@@ -9,12 +9,41 @@ import {
   KaspaClient,
   fetchAddressTransactions,
   fetchTransactionDetails,
-  decodePayload,
 } from "./utils/all-in-one";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, Message } from "./type/all";
+import { amountFromMessage } from "./utils/amount-from-message";
+import { useKaswareStore } from "./store/kasware.store";
+import { KaswareNotInstalled } from "./components/KaswareNotInstalled";
+import { useMessagingStore } from "./store/messaging.store";
+import { ContactCard } from "./components/ContactCard";
+import { MessageDisplay } from "./components/MessageDisplay";
 
 export const OneLiner: FC = () => {
+  const isKaswareDetected = useKaswareStore((s) => s.isKaswareDetected);
+  const refreshKaswareDetection = useKaswareStore(
+    (s) => s.refreshKaswareDetection
+  );
+  const setSelectedAddress = useKaswareStore((s) => s.setSelectedAddress);
+  const selectedAddress = useKaswareStore((s) => s.selectedAddress);
+  const messageStore = useMessagingStore();
+
+  const [isCreatingNewChat, setIsCreatingNewChat] = useState(true);
+  const onNewChatClicked = useCallback(() => {
+    const recipientInput = document.getElementById("recipientAddress");
+    const messageInput = document.getElementById("messageInput");
+    if (recipientInput && recipientInput instanceof HTMLInputElement)
+      recipientInput.value = "";
+    if (messageInput && messageInput instanceof HTMLInputElement)
+      messageInput.value = "";
+
+    messageStore.setOpenedRecipient(null);
+
+    if (recipientInput) recipientInput.focus();
+
+    setIsCreatingNewChat(true);
+  }, [messageStore]);
+
   // @TODO(tech): refactor this
   // Function to set up a listener for a specific DAA score
   function setupDaaScoreListener(daaScore: string, txId: string) {
@@ -77,17 +106,8 @@ export const OneLiner: FC = () => {
                 existingMessage.remove();
               }
 
-              // Add the new message
-              displayMessage(messageData, messagesList, currentAddress);
-              messagesList.scrollTop = messagesList.scrollHeight;
-
               // Update contacts list
-              const allMessages = loadStoredMessages(currentAddress);
-              const contacts = updateContacts(allMessages, currentAddress);
-              const contactsList = document.querySelector(".contacts-list");
-              if (contactsList && contactsList instanceof HTMLElement) {
-                displayContacts(contacts, contactsList, undefined);
-              }
+              messageStore.loadMessages(currentAddress);
             }
           }
         }
@@ -117,20 +137,15 @@ export const OneLiner: FC = () => {
 
   const [currentClient, setCurrentClient] = useState<KaspaClient | null>();
 
-  const [connectionStatus, setConnectionStatus] = useState("");
-  const [selectedNetwork, setSelectedNetwork] = useState("mainnet");
+  const [connectionStatus, setConnectionStatus] = useState(
+    "Waiting for interaction"
+  );
+  const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
 
-  // Helper function to load messages from localStorage for a specific wallet
-  const loadStoredMessages = useCallback((walletAddress: string): Message[] => {
-    const messagesMap = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
-    return messagesMap[walletAddress] || [];
-  }, []);
-
-  // @TODO(tech): initiate rpc connection before entering this component
   const connectToNetwork = useCallback(
     async (networkId: string) => {
+      setConnectionStatus("Connecting...");
+
       try {
         // Disconnect existing client if any
         if (currentClient) {
@@ -138,14 +153,11 @@ export const OneLiner: FC = () => {
         }
 
         // Create new client and connect
-        setCurrentClient(new KaspaClient());
 
         currentClient?.setNetworkId(networkId);
         await currentClient?.connect();
 
         setConnectionStatus("Connected to Kaspa Network");
-
-        setSelectedNetwork(networkId);
 
         setIsNetworkSelectorVisible(false);
       } catch (error) {
@@ -153,7 +165,7 @@ export const OneLiner: FC = () => {
         setConnectionStatus("Connection Failed");
       }
     },
-    [currentClient]
+    [currentClient, selectedNetwork]
   );
 
   // Helper function to store messages in localStorage
@@ -173,6 +185,82 @@ export const OneLiner: FC = () => {
     },
     []
   );
+
+  const onSendClicked = useCallback(async () => {
+    if (!selectedAddress) {
+      alert("Shouldn't occurs, no selected address");
+      return;
+    }
+
+    const messageInput = document.getElementById("messageInput");
+    const recipientInput = document.getElementById("recipientAddress");
+
+    if (
+      !recipientInput ||
+      !(recipientInput instanceof HTMLInputElement) ||
+      !messageInput ||
+      !(messageInput instanceof HTMLInputElement)
+    ) {
+      return;
+    }
+
+    const message = messageInput.value.trim();
+    const recipient = recipientInput.value.trim();
+
+    if (!message) {
+      alert("Please enter a message");
+      return;
+    }
+    if (!recipient) {
+      alert("Please enter a recipient address");
+      return;
+    }
+
+    try {
+      const amount = amountFromMessage(message);
+      console.log("Sending transaction with amount:", amount, "sompi");
+
+      const txResponse = await window.kasware.sendKaspa(
+        recipient,
+        amount.toString(),
+        {
+          payload: message,
+          encoding: "utf8",
+          mass: "1000000",
+        }
+      );
+
+      console.log("Message sent! Transaction response:", txResponse);
+
+      const txData =
+        typeof txResponse === "string" ? JSON.parse(txResponse) : txResponse;
+      const txId = txData.id || txData.transactionId || txResponse;
+
+      const newMessageData: Message = {
+        transactionId: txId,
+        senderAddress: selectedAddress,
+        recipientAddress: recipient,
+        timestamp: Date.now(),
+        content: message,
+        amount: amount,
+        payload: "",
+      };
+
+      storeMessage(newMessageData, selectedAddress);
+
+      messageInput.value = "";
+      recipientInput.value = "";
+
+      messageStore.addMessages([newMessageData]);
+
+      messageStore.setOpenedRecipient(recipient);
+      setIsCreatingNewChat(false);
+    } catch (error) {
+      console.error("Error sending message:", error);
+
+      alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
+    }
+  }, [messageStore, selectedAddress, storeMessage]);
 
   const processTransaction = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -260,348 +348,124 @@ export const OneLiner: FC = () => {
     setIsNetworkSelectorVisible(!isNetworkSelectorVisible);
   }, [isNetworkSelectorVisible]);
 
-  const [isInit, setIsInit] = useState(false);
+  // Kasware initialization
   useEffect(() => {
-    if (isInit) return;
-    try {
-      // Initialize network selector
-      const networkBadge = document.querySelector(".network-badge");
-      const networkSelector = document.querySelector(".network-selector");
-      const connectionStatus = document.querySelector(".connection-status");
+    setCurrentClient(new KaspaClient());
 
-      if (!networkBadge || !networkSelector || !connectionStatus) {
-        console.error("Network selector elements not found");
+    (async () => {
+      // Get network from kasware
+      const kaswareNetwork: string | null = await window.kasware.getNetwork();
+
+      // Map KasWare network to SDK network format
+      const networkMap = {
+        kaspa_mainnet: "mainnet",
+        "kaspa-mainnet": "mainnet",
+        kaspa_testnet_10: "testnet-10",
+        "kaspa-testnet-10": "testnet-10",
+        kaspa_testnet_11: "testnet-11",
+        "kaspa-testnet-11": "testnet-11",
+        kaspa_devnet: "devnet",
+        "kaspa-devnet": "devnet",
+      };
+
+      // @TODO: proper network typing and unification
+      const network: string = kaswareNetwork
+        ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          networkMap[kaswareNetwork]
+        : "";
+      if (!network) {
+        throw new Error(`Unsupported network: ${kaswareNetwork}`);
+      }
+
+      console.log("Kaspa network selected from KasWare network:", network);
+      setSelectedNetwork(network);
+    })();
+  }, []);
+
+  // Kasware detection
+  useEffect(() => {
+    console.log("KasWare detection effect triggered", selectedNetwork);
+    if (!selectedNetwork) return;
+    (async () => {
+      // Connect to the network
+      await connectToNetwork(selectedNetwork);
+
+      const isKaswareAvailable = await checkKaswareAvailability();
+      const transactionsNode = document.getElementById("transactions");
+
+      if (isKaswareAvailable) {
+        console.log("KasWare Wallet is installed!");
+
+        if (transactionsNode) {
+          transactionsNode.innerHTML =
+            '<div class="info-message">KasWare Wallet detected. Click "Connect to Kasware" to view your transactions.</div>';
+        }
+      }
+    })();
+  }, [connectToNetwork, selectedNetwork]);
+
+  // Connect button handler
+  const onConnectClicked = useCallback(async () => {
+    try {
+      // kasware guard
+      if (!isKaswareDetected) {
+        const result = await refreshKaswareDetection();
+
+        if (!result) {
+          return;
+        }
+      }
+
+      // Request accounts from the Kasware wallet
+      const accounts = await window.kasware.requestAccounts();
+      console.log("Connected to Kasware Wallet:", accounts);
+
+      if (!accounts?.length) {
+        console.warn("OnConnect - No account detected");
         return;
       }
 
-      // Close network selector when clicking outside
-      document.addEventListener("click", (event) => {
-        if (!(event instanceof MouseEvent)) return;
+      // Initialize conversations immediately after connecting
+      const address = accounts[0];
 
-        // @TODO(tech): refacto
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        if (!networkBadge.contains(event.target)) {
-          networkSelector.classList.remove("show");
-        }
-      });
+      setSelectedAddress(address);
 
-      // Initialize with testnet-10
-      try {
-        const network = "testnet-10";
-        const networkOption = document.querySelector(
-          `[data-network="${network}"]`
-        );
-        if (networkOption && networkBadge) {
-          const content = networkOption?.textContent?.trim();
-          networkBadge.textContent = content ?? "";
-          networkOption.classList.add("active");
-        }
+      // Load existing messages and initialize contacts
+      const storedMessages = messageStore.loadMessages(address);
+      console.log("Loaded stored messages:", storedMessages);
 
-        // @QUESTION: causing troubles - infinite connection initiation
-        // (async () => {
-        //   await connectToNetwork(network);
-
-        //   setIsInit(true);
-        //   setConnectionStatus("Connected to Kaspa Network");
-        // })();
-      } catch (error) {
-        console.error("Failed to initialize network:", error);
-        setConnectionStatus("Connection Failed");
-      }
-
-      // @QUESTION: this was in DOMLoaded before, we had two initializer, is there a reason?
-      (async () => {
-        // Get network from kasware
-        const kaswareNetwork: string | null = await window.kasware.getNetwork();
-
-        // Map KasWare network to SDK network format
-        const networkMap = {
-          kaspa_mainnet: "mainnet",
-          "kaspa-mainnet": "mainnet",
-          kaspa_testnet_10: "testnet-10",
-          "kaspa-testnet-10": "testnet-10",
-          kaspa_testnet_11: "testnet-11",
-          "kaspa-testnet-11": "testnet-11",
-          kaspa_devnet: "devnet",
-          "kaspa-devnet": "devnet",
-        };
-
-        // @TODO: proper network typing and unification
-        const network: string = kaswareNetwork
-          ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            networkMap[kaswareNetwork]
-          : "";
-        if (!network) {
-          throw new Error(`Unsupported network: ${kaswareNetwork}`);
-        }
-
-        // Connect to the network
-        await connectToNetwork(network);
-
-        const isKaswareAvailable = await checkKaswareAvailability();
-        const transactionsNode = document.getElementById("transactions");
-
-        if (isKaswareAvailable) {
-          console.log("KasWare Wallet is installed!");
-
-          if (transactionsNode) {
-            transactionsNode.innerHTML =
-              '<div class="info-message">KasWare Wallet detected. Click "Connect to Kasware" to view your transactions.</div>';
-          }
-        } else {
-          console.error("KasWare Wallet is not installed.");
-
-          if (transactionsNode) {
-            transactionsNode.innerHTML =
-              '<div class="error">KasWare Wallet is not installed. Please install it from <a href="https://kasware.xyz" target="_blank">kasware.xyz</a></div>';
-          }
-        }
-      })();
+      // Then fetch transactions and update UI
+      fetchTransactions(accounts);
     } catch (error) {
-      console.error("Error initializing:", error);
+      console.error("Failed to connect to Kasware Wallet:", error);
 
       const transactionsNode = document.getElementById("transactions");
-
       if (transactionsNode) {
-        transactionsNode.innerHTML = `<div class="error">Failed to initialize: ${unknownErrorToErrorLike(
+        transactionsNode.innerHTML = `<div class="error">Failed to connect to Kasware Wallet: ${unknownErrorToErrorLike(
           error
         )}</div>`;
       }
     }
-  }, [connectToNetwork, isInit]);
+  }, [isKaswareDetected]);
 
-  useEffect(() => {
-    // Connect button handler
-    document
-      .getElementById("connectButton")
-      ?.addEventListener("click", async () => {
-        try {
-          const isKaswareAvailable = await checkKaswareAvailability();
-          if (isKaswareAvailable) {
-            // Request accounts from the Kasware wallet
-            const accounts = await window.kasware.requestAccounts();
-            console.log("Connected to Kasware Wallet:", accounts);
-
-            // Initialize conversations immediately after connecting
-            if (accounts && accounts.length > 0) {
-              const address = accounts[0];
-
-              // Load existing messages and initialize contacts
-              const storedMessages = loadStoredMessages(address);
-              console.log("Loaded stored messages:", storedMessages);
-
-              // Update contacts list
-              const contacts = updateContacts(storedMessages, address);
-              console.log("Updated contacts:", contacts);
-
-              // Find contacts list container
-              const contactsList = document.querySelector(".contacts-list");
-              if (contactsList && contactsList instanceof HTMLElement) {
-                displayContacts(contacts, contactsList, address);
-                console.log("Displayed contacts in sidebar");
-              }
-
-              // Initialize messages list if there are any messages
-              const messagesList = document.querySelector(".messages-list");
-              if (messagesList && storedMessages.length > 0) {
-                // Sort messages by timestamp
-                const sortedMessages = storedMessages.sort(
-                  (a: { timestamp?: number }, b: { timestamp?: number }) =>
-                    (a.timestamp || 0) - (b.timestamp || 0)
-                );
-
-                // Display all messages
-                sortedMessages.forEach((msg: Message) =>
-                  displayMessage(msg, messagesList, address)
-                );
-                console.log("Displayed stored messages");
-              } else if (messagesList) {
-                messagesList.innerHTML =
-                  '<div class="no-messages">No messages found.</div>';
-              }
-            }
-
-            // Then fetch transactions and update UI
-            fetchTransactions(accounts);
-          } else {
-            console.error("KasWare Wallet is not installed.");
-
-            const transactionsNode = document.getElementById("transactions");
-            if (transactionsNode) {
-              transactionsNode.innerHTML =
-                '<div class="error">KasWare Wallet is not installed. Please install it from <a href="https://kasware.xyz" target="_blank">kasware.xyz</a></div>';
-            }
-          }
-        } catch (error) {
-          console.error("Failed to connect to Kasware Wallet:", error);
-
-          const transactionsNode = document.getElementById("transactions");
-          if (transactionsNode) {
-            transactionsNode.innerHTML = `<div class="error">Failed to connect to Kasware Wallet: ${unknownErrorToErrorLike(
-              error
-            )}</div>`;
-          }
-        }
-      });
-  }, []);
-
-  // Helper function to display a single message
-  const displayMessage = useCallback(
-    (messageData: Message, messagesList: Node, currentAddress: string) => {
-      const messageDiv = document.createElement("div");
-      const decodedPayload = messageData.payload
-        ? decodePayload(messageData.payload)
-        : messageData.content;
-      const txId = messageData.transactionId || "pending";
-
-      // Determine if the message is outgoing by checking if we're the sender
-      const isOutgoing = messageData.senderAddress === currentAddress;
-
-      messageDiv.className = `message ${isOutgoing ? "outgoing" : "incoming"}`;
-
-      // For display, show the other party's address (recipient for outgoing, sender for incoming)
-      const displayAddress = isOutgoing
-        ? messageData.recipientAddress
-        : messageData.senderAddress;
-      const shortDisplayAddress =
-        displayAddress && displayAddress !== "Unknown"
-          ? `${displayAddress.substring(0, 12)}...${displayAddress.substring(
-              displayAddress.length - 12
-            )}`
-          : "Unknown";
-
-      // Format amount if available
-      const amountDisplay = messageData.amount
-        ? `<span class="message-amount">${formatKasAmount(
-            messageData.amount
-          )} KAS</span>`
-        : "";
-
-      messageDiv.innerHTML = `
-                    <div class="message-header">
-                        <span class="message-from">${
-                          isOutgoing ? "To" : "From"
-                        }: ${shortDisplayAddress}</span>
-                        <span class="message-time">${
-                          messageData.timestamp
-                            ? new Date(messageData.timestamp).toLocaleString()
-                            : "Pending"
-                        }</span>
-                    </div>
-                    <div class="message-content">
-                        ${decodedPayload}
-                    </div>
-                    <div class="message-footer">
-                        <span class="message-id">TX: ${
-                          txId === "pending"
-                            ? "Pending..."
-                            : txId.substring(0, 8) + "..."
-                        }</span>
-                        ${amountDisplay}
-                    </div>
-                `;
-
-      messagesList.appendChild(messageDiv);
-    },
-    []
-  );
-
-  const displayContactMessages = useCallback(
-    (
-      messages: Message[],
-      messagesList: HTMLElement,
-      currentAddress: string
-    ) => {
-      messagesList.innerHTML = "";
-
-      if (messages.length === 0) {
-        messagesList.innerHTML =
-          '<div class="no-messages">No messages in this conversation.</div>';
+  const onContactClicked = useCallback(
+    (contact: Contact) => {
+      if (!selectedAddress) {
+        console.error("No selected address");
         return;
       }
 
-      messages
-        .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
-        .forEach((msg) => displayMessage(msg, messagesList, currentAddress));
+      setIsCreatingNewChat(false);
+      messageStore.setOpenedRecipient(contact.address);
 
-      messagesList.scrollTop = messagesList.scrollHeight;
+      // Show recipient address in input when selecting a conversation
+      const recipientInput = document.getElementById("recipientAddress");
+      if (recipientInput && recipientInput instanceof HTMLInputElement) {
+        recipientInput.value = contact.address;
+      }
     },
-    [displayMessage]
-  );
-
-  const displayContacts = useCallback(
-    (
-      contacts: Contact[],
-      contactsList: HTMLElement,
-      selectedContactAddress?: string
-    ) => {
-      contactsList.innerHTML = "";
-
-      contacts.forEach((contact) => {
-        const contactDiv = document.createElement("div");
-        contactDiv.className = `contact-item ${
-          selectedContactAddress === contact.address ? "active" : ""
-        }`;
-
-        const shortAddress = `${contact.address.substring(
-          0,
-          8
-        )}...${contact.address.substring(contact.address.length - 8)}`;
-        const lastMessage = contact.lastMessage.payload
-          ? decodePayload(contact.lastMessage.payload)
-          : contact.lastMessage.content;
-        const timestamp = contact.lastMessage.timestamp
-          ? new Date(contact.lastMessage.timestamp).toLocaleString()
-          : "";
-
-        contactDiv.innerHTML = `
-                    <div class="contact-name">${shortAddress}</div>
-                    <div class="contact-preview">${lastMessage}</div>
-                    <div class="contact-time">${timestamp}</div>
-                `;
-
-        contactDiv.addEventListener("click", () => {
-          // Get fresh reference to messagesList
-          const messagesList = document.querySelector(".messages-list");
-          if (!messagesList || !(messagesList instanceof HTMLElement)) {
-            console.error("Messages list container not found");
-            return;
-          }
-
-          // Update active state
-          document
-            .querySelectorAll(".contact-item")
-            .forEach((item) => item.classList.remove("active"));
-          contactDiv.classList.add("active");
-
-          // Get current address
-          const currentAddress =
-            document.querySelector(".address")?.textContent;
-          if (!currentAddress) {
-            console.error("Current address not found");
-            return;
-          }
-
-          // Display messages
-          displayContactMessages(
-            contact.messages,
-            messagesList,
-            currentAddress
-          );
-
-          // Show recipient address in input when selecting a conversation
-          const recipientInput = document.getElementById("recipientAddress");
-          if (recipientInput && recipientInput instanceof HTMLInputElement) {
-            recipientInput.value = contact.address;
-          }
-        });
-
-        contactsList.appendChild(contactDiv);
-      });
-    },
-    [displayContactMessages]
+    [messageStore, selectedAddress]
   );
 
   const startUtxoListener = useCallback(
@@ -632,7 +496,7 @@ export const OneLiner: FC = () => {
 
             if (transactions && transactions.transactions) {
               // Load existing messages
-              const existingMessages = loadStoredMessages(address);
+              const existingMessages = messageStore.loadMessages(address);
               const existingTxIds = new Set(
                 existingMessages.map(
                   (msg: { transactionId: string }) => msg.transactionId
@@ -664,33 +528,18 @@ export const OneLiner: FC = () => {
                 hasNewMessages = true;
 
                 // Process and store the new message
-                const messageData = processTransaction(tx, address);
+                processTransaction(tx, address);
 
-                // Update UI immediately for this new message
-                const messagesList = document.querySelector(".messages-list");
-                if (messagesList) {
-                  displayMessage(messageData, messagesList, address);
-                  messagesList.scrollTop = messagesList.scrollHeight;
-
-                  // Play notification sound
-                  const audio = new Audio(
-                    "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
-                  );
-                  audio
-                    .play()
-                    .catch((e) => console.log("Audio play failed:", e));
-                }
+                // Play notification sound
+                const audio = new Audio(
+                  "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
+                );
+                audio.play().catch((e) => console.log("Audio play failed:", e));
               }
 
               if (hasNewMessages) {
                 // Update contacts list
-                const allMessages = loadStoredMessages(address);
-                const contacts = updateContacts(allMessages, address);
-                const contactsList = document.querySelector(".contacts-list");
-                if (contactsList && contactsList instanceof HTMLElement) {
-                  displayContacts(contacts, contactsList, undefined);
-                  console.log("Updated contacts list with new messages");
-                }
+                messageStore.loadMessages(address);
               }
             }
 
@@ -724,14 +573,7 @@ export const OneLiner: FC = () => {
         console.error(error);
       }
     },
-    [
-      currentClient,
-      displayContacts,
-      displayMessage,
-      loadStoredMessages,
-      processTransaction,
-      updateContacts,
-    ]
+    [currentClient, messageStore, processTransaction]
   );
 
   const fetchTransactions = useCallback(
@@ -789,7 +631,7 @@ export const OneLiner: FC = () => {
           // Process transactions to extract messages
           if (transactions && transactions.transactions) {
             // Load existing messages to avoid duplicates
-            const existingMessages = loadStoredMessages(address);
+            const existingMessages = messageStore.loadMessages(address);
             const existingTxIds = new Set(
               existingMessages.map(
                 (msg: { transactionId: string }) => msg.transactionId
@@ -868,42 +710,8 @@ export const OneLiner: FC = () => {
             }
 
             // Update UI with all messages
-            const allMessages = loadStoredMessages(address);
+            const allMessages = messageStore.loadMessages(address);
             console.log("All messages after processing:", allMessages);
-
-            // Update contacts list
-            const contacts = updateContacts(allMessages, address);
-            const contactsList = document.querySelector(".contacts-list");
-
-            // @COMMENT
-            console.log({ contactsList });
-            if (contactsList instanceof HTMLElement) {
-              displayContacts(contacts, contactsList, undefined);
-              console.log("Updated contacts list");
-            }
-
-            // Display messages
-            const messagesList = document.querySelector(".messages-list");
-
-            // @COMMENT
-            console.log({ messagesList });
-
-            if (messagesList) {
-              messagesList.innerHTML = "";
-              if (allMessages.length > 0) {
-                const sortedMessages = allMessages.sort(
-                  (a: { timestamp: number }, b: { timestamp: number }) =>
-                    (a.timestamp || 0) - (b.timestamp || 0)
-                );
-                sortedMessages.forEach((msg: Message) =>
-                  displayMessage(msg, messagesList, address)
-                );
-                messagesList.scrollTop = messagesList.scrollHeight;
-              } else {
-                messagesList.innerHTML =
-                  '<div class="no-messages">No messages found.</div>';
-              }
-            }
           }
 
           // Display the wallet information
@@ -941,74 +749,17 @@ export const OneLiner: FC = () => {
             container.appendChild(dataContainer);
           }
 
-          // Create messages container
-          const messagesContainer = document.createElement("div");
-          messagesContainer.className = "messages-container";
-          messagesContainer.innerHTML = `
-                        <div class="contacts-sidebar">
-                            <div class="contacts-header">
-                                <h3>Conversations</h3>
-                                <button class="new-conversation-btn">New Chat</button>
-                            </div>
-                            <div class="contacts-list"></div>
-                        </div>
-                        <div class="messages-section">
-                            <div class="messages-header">
-                                <h3>Messages</h3>
-                                <button id="clearHistoryButton" class="clear-history-button">Clear History</button>
-                            </div>
-                            <div class="messages-list"></div>
-                            <div class="message-input-section">
-                                <div class="message-input-container">
-                                    <input type="text" id="recipientAddress" placeholder="Recipient address" class="recipient-input">
-                                    <div class="message-input-wrapper">
-                                        <input type="text" id="messageInput" placeholder="Type your message..." class="message-input">
-                                        <button id="sendButton" class="send-button">Send</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-
-          // Add messages container to the main container
-          dataContainer.appendChild(messagesContainer);
-
           // Initialize contacts and messages
-          const contactsList =
-            messagesContainer.querySelector(".contacts-list");
-          const messagesList =
-            messagesContainer.querySelector(".messages-list");
+          const messagesList = document.querySelector(".messages-list");
 
           // Update contacts list
-          const allMessages = loadStoredMessages(address);
-          const contacts = updateContacts(allMessages, address);
-          if (contactsList && contactsList instanceof HTMLElement) {
-            displayContacts(contacts, contactsList, undefined);
-            console.log("Updated contacts list");
-          }
-
-          // Display messages
-          if (messagesList) {
-            if (allMessages.length > 0) {
-              const sortedMessages = allMessages.sort(
-                (a: { timestamp: number }, b: { timestamp: number }) =>
-                  (a.timestamp || 0) - (b.timestamp || 0)
-              );
-              sortedMessages.forEach((msg: Message) =>
-                displayMessage(msg, messagesList, address)
-              );
-              messagesList.scrollTop = messagesList.scrollHeight;
-            } else {
-              messagesList.innerHTML =
-                '<div class="no-messages">No messages found.</div>';
-            }
-          }
+          messageStore.loadMessages(address);
 
           // Initialize WebSocket subscription for live updates
           subscribeToNewTransactions(address);
 
           // Add event listener for clear history button
-          const clearHistoryButton = messagesContainer.querySelector(
+          const clearHistoryButton = document.querySelector(
             "#clearHistoryButton"
           );
           clearHistoryButton?.addEventListener("click", () => {
@@ -1030,130 +781,8 @@ export const OneLiner: FC = () => {
                 messagesList.innerHTML =
                   '<div class="no-messages">No messages found.</div>';
               }
-              if (contactsList) {
-                contactsList.innerHTML = "";
-              }
             }
           });
-
-          // Add event listener for new conversation button
-          const newChatButton = messagesContainer.querySelector(
-            ".new-conversation-btn"
-          );
-          if (newChatButton) {
-            newChatButton.addEventListener("click", () => {
-              const recipientInput =
-                document.getElementById("recipientAddress");
-              const messageInput = document.getElementById("messageInput");
-              if (recipientInput && recipientInput instanceof HTMLInputElement)
-                recipientInput.value = "";
-              if (messageInput && messageInput instanceof HTMLInputElement)
-                messageInput.value = "";
-
-              document
-                .querySelectorAll(".contact-item")
-                .forEach((item) => item.classList.remove("active"));
-
-              if (messagesList) {
-                messagesList.innerHTML =
-                  '<div class="no-messages">Enter a recipient address to start a new conversation.</div>';
-              }
-
-              if (recipientInput) recipientInput.focus();
-            });
-          }
-
-          // Add event listener for send button
-          const sendButton = document.getElementById("sendButton");
-          if (sendButton) {
-            sendButton.addEventListener("click", async () => {
-              const messageInput = document.getElementById("messageInput");
-              const recipientInput =
-                document.getElementById("recipientAddress");
-
-              if (
-                !recipientInput ||
-                !(recipientInput instanceof HTMLInputElement) ||
-                !messageInput ||
-                !(messageInput instanceof HTMLInputElement)
-              ) {
-                return;
-              }
-
-              const message = messageInput.value.trim();
-              const recipient = recipientInput.value.trim();
-
-              if (!message) {
-                alert("Please enter a message");
-                return;
-              }
-              if (!recipient) {
-                alert("Please enter a recipient address");
-                return;
-              }
-
-              try {
-                const amount = await calculateMinimumAmount(message);
-                console.log(
-                  "Sending transaction with amount:",
-                  amount,
-                  "sompi"
-                );
-
-                const txResponse = await window.kasware.sendKaspa(
-                  recipient,
-                  amount.toString(),
-                  {
-                    payload: message,
-                    encoding: "utf8",
-                    mass: "1000000",
-                  }
-                );
-
-                console.log("Message sent! Transaction response:", txResponse);
-
-                const txData =
-                  typeof txResponse === "string"
-                    ? JSON.parse(txResponse)
-                    : txResponse;
-                const txId = txData.id || txData.transactionId || txResponse;
-
-                const newMessageData: Message = {
-                  transactionId: txId,
-                  senderAddress: address,
-                  recipientAddress: recipient,
-                  timestamp: Date.now(),
-                  content: message,
-                  amount: amount,
-                  payload: "",
-                };
-                storeMessage(newMessageData, address);
-
-                messageInput.value = "";
-                recipientInput.value = "";
-
-                if (messagesList instanceof HTMLElement) {
-                  displayMessage(newMessageData, messagesList, address);
-                }
-
-                if (messagesList) {
-                  messagesList.scrollTop = messagesList.scrollHeight;
-                }
-
-                const messages = loadStoredMessages(address);
-                const contacts = updateContacts(messages, address);
-                if (contactsList instanceof HTMLElement) {
-                  displayContacts(contacts, contactsList, recipient);
-                }
-              } catch (error) {
-                console.error("Error sending message:", error);
-
-                alert(
-                  `Failed to send message: ${unknownErrorToErrorLike(error)}`
-                );
-              }
-            });
-          }
 
           // Add event listener for Enter key in message input
           const messageInput = document.getElementById("messageInput");
@@ -1165,6 +794,8 @@ export const OneLiner: FC = () => {
               }
             });
           }
+
+          messageStore.setIsLoaded(true);
 
           return transactions.transactions;
         } catch (error) {
@@ -1187,9 +818,7 @@ export const OneLiner: FC = () => {
     },
     [
       // @NOTE: voluntary omit of one of the deps as it is a circular dep (a->b and b->a)
-      displayContacts,
-      displayMessage,
-      loadStoredMessages,
+      messageStore.loadMessages,
       storeMessage,
       updateContacts,
     ]
@@ -1223,7 +852,7 @@ export const OneLiner: FC = () => {
 
               if (transactions) {
                 // Process only new transactions
-                const existingMessages = loadStoredMessages(address);
+                const existingMessages = messageStore.loadMessages(address);
                 const existingTxIds = new Set(
                   existingMessages.map((msg) => msg.transactionId)
                 );
@@ -1252,38 +881,15 @@ export const OneLiner: FC = () => {
                   console.log("New messages received:", newMessages);
 
                   // Update UI with all messages
-                  const allMessages = loadStoredMessages(address);
-                  const messagesList = document.querySelector(".messages-list");
+                  messageStore.loadMessages(address);
 
-                  if (messagesList) {
-                    // Sort messages by timestamp
-                    const sortedMessages = allMessages.sort(
-                      (a, b) => (a.timestamp || 0) - (b.timestamp || 0)
-                    );
-
-                    // Clear and repopulate messages
-                    messagesList.innerHTML = "";
-                    sortedMessages.forEach((msg) =>
-                      displayMessage(msg, messagesList, address)
-                    );
-                    messagesList.scrollTop = messagesList.scrollHeight;
-
-                    // Play notification sound
-                    const audio = new Audio(
-                      "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
-                    );
-                    audio
-                      .play()
-                      .catch((e) => console.log("Audio play failed:", e));
-                  }
-
-                  // Update contacts list
-                  const contacts = updateContacts(allMessages, address);
-                  const contactsList = document.querySelector(".contacts-list");
-                  if (contactsList && contactsList instanceof HTMLElement) {
-                    displayContacts(contacts, contactsList, undefined);
-                    console.log("Updated contacts list with new messages");
-                  }
+                  // Play notification sound
+                  const audio = new Audio(
+                    "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
+                  );
+                  audio
+                    .play()
+                    .catch((e) => console.log("Audio play failed:", e));
                 }
               }
             }
@@ -1294,68 +900,8 @@ export const OneLiner: FC = () => {
           console.error("Error subscribing to transactions:", error);
         }
       },
-      [
-        currentClient,
-        displayContacts,
-        displayMessage,
-        fetchTransactions,
-        loadStoredMessages,
-        processTransaction,
-        updateContacts,
-      ]
+      [currentClient, fetchTransactions, messageStore, processTransaction]
     );
-
-  // Helper function to calculate minimum required amount based on message length
-  async function calculateMinimumAmount(message: string) {
-    // Constants for fee calculation (all values in sompi)
-    const MIN_OUTPUT_VALUE = 10000000; // 0.1 KAS minimum output value
-    const MIN_RELAY_FEE = 100000; // 0.001 KAS minimum relay fee
-    const DEFAULT_FEE_PER_MASS = 100; // 100 sompi per mass unit
-    const MASS_MULTIPLIER = 10; // Mass multiplier for safety
-
-    try {
-      // Calculate message bytes
-      const messageBytes = new TextEncoder().encode(message).length;
-
-      // Calculate mass based on message length with safety multiplier
-      const baseMass = 300; // Base transaction mass
-      const messageMass = messageBytes * MASS_MULTIPLIER; // Higher mass per byte
-      const totalMass = baseMass + messageMass;
-
-      // Calculate minimum fee based on mass
-      const massFee = Math.ceil(totalMass * DEFAULT_FEE_PER_MASS);
-      const minFee = Math.max(massFee, MIN_RELAY_FEE);
-
-      // Calculate total amount (minimum output + fees)
-      const totalAmount = MIN_OUTPUT_VALUE + minFee;
-
-      // Add 10% buffer for safety
-      const finalAmount = Math.ceil(totalAmount * 1.1);
-
-      // Log the calculation details
-      console.log("Fee calculation:", {
-        messageLength: messageBytes,
-        messageMass,
-        baseMass,
-        totalMass,
-        massFee,
-        minFee,
-        minOutputValue: MIN_OUTPUT_VALUE,
-        totalBeforeBuffer: totalAmount,
-        finalAmount,
-        kasAmount: formatKasAmount(finalAmount),
-      });
-
-      return finalAmount;
-    } catch (error) {
-      console.error("Error in fee calculation:", error);
-      // Fallback to minimum output value plus fees
-      const fallbackAmount = MIN_OUTPUT_VALUE + MIN_RELAY_FEE;
-      const finalAmount = Math.ceil(fallbackAmount * 1.1);
-      console.log("Using fallback amount:", finalAmount, "sompi");
-      return finalAmount;
-    }
-  }
 
   return (
     <>
@@ -1384,9 +930,89 @@ export const OneLiner: FC = () => {
             </div>
           ) : null}
         </div>
-        <div className="connection-status">Connected to Kaspa Network</div>
+        <div className="connection-status">{connectionStatus}</div>
       </div>
-      <button id="connectButton">Connect to Kasware</button>
+      <button onClick={onConnectClicked} id="connectButton">
+        Connect to Kasware
+      </button>
+      {isKaswareDetected === false ? <KaswareNotInstalled /> : null}
+      {messageStore.isLoaded ? (
+        <div className="messages-container">
+          <div className="contacts-sidebar">
+            <div className="contacts-header">
+              <h3>Conversations</h3>
+              <button
+                onClick={onNewChatClicked}
+                className="new-conversation-btn"
+              >
+                New Chat
+              </button>
+            </div>
+            <div className="contacts-list">
+              {messageStore.contacts.map((c) => (
+                <ContactCard
+                  isSelected={c.address === messageStore.openedRecipient}
+                  key={c.address}
+                  contact={c}
+                  onClick={onContactClicked}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="messages-section">
+            <div className="messages-header">
+              <h3>Messages</h3>
+              <button id="clearHistoryButton" className="clear-history-button">
+                Clear History
+              </button>
+            </div>
+            <div className="messages-list">
+              {isCreatingNewChat ? (
+                <div className="no-messages">
+                  Enter a recipient address to start a new conversation.
+                </div>
+              ) : messageStore.messagesOnOpenedRecipient.length ? (
+                messageStore.messagesOnOpenedRecipient.map((msg) => (
+                  <MessageDisplay
+                    isOutgoing={msg.senderAddress === selectedAddress}
+                    key={msg.transactionId}
+                    message={msg}
+                  />
+                ))
+              ) : (
+                <div className="no-messages">
+                  No messages in this conversation.
+                </div>
+              )}
+            </div>
+            <div className="message-input-section">
+              <div className="message-input-container">
+                <input
+                  type="text"
+                  id="recipientAddress"
+                  placeholder="Recipient address"
+                  className="recipient-input"
+                />
+                <div className="message-input-wrapper">
+                  <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Type your message..."
+                    className="message-input"
+                  />
+                  <button
+                    onClick={onSendClicked}
+                    id="sendButton"
+                    className="send-button"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div id="transactions"></div>
     </>
   );
