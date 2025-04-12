@@ -29,6 +29,10 @@ export const OneLiner: FC = () => {
   const populateKaswareInformation = useKaswareStore(
     (s) => s.populateKaswareInformation
   );
+  const switchKaswareNetwork = useKaswareStore((s) => s.switchKaswareNetwork);
+  const getKaswareCurrentNetwork = useKaswareStore(
+    (s) => s.getKaswareCurrentNetwork
+  );
   const balance = useKaswareStore((s) => s.balance);
   const utxoEntries = useKaswareStore((s) => s.utxoEntries);
   const setSelectedAddress = useKaswareStore((s) => s.setSelectedAddress);
@@ -262,6 +266,14 @@ export const OneLiner: FC = () => {
 
       if (isKaswareAvailable) {
         console.log("KasWare Wallet is installed!");
+
+        const network = await getKaswareCurrentNetwork();
+
+        if (network !== selectedNetwork) {
+          await switchKaswareNetwork(selectedNetwork);
+
+          console.log("Switched KasWare network to:", selectedNetwork);
+        }
       }
     })();
   }, [connectToNetwork, selectedNetwork]);
