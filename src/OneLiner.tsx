@@ -11,7 +11,6 @@ import {
 } from "./utils/all-in-one";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, Message, NetworkType } from "./type/all";
-import { amountFromMessage } from "./utils/amount-from-message";
 import { useKaswareStore } from "./store/kasware.store";
 import { KaswareNotInstalled } from "./components/KaswareNotInstalled";
 import { useMessagingStore } from "./store/messaging.store";
@@ -19,6 +18,8 @@ import { ContactCard } from "./components/ContactCard";
 import { MessageDisplay } from "./components/MessageDisplay";
 import { NetworkSelector } from "./containers/NetworkSelector";
 import { WalletInfo } from "./components/WalletInfo";
+import { SendMessageForm } from "./containers/SendMessageForm";
+import { ErrorCard } from "./components/ErrorCard";
 
 export const OneLiner: FC = () => {
   const isKaswareDetected = useKaswareStore((s) => s.isKaswareDetected);
@@ -34,21 +35,30 @@ export const OneLiner: FC = () => {
   const selectedAddress = useKaswareStore((s) => s.selectedAddress);
   const messageStore = useMessagingStore();
 
-  const [isCreatingNewChat, setIsCreatingNewChat] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const onNewChatClicked = useCallback(() => {
-    const recipientInput = document.getElementById("recipientAddress");
-    const messageInput = document.getElementById("messageInput");
-    if (recipientInput && recipientInput instanceof HTMLInputElement)
-      recipientInput.value = "";
-    if (messageInput && messageInput instanceof HTMLInputElement)
-      messageInput.value = "";
-
-    messageStore.setOpenedRecipient(null);
-
-    if (recipientInput) recipientInput.focus();
-
-    setIsCreatingNewChat(true);
+    messageStore.setIsCreatingNewChat(true);
   }, [messageStore]);
+
+  const onClearHistory = useCallback(() => {
+    if (
+      confirm(
+        "Are you sure you want to clear all message history? This cannot be undone."
+      )
+    ) {
+      const messagesMap = JSON.parse(
+        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+      );
+      if (selectedAddress) {
+        delete messagesMap[selectedAddress];
+      }
+      localStorage.setItem(
+        "kaspa_messages_by_wallet",
+        JSON.stringify(messagesMap)
+      );
+    }
+  }, [selectedAddress]);
 
   // @TODO(tech): refactor this
   // Function to set up a listener for a specific DAA score
@@ -82,9 +92,7 @@ export const OneLiner: FC = () => {
           const txData = JSON.parse(tx.data);
 
           // Get current address
-          const currentAddress =
-            document.querySelector(".address")?.textContent;
-          if (!currentAddress) {
+          if (!selectedAddress) {
             console.error("Current address not found");
             return;
           }
@@ -97,24 +105,11 @@ export const OneLiner: FC = () => {
               payload: txData.payload,
               outputs: txData.outputs || [],
             },
-            currentAddress
+            selectedAddress
           );
 
           if (messageData) {
-            // Update the UI with the new message
-            const messagesList = document.querySelector(".messages-list");
-            if (messagesList) {
-              // Remove any existing message with this transaction ID
-              const existingMessage = messagesList.querySelector(
-                `[data-tx-id="${txId}"]`
-              );
-              if (existingMessage) {
-                existingMessage.remove();
-              }
-
-              // Update contacts list
-              messageStore.loadMessages(currentAddress);
-            }
+            messageStore.loadMessages(selectedAddress);
           }
         }
       }
@@ -174,100 +169,6 @@ export const OneLiner: FC = () => {
     [currentClient]
   );
 
-  // Helper function to store messages in localStorage
-  const storeMessage = useCallback(
-    (message: Message, walletAddress: string) => {
-      const messagesMap = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
-      if (!messagesMap[walletAddress]) {
-        messagesMap[walletAddress] = [];
-      }
-      messagesMap[walletAddress].push(message);
-      localStorage.setItem(
-        "kaspa_messages_by_wallet",
-        JSON.stringify(messagesMap)
-      );
-    },
-    []
-  );
-
-  const onSendClicked = useCallback(async () => {
-    if (!selectedAddress) {
-      alert("Shouldn't occurs, no selected address");
-      return;
-    }
-
-    const messageInput = document.getElementById("messageInput");
-    const recipientInput = document.getElementById("recipientAddress");
-
-    if (
-      !recipientInput ||
-      !(recipientInput instanceof HTMLInputElement) ||
-      !messageInput ||
-      !(messageInput instanceof HTMLInputElement)
-    ) {
-      return;
-    }
-
-    const message = messageInput.value.trim();
-    const recipient = recipientInput.value.trim();
-
-    if (!message) {
-      alert("Please enter a message");
-      return;
-    }
-    if (!recipient) {
-      alert("Please enter a recipient address");
-      return;
-    }
-
-    try {
-      const amount = amountFromMessage(message);
-      console.log("Sending transaction with amount:", amount, "sompi");
-
-      const txResponse = await window.kasware.sendKaspa(
-        recipient,
-        amount.toString(),
-        {
-          payload: message,
-          encoding: "utf8",
-          mass: "1000000",
-        }
-      );
-
-      console.log("Message sent! Transaction response:", txResponse);
-
-      const txData =
-        typeof txResponse === "string" ? JSON.parse(txResponse) : txResponse;
-      const txId = txData.id || txData.transactionId || txResponse;
-
-      const newMessageData: Message = {
-        transactionId: txId,
-        senderAddress: selectedAddress,
-        recipientAddress: recipient,
-        timestamp: Date.now(),
-        content: message,
-        amount: amount,
-        payload: "",
-      };
-
-      storeMessage(newMessageData, selectedAddress);
-
-      messageInput.value = "";
-      recipientInput.value = "";
-
-      messageStore.addMessages([newMessageData]);
-
-      messageStore.setOpenedRecipient(recipient);
-      setIsCreatingNewChat(false);
-    } catch (error) {
-      console.error("Error sending message:", error);
-
-      alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
-    }
-  }, [messageStore, selectedAddress, storeMessage]);
-
   const processTransaction = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tx: any, address: string) => {
@@ -312,40 +213,11 @@ export const OneLiner: FC = () => {
       };
 
       // Store the message
-      storeMessage(messageData, address);
+      messageStore.storeMessage(messageData, address);
 
       return messageData;
     },
-    [storeMessage]
-  );
-
-  // Add new functions for contacts
-  const updateContacts = useCallback(
-    (messages: Message[], currentAddress: string) => {
-      const contacts = new Map();
-
-      messages.forEach((msg) => {
-        const otherParty =
-          msg.senderAddress === currentAddress
-            ? msg.recipientAddress
-            : msg.senderAddress;
-
-        if (!contacts.has(otherParty)) {
-          contacts.set(otherParty, {
-            address: otherParty,
-            lastMessage: msg,
-            messages: [],
-          });
-        }
-        contacts.get(otherParty).messages.push(msg);
-      });
-
-      return Array.from(contacts.values()).sort(
-        (a, b) =>
-          (b.lastMessage.timestamp || 0) - (a.lastMessage.timestamp || 0)
-      );
-    },
-    []
+    [messageStore]
   );
 
   // Kasware initialization
@@ -436,12 +308,9 @@ export const OneLiner: FC = () => {
     } catch (error) {
       console.error("Failed to connect to Kasware Wallet:", error);
 
-      const transactionsNode = document.getElementById("transactions");
-      if (transactionsNode) {
-        transactionsNode.innerHTML = `<div class="error">Failed to connect to Kasware Wallet: ${unknownErrorToErrorLike(
-          error
-        )}</div>`;
-      }
+      setErrorMessage(
+        `Failed to connect to Kasware Wallet: ${unknownErrorToErrorLike(error)}`
+      );
     }
   }, [
     isKaswareDetected,
@@ -458,14 +327,8 @@ export const OneLiner: FC = () => {
         return;
       }
 
-      setIsCreatingNewChat(false);
+      messageStore.setIsCreatingNewChat(false);
       messageStore.setOpenedRecipient(contact.address);
-
-      // Show recipient address in input when selecting a conversation
-      const recipientInput = document.getElementById("recipientAddress");
-      if (recipientInput && recipientInput instanceof HTMLInputElement) {
-        recipientInput.value = contact.address;
-      }
     },
     [messageStore, selectedAddress]
   );
@@ -688,7 +551,7 @@ export const OneLiner: FC = () => {
               console.log("Storing message data:", messageData);
 
               // Store the message
-              storeMessage(messageData, address);
+              messageStore.storeMessage(messageData, address);
             }
 
             // Update UI with all messages
@@ -696,79 +559,31 @@ export const OneLiner: FC = () => {
             console.log("All messages after processing:", allMessages);
           }
 
-          // Initialize contacts and messages
-          const messagesList = document.querySelector(".messages-list");
-
           // Update contacts list
           messageStore.loadMessages(address);
 
           // Initialize WebSocket subscription for live updates
           subscribeToNewTransactions(address);
 
-          // Add event listener for clear history button
-          const clearHistoryButton = document.querySelector(
-            "#clearHistoryButton"
-          );
-          clearHistoryButton?.addEventListener("click", () => {
-            if (
-              confirm(
-                "Are you sure you want to clear all message history? This cannot be undone."
-              )
-            ) {
-              const messagesMap = JSON.parse(
-                localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-              );
-              delete messagesMap[address];
-              localStorage.setItem(
-                "kaspa_messages_by_wallet",
-                JSON.stringify(messagesMap)
-              );
-
-              if (messagesList) {
-                messagesList.innerHTML =
-                  '<div class="no-messages">No messages found.</div>';
-              }
-            }
-          });
-
-          // Add event listener for Enter key in message input
-          const messageInput = document.getElementById("messageInput");
-          if (messageInput) {
-            messageInput.addEventListener("keypress", (e) => {
-              if (e.key === "Enter") {
-                const button = document.getElementById("sendButton");
-                if (button) button.click();
-              }
-            });
-          }
-
           messageStore.setIsLoaded(true);
 
           return transactions.transactions;
         } catch (error) {
           console.error("Error fetching data:", error);
-          const transactionsNode = document.getElementById("transactions");
-          if (transactionsNode) {
-            transactionsNode.innerHTML = `<div class="error">Failed to fetch data: ${unknownErrorToErrorLike(
-              error
-            )}</div>`;
-          }
+
+          setErrorMessage(
+            `Failed to fetch data: ${unknownErrorToErrorLike(error)}`
+          );
         }
       } catch (error) {
         console.error("Failed to fetch transactions:", error);
 
-        const transactionsNode = document.getElementById("transactions");
-        if (transactionsNode) {
-          transactionsNode.innerHTML = `<div class="error">Failed to fetch transactions: ${error}</div>`;
-        }
+        setErrorMessage(
+          `Failed to fetch transactions: ${unknownErrorToErrorLike(error)}`
+        );
       }
     },
-    [
-      // @NOTE: voluntary omit of one of the deps as it is a circular dep (a->b and b->a)
-      messageStore.loadMessages,
-      storeMessage,
-      updateContacts,
-    ]
+    [messageStore]
   );
 
   const subscribeToNewTransactions: (address: string) => Promise<void> =
@@ -890,12 +705,16 @@ export const OneLiner: FC = () => {
           <div className="messages-section">
             <div className="messages-header">
               <h3>Messages</h3>
-              <button id="clearHistoryButton" className="clear-history-button">
+              <button
+                onClick={onClearHistory}
+                id="clearHistoryButton"
+                className="clear-history-button"
+              >
                 Clear History
               </button>
             </div>
             <div className="messages-list">
-              {isCreatingNewChat ? (
+              {messageStore.isCreatingNewChat ? (
                 <div className="no-messages">
                   Enter a recipient address to start a new conversation.
                 </div>
@@ -913,31 +732,7 @@ export const OneLiner: FC = () => {
                 </div>
               )}
             </div>
-            <div className="message-input-section">
-              <div className="message-input-container">
-                <input
-                  type="text"
-                  id="recipientAddress"
-                  placeholder="Recipient address"
-                  className="recipient-input"
-                />
-                <div className="message-input-wrapper">
-                  <input
-                    type="text"
-                    id="messageInput"
-                    placeholder="Type your message..."
-                    className="message-input"
-                  />
-                  <button
-                    onClick={onSendClicked}
-                    id="sendButton"
-                    className="send-button"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
+            <SendMessageForm />
           </div>
         </div>
       ) : null}
@@ -956,6 +751,7 @@ export const OneLiner: FC = () => {
           totalBalance={balance?.total}
           utxoCount={utxoEntries?.length}
         />
+        <ErrorCard error={errorMessage} />
       </div>
     </>
   );

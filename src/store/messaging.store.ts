@@ -3,6 +3,7 @@ import { Contact, Message } from "../type/all";
 
 interface MessagingState {
   isLoaded: boolean;
+  isCreatingNewChat: boolean;
   contacts: Contact[];
   messages: Message[];
   messagesOnOpenedRecipient: Message[];
@@ -11,14 +12,17 @@ interface MessagingState {
   addContacts: (contacts: Contact[]) => void;
   loadMessages: (address: string) => Message[];
   setIsLoaded: (isLoaded: boolean) => void;
+  storeMessage: (message: Message, walletAddress: string) => void;
 
   openedRecipient: string | null;
   setOpenedRecipient: (contact: string | null) => void;
   refreshMessagesOnOpenedRecipient: () => void;
+  setIsCreatingNewChat: (isCreatingNewChat: boolean) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
   isLoaded: false,
+  isCreatingNewChat: false,
   openedRecipient: null,
   contacts: [],
   messages: [],
@@ -76,6 +80,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     return g().messages;
   },
+  storeMessage: (message: Message, walletAddress: string) => {
+    const messagesMap = JSON.parse(
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+    );
+    if (!messagesMap[walletAddress]) {
+      messagesMap[walletAddress] = [];
+    }
+    messagesMap[walletAddress].push(message);
+    localStorage.setItem(
+      "kaspa_messages_by_wallet",
+      JSON.stringify(messagesMap)
+    );
+  },
   setIsLoaded: (isLoaded) => {
     set({ isLoaded });
   },
@@ -102,5 +119,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     });
 
     set({ messagesOnOpenedRecipient: messages });
+  },
+  setIsCreatingNewChat: (isCreatingNewChat) => {
+    set({ isCreatingNewChat });
+
+    if (isCreatingNewChat) {
+      set({ openedRecipient: null, messagesOnOpenedRecipient: [] });
+    }
   },
 }));
