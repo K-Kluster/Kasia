@@ -2,7 +2,6 @@
 // it is intended to be temporary to progressively move towards modularization
 
 import { FC, useCallback, useEffect, useState } from "react";
-import { formatKasAmount } from "./utils/format";
 import { checkKaswareAvailability } from "./utils/wallet-extension";
 import {
   fetchKasplexData,
@@ -11,19 +10,26 @@ import {
   fetchTransactionDetails,
 } from "./utils/all-in-one";
 import { unknownErrorToErrorLike } from "./utils/errors";
-import { Contact, Message } from "./type/all";
+import { Contact, Message, NetworkType } from "./type/all";
 import { amountFromMessage } from "./utils/amount-from-message";
 import { useKaswareStore } from "./store/kasware.store";
 import { KaswareNotInstalled } from "./components/KaswareNotInstalled";
 import { useMessagingStore } from "./store/messaging.store";
 import { ContactCard } from "./components/ContactCard";
 import { MessageDisplay } from "./components/MessageDisplay";
+import { NetworkSelector } from "./containers/NetworkSelector";
+import { WalletInfo } from "./components/WalletInfo";
 
 export const OneLiner: FC = () => {
   const isKaswareDetected = useKaswareStore((s) => s.isKaswareDetected);
   const refreshKaswareDetection = useKaswareStore(
     (s) => s.refreshKaswareDetection
   );
+  const populateKaswareInformation = useKaswareStore(
+    (s) => s.populateKaswareInformation
+  );
+  const balance = useKaswareStore((s) => s.balance);
+  const utxoEntries = useKaswareStore((s) => s.utxoEntries);
   const setSelectedAddress = useKaswareStore((s) => s.setSelectedAddress);
   const selectedAddress = useKaswareStore((s) => s.selectedAddress);
   const messageStore = useMessagingStore();
@@ -140,7 +146,9 @@ export const OneLiner: FC = () => {
   const [connectionStatus, setConnectionStatus] = useState(
     "Waiting for interaction"
   );
-  const [selectedNetwork, setSelectedNetwork] = useState<string | null>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType | null>(
+    null
+  );
 
   const connectToNetwork = useCallback(
     async (networkId: string) => {
@@ -158,14 +166,12 @@ export const OneLiner: FC = () => {
         await currentClient?.connect();
 
         setConnectionStatus("Connected to Kaspa Network");
-
-        setIsNetworkSelectorVisible(false);
       } catch (error) {
         console.error("Failed to connect:", error);
         setConnectionStatus("Connection Failed");
       }
     },
-    [currentClient, selectedNetwork]
+    [currentClient]
   );
 
   // Helper function to store messages in localStorage
@@ -342,12 +348,6 @@ export const OneLiner: FC = () => {
     []
   );
 
-  const [isNetworkSelectorVisible, setIsNetworkSelectorVisible] =
-    useState(false);
-  const onNetworkBadgeClicked = useCallback(() => {
-    setIsNetworkSelectorVisible(!isNetworkSelectorVisible);
-  }, [isNetworkSelectorVisible]);
-
   // Kasware initialization
   useEffect(() => {
     setCurrentClient(new KaspaClient());
@@ -357,7 +357,7 @@ export const OneLiner: FC = () => {
       const kaswareNetwork: string | null = await window.kasware.getNetwork();
 
       // Map KasWare network to SDK network format
-      const networkMap = {
+      const networkMap: Record<string, NetworkType> = {
         kaspa_mainnet: "mainnet",
         "kaspa-mainnet": "mainnet",
         kaspa_testnet_10: "testnet-10",
@@ -369,11 +369,11 @@ export const OneLiner: FC = () => {
       };
 
       // @TODO: proper network typing and unification
-      const network: string = kaswareNetwork
+      const network = kaswareNetwork
         ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
           networkMap[kaswareNetwork]
-        : "";
+        : null;
       if (!network) {
         throw new Error(`Unsupported network: ${kaswareNetwork}`);
       }
@@ -392,15 +392,9 @@ export const OneLiner: FC = () => {
       await connectToNetwork(selectedNetwork);
 
       const isKaswareAvailable = await checkKaswareAvailability();
-      const transactionsNode = document.getElementById("transactions");
 
       if (isKaswareAvailable) {
         console.log("KasWare Wallet is installed!");
-
-        if (transactionsNode) {
-          transactionsNode.innerHTML =
-            '<div class="info-message">KasWare Wallet detected. Click "Connect to Kasware" to view your transactions.</div>';
-        }
       }
     })();
   }, [connectToNetwork, selectedNetwork]);
@@ -431,6 +425,8 @@ export const OneLiner: FC = () => {
 
       setSelectedAddress(address);
 
+      await populateKaswareInformation();
+
       // Load existing messages and initialize contacts
       const storedMessages = messageStore.loadMessages(address);
       console.log("Loaded stored messages:", storedMessages);
@@ -447,7 +443,13 @@ export const OneLiner: FC = () => {
         )}</div>`;
       }
     }
-  }, [isKaswareDetected]);
+  }, [
+    isKaswareDetected,
+    setSelectedAddress,
+    refreshKaswareDetection,
+    populateKaswareInformation,
+    messageStore,
+  ]);
 
   const onContactClicked = useCallback(
     (contact: Contact) => {
@@ -544,27 +546,7 @@ export const OneLiner: FC = () => {
             }
 
             // Update balance display
-            const balance = await window.kasware.getBalance(address);
-            if (balance) {
-              const balanceInfoNode = document.querySelector(".balance-info");
-
-              if (balanceInfoNode) {
-                balanceInfoNode.innerHTML = `
-                    <h4>Balance</h4>
-                    <ul class="balance-list">
-                        <li><strong>Total:</strong> <span class="amount">${formatKasAmount(
-                          balance.total
-                        )} KAS</span></li>
-                        <li><strong>Confirmed:</strong> <span class="amount">${formatKasAmount(
-                          balance.confirmed
-                        )} KAS</span></li>
-                        <li><strong>Unconfirmed:</strong> <span class="amount">${formatKasAmount(
-                          balance.unconfirmed
-                        )} KAS</span></li>
-                    </ul>
-                `;
-              }
-            }
+            await populateKaswareInformation();
           }
         );
 
@@ -712,41 +694,6 @@ export const OneLiner: FC = () => {
             // Update UI with all messages
             const allMessages = messageStore.loadMessages(address);
             console.log("All messages after processing:", allMessages);
-          }
-
-          // Display the wallet information
-          const container = document.getElementById("transactions");
-
-          const dataContainer = document.createElement("div");
-          dataContainer.className = "data-container";
-
-          if (container) {
-            container.innerHTML = `
-                        <div class="info-message">
-                            <h3>Wallet Information</h3>
-                            <p><strong>Address:</strong> <span class="address">${address}</span></p>
-                            <div class="balance-info">
-                                <h4>Balance</h4>
-                                <ul class="balance-list">
-                                    <li><strong>Total:</strong> <span class="amount">${formatKasAmount(
-                                      balance.total
-                                    )} KAS</span></li>
-                                    <li><strong>Confirmed:</strong> <span class="amount">${formatKasAmount(
-                                      balance.confirmed
-                                    )} KAS</span></li>
-                                    <li><strong>Unconfirmed:</strong> <span class="amount">${formatKasAmount(
-                                      balance.unconfirmed
-                                    )} KAS</span></li>
-                                </ul>
-                            </div>
-                            <p><strong>UTXO Entries:</strong> <span class="utxo-count">${
-                              utxoEntries ? utxoEntries.length : 0
-                            }</span></p>
-                        </div>
-                    `;
-
-            // Create container for messages
-            container.appendChild(dataContainer);
           }
 
           // Initialize contacts and messages
@@ -907,29 +854,10 @@ export const OneLiner: FC = () => {
     <>
       <div className="header-container">
         <h1>Messaging Page</h1>
-        <div className="network-selector-container">
-          <div onClick={onNetworkBadgeClicked} className="network-badge">
-            Mainnet
-          </div>
-          {isNetworkSelectorVisible ? (
-            <div className="network-selector">
-              <div
-                className="network-option active"
-                data-network="mainnet"
-                onClick={() => connectToNetwork("mainnet")}
-              >
-                Mainnet
-              </div>
-              <div
-                className="network-option"
-                data-network="testnet-10"
-                onClick={() => connectToNetwork("testnet-10")}
-              >
-                Testnet 10
-              </div>
-            </div>
-          ) : null}
-        </div>
+        <NetworkSelector
+          selectedNetwork={selectedNetwork}
+          onNetworkChange={(n) => setSelectedNetwork(n)}
+        />
         <div className="connection-status">{connectionStatus}</div>
       </div>
       <button onClick={onConnectClicked} id="connectButton">
@@ -1013,7 +941,22 @@ export const OneLiner: FC = () => {
           </div>
         </div>
       ) : null}
-      <div id="transactions"></div>
+      <div id="transactions">
+        <WalletInfo
+          state={
+            selectedAddress
+              ? "connected"
+              : isKaswareDetected
+              ? "detected"
+              : "not-detected"
+          }
+          address={selectedAddress}
+          matureBalance={balance?.confirmed}
+          pendingBalance={balance?.unconfirmed}
+          totalBalance={balance?.total}
+          utxoCount={utxoEntries?.length}
+        />
+      </div>
     </>
   );
 };

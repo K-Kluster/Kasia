@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.1",
     "@tailwindcss/vite": "^4.1.3",
     "kaspa-wasm": "file:wasm",
     "react": "^19.0.0",

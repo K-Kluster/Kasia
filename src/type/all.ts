@@ -13,3 +13,5 @@ export type Contact = {
   lastMessage: Message;
   messages: Message[];
 };
+
+export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet";
