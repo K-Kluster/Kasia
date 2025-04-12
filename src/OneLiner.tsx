@@ -42,23 +42,18 @@ export const OneLiner: FC = () => {
   }, [messageStore]);
 
   const onClearHistory = useCallback(() => {
+    if (!selectedAddress) {
+      return;
+    }
+
     if (
       confirm(
         "Are you sure you want to clear all message history? This cannot be undone."
       )
     ) {
-      const messagesMap = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
-      if (selectedAddress) {
-        delete messagesMap[selectedAddress];
-      }
-      localStorage.setItem(
-        "kaspa_messages_by_wallet",
-        JSON.stringify(messagesMap)
-      );
+      messageStore.flushCache(selectedAddress);
     }
-  }, [selectedAddress]);
+  }, [selectedAddress, messageStore]);
 
   // @TODO(tech): refactor this
   // Function to set up a listener for a specific DAA score

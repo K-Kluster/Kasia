@@ -8,7 +8,7 @@ interface MessagingState {
   messages: Message[];
   messagesOnOpenedRecipient: Message[];
   addMessages: (messages: Message[]) => void;
-  flushCache: () => void;
+  flushCache: (address: string) => void;
   addContacts: (contacts: Contact[]) => void;
   loadMessages: (address: string) => Message[];
   setIsLoaded: (isLoaded: boolean) => void;
@@ -42,8 +42,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     g().refreshMessagesOnOpenedRecipient();
   },
-  flushCache: () => {
-    // @TODO: implement
+  flushCache: (address: string) => {
+    const messagesMap = JSON.parse(
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+    );
+    if (address) {
+      delete messagesMap[address];
+    }
+    localStorage.setItem(
+      "kaspa_messages_by_wallet",
+      JSON.stringify(messagesMap)
+    );
   },
   loadMessages: (address): Message[] => {
     const messages: Record<string, Message[]> = JSON.parse(
