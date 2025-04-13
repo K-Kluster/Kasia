@@ -1,4 +1,4 @@
-import { RpcClient, Resolver, Encoding } from "kaspa-wasm";
+import { RpcClient, Resolver, Encoding, IUtxosChanged } from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "./errors";
 
 // Helper function to decode hex payload to text
@@ -203,6 +203,10 @@ export class KaspaClient {
   connected: boolean;
   retryCount: number;
 
+  utxoNotificationCallback?: (notification: IUtxosChanged) => unknown;
+  utxoNotificationSubscribeAddresses: string[] = [];
+  historyOfEmittedTxIdUtxoChanges: string[] = [];
+
   constructor(options = {}) {
     this.options = {
       debug: true,
@@ -286,26 +290,59 @@ export class KaspaClient {
     }
   }
 
-  // Subscribe to UTXO changes
-  // @TODO(tech): type notification
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async subscribeToUtxoChanges(addresses: string[], callback: (notification: any) => unknown) {
-    if (!this.rpc || !this.connected) {
-      throw new Error("Not connected to network");
-    }
-
-    this.log(`Subscribing to UTXO changes for addresses: ${addresses}`);
-
+  async subscribeToUtxoChanges(
+    addresses: string[],
+    callback: (notification: IUtxosChanged) => unknown
+  ) {
     try {
-      // Use the correct RPC method for UTXO subscription
+      if (!this.rpc || !this.connected) {
+        throw new Error("Not connected to network");
+      }
 
-      // @QUESTION: does this works? i had to lie to the type system
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      await this.rpc.subscribeUtxosChanged(addresses, (notification) => {
-        this.log("UTXO change detected:", notification);
-        callback(notification);
-      });
+      if (this.utxoNotificationCallback) {
+        this.rpc.removeEventListener(
+          "utxos-changed",
+          this.utxoNotificationCallback
+        );
+        this.rpc.unsubscribeUtxosChanged(
+          this.utxoNotificationSubscribeAddresses
+        );
+        this.log("Removed existing UTXO change listener");
+      }
+
+      this.log(`Subscribing to UTXO changes for addresses: ${addresses}`);
+
+      const boundCallback = callback.bind(this);
+
+      const wrappedWithFilter = (notification: IUtxosChanged) => {
+        const transactionIds = notification.data.added?.map(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (utxo: any) => utxo?.outpoint?.transactionId
+        );
+
+        const notEmittedTxIds = transactionIds.filter(
+          (txId: string) =>
+            this.historyOfEmittedTxIdUtxoChanges.findIndex(
+              (item) => item === txId
+            ) === -1
+        );
+
+        if (notEmittedTxIds.length > 0) {
+          this.log(
+            `Emitting UTXO change notification for txids: ${notEmittedTxIds}`
+          );
+          this.historyOfEmittedTxIdUtxoChanges.push(...notEmittedTxIds);
+
+          boundCallback(notification);
+        }
+      };
+
+      this.utxoNotificationCallback = wrappedWithFilter.bind(this);
+      this.utxoNotificationSubscribeAddresses = addresses;
+
+      this.rpc.addEventListener("utxos-changed", this.utxoNotificationCallback);
+
+      this.rpc.subscribeUtxosChanged(this.utxoNotificationSubscribeAddresses);
 
       this.log("Successfully subscribed to UTXO changes");
     } catch (error) {

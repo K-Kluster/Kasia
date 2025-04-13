@@ -276,7 +276,12 @@ export const OneLiner: FC = () => {
         }
       }
     })();
-  }, [connectToNetwork, selectedNetwork]);
+  }, [
+    connectToNetwork,
+    getKaswareCurrentNetwork,
+    selectedNetwork,
+    switchKaswareNetwork,
+  ]);
 
   // Connect button handler
   const onConnectClicked = useCallback(async () => {
@@ -311,7 +316,67 @@ export const OneLiner: FC = () => {
       console.log("Loaded stored messages:", storedMessages);
 
       // Then fetch transactions and update UI
-      fetchTransactions(accounts);
+      await fetchTransactions(accounts);
+
+      currentClient?.subscribeToUtxoChanges([address], async (notification) => {
+        console.log("UTXO change notification received:", notification);
+
+        // Wait a short moment for the transaction to be available
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Get all transactions for the address
+        const transactions = await fetchAddressTransactions(address);
+        console.log("Fetched transactions after UTXO change:", transactions);
+
+        if (transactions && transactions.transactions) {
+          // Load existing messages
+          const existingMessages = messageStore.messages;
+          const existingTxIds = new Set(
+            existingMessages.map(
+              (msg: { transactionId: string }) => msg.transactionId
+            )
+          );
+
+          let hasNewMessages = false;
+
+          // Process new transactions
+          for (const tx of transactions.transactions) {
+            // Skip if we already have this transaction
+            if (existingTxIds.has(tx.transactionId)) {
+              console.log("Skipping existing transaction:", tx.transactionId);
+              continue;
+            }
+
+            if (!tx.payload) {
+              console.log(
+                "Skipping transaction with no payload:",
+                tx.transactionId
+              );
+              continue;
+            }
+
+            console.log("Processing new transaction:", tx);
+            hasNewMessages = true;
+
+            // Process and store the new message
+            processTransaction(tx, address);
+
+            // Play notification sound
+            const audio = new Audio(
+              "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
+            );
+            audio.play().catch((e) => console.log("Audio play failed:", e));
+          }
+
+          if (hasNewMessages) {
+            // Update contacts list
+            messageStore.loadMessages(address);
+          }
+        }
+
+        // Update balance display
+        await populateKaswareInformation();
+      });
     } catch (error) {
       console.error("Failed to connect to Kasware Wallet:", error);
 
@@ -325,6 +390,7 @@ export const OneLiner: FC = () => {
     refreshKaswareDetection,
     populateKaswareInformation,
     messageStore,
+    currentClient,
   ]);
 
   const onContactClicked = useCallback(
@@ -338,94 +404,6 @@ export const OneLiner: FC = () => {
       messageStore.setOpenedRecipient(contact.address);
     },
     [messageStore, selectedAddress]
-  );
-
-  const startUtxoListener = useCallback(
-    async (address: string) => {
-      if (!currentClient) {
-        console.log("UTXO listener - No current client initialized");
-        return;
-      }
-
-      console.log("Starting UTXO listener for address:", address);
-
-      try {
-        // Subscribe to UTXO changes
-        await currentClient.subscribeToUtxoChanges(
-          [address],
-          async (notification) => {
-            console.log("UTXO change notification received:", notification);
-
-            // Wait a short moment for the transaction to be available
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-
-            // Get all transactions for the address
-            const transactions = await fetchAddressTransactions(address);
-            console.log(
-              "Fetched transactions after UTXO change:",
-              transactions
-            );
-
-            if (transactions && transactions.transactions) {
-              // Load existing messages
-              const existingMessages = messageStore.loadMessages(address);
-              const existingTxIds = new Set(
-                existingMessages.map(
-                  (msg: { transactionId: string }) => msg.transactionId
-                )
-              );
-
-              let hasNewMessages = false;
-
-              // Process new transactions
-              for (const tx of transactions.transactions) {
-                // Skip if we already have this transaction
-                if (existingTxIds.has(tx.transactionId)) {
-                  console.log(
-                    "Skipping existing transaction:",
-                    tx.transactionId
-                  );
-                  continue;
-                }
-
-                if (!tx.payload) {
-                  console.log(
-                    "Skipping transaction with no payload:",
-                    tx.transactionId
-                  );
-                  continue;
-                }
-
-                console.log("Processing new transaction:", tx);
-                hasNewMessages = true;
-
-                // Process and store the new message
-                processTransaction(tx, address);
-
-                // Play notification sound
-                const audio = new Audio(
-                  "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
-                );
-                audio.play().catch((e) => console.log("Audio play failed:", e));
-              }
-
-              if (hasNewMessages) {
-                // Update contacts list
-                messageStore.loadMessages(address);
-              }
-            }
-
-            // Update balance display
-            await populateKaswareInformation();
-          }
-        );
-
-        console.log("UTXO listener started successfully");
-      } catch (error) {
-        console.error(error);
-      }
-    },
-    [currentClient, messageStore, processTransaction]
   );
 
   const fetchTransactions = useCallback(
@@ -569,9 +547,6 @@ export const OneLiner: FC = () => {
           // Update contacts list
           messageStore.loadMessages(address);
 
-          // Initialize WebSocket subscription for live updates
-          subscribeToNewTransactions(address);
-
           messageStore.setIsLoaded(true);
 
           return transactions.transactions;
@@ -592,85 +567,6 @@ export const OneLiner: FC = () => {
     },
     [messageStore]
   );
-
-  const subscribeToNewTransactions: (address: string) => Promise<void> =
-    useCallback(
-      async (address: string) => {
-        try {
-          if (!currentClient || !currentClient.rpc) {
-            console.error("RPC client not initialized");
-            return;
-          }
-
-          console.log("Starting subscription for address:", address);
-
-          // Subscribe to UTXO changes using the RPC client
-          await currentClient.rpc.subscribeUtxosChanged(
-            [address],
-            // @QUESTION: i had to lie to the typing system, it says it doesn't take a callback parameter, not sure if it's true
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            async (notification) => {
-              console.log("UTXO change notification received:", notification);
-
-              // Wait a short moment for the transaction to be available
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-
-              // Fetch latest transactions
-              const transactions = await fetchTransactions([address]);
-
-              if (transactions) {
-                // Process only new transactions
-                const existingMessages = messageStore.loadMessages(address);
-                const existingTxIds = new Set(
-                  existingMessages.map((msg) => msg.transactionId)
-                );
-
-                const newMessages = [];
-
-                for (const tx of transactions) {
-                  // Skip if we already have this transaction
-                  if (existingTxIds.has(tx.transactionId)) {
-                    continue;
-                  }
-
-                  // Skip if no payload
-                  if (!tx.payload) {
-                    continue;
-                  }
-
-                  // Process and store the new message
-                  const messageData = processTransaction(tx, address);
-                  if (messageData) {
-                    newMessages.push(messageData);
-                  }
-                }
-
-                if (newMessages.length > 0) {
-                  console.log("New messages received:", newMessages);
-
-                  // Update UI with all messages
-                  messageStore.loadMessages(address);
-
-                  // Play notification sound
-                  const audio = new Audio(
-                    "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
-                  );
-                  audio
-                    .play()
-                    .catch((e) => console.log("Audio play failed:", e));
-                }
-              }
-            }
-          );
-
-          console.log("Successfully subscribed to UTXO changes");
-        } catch (error) {
-          console.error("Error subscribing to transactions:", error);
-        }
-      },
-      [currentClient, fetchTransactions, messageStore, processTransaction]
-    );
 
   return (
     <>
