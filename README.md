@@ -4,7 +4,7 @@
 
 Install Rust locally, and install `wasm-pack` using `cargo install wasm-pack`.
 
-- `cd ./wasm`
+- `cd ./cipher`
 - `wasm-pack build --target web --release -d ../cipher-wasm`
 
 Install NodeJs locally.
