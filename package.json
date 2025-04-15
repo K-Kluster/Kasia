@@ -12,6 +12,8 @@
   "dependencies": {
     "@headlessui/react": "^2.2.1",
     "@tailwindcss/vite": "^4.1.3",
+    "cipher": "file:cipher-wasm",
+    "eventemitter3": "^5.0.1",
     "kaspa-wasm": "file:wasm",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

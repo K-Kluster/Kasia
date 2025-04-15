@@ -1,9 +1,12 @@
-import init, { initConsolePanicHook } from "kaspa-wasm";
+import initKaspaWasm, { initConsolePanicHook } from "kaspa-wasm";
+import initCipherWasm from "cipher";
 
 // load wasm entry point, and lazy load sub-module so we don't have to worry
 // any it's initialization later on
 const boot = async () => {
-  await init();
+  await initKaspaWasm();
+
+  await initCipherWasm();
 
   initConsolePanicHook();
 

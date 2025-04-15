@@ -1,4 +1,10 @@
-import { RpcClient, Resolver, Encoding, IUtxosChanged } from "kaspa-wasm";
+import {
+  RpcClient,
+  Resolver,
+  Encoding,
+  IUtxosChanged,
+  NetworkId,
+} from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "./errors";
 
 // Helper function to decode hex payload to text
@@ -207,16 +213,16 @@ export class KaspaClient {
   utxoNotificationSubscribeAddresses: string[] = [];
   historyOfEmittedTxIdUtxoChanges: string[] = [];
 
-  constructor(options = {}) {
+  constructor(networkId?: string) {
     this.options = {
       debug: true,
       retryDelay: 2000,
       maxRetries: 3,
-      ...options,
+      // ...options,
     };
 
     this.rpc = null;
-    this.networkId = "mainnet";
+    this.networkId = networkId ?? "mainnet";
     this.connected = false;
     this.retryCount = 0;
   }
