@@ -10,7 +10,7 @@ use kaspa_addresses::Address;
 use kaspa_wallet_keys::privatekey::PrivateKey as WalletPrivateKey;
 use secp256k1::{PublicKey as SecpPublicKey, XOnlyPublicKey};
 use std::ops::Deref;
-use wasm_bindgen::{JsError, UnwrapThrowExt, convert::TryFromJsValue, prelude::wasm_bindgen};
+use wasm_bindgen::{JsError, UnwrapThrowExt, prelude::wasm_bindgen};
 
 #[wasm_bindgen(inspectable)]
 #[derive(Debug, Clone)]
@@ -38,12 +38,6 @@ impl EncryptedMessage {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        println!(
-            "{} {} {}",
-            self.nonce.len(),
-            self.ephemeral_public_key.len(),
-            self.ciphertext.len()
-        );
         bytes.extend_from_slice(&self.nonce);
         bytes.extend_from_slice(&self.ephemeral_public_key);
         bytes.extend_from_slice(&self.ciphertext);
@@ -87,8 +81,6 @@ pub fn encrypt_message(
 
     let shared_secret = ephemeral_secret.diffie_hellman(&receiver_pk);
 
-    println!("shared_secret: {:?}", shared_secret.raw_secret_bytes());
-
     let exctracted = shared_secret.extract::<sha2::Sha256>(None);
     let mut okm = [0u8; 32];
     let result = exctracted.expand(b"", &mut okm);
@@ -125,8 +117,6 @@ pub fn decrypt_message(
 
     let shared_secret_2 = diffie_hellman(receiver_sk.to_nonzero_scalar(), ephemeral_pk.as_affine());
 
-    println!("shared_secret_2: {:?}", shared_secret_2.raw_secret_bytes());
-
     let exctracted_2 = shared_secret_2.extract::<sha2::Sha256>(None);
     let mut okm_2 = [0u8; 32];
     exctracted_2.expand(b"", &mut okm_2).unwrap();
@@ -141,101 +131,7 @@ pub fn decrypt_message(
     Ok(String::from_utf8(plaintext).unwrap())
 }
 
-// fn main() {
-// // SENDER INITIALIZATION
-// let sender_sk_str = "e5da15144c93981f7694704d2fe92ca6ecf2b9b4d73ef6b93dafa8270d9736ad";
-// let sender_address = Address::try_from(
-//     "kaspatest:qqd2q3ezkrfxkedy6skvr37lrp4mg6fxqp0rndcz9g8md7hl6zc7x89rmdyy5",
-// )
-// .unwrap();
-
-// let receiver_address = Address::try_from(
-//     "kaspatest:qqd2q3ezkrfxkedy6skvr37lrp4mg6fxqp0rndcz9g8md7hl6zc7x89rmdyy5",
-// )
-// .unwrap();
-
-// let sender_sk = SecretKey::from_slice(&hex::decode(sender_sk_str).unwrap()).unwrap();
-
-// // RECEIVER INITIALIZATION
-// let receiver_prv_key_data = PrvKeyData::try_from_mnemonic(
-//     Mnemonic::random(
-//         kaspa_wallet_core::prelude::WordCount::Words24,
-//         Language::English,
-//     )
-//     .unwrap(),
-//     None,
-//     EncryptionKind::XChaCha20Poly1305,
-// )
-// .unwrap();
-
-// let receiver_extended_private_key = receiver_prv_key_data.get_xprv(None).unwrap();
-// let receiver_sec_pk = receiver_extended_private_key.public_key().public_key;
-// let receiver_sec_sk = receiver_extended_private_key.private_key();
-
-// let receiver_wallet_pk = WalletPublicKey::from(receiver_sec_pk);
-
-// let receiver_address = receiver_wallet_pk.to_address(NetworkType::Testnet).unwrap();
-
-// let receiver_pk = PublicKey::from_sec1_bytes(&receiver_sec_pk.serialize()).unwrap();
-// let receiver_sk = SecretKey::from_slice(&receiver_sec_sk.secret_bytes()).unwrap();
-
-// // ECDH
-
-// // let sender_pk_point = EncodedPoint::from_bytes(sender_address.payload.as_slice()).unwrap();
-// // let receiver_pk_point = EncodedPoint::from_bytes(receiver_address.payload.as_slice()).unwrap();
-
-// // let sender_pk = PublicKey::from_sec1_bytes(sender_pk_point.as_bytes()).unwrap();
-// // let receiver_pk = PublicKey::from_sec1_bytes(receiver_pk_point.as_bytes()).unwrap();
-
-// let sender_xonly_pk = XOnlyPublicKey::from_slice(sender_address.payload.as_slice()).unwrap();
-// let receiver_xonly_pk =
-//     XOnlyPublicKey::from_slice(receiver_address.payload.as_slice()).unwrap();
-
-// let sender_pk_even =
-//     SecpPublicKey::from_x_only_public_key(sender_xonly_pk, secp256k1::Parity::Even);
-// let receiver_pk_even =
-//     SecpPublicKey::from_x_only_public_key(receiver_xonly_pk, secp256k1::Parity::Even);
-
-// let sender_pk = PublicKey::from_sec1_bytes(&sender_pk_even.serialize()).unwrap();
-// let receiver_pk = PublicKey::from_sec1_bytes(&receiver_pk_even.serialize()).unwrap();
-
-// // sender create shared point
-// let ephemeral_secret = EphemeralSecret::random(&mut OsRng);
-// let shared_secret = ephemeral_secret.diffie_hellman(&receiver_pk);
-// let ephemeral_pk = ephemeral_secret.public_key();
-
-// // sender cipher text
-// let exctracted = shared_secret.extract::<sha2::Sha256>(None);
-// let mut okm = [0u8; 32];
-// exctracted.expand(b"", &mut okm).unwrap();
-// let cipher = ChaCha20Poly1305::new(&okm.into());
-
-// let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng); // 96-bits; unique per message
-// let ciphertext = cipher
-//     .encrypt(&nonce, b"plaintext message".as_ref())
-//     .unwrap();
-
-// // receiver decrypt
-// let shared_secret_2 = diffie_hellman(receiver_sk.to_nonzero_scalar(), ephemeral_pk.as_affine());
-
-// let exctracted_2 = shared_secret_2.extract::<sha2::Sha256>(None);
-// let mut okm_2 = [0u8; 32];
-// exctracted_2.expand(b"", &mut okm_2).unwrap();
-// let cipher_2 = ChaCha20Poly1305::new(&okm_2.into());
-// let plaintext = cipher_2.decrypt(&nonce, ciphertext.as_ref()).unwrap();
-// assert_eq!(&plaintext, b"plaintext message");
-
-// let encrypted_message = EncryptedMessage::new(
-//     ciphertext.as_slice(),
-//     nonce.as_slice(),
-//     ephemeral_pk.to_sec1_bytes().deref(),
-// );
-
-// println!("{:?}", encrypted_message.to_hex());
-// }
-
 // tests
-
 #[cfg(test)]
 mod tests {
 
@@ -260,7 +156,7 @@ mod tests {
             WalletPrivateKey::try_from_slice(receiver_sk.to_bytes().as_slice()).unwrap();
 
         let message = "plaintext message";
-        let encrypted_message = encrypt_message(receiver_address, message).unwrap();
+        let encrypted_message = encrypt_message(&receiver_address.to_string(), message).unwrap();
         let decrypted_message = decrypt_message(encrypted_message, wallet_private_key).unwrap();
         assert_eq!(message.to_owned(), decrypted_message);
     }

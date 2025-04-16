@@ -12,7 +12,6 @@ import {
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, Message, NetworkType } from "./type/all";
 import { useKaswareStore } from "./store/kasware.store";
-import { KaswareNotInstalled } from "./components/KaswareNotInstalled";
 import { useMessagingStore } from "./store/messaging.store";
 import { ContactCard } from "./components/ContactCard";
 import { MessageDisplay } from "./components/MessageDisplay";
@@ -20,6 +19,8 @@ import { NetworkSelector } from "./containers/NetworkSelector";
 import { WalletInfo } from "./components/WalletInfo";
 import { SendMessageForm } from "./containers/SendMessageForm";
 import { ErrorCard } from "./components/ErrorCard";
+import { useWalletStore } from "./store/wallet.store";
+import { WalletGuard } from "./containers/WalletGuard";
 
 export const OneLiner: FC = () => {
   const isKaswareDetected = useKaswareStore((s) => s.isKaswareDetected);
@@ -39,7 +40,14 @@ export const OneLiner: FC = () => {
   const selectedAddress = useKaswareStore((s) => s.selectedAddress);
   const messageStore = useMessagingStore();
 
+  const walletStore = useWalletStore();
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isWalletReady, setIsWalletReady] = useState(false);
+
+  const onWalletUnlocked = useCallback(() => {
+    setIsWalletReady(true);
+  }, []);
 
   const onNewChatClicked = useCallback(() => {
     messageStore.setIsCreatingNewChat(true);
@@ -223,40 +231,40 @@ export const OneLiner: FC = () => {
   useEffect(() => {
     setCurrentClient(new KaspaClient());
 
-    (async () => {
-      // Get network from kasware
-      const kaswareNetwork: string | null = await window.kasware.getNetwork();
+    // (async () => {
+    //   // Get network from kasware
+    //   const kaswareNetwork: string | null = await window.kasware.getNetwork();
 
-      // Map KasWare network to SDK network format
-      const networkMap: Record<string, NetworkType> = {
-        kaspa_mainnet: "mainnet",
-        "kaspa-mainnet": "mainnet",
-        kaspa_testnet_10: "testnet-10",
-        "kaspa-testnet-10": "testnet-10",
-        kaspa_testnet_11: "testnet-11",
-        "kaspa-testnet-11": "testnet-11",
-        kaspa_devnet: "devnet",
-        "kaspa-devnet": "devnet",
-      };
+    //   // Map KasWare network to SDK network format
+    //   const networkMap: Record<string, NetworkType> = {
+    //     kaspa_mainnet: "mainnet",
+    //     "kaspa-mainnet": "mainnet",
+    //     kaspa_testnet_10: "testnet-10",
+    //     "kaspa-testnet-10": "testnet-10",
+    //     kaspa_testnet_11: "testnet-11",
+    //     "kaspa-testnet-11": "testnet-11",
+    //     kaspa_devnet: "devnet",
+    //     "kaspa-devnet": "devnet",
+    //   };
 
-      // @TODO: proper network typing and unification
-      const network = kaswareNetwork
-        ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          networkMap[kaswareNetwork]
-        : null;
-      if (!network) {
-        throw new Error(`Unsupported network: ${kaswareNetwork}`);
-      }
+    //   // @TODO: proper network typing and unification
+    //   const network = kaswareNetwork
+    //     ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //       // @ts-ignore
+    //       networkMap[kaswareNetwork]
+    //     : null;
+    //   if (!network) {
+    //     throw new Error(`Unsupported network: ${kaswareNetwork}`);
+    //   }
 
-      console.log("Kaspa network selected from KasWare network:", network);
-      setSelectedNetwork(network);
-    })();
+    //   console.log("Kaspa network selected from KasWare network:", network);
+    //   setSelectedNetwork(network);
+    // })();
   }, []);
 
-  // Kasware detection
+  // Network change side effect
   useEffect(() => {
-    console.log("KasWare detection effect triggered", selectedNetwork);
+    console.log("Network Change Detected", selectedNetwork);
     if (!selectedNetwork) return;
     (async () => {
       // Connect to the network
@@ -269,6 +277,7 @@ export const OneLiner: FC = () => {
 
         const network = await getKaswareCurrentNetwork();
 
+        // propose end-user to switch their network in Kasware according to their choice on the network selector
         if (network !== selectedNetwork) {
           await switchKaswareNetwork(selectedNetwork);
 
@@ -283,100 +292,117 @@ export const OneLiner: FC = () => {
     switchKaswareNetwork,
   ]);
 
+  // @TODO instanciate everything with new internal wallet
   // Connect button handler
-  const onConnectClicked = useCallback(async () => {
+  const onStartMessagingProcessClicked = useCallback(async () => {
     try {
       // kasware guard
       if (!isKaswareDetected) {
-        const result = await refreshKaswareDetection();
-
-        if (!result) {
-          return;
-        }
+        // lazily refresh kasware
+        refreshKaswareDetection();
       }
 
-      // Request accounts from the Kasware wallet
-      const accounts = await window.kasware.requestAccounts();
-      console.log("Connected to Kasware Wallet:", accounts);
-
-      if (!accounts?.length) {
-        console.warn("OnConnect - No account detected");
+      if (!currentClient || !currentClient.connected) {
+        setErrorMessage(
+          "Please choose a network and connect to the Kaspa Network first"
+        );
         return;
       }
 
+      if (!walletStore.unlockedWallet) {
+        console.log({ walletStore });
+        setErrorMessage("Please unlock your wallet first (shouldn't happen)");
+        return;
+      }
+
+      // Request accounts from the Kasware wallet
+      // const accounts = await window.kasware.requestAccounts();
+      // console.log("Connected to Kasware Wallet:", accounts);
+
+      // if (!accounts?.length) {
+      //   console.warn("OnConnect - No account detected");
+      //   return;
+      // }
+
       // Initialize conversations immediately after connecting
-      const address = accounts[0];
+      // const address = accounts[0];
 
-      setSelectedAddress(address);
+      const { receiveAddress } = await walletStore.start(
+        currentClient,
+        walletStore.unlockedWallet
+      );
+      const receiveAddressStr = receiveAddress.toString();
 
-      await populateKaswareInformation();
+      setSelectedAddress(receiveAddressStr);
+
+      // await populateKaswareInformation();
 
       // Load existing messages and initialize contacts
-      const storedMessages = messageStore.loadMessages(address);
+      const storedMessages = messageStore.loadMessages(receiveAddressStr);
       console.log("Loaded stored messages:", storedMessages);
 
       // Then fetch transactions and update UI
-      await fetchTransactions(accounts);
+      await fetchTransactions([receiveAddressStr]);
 
-      currentClient?.subscribeToUtxoChanges([address], async (notification) => {
-        console.log("UTXO change notification received:", notification);
+      // currentClient?.subscribeToUtxoChanges([address], async (notification) => {
+      //   console.log("UTXO change notification received:", notification);
 
-        // Wait a short moment for the transaction to be available
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+      //   // Wait a short moment for the transaction to be available
+      //   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        // Get all transactions for the address
-        const transactions = await fetchAddressTransactions(address);
-        console.log("Fetched transactions after UTXO change:", transactions);
+      //   // Get all transactions for the address
+      //   const transactions = await fetchAddressTransactions(address);
+      //   console.log("Fetched transactions after UTXO change:", transactions);
 
-        if (transactions && transactions.transactions) {
-          // Load existing messages
-          const existingMessages = messageStore.messages;
-          const existingTxIds = new Set(
-            existingMessages.map(
-              (msg: { transactionId: string }) => msg.transactionId
-            )
-          );
+      //   if (transactions && transactions.transactions) {
+      //     // Load existing messages
+      //     const existingMessages = messageStore.messages;
+      //     const existingTxIds = new Set(
+      //       existingMessages.map(
+      //         (msg: { transactionId: string }) => msg.transactionId
+      //       )
+      //     );
 
-          let hasNewMessages = false;
+      //     let hasNewMessages = false;
 
-          // Process new transactions
-          for (const tx of transactions.transactions) {
-            // Skip if we already have this transaction
-            if (existingTxIds.has(tx.transactionId)) {
-              console.log("Skipping existing transaction:", tx.transactionId);
-              continue;
-            }
+      //     // Process new transactions
+      //     for (const tx of transactions.transactions) {
+      //       // Skip if we already have this transaction
+      //       if (existingTxIds.has(tx.transactionId)) {
+      //         console.log("Skipping existing transaction:", tx.transactionId);
+      //         continue;
+      //       }
 
-            if (!tx.payload) {
-              console.log(
-                "Skipping transaction with no payload:",
-                tx.transactionId
-              );
-              continue;
-            }
+      //       if (!tx.payload) {
+      //         console.log(
+      //           "Skipping transaction with no payload:",
+      //           tx.transactionId
+      //         );
+      //         continue;
+      //       }
 
-            console.log("Processing new transaction:", tx);
-            hasNewMessages = true;
+      //       console.log("Processing new transaction:", tx);
+      //       hasNewMessages = true;
 
-            // Process and store the new message
-            processTransaction(tx, address);
+      //       // Process and store the new message
+      //       processTransaction(tx, address);
 
-            // Play notification sound
-            const audio = new Audio(
-              "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
-            );
-            audio.play().catch((e) => console.log("Audio play failed:", e));
-          }
+      //       // Play notification sound
+      //       const audio = new Audio(
+      //         "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA/+M4wAAAAAAAAAAAAEluZm8AAAAPAAAAAwAAAbAAkJCQkJCQkJCQkJCQkJCQwMDAwMDAwMDAwMDAwMDAwMD///////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAbBE6LrOAAAAAAD/+8DEAAAJkAF59BEABGjQL3c2IgAgACAAIAMfB8H4Pg+D7/wQiCEIQhD4Pg+D4IQhCEIQh8HwfB8EIQhCEP/B8HwfBCEIQhCHwfB8HwfBCEIQhCEPg+D4PghCEIQhD4Pg+D4IQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhCHwfB8HwQhCEIQh8HwfB8EIQhCEIQ+D4Pg+CEIQhCEPg+D4PghCEIQhD4Pg+D4AAAAA"
+      //       );
+      //       audio.play().catch((e) => console.log("Audio play failed:", e));
+      //     }
 
-          if (hasNewMessages) {
-            // Update contacts list
-            messageStore.loadMessages(address);
-          }
-        }
+      //     if (hasNewMessages) {
+      //       // Update contacts list
+      //       messageStore.loadMessages(address);
+      //     }
+      //   }
 
-        // Update balance display
-        await populateKaswareInformation();
-      });
+      //   // Update balance display
+      //   await populateKaswareInformation();
+      // });
     } catch (error) {
       console.error("Failed to connect to Kasware Wallet:", error);
 
@@ -390,6 +416,7 @@ export const OneLiner: FC = () => {
     refreshKaswareDetection,
     populateKaswareInformation,
     messageStore,
+    walletStore,
     currentClient,
   ]);
 
@@ -414,20 +441,11 @@ export const OneLiner: FC = () => {
         const address = accounts[0];
         console.log("Fetching transactions for address:", address);
 
-        const isKaswareAvailable = await checkKaswareAvailability();
-        if (!isKaswareAvailable) {
-          throw new Error("Kasware wallet is not available");
-        }
-
         try {
           // Get UTXO entries for the address using the correct method
           console.log("Fetching UTXO entries for address:", address);
-          const utxoEntries = await window.kasware.getUtxoEntries(address);
+          const utxoEntries = walletStore.getMatureUtxos();
           console.log("UTXO entries:", utxoEntries);
-
-          // Get balance for the address
-          const balance = await window.kasware.getBalance(address);
-          console.log("Balance:", balance);
 
           // Get transactions for the address
           console.log("Fetching transactions for address:", address);
@@ -565,23 +583,27 @@ export const OneLiner: FC = () => {
         );
       }
     },
-    [messageStore]
+    [messageStore, walletStore]
   );
 
   return (
     <>
       <div className="header-container">
-        <h1>Messaging Page</h1>
+        <h1>Encrypted Messaging App</h1>
         <NetworkSelector
           selectedNetwork={selectedNetwork}
           onNetworkChange={(n) => setSelectedNetwork(n)}
         />
         <div className="connection-status">{connectionStatus}</div>
       </div>
-      <button onClick={onConnectClicked} id="connectButton">
-        Connect to Kasware
-      </button>
-      {isKaswareDetected === false ? <KaswareNotInstalled /> : null}
+      {isWalletReady ? (
+        <button onClick={onStartMessagingProcessClicked} id="connectButton">
+          Start Wallet Service
+        </button>
+      ) : (
+        <WalletGuard onSuccess={onWalletUnlocked} />
+      )}
+      {/* {isKaswareDetected === false ? <KaswareNotInstalled /> : null} */}
       {messageStore.isLoaded ? (
         <div className="messages-container">
           <div className="contacts-sidebar">
@@ -641,15 +663,9 @@ export const OneLiner: FC = () => {
       ) : null}
       <div id="transactions">
         <WalletInfo
-          state={
-            selectedAddress
-              ? "connected"
-              : isKaswareDetected
-              ? "detected"
-              : "not-detected"
-          }
+          state={selectedAddress ? "connected" : "detected"}
           address={selectedAddress}
-          matureBalance={balance?.confirmed}
+          matureBalance={walletStore.balance ?? 0}
           pendingBalance={balance?.unconfirmed}
           totalBalance={balance?.total}
           utxoCount={utxoEntries?.length}

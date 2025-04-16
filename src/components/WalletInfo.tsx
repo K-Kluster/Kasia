@@ -10,6 +10,7 @@ type WalletInfoProps = {
   totalBalance?: number;
 };
 
+// @TODO: finish to plug other infos
 export const WalletInfo: FC<WalletInfoProps> = ({
   state,
   address,
@@ -36,9 +37,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             </li>
             <li>
               <strong>Confirmed:</strong>{" "}
-              <span className="amount">
-                {formatKasAmount(matureBalance ?? 0)} KAS
-              </span>
+              <span className="amount">{matureBalance ?? 0} KAS</span>
             </li>
             <li>
               <strong>Unconfirmed:</strong>{" "}

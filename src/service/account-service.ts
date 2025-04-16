@@ -1,11 +1,9 @@
 import {
   Address,
-  FeeSource,
   Generator,
   kaspaToSompi,
   PaymentOutput,
   PendingTransaction,
-  signTransaction,
   UtxoContext,
   UtxoProcessor,
   UtxoProcessorEvent,
@@ -241,6 +239,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       },
       sendMessage.password
     );
+  }
+
+  public getMatureUtxos() {
+    if (!this.isStarted) {
+      throw new Error("Account service is not started");
+    }
+
+    return this.context.getMatureRange(0, this.context.matureLength);
   }
 
   private _getGeneratorForTransaction(transaction: CreateTransactionArgs) {

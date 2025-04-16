@@ -3,14 +3,15 @@ import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../type/all";
 import { amountFromMessage } from "../utils/amount-from-message";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { useKaswareStore } from "../store/kasware.store";
 import { Input } from "@headlessui/react";
+import { useWalletStore } from "../store/wallet.store";
+import { Address } from "kaspa-wasm";
 
 type SendMessageFormProps = unknown;
 
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
-  const selectedAddress = useKaswareStore((s) => s.selectedAddress);
+  const walletStore = useWalletStore();
   const isCreatingNewChat = useMessagingStore((s) => s.isCreatingNewChat);
 
   const messageStore = useMessagingStore();
@@ -36,8 +37,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   }, [isCreatingNewChat]);
 
   const onSendClicked = useCallback(async () => {
-    if (!selectedAddress) {
+    if (!walletStore.address) {
       alert("Shouldn't occurs, no selected address");
+      return;
+    }
+
+    if (!walletStore.unlockedWallet) {
+      alert("Shouldn't occurs, no unlocked wallet");
       return;
     }
 
@@ -66,36 +72,38 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     }
 
     try {
-      const amount = amountFromMessage(message);
-      console.log("Sending transaction with amount:", amount, "sompi");
+      console.log("Sending transaction");
 
-      const txResponse = await window.kasware.sendKaspa(
-        recipient,
-        amount.toString(),
-        {
-          payload: message,
-          encoding: "utf8",
-          mass: "1000000",
-        }
+      const txId = await walletStore.sendMessage(
+        message,
+        new Address(recipient),
+        walletStore.unlockedWallet.password
       );
 
-      console.log("Message sent! Transaction response:", txResponse);
+      // const txResponse = await window.kasware.sendKaspa(
+      //   recipient,
+      //   amount.toString(),
+      //   {
+      //     payload: message,
+      //     encoding: "utf8",
+      //     mass: "1000000",
+      //   }
+      // );
 
-      const txData =
-        typeof txResponse === "string" ? JSON.parse(txResponse) : txResponse;
-      const txId = txData.id || txData.transactionId || txResponse;
+      console.log("Message sent! Transaction response:", txId);
 
       const newMessageData: Message = {
         transactionId: txId,
-        senderAddress: selectedAddress,
+        senderAddress: walletStore.address.toString(),
         recipientAddress: recipient,
         timestamp: Date.now(),
         content: message,
-        amount: amount,
+        // @TODO: fixme
+        amount: 0.69,
         payload: "",
       };
 
-      messageStore.storeMessage(newMessageData, selectedAddress);
+      messageStore.storeMessage(newMessageData, walletStore.address.toString());
 
       messageInput.value = "";
       recipientInput.value = "";
@@ -109,7 +117,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [messageStore, selectedAddress]);
+  }, [messageStore, walletStore]);
 
   const onMessageInputKeyPressed = useCallback(
     (e: KeyboardEvent) => {

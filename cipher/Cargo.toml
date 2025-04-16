@@ -17,3 +17,6 @@ secp256k1 = "0.29.1"
 wasm-bindgen = "0.2.100"
 kaspa-wallet-keys = {branch = "master", git = "https://github.com/kaspanet/rusty-kaspa.git"}
 uuid = {version = "1.16.0", features = ["v4", "fast-rng", "js"]}
+
+[dev-dependencies]
+kaspa-wrpc-client = {branch = "master", git = "https://github.com/kaspanet/rusty-kaspa.git"}

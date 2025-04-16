@@ -17,6 +17,7 @@ export type UnlockedWallet = {
   activeAccount: 1;
   publicKeyGenerator: PublicKeyGenerator;
   encryptedXPrv: string;
+  password: string;
 };
 
 export class WalletStorage {
@@ -51,6 +52,7 @@ export class WalletStorage {
             password
           ),
           publicKeyGenerator,
+          password,
         };
       } catch (error) {
         console.error(error);

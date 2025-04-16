@@ -1,14 +1,8 @@
 import { create } from "zustand";
 import { KaspaClient } from "../utils/all-in-one";
 import { UnlockedWallet, WalletStorage } from "../utils/wallet-storage";
-import {
-  Address,
-  addressFromScriptPublicKey,
-  IBlockAdded,
-  Mnemonic,
-} from "kaspa-wasm";
+import { Address, Mnemonic, UtxoEntryReference } from "kaspa-wasm";
 import { AccountService } from "../service/account-service";
-import { BlockAddedData } from "../type/all";
 
 type WalletState = {
   doesExists: boolean;
@@ -27,7 +21,7 @@ type WalletState = {
   start: (
     rpcClient: KaspaClient,
     unlockedWallet: UnlockedWallet
-  ) => Promise<void>;
+  ) => Promise<{ receiveAddress: Address }>;
   stop: () => void;
 
   sendMessage: (
@@ -35,6 +29,8 @@ type WalletState = {
     toAddress: Address,
     password: string
   ) => Promise<string>;
+
+  getMatureUtxos: () => UtxoEntryReference[];
 
   /// warning: this will remove all data from the store
   flush: () => void;
@@ -78,38 +74,46 @@ export const useWalletStore = create<WalletState>((set, g) => {
         set({ balance });
       });
 
-      const prefix = "ciph_msg:"
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
+      // @TODO, in another service
+      // const prefix = "ciph_msg:"
+      //   .split("")
+      //   .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      //   .join("");
 
-      rpcClient.rpc?.addEventListener(
-        "block-added",
-        (blockAdded: IBlockAdded) => {
-          const data = blockAdded as BlockAddedData;
-          const cipheredTxs = data.data.block.transactions.filter((t) => {
-            return t.payload.startsWith(prefix);
-          });
+      // rpcClient.rpc?.addEventListener(
+      //   "block-added",
+      //   (blockAdded: IBlockAdded) => {
+      //     const data = blockAdded as BlockAddedData;
+      //     const cipheredTxs = data.data.block.transactions.filter((t) => {
+      //       return t.payload.startsWith(prefix);
+      //     });
 
-          if (cipheredTxs.length) {
-            console.log(cipheredTxs);
-          }
-        }
-      );
-
-      rpcClient.rpc?.subscribeBlockAdded();
+      //     if (cipheredTxs.length) {
+      //       console.log(cipheredTxs);
+      //     }
+      //   }
+      // );
+      // rpcClient.rpc?.subscribeBlockAdded();
 
       set({
         rpcClient,
         address: _accountService.receiveAddress,
         isAccountServiceRunning: true,
       });
+
+      return { receiveAddress: _accountService.receiveAddress! };
     },
     sendMessage(message, toAddress, password) {
       if (!_accountService) {
         throw Error("Account service not initialized.");
       }
       return _accountService.sendMessage({ message, toAddress, password });
+    },
+    getMatureUtxos() {
+      if (!_accountService) {
+        throw Error("Account service not initialized.");
+      }
+      return _accountService.getMatureUtxos();
     },
     stop: () => {
       if (_accountService) {
