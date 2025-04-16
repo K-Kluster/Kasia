@@ -37,7 +37,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             </li>
             <li>
               <strong>Confirmed:</strong>{" "}
-              <span className="amount">{matureBalance ?? 0} KAS</span>
+              <span className="amount">{formatKasAmount(matureBalance ?? 0)} KAS</span>
             </li>
             <li>
               <strong>Unconfirmed:</strong>{" "}
@@ -47,10 +47,19 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             </li>
           </ul>
         </div>
-        <p>
-          <strong>UTXO Entries:</strong>{" "}
-          <span className="utxo-count">{utxoCount}</span>
-        </p>
+        <div className="balance-info">
+          <h4>UTXO Information</h4>
+          <ul className="balance-list">
+            <li>
+              <strong>Mature UTXOs:</strong>{" "}
+              <span className="utxo-count">{utxoCount ?? '-'}</span>
+            </li>
+            <li>
+              <strong>Status:</strong>{" "}
+              <span className="status">{!utxoCount ? 'Initializing...' : 'Ready'}</span>
+            </li>
+          </ul>
+        </div>
       </>
     );
   }, [address, totalBalance, matureBalance, pendingBalance, utxoCount]);
