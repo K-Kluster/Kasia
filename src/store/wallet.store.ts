@@ -111,9 +111,15 @@ export const useWalletStore = create<WalletState>((set, g) => {
     },
     getMatureUtxos() {
       if (!_accountService) {
+        console.log('WalletStore - Account service not initialized');
         throw Error("Account service not initialized.");
       }
-      return _accountService.getMatureUtxos();
+      const utxos = _accountService.getMatureUtxos();
+      console.log('WalletStore - getMatureUtxos result:', {
+        count: utxos.length,
+        utxos: utxos
+      });
+      return utxos;
     },
     stop: () => {
       if (_accountService) {

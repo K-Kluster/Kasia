@@ -68,65 +68,63 @@ h1 {
 .network-selector-container {
   position: relative;
   display: inline-block;
-  margin-bottom: 1rem;
 }
 
 .network-badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem;
   background: var(--accent-blue);
   color: white;
-  border-radius: 9999px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
-  transition: transform 0.2s;
+  border-radius: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
+  min-width: 100px;
+  justify-content: space-between;
+  transition: background-color 0.2s;
 }
 
 .network-badge:hover {
-  transform: translateY(-1px);
+  background-color: rgba(59, 130, 246, 0.9);
 }
 
 .network-badge::after {
   content: "▼";
+  font-size: 0.625rem;
   margin-left: 0.5rem;
-  font-size: 0.75rem;
-  transition: transform 0.2s;
 }
 
 .network-selector {
   position: absolute;
-  top: calc(100% + 0.5rem);
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(100% + 2px);
+  left: 0;
   background: var(--secondary-bg);
   border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  padding: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 10;
-  display: block;
-  animation: fadeIn 0.2s ease-out;
-  min-width: 120px;
 }
 
 .network-selector.show {
   display: block;
-  animation: fadeIn 0.2s ease-out;
 }
 
 .network-option {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
-  border-radius: 0.25rem;
-  transition: all 0.2s;
+  transition: background-color 0.2s;
   color: var(--text-primary);
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  font-size: 0.8125rem;
 }
 
 .network-option:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--primary-bg);
 }
 
 .network-option.active {
@@ -312,11 +310,13 @@ h1 {
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   border: 1px solid var(--border-color);
   display: flex;
   overflow: hidden;
   height: 700px;
+  min-width: 320px;
 }
 
 .contacts-sidebar {
@@ -411,6 +411,7 @@ h1 {
   display: flex;
   flex-direction: column;
   background-color: var(--primary-bg);
+  min-width: 0;
 }
 
 .messages-list {
@@ -443,11 +444,15 @@ h1 {
 }
 
 .message {
-  margin: 12px 0;
-  padding: 12px;
-  border-radius: 12px;
-  max-width: 70%;
   position: relative;
+  background-color: var(--secondary-bg);
+  padding: 12px 16px;
+  border-radius: 16px;
+  max-width: 70%;
+  margin-bottom: 16px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .clear-history-button {
@@ -525,6 +530,7 @@ h1 {
   bottom: 0;
   width: 20px;
   height: 20px;
+  z-index: -1;
 }
 
 .message.incoming::before {
@@ -545,6 +551,10 @@ h1 {
   align-items: center;
   margin-bottom: 6px;
   font-size: 0.8em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .message.outgoing .message-header {
@@ -555,6 +565,7 @@ h1 {
   font-size: 1em;
   margin: 8px 0;
   word-break: break-word;
+  overflow-wrap: break-word;
   line-height: 1.4;
 }
 
@@ -565,6 +576,10 @@ h1 {
   margin-top: 6px;
   font-size: 0.75em;
   opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .message.outgoing .message-footer {
@@ -576,6 +591,56 @@ h1 {
   padding: 2px 6px;
   border-radius: 10px;
   font-family: monospace;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tx-label {
+  user-select: none;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tx-value {
+  user-select: all;
+}
+
+.message-id:hover, .message-id:focus {
+  max-width: none;
+  background-color: rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.message.outgoing .message-id:hover,
+.message.outgoing .message-id:focus {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.message-id::after {
+  content: "Click to view full ID";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background-color: var(--secondary-bg);
+  border-radius: 4px;
+  font-size: 0.8em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.message-id:hover::after {
+  opacity: 1;
 }
 
 .message-amount {
@@ -583,4 +648,112 @@ h1 {
   padding: 2px 6px;
   border-radius: 10px;
   margin-left: 8px;
+}
+
+@media (max-width: 768px) {
+  .message {
+    max-width: 85%;
+  }
+  
+  .messages-container {
+    height: calc(100vh - 100px);
+  }
+
+  .contacts-sidebar {
+    min-width: 200px;
+  }
+}
+
+.wallet-info-container {
+  display: inline-block;
+  position: absolute;
+  right: 20px;
+  top: 0;
+  z-index: 100;
+}
+
+.wallet-info-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+  margin: 20px;
+}
+
+.wallet-info-button:hover {
+  background-color: #2980b9;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--secondary-bg);
+  padding: 20px;
+  border-radius: 12px;
+  position: relative;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-body {
+  margin-top: 20px;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

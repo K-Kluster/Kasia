@@ -668,7 +668,8 @@ export const OneLiner: FC = () => {
           matureBalance={walletStore.balance ?? 0}
           pendingBalance={balance?.unconfirmed}
           totalBalance={balance?.total}
-          utxoCount={utxoEntries?.length}
+          utxoCount={walletStore.isAccountServiceRunning ? walletStore.getMatureUtxos()?.length ?? 0 : undefined}
+          isWalletReady={isWalletReady}
         />
         <ErrorCard error={errorMessage} />
       </div>

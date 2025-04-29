@@ -243,10 +243,17 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
   public getMatureUtxos() {
     if (!this.isStarted) {
+      console.log('AccountService - Service not started');
       throw new Error("Account service is not started");
     }
 
-    return this.context.getMatureRange(0, this.context.matureLength);
+    const matureUtxos = this.context.getMatureRange(0, this.context.matureLength);
+    console.log('AccountService - Mature UTXOs:', {
+      count: matureUtxos.length,
+      matureLength: this.context.matureLength,
+      utxos: matureUtxos
+    });
+    return matureUtxos;
   }
 
   private _getGeneratorForTransaction(transaction: CreateTransactionArgs) {

@@ -44,7 +44,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       </div>
       <div className="message-content">{decodedPayload}</div>
       <div className="message-footer">
-        <span className="message-id">TX: {transactionId || "Pending..."}</span>
+        <span className="message-id">
+          <span className="tx-label">TX: </span>
+          <span className="tx-value">{transactionId || "Pending..."}</span>
+        </span>
         {amount && (
           <span className="message-amount">{formatKasAmount(amount)} KAS</span>
         )}
