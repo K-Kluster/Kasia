@@ -163,10 +163,9 @@ export const OneLiner: FC = () => {
         }
 
         // Create new client and connect
-        const client = new KaspaClient();
-        client.setNetworkId(networkId);
-        await client.connect();
-        setCurrentClient(client);
+
+        currentClient?.setNetworkId(networkId);
+        await currentClient?.connect();
 
         setConnectionStatus("Connected to Kaspa Network");
       } catch (error) {
