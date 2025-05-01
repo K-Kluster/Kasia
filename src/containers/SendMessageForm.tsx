@@ -22,17 +22,17 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   useEffect(() => {
     console.log("Opened recipient:", openedRecipient);
 
-    if (openedRecipient) {
-      recipientInputRef.current!.value = openedRecipient;
-      messageInputRef.current!.focus();
+    if (openedRecipient && recipientInputRef.current) {
+      recipientInputRef.current.value = openedRecipient;
+      messageInputRef.current?.focus();
     }
   }, [openedRecipient]);
 
   useEffect(() => {
-    if (isCreatingNewChat) {
-      recipientInputRef.current!.value = "";
-      messageInputRef.current!.value = "";
-      recipientInputRef.current!.focus();
+    if (isCreatingNewChat && recipientInputRef.current && messageInputRef.current) {
+      recipientInputRef.current.value = "";
+      messageInputRef.current.value = "";
+      recipientInputRef.current.focus();
     }
   }, [isCreatingNewChat]);
 
@@ -47,20 +47,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       return;
     }
 
-    const messageInput = document.getElementById("messageInput");
-    const recipientInput = document.getElementById("recipientAddress");
-
-    if (
-      !recipientInput ||
-      !(recipientInput instanceof HTMLInputElement) ||
-      !messageInput ||
-      !(messageInput instanceof HTMLInputElement)
-    ) {
+    if (!recipientInputRef.current || !messageInputRef.current) {
       return;
     }
 
-    const message = messageInput.value.trim();
-    const recipient = recipientInput.value.trim();
+    const message = messageInputRef.current.value.trim();
+    const recipient = recipientInputRef.current.value.trim();
 
     if (!message) {
       alert("Please enter a message");
@@ -105,8 +97,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       messageStore.storeMessage(newMessageData, walletStore.address.toString());
 
-      messageInput.value = "";
-      recipientInput.value = "";
+      messageInputRef.current.value = "";
+      recipientInputRef.current.value = "";
 
       messageStore.addMessages([newMessageData]);
 

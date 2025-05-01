@@ -1,0 +1,25 @@
+.wallet-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.wallet-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+#connectButton {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.close-wallet-button {
+  background-color: #f44336;
+  color: white;
+} 

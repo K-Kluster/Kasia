@@ -1,0 +1,282 @@
+.wallet-guard {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  color: white;
+}
+
+.wallet-guard h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  color: white;
+}
+
+.wallet-list {
+  margin-bottom: 20px;
+}
+
+.wallet-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 10px;
+  background-color: #1a1f2e;
+  border: 1px solid #2a3042;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.wallet-item:hover {
+  border-color: #3a4156;
+  background-color: #1e2436;
+}
+
+.wallet-info h3 {
+  margin: 0 0 5px 0;
+  color: white;
+}
+
+.wallet-info p {
+  margin: 0;
+  color: #8f95a3;
+  font-size: 0.9em;
+}
+
+.wallet-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.wallet-actions button {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  height: 36px;
+  line-height: 20px;
+}
+
+.wallet-actions button:first-child {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.wallet-actions button:first-child:hover {
+  background-color: #45a049;
+}
+
+.wallet-actions button:last-child {
+  background-color: #f44336;
+  color: white;
+}
+
+.wallet-actions button:last-child:hover {
+  background-color: #da3c31;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: white;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  background-color: #1a1f2e;
+  border: 1px solid #2a3042;
+  border-radius: 4px;
+  font-size: 16px;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3a4156;
+  background-color: #1e2436;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.form-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.form-actions button:first-child {
+  background-color: #2a3042;
+  color: white;
+  border: 1px solid #3a4156;
+}
+
+.form-actions button:first-child:hover {
+  background-color: #3a4156;
+}
+
+.form-actions button:last-child {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.form-actions button:last-child:hover {
+  background-color: #45a049;
+}
+
+.error {
+  color: #f44336;
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: rgba(244, 67, 54, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.mnemonic-display {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #1a1f2e;
+  border: 1px solid #2a3042;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mnemonic-input-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.mnemonic-word-input {
+  width: 100%;
+  padding: 8px;
+  background-color: #1a1f2e;
+  border: 1px solid #2a3042;
+  border-radius: 4px;
+  font-size: 14px;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.mnemonic-word-input:focus {
+  outline: none;
+  border-color: #3a4156;
+  background-color: #1e2436;
+}
+
+.mnemonic-word-input::placeholder {
+  color: #8f95a3;
+  font-size: 12px;
+}
+
+.mnemonic-phrase {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 15px;
+  width: 100%;
+  margin-bottom: 15px;
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+
+.mnemonic-phrase.visible {
+  filter: none;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.show-phrase-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 10px;
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 4px;
+  width: 100%;
+}
+
+.show-phrase-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.show-phrase-toggle label {
+  color: #4CAF50;
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.copy-button {
+  opacity: 0.5;
+  pointer-events: none;
+  padding: 10px 20px;
+  background-color: #2a3042;
+  color: white;
+  border: 1px solid #3a4156;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.mnemonic-phrase.visible + .copy-button {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.copy-button:hover {
+  background-color: #3a4156;
+}
+
+.copy-button:active {
+  transform: translateY(1px);
+}
+
+.mnemonic-word {
+  font-family: monospace;
+  font-size: 14px;
+  padding: 8px;
+  background-color: #2a3042;
+  border-radius: 4px;
+  color: #4CAF50;
+}
+
+.word-number {
+  color: #8f95a3;
+  margin-right: 5px;
+  font-size: 12px;
+} 

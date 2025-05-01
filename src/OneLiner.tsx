@@ -328,8 +328,7 @@ export const OneLiner: FC = () => {
       // const address = accounts[0];
 
       const { receiveAddress } = await walletStore.start(
-        currentClient,
-        walletStore.unlockedWallet
+        currentClient
       );
       const receiveAddressStr = receiveAddress.toString();
 
@@ -597,9 +596,21 @@ export const OneLiner: FC = () => {
         <div className="connection-status">{connectionStatus}</div>
       </div>
       {isWalletReady ? (
-        <button onClick={onStartMessagingProcessClicked} id="connectButton">
-          Start Wallet Service
-        </button>
+        <div className="wallet-actions">
+          <button onClick={onStartMessagingProcessClicked} id="connectButton">
+            Start Wallet Service
+          </button>
+          <button onClick={() => {
+            walletStore.lock();
+            setIsWalletReady(false);
+            messageStore.setIsLoaded(false);
+            messageStore.setOpenedRecipient(null);
+            messageStore.setIsCreatingNewChat(false);
+            setSelectedAddress("");
+          }} className="close-wallet-button">
+            Close Wallet
+          </button>
+        </div>
       ) : (
         <WalletGuard onSuccess={onWalletUnlocked} />
       )}

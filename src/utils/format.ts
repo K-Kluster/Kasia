@@ -1,9 +1,8 @@
 // Helper function to format KAS amount
-export function formatKasAmount(somrat: number) {
-  // Convert somrat (smallest unit) to KAS
-  const amount = Number(somrat) / 100000000;
-  return amount.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
+export function formatKasAmount(amount: number) {
+  // amount is already in KAS
+  return Number(amount).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 8,
   });
 }

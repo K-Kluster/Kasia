@@ -17,6 +17,7 @@
     "kaspa-wasm": "file:wasm",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.5.2",
     "react-router": "^7.5.0",
     "tailwindcss": "^4.1.3",
     "zustand": "^5.0.3"

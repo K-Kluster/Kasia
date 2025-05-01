@@ -37,17 +37,23 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             <li>
               <strong>Total:</strong>{" "}
               <span className="amount">
-                {formatKasAmount(totalBalance ?? 0)} KAS
+                {formatKasAmount(
+                  typeof totalBalance === 'bigint' ? Number(totalBalance) : typeof totalBalance === 'string' ? Number(totalBalance) : totalBalance ?? 0
+                )} KAS
               </span>
             </li>
             <li>
               <strong>Confirmed:</strong>{" "}
-              <span className="amount">{formatKasAmount(matureBalance ?? 0)} KAS</span>
+              <span className="amount">{formatKasAmount(
+                typeof matureBalance === 'bigint' ? Number(matureBalance) : typeof matureBalance === 'string' ? Number(matureBalance) : matureBalance ?? 0
+              )} KAS</span>
             </li>
             <li>
               <strong>Unconfirmed:</strong>{" "}
               <span className="amount">
-                {formatKasAmount(pendingBalance ?? 0)} KAS
+                {formatKasAmount(
+                  typeof pendingBalance === 'bigint' ? Number(pendingBalance) : typeof pendingBalance === 'string' ? Number(pendingBalance) : pendingBalance ?? 0
+                )} KAS
               </span>
             </li>
           </ul>

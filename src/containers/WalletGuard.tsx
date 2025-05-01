@@ -1,163 +1,281 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
+import { WalletStorage } from "../utils/wallet-storage";
+import "./WalletGuard.css";
 
-type WalletStep =
-  | {
-      type: "home";
-    }
-  | {
-      type: "create";
-      password?: string;
-    }
-  | {
-      type: "import";
-      mnemonic?: string;
-      password?: string;
-    }
-  | {
-      type: "unlock";
-      password?: string;
-    }
-  | {
-      type: "finalizing";
-      mnemonic?: string;
+type Step = {
+  type: "home" | "create" | "import" | "unlock" | "finalizing";
+  mnemonic?: Mnemonic;
+  name?: string;
     };
 
-export const WalletGuard: FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
-  const doesExists = useWalletStore((s) => s.doesExists);
-  const unlockedWallet = useWalletStore((s) => s.unlockedWallet);
-  const walletStore = useWalletStore();
+type WalletGuardProps = {
+  onSuccess: () => void;
+};
 
-  const passwordRef = useRef<HTMLInputElement | null>(null);
-  const mnemonicRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const [step, setStep] = useState<WalletStep>({ type: "home" });
+export const WalletGuard = ({ onSuccess }: WalletGuardProps) => {
+  const [step, setStep] = useState<Step>({ type: "home" });
   const [error, setError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const mnemonicRef = useRef<HTMLTextAreaElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
-  // on mounted, if wallet is already unlocked, just skip the step
+  const {
+    wallets,
+    selectedWalletId,
+    unlockedWallet,
+    loadWallets,
+    selectWallet,
+    createWallet,
+    deleteWallet,
+    unlock,
+    lock
+  } = useWalletStore();
+
   useEffect(() => {
-    if (unlockedWallet !== null) {
+    setIsMounted(true);
+    loadWallets();
+    return () => setIsMounted(false);
+  }, [loadWallets]);
+
+  useEffect(() => {
+    if (unlockedWallet) {
+      setStep({ type: "finalizing", mnemonic: undefined });
       onSuccess();
     }
-  }, []);
+  }, [unlockedWallet, onSuccess]);
 
-  const onClickStep = useCallback((step: "create" | "import" | "unlock") => {
-    setStep({ type: step });
-  }, []);
+  if (!isMounted) return null;
 
-  const onCreateWallet = useCallback(async () => {
-    if (!passwordRef.current) return;
+  const onClickStep = (type: Step["type"]) => {
+    setStep({ type });
+    setError(null);
+  };
 
-    const password = passwordRef.current.value;
-
-    if (!password) {
-      setError("Password is required");
-      return;
-    }
-
-    const mnemonic = Mnemonic.random(24);
-
-    await walletStore.create(mnemonic, password);
-
-    setStep({ type: "finalizing", mnemonic: mnemonic.phrase });
-  }, [walletStore]);
-
-  const onImportWallet = useCallback(async () => {
-    if (!passwordRef.current) return;
-
-    const password = passwordRef.current.value;
-
-    if (!password) {
-      setError("Password is required");
+  const onCreateWallet = async () => {
+    if (!nameRef.current?.value || !passwordRef.current?.value) {
+      setError("Please enter a name and password");
       return;
     }
 
     try {
-      const mnemonic = new Mnemonic(mnemonicRef.current?.value || "");
+      const mnemonic = Mnemonic.random();
+      await createWallet(nameRef.current.value, mnemonic, passwordRef.current.value);
+      setStep({ type: "finalizing", mnemonic });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create wallet");
+    }
+  };
 
-      await walletStore.create(mnemonic, password);
+  const onImportWallet = async () => {
+    if (!nameRef.current?.value || !mnemonicRef.current?.value || !passwordRef.current?.value) {
+      setError("Please enter all fields");
+      return;
+    }
 
+    try {
+      const mnemonic = new Mnemonic(mnemonicRef.current.value);
+      await createWallet(nameRef.current.value, mnemonic, passwordRef.current.value);
       setStep({ type: "finalizing" });
-    } catch {
-      setError("Invalid mnemonic");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid mnemonic");
     }
-  }, [walletStore]);
+  };
 
-  const onUnlockWallet = useCallback(async () => {
-    if (!passwordRef.current) return;
-
-    const password = passwordRef.current.value;
-
-    if (!password) {
-      setError("Password is required");
+  const onUnlockWallet = async () => {
+    if (!selectedWalletId || !passwordRef.current?.value) {
+      setError("Please select a wallet and enter password");
+      return;
     }
 
     try {
-      await walletStore.unlock(password);
-
-      onSuccess();
-    } catch {
-      setError("Invalid password");
+      await unlock(selectedWalletId, passwordRef.current.value);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid password");
     }
-  }, [onSuccess, walletStore]);
+  };
+
+  const onDeleteWallet = (walletId: string) => {
+    if (window.confirm("Are you sure you want to delete this wallet?")) {
+      deleteWallet(walletId);
+    }
+  };
 
   if (step.type === "home") {
     return (
-      <>
-        {!doesExists ? (
-          <>
-            <button onClick={() => onClickStep("create")}>Create Wallet</button>
+      <div className="wallet-guard">
+        <h2>Select Wallet</h2>
+        {wallets.length > 0 ? (
+          <div className="wallet-list">
+            {wallets.map((wallet) => (
+              <div key={wallet.id} className="wallet-item">
+                <div className="wallet-info">
+                  <h3>{wallet.name}</h3>
+                  <p>Created: {new Date(wallet.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div className="wallet-actions">
+                  <button onClick={() => {
+                    selectWallet(wallet.id);
+                    setStep({ type: "unlock" });
+                  }}>Select</button>
+                  <button onClick={() => onDeleteWallet(wallet.id)}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>No wallets found. Create or import a wallet to get started.</p>
+        )}
+        <div className="wallet-actions">
+          <button onClick={() => onClickStep("create")}>Create New Wallet</button>
             <button onClick={() => onClickStep("import")}>Import Wallet</button>
-          </>
-        ) : unlockedWallet === null ? (
-          <button onClick={() => onClickStep("unlock")}>Unlock Wallet</button>
-        ) : null}
-      </>
+        </div>
+      </div>
     );
   }
 
-  if (step.type === "create") {
+  if (step.type === "create" || step.type === "import") {
     return (
-      <>
-        <input ref={passwordRef} type="password" required />
-        <button onClick={onCreateWallet}>Use This Password</button>
-        <p>{error}</p>
-      </>
-    );
-  }
+      <div className="wallet-guard">
+        <h2>{step.type === "create" ? "Create New Wallet" : "Import Wallet"}</h2>
+        <div className="form-group">
+          <label>Wallet Name</label>
+          <input ref={nameRef} type="text" placeholder="My Wallet" />
+        </div>
+        {step.type === "import" && (
+          <div className="form-group">
+            <label>Mnemonic Phrase</label>
+            <div className="mnemonic-input-grid">
+              {Array.from({ length: 24 }, (_, i) => (
+                <input
+                  key={i}
+                  type="password"
+                  placeholder={`Word ${i + 1}`}
+                  className="mnemonic-word-input"
+                  data-index={i}
+                  onPaste={(e) => {
+                    if (i === 0) {
+                      e.preventDefault();
+                      const pastedText = e.clipboardData.getData('text');
+                      const words = pastedText.trim().split(/\s+/);
+                      
+                      const inputElement = e.target as HTMLInputElement;
+                      const allInputs = inputElement.parentElement?.querySelectorAll('input');
+                      if (!allInputs) return;
 
-  if (step.type === "import") {
-    return (
-      <>
-        <textarea ref={mnemonicRef} required />
-        <button onClick={onImportWallet}>Confirm Password</button>
-        <p>{error}</p>
-      </>
+                      words.slice(0, 24).forEach((word, index) => {
+                        if (allInputs[index]) {
+                          (allInputs[index] as HTMLInputElement).value = word;
+                        }
+                      });
+
+                      if (mnemonicRef.current) {
+                        mnemonicRef.current.value = words.slice(0, 24).join(' ');
+                      }
+                    }
+                  }}
+                  onChange={(e) => {
+                    const inputElement = e.target as HTMLInputElement;
+                    const allInputs = inputElement.parentElement?.querySelectorAll('input') || [];
+                    const words = Array.from(allInputs).map(input => input.value).join(' ');
+                    if (mnemonicRef.current) {
+                      mnemonicRef.current.value = words;
+                    }
+                  }}
+                />
+              ))}
+            </div>
+            <textarea 
+              ref={mnemonicRef} 
+              style={{ display: 'none' }}
+            />
+          </div>
+        )}
+        <div className="form-group">
+          <label>Password</label>
+          <input ref={passwordRef} type="password" placeholder="Enter password" />
+        </div>
+        {error && <div className="error">{error}</div>}
+        <div className="form-actions">
+          <button onClick={() => onClickStep("home")}>Back</button>
+          <button onClick={step.type === "create" ? onCreateWallet : onImportWallet}>
+            {step.type === "create" ? "Create" : "Import"}
+          </button>
+        </div>
+      </div>
     );
   }
 
   if (step.type === "unlock") {
     return (
-      <>
-        <input ref={passwordRef} type="password" required />
+      <div className="wallet-guard">
+        <h2>Unlock Wallet</h2>
+        <div className="form-group">
+          <label>Password</label>
+          <input ref={passwordRef} type="password" placeholder="Enter password" />
+        </div>
+        {error && <div className="error">{error}</div>}
+        <div className="form-actions">
+          <button onClick={() => onClickStep("home")}>Back</button>
         <button onClick={onUnlockWallet}>Unlock</button>
-        <p>{error}</p>
-      </>
+        </div>
+      </div>
     );
   }
 
   if (step.type === "finalizing") {
-    <>
-      {step.mnemonic ? (
-        <p>
-          Wallet created, please store the mnemonic safely:{" "}
-          <code>{step.mnemonic}</code>
-        </p>
-      ) : (
-        <p>Wallet imported successfully.</p>
-      )}
-      <button onClick={onSuccess}>I'm ready</button>
-    </>;
+    return (
+      <div className="wallet-guard">
+        <h2>{step.mnemonic ? "Wallet Created Successfully!" : "Wallet Unlocked!"}</h2>
+        {step.type === "finalizing" && step.mnemonic && (
+          <div className="mnemonic-display">
+            <p>Please save your mnemonic phrase securely:</p>
+            <div className="show-phrase-toggle">
+              <input 
+                type="checkbox" 
+                id="showPhrase"
+                onChange={(e) => {
+                  const phraseElement = document.querySelector('.mnemonic-phrase');
+                  if (phraseElement) {
+                    phraseElement.classList.toggle('visible', e.target.checked);
+                  }
+                }}
+              />
+              <label htmlFor="showPhrase">I understand that anyone with my seed phrase can access my wallet. Show seed phrase</label>
+            </div>
+            <div className="mnemonic-phrase">
+              {step.mnemonic.phrase.split(' ').map((word, i) => (
+                <span key={i} className="mnemonic-word">
+                  <span className="word-number">{i + 1}.</span> {word}
+                </span>
+              ))}
+            </div>
+            <button 
+              className="copy-button"
+              onClick={() => {
+                const words = step.mnemonic?.phrase || '';
+                navigator.clipboard.writeText(words).then(() => {
+                  const btn = document.querySelector('.copy-button') as HTMLButtonElement;
+                  if (btn) {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                      btn.textContent = originalText;
+                    }, 2000);
+                  }
+                });
+              }}
+            >
+              Copy Seed Phrase
+            </button>
+          </div>
+        )}
+        <button onClick={() => onClickStep("home")}>Back to Wallets</button>
+      </div>
+    );
   }
+
+  return null;
 };
