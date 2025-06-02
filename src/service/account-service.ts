@@ -464,7 +464,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
   public async estimateSendMessage(sendMessage: SendMessageArgs) {
     try {
-      const minimumAmount = kaspaToSompi("0.1");
+      const minimumAmount = kaspaToSompi("0.19");
 
     if (!minimumAmount) {
       throw new Error("Minimum amount missing");
@@ -496,7 +496,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   }
 
   public async sendMessage(sendMessage: SendMessageArgs) {
-    const minimumAmount = kaspaToSompi("0.1");
+    const minimumAmount = kaspaToSompi("0.19");
 
     if (!minimumAmount) {
       throw new Error("Minimum amount missing");
@@ -573,7 +573,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     preEncryptedHex: string, 
     password: string
   ) {
-    const minimumAmount = kaspaToSompi("0.1");
+    const minimumAmount = kaspaToSompi("0.19");
 
     if (!minimumAmount) {
       throw new Error("Minimum amount missing");
