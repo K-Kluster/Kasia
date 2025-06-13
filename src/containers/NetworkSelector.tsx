@@ -15,10 +15,10 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Set default network to testnet-10 on component mount
+  // Set default network to mainnet on component mount or if selectedNetwork is null/invalid
   useEffect(() => {
-    if (!selectedNetwork) {
-      onNetworkChange("testnet-10");
+    if (!selectedNetwork || selectedNetwork !== "mainnet") {
+      onNetworkChange("mainnet");
     }
   }, [selectedNetwork, onNetworkChange]);
 
@@ -39,19 +39,12 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   }, []);
 
   const networkDisplay = useMemo(() => {
-    switch (selectedNetwork) {
-      case "mainnet":
-        return "Mainnet";
-      case "testnet-10":
-        return "Testnet 10";
-      case "testnet-11":
-        return "Testnet 11";
-      case null:
-        return "Select Network";
-      default:
-        return "Unknown Network";
+    // Always show Mainnet if connected, otherwise show appropriate status
+    if (isConnected) {
+      return "Mainnet";
     }
-  }, [selectedNetwork]);
+    return selectedNetwork === "mainnet" ? "Mainnet" : "Connecting to Mainnet...";
+  }, [selectedNetwork, isConnected]);
 
   return (
     <div className="network-selector-container" ref={menuRef}>
@@ -69,16 +62,6 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
               } network-option`}
             >
               Mainnet
-            </div>
-          </MenuItem>
-          <MenuItem>
-            <div
-              onClick={() => onNetworkChange("testnet-10")}
-              className={`${
-                selectedNetwork === "testnet-10" ? "active" : ""
-              } network-option`}
-            >
-              Testnet 10
             </div>
           </MenuItem>
         </MenuItems>

@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { Message as MessageType } from "../type/all";
 import { decodePayload } from "../utils/all-in-one";
 import { formatKasAmount } from "../utils/format";
@@ -6,6 +6,8 @@ import { decrypt_message, decrypt_message_with_bytes, decrypt_with_secret_key } 
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
+import { useMessagingStore } from '../store/messaging.store';
+import { HandshakeResponse } from './HandshakeResponse';
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -23,25 +25,106 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     payload,
     content,
     amount,
+    fee,
     transactionId,
     fileData
   } = message;
+  
   const displayAddress = isOutgoing ? recipientAddress : senderAddress;
   const walletStore = useWalletStore();
+  const messagingStore = useMessagingStore();
+  const mounted = useRef(true);
 
-  const shortDisplayAddress =
-    displayAddress && displayAddress !== "Unknown"
-      ? `${displayAddress.substring(0, 12)}...${displayAddress.substring(
-          displayAddress.length - 12
-        )}`
-      : "Unknown";
+  // Check if this is a handshake message
+  const isHandshake = (payload?.startsWith('ciph_msg:') && 
+                      payload?.includes(':handshake:')) ||
+                     (content?.startsWith('ciph_msg:') && 
+                      content?.includes(':handshake:'));
 
-  const [decryptedContent, setDecryptedContent] = useState<string>("");
-  const [decryptionError, setDecryptionError] = useState<string>("");
+  // Get conversation if it's a handshake
+  const conversation = isHandshake ? (() => {
+    try {
+      // Parse the handshake payload using the same method as ConversationManager
+      const handshakeMessage = payload?.startsWith('ciph_msg:') ? payload : content;
+      const parts = handshakeMessage.split(':');
+      if (parts.length < 4 || parts[0] !== 'ciph_msg' || parts[2] !== 'handshake') {
+        console.error('Invalid handshake payload format');
+        return null;
+      }
+
+      const jsonPart = parts.slice(3).join(':'); // Handle colons in JSON
+      const handshakePayload = JSON.parse(jsonPart);
+      
+      // Get all conversations
+      const conversations = [
+        ...(messagingStore.conversationManager?.getActiveConversations() || []),
+        ...(messagingStore.conversationManager?.getPendingConversations() || [])
+      ];
+
+      // First try to find by conversation ID
+      let foundConversation = conversations.find(c => c.conversationId === handshakePayload.conversationId);
+      
+      // If not found by ID, try to find by address
+      if (!foundConversation) {
+        foundConversation = conversations.find(c => 
+          c.kaspaAddress === senderAddress || c.kaspaAddress === recipientAddress
+        );
+      }
+
+      console.log('Found conversation:', foundConversation);
+      return foundConversation;
+    } catch (error) {
+      console.error('Error parsing handshake payload:', error);
+      return null;
+    }
+  })() : null;
+
+  // Get the correct explorer URL based on network
+  const getExplorerUrl = (txId: string) => {
+    return walletStore.selectedNetwork === "mainnet" 
+      ? `https://explorer.kaspa.org/txs/${txId}`
+      : `https://explorer-tn10.kaspa.org/txs/${txId}`;
+  };
+
+  // Format amount or fee for display
+  const formatAmountAndFee = () => {
+    if (isOutgoing && fee !== undefined) {
+      return (
+        <div className="message-transaction-info">
+          <div className="message-fee">Fee: {fee.toFixed(8)} KAS</div>
+        </div>
+      );
+    }
+    return null;  // Don't show amount for any messages
+  };
 
   // Parse and render message content
   const renderMessageContent = () => {
-    let messageToRender = decryptedContent || content;
+    // If this is a handshake message and we found the conversation
+    if (isHandshake && conversation) {
+      // Only show handshake response UI if:
+      // 1. The conversation is pending
+      // 2. We didn't initiate it
+      // 3. It hasn't been responded to yet
+      if (conversation.status === 'pending' && !conversation.initiatedByMe) {
+      console.log('Rendering handshake response for conversation:', conversation);
+      return <HandshakeResponse conversation={conversation} />;
+      }
+      // For other handshake messages, just show the status text
+      return conversation.status === 'active' 
+        ? 'Handshake completed' 
+        : conversation.initiatedByMe 
+          ? 'Handshake sent' 
+          : 'Handshake received';
+    }
+
+    // Wait for decryption attempt before showing content
+    if (isDecrypting) {
+      return <div className="decrypting">Decrypting message...</div>;
+    }
+
+    // Only use decrypted content if decryption was attempted and successful
+    let messageToRender = (decryptionAttempted && decryptedContent) || content;
     
     // Handle file/image messages
     if (fileData && fileData.type === 'file') {
@@ -73,10 +156,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       const parsedContent = JSON.parse(messageToRender);
       if (parsedContent.type === 'file') {
         if (parsedContent.mimeType.startsWith('image/')) {
-          return <img src={parsedContent.content} alt={parsedContent.name} className="message-image" />;
+          return <img key={`img-${transactionId}`} src={parsedContent.content} alt={parsedContent.name} className="message-image" />;
         }
         return (
-          <div className="file-message">
+          <div key={`file-${transactionId}`} className="file-message">
             <div className="file-info">
               📎 {parsedContent.name} ({Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>
@@ -101,11 +184,41 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     return messageToRender;
   };
 
+  const [decryptedContent, setDecryptedContent] = useState<string>("");
+  const [decryptionError, setDecryptionError] = useState<string>("");
+  const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
+  const [decryptionAttempted, setDecryptionAttempted] = useState<boolean>(false);
+
   useEffect(() => {
     const decryptMessage = async () => {
-      if (!payload || !walletStore.unlockedWallet) return;
+      if (!mounted.current || !walletStore.unlockedWallet) {
+        setDecryptionAttempted(true);
+        return;
+      }
+
+      // If we already have decrypted content from the account service, use that
+      if (content) {
+        setDecryptedContent(content);
+        setDecryptionError("");
+        setDecryptionAttempted(true);
+        return;
+      }
+
+      // Only attempt decryption if we don't have pre-decrypted content
+      if (!payload) {
+        setDecryptionAttempted(true);
+        return;
+      }
+
+      setIsDecrypting(true);
+      setDecryptionAttempted(false);
 
       try {
+        // Add a small delay to ensure wallet is fully initialized
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        if (!mounted.current) return;
+
         // Check if the payload starts with the cipher prefix
         const prefix = "ciph_msg:"
           .split("")
@@ -122,74 +235,82 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             walletStore.unlockedWallet.password
           );
 
+          let decrypted: string | null = null;
+          
           // Try decryption with receive key first
           try {
             const privateKey = privateKeyGenerator.receiveKey(0);
-            const decrypted = await CipherHelper.tryDecrypt(
+            decrypted = await CipherHelper.tryDecrypt(
               encryptedHex,
               privateKey.toString(),
               transactionId || `${senderAddress}-${timestamp}`
             );
-            setDecryptedContent(decrypted);
-            setDecryptionError("");
-            return;
           } catch (receiveErr) {
-            CipherHelper.log("Failed to decrypt with receive key:", receiveErr);
-            
             // Try with change key as fallback
             try {
               const changeKey = privateKeyGenerator.changeKey(0);
-              const decrypted = await CipherHelper.tryDecrypt(
+              decrypted = await CipherHelper.tryDecrypt(
                 encryptedHex,
                 changeKey.toString(),
                 transactionId || `${senderAddress}-${timestamp}`
               );
-              setDecryptedContent(decrypted);
-              setDecryptionError("");
-              return;
             } catch (changeErr) {
-              CipherHelper.error("Failed to decrypt with change key:", changeErr);
               throw new Error("Failed to decrypt with both receive and change keys");
             }
           }
+
+          if (mounted.current && decrypted) {
+            setDecryptedContent(decrypted);
+            setDecryptionError("");
+          }
         } else {
-          // If not encrypted, use the regular decodePayload
-          CipherHelper.log("Message not encrypted with cipher prefix, using regular decodePayload");
           const decoded = decodePayload(payload);
-          setDecryptedContent(decoded || "");
-          setDecryptionError("");
+          if (mounted.current) {
+            setDecryptedContent(decoded || "");
+            setDecryptionError("");
+          }
         }
       } catch (error) {
-        CipherHelper.error("Error in decryption process:", error);
-        const decoded = decodePayload(payload);
-        setDecryptedContent(decoded || "");
-        setDecryptionError((error as Error).message || "Failed to decrypt message");
+        console.error("Error decrypting message:", error);
+        if (mounted.current) {
+          setDecryptionError(error instanceof Error ? error.message : "Unknown error");
+        }
+      } finally {
+        if (mounted.current) {
+          setIsDecrypting(false);
+          setDecryptionAttempted(true);
+        }
       }
     };
 
     decryptMessage();
-  }, [payload, walletStore.unlockedWallet, transactionId, senderAddress, timestamp]);
+  }, [payload, walletStore.unlockedWallet, content]);
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   return (
     <div className={`message ${isOutgoing ? "outgoing" : "incoming"}`}>
       <div className="message-header">
-        <span className="message-from">
-          {isOutgoing ? "To" : "From"}: {shortDisplayAddress}
-        </span>
-        <span className="message-time">
-          {timestamp ? new Date(timestamp).toLocaleString() : "Pending"}
-        </span>
+        <div className="message-timestamp">
+          {new Date(timestamp).toLocaleString()}
       </div>
-      <div className="message-content">
-        {renderMessageContent()}
       </div>
+      <div className="message-content">{renderMessageContent()}</div>
       <div className="message-footer">
-        <span className="message-id">
-          <span className="tx-label">TX: </span>
-          <span className="tx-value">{transactionId || "Pending..."}</span>
-        </span>
-        {amount > 0 && (
-          <span className="message-amount">{formatKasAmount(amount, true)} KAS</span>
+          {formatAmountAndFee()}
+        {transactionId && (
+            <a 
+              href={getExplorerUrl(transactionId)}
+              target="_blank"
+              rel="noopener noreferrer"
+            className="transaction-link"
+            >
+            View Transaction
+            </a>
         )}
       </div>
     </div>

@@ -174,12 +174,76 @@
 }
 
 .error {
-  color: #f44336;
-  margin-bottom: 15px;
-  padding: 10px;
-  background-color: rgba(244, 67, 54, 0.1);
+  color: #e74c3c;
+  background-color: rgba(231, 76, 60, 0.1);
+  border: 1px solid #e74c3c;
   border-radius: 4px;
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  padding: 10px;
+  margin: 10px 0;
+  text-align: center;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error::before {
+  content: "⚠️";
+  margin-right: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #2c3e50;
+  border-radius: 4px;
+  background-color: #34495e;
+  color: #ecf0f1;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  border-color: #3498db;
+  outline: none;
+}
+
+.form-group input.error {
+  border-color: #e74c3c;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.form-actions button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.form-actions button:first-child {
+  background-color: #34495e;
+  color: #ecf0f1;
+}
+
+.form-actions button:last-child {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.form-actions button:hover {
+  opacity: 0.9;
+}
+
+.warning-message {
+  color: #f1c40f;
+  margin: 10px 0;
+  text-align: center;
 }
 
 .mnemonic-display {
@@ -306,4 +370,18 @@
   color: #8f95a3;
   margin-right: 5px;
   font-size: 12px;
+}
+
+.selected-wallet-info {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #2c3e50;
+  border-radius: 4px;
+}
+
+.selected-wallet-info .wallet-name {
+  font-size: 16px;
+  color: #3498db;
+  font-weight: 500;
 } 

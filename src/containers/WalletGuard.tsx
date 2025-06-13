@@ -10,7 +10,7 @@ type Step = {
   type: "home" | "create" | "import" | "unlock" | "finalizing";
   mnemonic?: Mnemonic;
   name?: string;
-};
+    };
 
 type WalletGuardProps = {
   onSuccess: () => void;
@@ -37,7 +37,6 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
     deleteWallet,
     unlock,
     lock,
-    currentClient,
     selectedNetwork: currentSelectedNetwork
   } = useWalletStore();
 
@@ -93,14 +92,25 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
 
   const onUnlockWallet = async () => {
     if (!selectedWalletId || !passwordRef.current?.value) {
-      setError("Please select a wallet and enter password");
+      setError("Please enter your wallet password");
       return;
     }
 
     try {
       await unlock(selectedWalletId, passwordRef.current.value);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid password");
+      console.error("Unlock error:", err);
+      // Clear the password field and focus it
+      if (passwordRef.current) {
+        passwordRef.current.value = "";
+        passwordRef.current.focus();
+      }
+      // Show user-friendly error message
+      if (err instanceof Error && err.message.toLowerCase().includes("invalid password")) {
+        setError("Incorrect password. Please try again.");
+      } else {
+        setError("Failed to unlock wallet. Please try again.");
+      }
     }
   };
 
@@ -121,27 +131,27 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
         <NetworkSelector
           selectedNetwork={selectedNetwork}
           onNetworkChange={onNetworkChange}
-          isConnected={isConnected && selectedNetwork !== "mainnet"}
+          isConnected={isConnected}
         />
         <h2>Select Wallet</h2>
-        <div className="wallet-list">
-          {wallets.map((wallet) => (
-            <div key={wallet.id} className="wallet-item">
-              <div className="wallet-info">
+          <div className="wallet-list">
+            {wallets.map((wallet) => (
+              <div key={wallet.id} className="wallet-item">
+                <div className="wallet-info">
                 <div className="wallet-name">{wallet.name}</div>
                 <div className="wallet-created">Created: {new Date(wallet.createdAt).toLocaleDateString()}</div>
-              </div>
-              <div className="wallet-actions">
+                </div>
+                <div className="wallet-actions">
                 <button onClick={() => onSelectWallet(wallet)} className="select-button">
                   Select
                 </button>
                 <button onClick={() => onDeleteWallet(wallet.id)} className="delete-button">
                   Delete
                 </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         <div className="wallet-options">
           <button onClick={() => onClickStep("create")} className="create-wallet-button">
             Create New Wallet
@@ -227,12 +237,28 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
   }
 
   if (step.type === "unlock") {
+    const selectedWallet = wallets.find(w => w.id === selectedWalletId);
     return (
       <div className="wallet-guard">
         <h2>Unlock Wallet</h2>
+        {selectedWallet && (
+          <div className="selected-wallet-info">
+            <span className="wallet-name">{selectedWallet.name}</span>
+          </div>
+        )}
         <div className="form-group">
           <label>Password</label>
-          <input ref={passwordRef} type="password" placeholder="Enter password" />
+          <input 
+            ref={passwordRef} 
+            type="password" 
+            placeholder="Enter your password" 
+            className={error ? "error" : ""}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onUnlockWallet();
+              }
+            }}
+          />
         </div>
         {error && <div className="error">{error}</div>}
         <div className="form-actions">
@@ -250,6 +276,9 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
         {step.type === "finalizing" && step.mnemonic && (
           <div className="mnemonic-display">
             <p>Please save your mnemonic phrase securely:</p>
+            <div className="warning-message">
+              ⚠️ This is the only time you will see your seed phrase - back it up now!
+            </div>
             <div className="show-phrase-toggle">
               <input 
                 type="checkbox" 

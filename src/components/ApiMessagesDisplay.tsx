@@ -3,6 +3,7 @@ import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { decrypt_message, EncryptedMessage } from "cipher";
 import { formatKasAmount } from "../utils/format";
+import { ConversationManager } from "../utils/conversation-manager";
 
 type Transaction = {
   transaction_id: string;
@@ -17,12 +18,7 @@ type Transaction = {
   }>;
 };
 
-type ApiMessagesDisplayProps = {
-  address: string;
-};
-
-export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => {
-  const [messages, setMessages] = useState<Array<{
+type Message = {
     transactionId: string;
     senderAddress: string;
     recipientAddress: string;
@@ -30,7 +26,16 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
     content: string;
     amount: number;
     payload: string;
-  }>>([]);
+  conversationId?: string; // Added to track which conversation this belongs to
+};
+
+type ApiMessagesDisplayProps = {
+  address: string;
+  conversationManager: ConversationManager; // Added to access conversation info
+};
+
+export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address, conversationManager }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const walletStore = useWalletStore();
@@ -45,10 +50,21 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
     setLoading(true);
     setError(null);
     try {
-      // Ensure the address is properly formatted for the API
-      const formattedAddress = address.includes(':') 
-        ? encodeURIComponent(address)
-        : encodeURIComponent(`kaspatest:${address}`);
+      // Get all addresses and aliases we need to monitor
+      const monitoredConversations = conversationManager.getMonitoredConversations();
+      const uniqueAddresses = new Set([
+        address, // Always include our current address
+        ...monitoredConversations.map(conv => conv.address)
+      ]);
+
+      // Fetch messages for all addresses
+      const allMessages: Message[] = [];
+      
+      for (const addr of uniqueAddresses) {
+        // Ensure the address is properly formatted for the API
+        const formattedAddress = addr.includes(':') 
+          ? encodeURIComponent(addr)
+          : encodeURIComponent(`kaspatest:${addr}`);
       
       const apiUrl = `https://api-tn10.kaspa.org/addresses/${formattedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`;
       
@@ -56,11 +72,12 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
       
       const response = await fetch(apiUrl);
       if (!response.ok) {
-        throw new Error(`API error: ${response.status} ${response.statusText}`);
+          console.error(`Error fetching messages for address ${addr}: ${response.status} ${response.statusText}`);
+          continue; // Skip this address but continue with others
       }
       
       const transactions: Transaction[] = await response.json();
-      console.log("Fetched transactions:", transactions);
+        console.log(`Fetched ${transactions.length} transactions for address ${addr}`);
       
       // Process transactions and extract messages
       const processedMessages = await Promise.all(
@@ -71,9 +88,9 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
             
             // For each transaction, determine if this is incoming or outgoing
             const recipientAddress = tx.outputs[0]?.script_public_key_address || "Unknown";
-            const isOutgoing = recipientAddress !== address;
+              const isOutgoing = recipientAddress !== addr;
             const senderAddress = isOutgoing ? 
-              address : 
+                addr : 
               (tx.inputs[0]?.previous_outpoint_address || "Unknown");
               
             // Try to decrypt the message
@@ -156,7 +173,8 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
               decryptedContent = "[Wallet locked]";
             }
             
-            return {
+              // Create the message object
+              const message: Message = {
               transactionId: tx.transaction_id,
               senderAddress,
               recipientAddress,
@@ -165,13 +183,33 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
               amount: tx.outputs[0]?.amount ? tx.outputs[0].amount / 100000000 : 0,
               payload: tx.payload
             };
-          })
-      );
+
+              // Try to find which conversation this message belongs to
+              if (decryptedContent !== "[Could not decrypt message]" && decryptedContent !== "[Decryption error]" && decryptedContent !== "[Wallet locked]") {
+                // Check if the decrypted content contains any of our monitored aliases
+                for (const conv of monitoredConversations) {
+                  if (decryptedContent.includes(conv.alias)) {
+                    // Find the conversation this alias belongs to
+                    const conversation = conversationManager.getConversationByAlias(conv.alias);
+                    if (conversation) {
+                      message.conversationId = conversation.conversationId;
+                      break;
+                    }
+                  }
+                }
+              }
+
+              return message;
+            })
+        );
+        
+        allMessages.push(...processedMessages);
+      }
       
-      // Sort messages by timestamp (newest first)
-      processedMessages.sort((a, b) => b.timestamp - a.timestamp);
+      // Sort all messages by timestamp (newest first)
+      allMessages.sort((a, b) => b.timestamp - a.timestamp);
       
-      setMessages(processedMessages);
+      setMessages(allMessages);
     } catch (err) {
       console.error("Error fetching messages:", err);
       setError(`Error fetching messages: ${(err as Error).message}`);
@@ -185,6 +223,16 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
     return `${addr.substring(0, 12)}...${addr.substring(addr.length - 12)}`;
   };
 
+  // Group messages by conversation
+  const messagesByConversation = messages.reduce((acc, message) => {
+    const convId = message.conversationId || 'unassigned';
+    if (!acc[convId]) {
+      acc[convId] = [];
+    }
+    acc[convId].push(message);
+    return acc;
+  }, {} as Record<string, Message[]>);
+
   return (
     <div className="api-messages-display">
       <div className="header">
@@ -197,34 +245,41 @@ export const ApiMessagesDisplay: FC<ApiMessagesDisplayProps> = ({ address }) => 
       {error && <div className="error-message">{error}</div>}
       
       <div className="messages-list">
-        {messages.length === 0 && !loading ? (
-          <div className="no-messages">No messages found</div>
-        ) : (
-          messages.map((msg) => (
-            <div 
-              key={msg.transactionId} 
-              className={`message ${msg.senderAddress === address ? "outgoing" : "incoming"}`}
-            >
+        {Object.entries(messagesByConversation).map(([convId, convMessages]) => {
+          const conversation = convId !== 'unassigned' 
+            ? conversationManager.getConversationByAlias(convMessages[0]?.content.split(' ')[0]) 
+            : null;
+
+          return (
+            <div key={convId} className="conversation-group">
+              {conversation && (
+                <h3>Conversation with {conversation.theirAlias} ({shortenAddress(conversation.kaspaAddress)})</h3>
+              )}
+              {!conversation && convId === 'unassigned' && (
+                <h3>Other Messages</h3>
+              )}
+              {convMessages.map((msg) => (
+                <div key={msg.transactionId} className="message">
               <div className="message-header">
-                <span className="message-direction">
-                  {msg.senderAddress === address ? "To" : "From"}: {shortenAddress(msg.senderAddress === address ? msg.recipientAddress : msg.senderAddress)}
-                </span>
-                <span className="message-time">
-                  {new Date(msg.timestamp).toLocaleString()}
+                    <span className="address">From: {shortenAddress(msg.senderAddress)}</span>
+                    <span className="address">To: {shortenAddress(msg.recipientAddress)}</span>
+                    <span className="timestamp">
+                      {new Date(msg.timestamp * 1000).toLocaleString()}
                 </span>
               </div>
               <div className="message-content">{msg.content}</div>
-              <div className="message-footer">
-                <span className="message-id">
-                  <span className="tx-label">TX: </span>
-                  <span className="tx-value">{msg.transactionId}</span>
-                </span>
-                {msg.amount && (
-                  <span className="message-amount">{formatKasAmount(msg.amount)} KAS</span>
+                  {msg.senderAddress === address && (
+                    <div className="message-fee">
+                      Fee: {formatKasAmount(msg.amount)} KAS
+                    </div>
                 )}
               </div>
+              ))}
             </div>
-          ))
+          );
+        })}
+        {messages.length === 0 && !loading && (
+          <div className="no-messages">No messages found</div>
         )}
       </div>
     </div>

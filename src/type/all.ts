@@ -5,6 +5,7 @@ export type Message = {
   timestamp: number;
   content: string;
   amount: number;
+  fee?: number;
   payload: string;
   fileData?: {
     type: string;
@@ -19,6 +20,7 @@ export type Contact = {
   address: string;
   lastMessage: Message;
   messages: Message[];
+  status?: 'active' | 'pending' | 'rejected';
 };
 
 export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet";
@@ -55,15 +57,20 @@ export interface Header {
 }
 
 export interface Transaction {
-  version: number;
+  // SDK fields
+  version?: number;
   inputs: Input[];
   outputs: Output[];
-  lockTime: string;
-  subnetworkId: string;
-  gas: string;
+  lockTime?: string;
+  subnetworkId?: string;
+  gas?: string;
   payload: string;
-  mass: string;
-  verboseData: VerboseData2;
+  mass?: string;
+  verboseData?: VerboseData2;
+
+  // API fields
+  transaction_id: string;
+  block_time: number;
 }
 
 export interface Input {
@@ -71,6 +78,7 @@ export interface Input {
   signatureScript: string;
   sequence: string;
   sigOpCount: number;
+  previous_outpoint_address?: string;
 }
 
 export interface PreviousOutpoint {
@@ -82,6 +90,8 @@ export interface Output {
   value: string;
   scriptPublicKey: string;
   verboseData: VerboseData;
+  amount?: number;
+  script_public_key_address?: string;
 }
 
 export interface VerboseData {

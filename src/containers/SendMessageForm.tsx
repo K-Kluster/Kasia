@@ -123,6 +123,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     try {
       console.log("Sending transaction from primary address:", walletStore.address.toString());
 
+      // Check if we have an active conversation with this recipient
+      const activeConversations = messageStore.getActiveConversations();
+      const existingConversation = activeConversations.find(conv => conv.kaspaAddress === recipient);
+
       let messageToSend = message;
       let fileDataForStorage: { type: string; name: string; size: number; mimeType: string; content: string; } | undefined = undefined;
 
@@ -151,11 +155,35 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         // Not a file message, use message as is
       }
 
-      const txId = await walletStore.sendMessage(
-        messageToSend,
-        new Address(recipient),
-        walletStore.unlockedWallet.password
-      );
+      let txId: string;
+      
+      // If we have an active conversation, use the context-aware sending
+      if (existingConversation && existingConversation.theirAlias) {
+        console.log("Sending message with conversation context:", {
+          recipient,
+          theirAlias: existingConversation.theirAlias
+        });
+        
+        if (!walletStore.accountService) {
+          throw new Error("Account service not initialized");
+        }
+        
+        // Use the account service directly for context-aware sending
+        txId = await walletStore.accountService.sendMessageWithContext({
+          toAddress: new Address(recipient),
+          message: messageToSend,
+          password: walletStore.unlockedWallet.password,
+          theirAlias: existingConversation.theirAlias
+        });
+      } else {
+        // If no active conversation or no alias, use regular sending
+        console.log("No active conversation found, sending regular message");
+        txId = await walletStore.sendMessage(
+          messageToSend,
+          new Address(recipient),
+          walletStore.unlockedWallet.password
+        );
+      }
 
       console.log("Message sent! Transaction response:", txId);
 
@@ -166,13 +194,15 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         recipientAddress: recipient,
         timestamp: Date.now(),
         content: fileDataForStorage ? JSON.stringify(fileDataForStorage) : message, // Store the complete file data in content
-        amount: 10000000, // 0.1 KAS in sompi
+        amount: 20000000, // 0.2 KAS in sompi
+        fee: feeEstimate || undefined,  // Include the fee estimate if available
         payload: "",  // No need to store encrypted payload for sent messages
         fileData: fileDataForStorage  // Also store it in fileData for immediate display
       };
 
-      // Store in local storage and update UI
+      // Store message under both sender and recipient addresses for proper conversation grouping
       messageStore.storeMessage(newMessageData, walletStore.address.toString());
+      messageStore.storeMessage(newMessageData, recipient);
       messageStore.addMessages([newMessageData]);
 
       // Only reset the message input, keep the recipient
@@ -187,7 +217,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       console.error("Error sending message:", error);
       alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [messageStore, walletStore, message, recipient]);
+  }, [messageStore, walletStore, message, recipient, feeEstimate]);
 
   const onMessageInputKeyPressed = useCallback(
     (e: KeyboardEvent) => {

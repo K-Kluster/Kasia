@@ -8,22 +8,27 @@ export const ContactCard: FC<{
   isSelected?: boolean;
 }> = ({ contact, onClick, isSelected }) => {
   const preview = useMemo(() => {
+    if (!contact?.lastMessage) return "";
     return contact.lastMessage.payload
       ? decodePayload(contact.lastMessage.payload)
-      : contact.lastMessage.content;
-  }, [contact.lastMessage.payload, contact.lastMessage.content]);
+      : contact.lastMessage.content || "";
+  }, [contact?.lastMessage]);
 
   const timestamp = useMemo(() => {
-    return contact.lastMessage.timestamp
-      ? new Date(contact.lastMessage.timestamp).toLocaleString()
-      : "";
-  }, [contact.lastMessage.timestamp]);
+    if (!contact?.lastMessage?.timestamp) return "";
+    return new Date(contact.lastMessage.timestamp).toLocaleString();
+  }, [contact?.lastMessage?.timestamp]);
 
   const shortAddress = useMemo(() => {
-    return `${contact.address.substring(0, 8)}...${contact.address.substring(
-      contact.address.length - 8
-    )}`;
-  }, [contact.address]);
+    if (!contact?.address) return "Unknown";
+    const addr = contact.address;
+    return `${addr.substring(0, 8)}...${addr.substring(addr.length - 8)}`;
+  }, [contact?.address]);
+
+  // Don't render if we don't have a valid contact
+  if (!contact?.address) {
+    return null;
+  }
 
   return (
     <div

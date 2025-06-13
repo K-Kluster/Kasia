@@ -6,6 +6,7 @@ import {
   PublicKeyGenerator,
   XPrv,
 } from "kaspa-wasm";
+import { KaspaClient } from "../utils/all-in-one";
 
 type StoredWallet = {
   id: string;
@@ -22,6 +23,7 @@ export type UnlockedWallet = {
   publicKeyGenerator: PublicKeyGenerator;
   encryptedXPrv: string;
   password: string;
+  client?: KaspaClient;
 };
 
 export class WalletStorage {
@@ -113,35 +115,35 @@ export class WalletStorage {
 
     try {
       // First decrypt the mnemonic phrase
-      const mnemonic = new Mnemonic(
-        decryptXChaCha20Poly1305(wallet.encryptedPhrase, password)
-      );
+        const mnemonic = new Mnemonic(
+          decryptXChaCha20Poly1305(wallet.encryptedPhrase, password)
+        );
       
       // Generate the seed and extended private key
       const seed = mnemonic.toSeed();
       const extendedKey = new XPrv(seed);
       
       // Get the public key generator
-      const publicKeyGenerator = await PublicKeyGenerator.fromMasterXPrv(
-        extendedKey,
-        false,
-        BigInt(1)
-      );
+        const publicKeyGenerator = await PublicKeyGenerator.fromMasterXPrv(
+          extendedKey,
+          false,
+          BigInt(1)
+        );
 
       // Create the unlocked wallet with the encrypted seed
-      return {
+        return {
         id: wallet.id,
         name: wallet.name,
-        activeAccount: 1,
+          activeAccount: 1,
         encryptedXPrv: encryptXChaCha20Poly1305(seed, password),
-        publicKeyGenerator,
-        password,
-      };
-    } catch (error) {
+          publicKeyGenerator,
+          password,
+        };
+      } catch (error) {
       console.error("Error decrypting wallet:", error);
-      throw new Error("Invalid password");
+        throw new Error("Invalid password");
+      }
     }
-  }
 
   create(name: string, mnemonic: Mnemonic, password: string): string {
     const walletsString = localStorage.getItem(this._storageKey);

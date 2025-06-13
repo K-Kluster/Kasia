@@ -1,9 +1,10 @@
 import { formatKasAmount } from "./format";
+import { Transaction } from "../type/all";
 
 // Helper function to calculate minimum required amount based on message length
 export function amountFromMessage(message: string) {
   // Constants for fee calculation (all values in sompi)
-  const MIN_OUTPUT_VALUE = 10000000; // 0.1 KAS minimum output value
+  const MIN_OUTPUT_VALUE = 20000000; // 0.2 KAS minimum output value
   const MIN_RELAY_FEE = 100000; // 0.001 KAS minimum relay fee
   const DEFAULT_FEE_PER_MASS = 100; // 100 sompi per mass unit
   const MASS_MULTIPLIER = 10; // Mass multiplier for safety

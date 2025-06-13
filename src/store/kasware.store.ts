@@ -57,8 +57,8 @@ export const useKaswareStore = create<KaswareState>((set, g) => ({
       "kaspa-devnet": "devnet",
     };
 
-    // If no network is set, default to testnet-10
-    const network = kaswareNetwork ? networkMap[kaswareNetwork] : "testnet-10";
+    // If no network is set, default to mainnet
+const network = kaswareNetwork ? networkMap[kaswareNetwork] : "mainnet";
 
     return network;
   },
