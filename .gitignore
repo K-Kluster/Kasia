@@ -1,3 +1,5 @@
+wasm/*
+
 # Logs
 logs
 *.log
