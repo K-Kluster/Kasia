@@ -113,32 +113,39 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
               const messageHex = tx.payload.substring(prefix.length);
               console.log(`API Messages: Message hex after prefix: ${messageHex}`);
 
-              // Parse the message parts using browser-compatible hex decoding
-              const hexToString = (hex: string) => {
-                const hexArray = hex.match(/.{1,2}/g) || [];
-                return hexArray.map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
-              };
+              const handshakePrefix = "313a68616e647368616b653a";  // "1:handshake:"
+              const commPrefix = "313a636f6d6d3a";  // "1:comm:"
 
-              // First convert the hex to string to get the metadata
-              const messageStr = hexToString(messageHex);
-              console.log(`API Messages: Decoded message string: ${messageStr}`);
+              let messageType = "unknown";
+              let isHandshake = false;
+              let targetAlias = null;
+              let encryptedContent = messageHex;  // Default to full message for handshakes
 
-              // Split on first three colons to get metadata
-              const parts = messageStr.split(/:(.*)/s); // Split on first colon and keep the rest
-              if (parts.length < 2) {
-                console.log(`API Messages: Invalid message format, couldn't split parts: ${messageStr}`);
-                continue;
+              if (messageHex.startsWith(handshakePrefix)) {
+                messageType = "handshake";
+                isHandshake = true;
+                encryptedContent = messageHex;
+              } else if (messageHex.startsWith(commPrefix)) {
+                // Parse regular messages
+                const hexToString = (hex: string) => {
+                  const hexArray = hex.match(/.{1,2}/g) || [];
+                  return hexArray.map(byte => String.fromCharCode(parseInt(byte, 16))).join('');
+                };
+
+                const messageStr = hexToString(messageHex);
+                const parts = messageStr.split(":");
+                
+                if (parts.length >= 4) {
+                  messageType = "comm";
+                  targetAlias = parts[2];
+                  encryptedContent = parts[3];
+                }
               }
 
-              const version = parts[0];
-              const remaining = parts[1];
-              const [type, aliasAndContent] = remaining.split(/:(.*)/s);
-              const [alias, encryptedContent] = aliasAndContent.split(/:(.*)/s);
-
               console.log(`API Messages: Parsed message parts:`);
-              console.log(`- Version: ${version}`);
-              console.log(`- Type: ${type}`);
-              console.log(`- Alias: ${alias}`);
+              console.log(`- Type: ${messageType}`);
+              console.log(`- Is Handshake: ${isHandshake}`);
+              console.log(`- Target Alias: ${targetAlias}`);
               console.log(`- Encrypted content (first 40 chars): ${encryptedContent?.substring(0, 40)}...`);
 
               if (!encryptedContent) {

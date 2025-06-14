@@ -1,0 +1,139 @@
+FetchApiMessages.tsx:65 API Messages: Fetching from URL for address kaspa:qrn5pewlmtzews435chszp4f7t7nsejz46vskspmrs7fplt0kurfgyw55w6ru: https://api.kaspa.org/addresses/kaspa%3Aqrn5pewlmtzews435chszp4f7t7nsejz46vskspmrs7fplt0kurfgyw55w6ru/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no
+MessageDisplay.tsx:74 Found conversation: {conversationId: '1400c90e-100c-49ee-8413-b690ed9982ef', myAlias: '1434dedb2c1e', theirAlias: 'fba64f2736b4', kaspaAddress: 'kaspa:qr2unxx3hlynjqflg3zdfx5nd79nmpvsrdeedn6tpvey0ffjczeqq79z20why', createdAt: 1749828270567, …}
+MessageDisplay.tsx:74 Found conversation: {conversationId: '1400c90e-100c-49ee-8413-b690ed9982ef', myAlias: '1434dedb2c1e', theirAlias: 'fba64f2736b4', kaspaAddress: 'kaspa:qr2unxx3hlynjqflg3zdfx5nd79nmpvsrdeedn6tpvey0ffjczeqq79z20why', createdAt: 1749828270567, …}
+FetchApiMessages.tsx:74 API Messages: Fetched 32 transactions for kaspa:qrn5pewlmtzews435chszp4f7t7nsejz46vskspmrs7fplt0kurfgyw55w6ru
+FetchApiMessages.tsx:81 API Messages: Found 31 encrypted message transactions for kaspa:qrn5pewlmtzews435chszp4f7t7nsejz46vskspmrs7fplt0kurfgyw55w6ru
+FetchApiMessages.tsx:91 API Messages: Processing new transaction: 9c1cb24e276f669b05c0d5d5621b095fece598543278013a490da1b66f4c5dc7
+FetchApiMessages.tsx:112 API Messages: Full payload: 636970685f6d73673a313a636f6d6d3a3634643330613333356336343a3337336665386139323337383130333530646339323732303033653465323864303538343539363837656336653231333232386334313663643639323466633633373462393333616530323431383661613538363961316338616532323635333137653763616334646130636562646563663361346531373835373534333066
+FetchApiMessages.tsx:114 API Messages: Message hex after prefix: 313a636f6d6d3a3634643330613333356336343a3337336665386139323337383130333530646339323732303033653465323864303538343539363837656336653231333232386334313663643639323466633633373462393333616530323431383661613538363961316338616532323635333137653763616334646130636562646563663361346531373835373534333066
+FetchApiMessages.tsx:124 API Messages: Decoded message string: 1:comm:64d30a335c64:373fe8a9237810350dc9272003e4e28d058459687ec6e213228c416cd6924fc6374b933ae024186aa5869a1c8ae2265317e7cac4da0cebdecf3a4e178575430f
+FetchApiMessages.tsx:138 API Messages: Parsed message parts:
+FetchApiMessages.tsx:139 - Version: 1
+FetchApiMessages.tsx:140 - Type: comm
+FetchApiMessages.tsx:141 - Alias: 64d30a335c64
+FetchApiMessages.tsx:142 - Encrypted content (first 40 chars): 373fe8a9237810350dc9272003e4e28d05845968...
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 0
+FetchApiMessages.tsx:167 API Messages: Using receive key f5755fb7...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 0: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 1
+FetchApiMessages.tsx:167 API Messages: Using receive key f0660f42...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 1: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 2
+FetchApiMessages.tsx:167 API Messages: Using receive key edc30453...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 2: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 3
+FetchApiMessages.tsx:167 API Messages: Using receive key f7f06280...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 3: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 4
+FetchApiMessages.tsx:167 API Messages: Using receive key e564bad6...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 4: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 5
+FetchApiMessages.tsx:167 API Messages: Using receive key e65febf8...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 5: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 6
+FetchApiMessages.tsx:167 API Messages: Using receive key de5247ce...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 6: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 7
+FetchApiMessages.tsx:167 API Messages: Using receive key 81d9db21...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 7: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 8
+FetchApiMessages.tsx:167 API Messages: Using receive key 04651253...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 8: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 9
+FetchApiMessages.tsx:167 API Messages: Using receive key 9258e7a0...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 9: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 10
+FetchApiMessages.tsx:167 API Messages: Using receive key d7379257...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 10: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 11
+FetchApiMessages.tsx:167 API Messages: Using receive key 3e18895d...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 11: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 12
+FetchApiMessages.tsx:167 API Messages: Using receive key 52f1adfd...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 12: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 13
+FetchApiMessages.tsx:167 API Messages: Using receive key af5559c8...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 13: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 14
+FetchApiMessages.tsx:167 API Messages: Using receive key 3b30839a...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 14: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 15
+FetchApiMessages.tsx:167 API Messages: Using receive key 6642bc42...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 15: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 16
+FetchApiMessages.tsx:167 API Messages: Using receive key b4478539...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 16: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 17
+FetchApiMessages.tsx:167 API Messages: Using receive key 771aba0b...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 17: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 18
+FetchApiMessages.tsx:167 API Messages: Using receive key 8bbde837...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 18: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:164 API Messages: Trying receive key at index 19
+FetchApiMessages.tsx:167 API Messages: Using receive key 0fc44cd5...
+FetchApiMessages.tsx:196 API Messages: Failed to decrypt with receive key at index 19: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 0
+FetchApiMessages.tsx:207 API Messages: Using change key 3287862c...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 0: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 1
+FetchApiMessages.tsx:207 API Messages: Using change key 0514819f...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 1: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 2
+FetchApiMessages.tsx:207 API Messages: Using change key 58e3d3d4...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 2: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 3
+FetchApiMessages.tsx:207 API Messages: Using change key 488026b6...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 3: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 4
+FetchApiMessages.tsx:207 API Messages: Using change key 2f7af49d...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 4: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 5
+FetchApiMessages.tsx:207 API Messages: Using change key e8783483...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 5: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 6
+FetchApiMessages.tsx:207 API Messages: Using change key 19919eea...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 6: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 7
+FetchApiMessages.tsx:207 API Messages: Using change key 22ca2fdd...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 7: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 8
+FetchApiMessages.tsx:207 API Messages: Using change key 8e6d3f3f...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 8: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 9
+FetchApiMessages.tsx:207 API Messages: Using change key 57fc8483...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 9: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 10
+FetchApiMessages.tsx:207 API Messages: Using change key 14c15591...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 10: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 11
+FetchApiMessages.tsx:207 API Messages: Using change key 10c1cc7b...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 11: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 12
+FetchApiMessages.tsx:207 API Messages: Using change key 9dc3be5d...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 12: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 13
+FetchApiMessages.tsx:207 API Messages: Using change key 9df684ef...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 13: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 14
+FetchApiMessages.tsx:207 API Messages: Using change key 76cca61f...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 14: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 15
+FetchApiMessages.tsx:207 API Messages: Using change key f701745a...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 15: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 16
+FetchApiMessages.tsx:207 API Messages: Using change key e429dbd1...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 16: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 17
+FetchApiMessages.tsx:207 API Messages: Using change key 4a5d4476...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 17: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 18
+FetchApiMessages.tsx:207 API Messages: Using change key 7ade99c1...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 18: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:204 API Messages: Trying change key at index 19
+FetchApiMessages.tsx:207 API Messages: Using change key 06371683...
+FetchApiMessages.tsx:236 API Messages: Failed to decrypt with change key at index 19: All decryption methods failed: Method 1: Decryption failed - incorrect key or corrupted data; Method 2: Decryption failed - incorrect key or corrupted data; Method 3: Decryption failed - incorrect key or corrupted data
+FetchApiMessages.tsx:242 API Messages: Could not decrypt message for transaction 9c1cb24e276f669b05c0d5d5621b095fece598543278013a490da1b66f4c5dc7 after trying 20 receive keys and 20 change keys
+FetchApiMessages.tsx:91 API Messages: Processing new transaction: f143164c95f9756d12dbec0c1deaa5851811cd3ff207d0bf77cfe40f9b9c1739
+FetchApiMessages.tsx:112 API Messages: Full payload: 636970685f6d73673aafaf941a32b0087a4dce7d1e03ae8f84ee3975403172778060175a58bb4bc1095a559db9c639fc5e04e782c84cd8305ab5972cc43077217ac4553d5f83ca89160636d97fa7bff6cdd4c900ee0d895fe1ed7b3bdf2a11bf9595fcfa593e6c9e92da16e3134f369ea9713a5e8b903704c76441cfaa9293df467d5ecb319a51f134f3d93380e9c53ea73f4f1b10f68c2caa14144d91cb372a64c9310f4d5cfdced94b6d7f9517ea71df2907fbae9b3b64dd074ab42ab76ca93e76361a3ae23ef8c8e39bd8fb26071891d5867d6c7bcf215f55b6f56ccfc4cd189405d4c7407a88dc87abda863314ac5f601ec12072a065f7def2594ed4bf750c0bfe8219be540a72e79dbb80024955089414c8bf1a72aaa599a8ddf3280079a0441b4e599765eca2fde85767708156ed09e17fc64913c1ebbc0962bfc97994fece30f01fc0463365443f7dfb45718a6f223bcc165b1aad018469c95c91739bf2e5de4d83ba
+FetchApiMessages.tsx:114 API Messages: Message hex after prefix: afaf941a32b0087a4dce7d1e03ae8f84ee3975403172778060175a58bb4bc1095a559db9c639fc5e04e782c84cd8305ab5972cc43077217ac4553d5f83ca89160636d97fa7bff6cdd4c900ee0d895fe1ed7b3bdf2a11bf9595fcfa593e6c9e92da16e3134f369ea9713a5e8b903704c76441cfaa9293df467d5ecb319a51f134f3d93380e9c53ea73f4f1b10f68c2caa14144d91cb372a64c9310f4d5cfdced94b6d7f9517ea71df2907fbae9b3b64dd074ab42ab76ca93e76361a3ae23ef8c8e39bd8fb26071891d5867d6c7bcf215f55b6f56ccfc4cd189405d4c7407a88dc87abda863314ac5f601ec12072a065f7def2594ed4bf750c0bfe8219be540a72e79dbb80024955089414c8bf1a72aaa599a8ddf3280079a0441b4e599765eca2fde85767708156ed09e17fc64913c1ebbc0962bfc97994fece30f01fc0463365443f7dfb45718a6f223bcc165b1aad018469c95c91739bf2e5de4d83ba
+FetchApiMessages.tsx:124 API Messages: Decoded message string: ¯¯2°zMÎ}®î9u@1rw`ZX»KÁ	ZU¹Æ9ü^çÈLØ0Zµ,Ä0w!zÄU=_Ê6Ù§¿öÍÔÉ

@@ -1,7 +1,9 @@
-import { FC, useMemo, useState } from "react";
+import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { formatKasAmount } from "../utils/format";
 import { FeeBuckets } from "./FeeBuckets";
 import { useWalletStore } from "../store/wallet.store";
+import { WalletStorage } from "../utils/wallet-storage";
+import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
 
 type WalletInfoProps = {
   state: "connected" | "detected" | "not-detected";
@@ -16,7 +18,6 @@ type WalletInfoProps = {
   isWalletReady?: boolean;
 };
 
-// @TODO: finish to plug other infos
 export const WalletInfo: FC<WalletInfoProps> = ({
   state,
   address,
@@ -24,8 +25,75 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   isWalletReady
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showSeedPhrase, setShowSeedPhrase] = useState(false);
+  const [seedPhrase, setSeedPhrase] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isBlurred, setIsBlurred] = useState(true);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const isAccountServiceRunning = useWalletStore(state => state.isAccountServiceRunning);
   const walletBalance = useWalletStore(state => state.balance);
+  const selectedWalletId = useWalletStore(state => state.selectedWalletId);
+  const wallets = useWalletStore(state => state.wallets);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleBlurToggle = (shouldBlur: boolean) => {
+    // Clear any existing timeout
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+
+    setIsBlurred(shouldBlur);
+
+    // If unblurring, set a timeout to re-blur after 5 seconds
+    if (!shouldBlur) {
+      blurTimeoutRef.current = setTimeout(() => {
+        setIsBlurred(true);
+      }, 5000);
+    }
+  };
+
+  const handleViewSeedPhrase = async () => {
+    try {
+      setError("");
+      if (!selectedWalletId) {
+        setError("No wallet selected");
+        return;
+      }
+
+      // Get the stored wallet data
+      const walletsString = localStorage.getItem("wallets");
+      if (!walletsString) {
+        setError("No wallets found");
+        return;
+      }
+
+      const wallets = JSON.parse(walletsString);
+      const wallet = wallets.find((w: any) => w.id === selectedWalletId);
+      if (!wallet) {
+        setError("Wallet not found");
+        return;
+      }
+
+      // Decrypt the seed phrase
+      const phrase = decryptXChaCha20Poly1305(wallet.encryptedPhrase, password);
+      setSeedPhrase(phrase);
+      setShowSeedPhrase(true);
+    } catch (error) {
+      console.error("Error viewing seed phrase:", error);
+      setError("Invalid password");
+    }
+  };
 
   const walletInfoNode = useMemo(() => {
     // Only show initialization state if the service isn't running
@@ -94,9 +162,52 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           </ul>
           )}
         </div>
+        <div className="seed-phrase-section">
+          <h4>Security</h4>
+          <p className="warning">
+            Warning: Never share your seed phrase with anyone. Anyone with access to your seed phrase can access your funds.
+          </p>
+          {!showSeedPhrase ? (
+            <div>
+              <p>Enter your password to view seed phrase:</p>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter wallet password"
+              />
+              <button onClick={handleViewSeedPhrase}>View Seed Phrase</button>
+              {error && <p className="error">{error}</p>}
+            </div>
+          ) : (
+            <div>
+              <p>Your seed phrase:</p>
+              <div className={`seed-phrase ${isBlurred ? 'blurred' : ''}`}>
+                {seedPhrase}
+              </div>
+              <div className="visibility-toggle">
+                <input
+                  type="checkbox"
+                  id="toggleVisibility"
+                  checked={!isBlurred}
+                  onChange={(e) => handleBlurToggle(!e.target.checked)}
+                />
+                <label htmlFor="toggleVisibility" className="eye-icon">
+                  {isBlurred ? '👁️' : '👁️'}
+                </label>
+              </div>
+              <button onClick={() => {
+                setShowSeedPhrase(false);
+                setSeedPhrase("");
+                setPassword("");
+                setIsBlurred(true);
+              }}>Hide Seed Phrase</button>
+            </div>
+          )}
+        </div>
       </>
     );
-  }, [address, walletBalance, isAccountServiceRunning]);
+  }, [address, walletBalance, isAccountServiceRunning, showSeedPhrase, seedPhrase, password, error, isBlurred]);
 
   if (!isWalletReady) return null;
 
@@ -131,6 +242,85 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           </div>
         </div>
       )}
+
+      <style>
+        {`
+        .seed-phrase-section {
+          margin-top: 20px;
+          padding: 15px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .seed-phrase {
+          background: rgba(0, 0, 0, 0.3);
+          padding: 15px;
+          border-radius: 5px;
+          margin: 10px 0;
+          word-break: break-all;
+          font-family: monospace;
+          color: #fff;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          transition: filter 0.2s ease;
+        }
+        .seed-phrase.blurred {
+          filter: blur(5px);
+          user-select: none;
+        }
+        .warning {
+          color: #ff4444;
+          font-size: 0.9em;
+          margin: 10px 0;
+          text-align: center;
+        }
+        .visibility-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 5px;
+        }
+        .visibility-toggle input[type="checkbox"] {
+          display: none;
+        }
+        .eye-icon {
+          cursor: pointer;
+          user-select: none;
+          font-size: 20px;
+          opacity: 0.8;
+          transition: opacity 0.2s;
+        }
+        .eye-icon:hover {
+          opacity: 1;
+        }
+        .error {
+          color: #ff4444;
+          margin-top: 5px;
+        }
+        .seed-phrase-section input {
+          width: 100%;
+          padding: 8px;
+          margin: 10px 0;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+          background: rgba(0, 0, 0, 0.3);
+          color: #fff;
+        }
+        .seed-phrase-section input::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+        }
+        .seed-phrase-section button {
+          background: #2196f3;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-top: 10px;
+          transition: background-color 0.2s;
+        }
+        .seed-phrase-section button:hover {
+          background: #1976d2;
+        }
+        `}
+      </style>
     </div>
   );
 };

@@ -84,7 +84,7 @@ type SendMessageWithContextArgs = {
 // Add this helper function at the top level
 function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) => 
-    typeof value === 'bigint' ? value.toString() : value
+    typeof value === "bigint" ? value.toString() : value
   );
 }
 
@@ -199,8 +199,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const baseUrl = this.networkId === 'mainnet' ? 'https://api.kaspa.org' : 'https://api-tn10.kaspa.org';
-        const response = await fetch(`${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=no`);
+        const baseUrl =
+          this.networkId === "mainnet"
+            ? "https://api.kaspa.org"
+            : "https://api-tn10.kaspa.org";
+        const response = await fetch(
+          `${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=no`
+        );
         
         if (response.status === 404) {
           console.log(`Transaction ${txId} not yet available in API (attempt ${attempt + 1}/${maxRetries}), retrying in 2 seconds...`);
@@ -237,7 +242,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Use the network-appropriate API endpoint
       const baseUrl = this.networkId === 'mainnet' ? 'https://api.kaspa.org' : 'https://api-tn10.kaspa.org';
       const encodedAddress = encodeURIComponent(address);
-      const response = await fetch(`${baseUrl}/addresses/${encodedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`);
+      const response = await fetch(
+        `${baseUrl}/addresses/${encodedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`
+      );
       
       if (!response.ok) {
         throw new Error(`Failed to fetch historical transactions: ${response.statusText}`);
@@ -247,6 +254,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const transactions = data.transactions || [];
 
       console.log(`Found ${transactions.length} historical transactions`);
+
+      // Update monitored conversations BEFORE processing messages
+      await this.updateMonitoredConversations();
 
       // Process each transaction
       for (const tx of transactions) {
@@ -272,13 +282,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const utxos = this.context.getMatureRange(0, this.context.matureLength);
     
     // Log UTXO details for debugging
-    console.log("Current UTXOs:", utxos.map(utxo => ({
+    console.log(
+      "Current UTXOs:",
+      utxos.map((utxo) => ({
       transactionId: utxo.outpoint.transactionId,
       amount: Number(utxo.entry.amount) / 100000000,
       amountSompi: utxo.entry.amount.toString(),
       scriptPublicKey: utxo.entry.scriptPublicKey.toString(),
-      isMature: true // Since we got it from getMatureRange
-    })));
+        isMature: true, // Since we got it from getMatureRange
+      }))
+    );
     
     // Emit the balance update
     this._emitBalanceUpdate();
@@ -299,7 +312,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   async start() {
     try {
       // Get the receive address from the wallet
-      const initialReceiveAddress = this.unlockedWallet.publicKeyGenerator.receiveAddress(
+      const initialReceiveAddress =
+        this.unlockedWallet.publicKeyGenerator.receiveAddress(
         this.networkId,
         0
       );
@@ -307,7 +321,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Ensure it has the proper network prefix
       this.receiveAddress = this.ensureAddressPrefix(initialReceiveAddress);
       
-      console.log("Using primary address for all operations:", this.receiveAddress.toString());
+      console.log(
+        "Using primary address for all operations:",
+        this.receiveAddress.toString()
+      );
 
       // Initialize UTXO processor first
       console.log("Starting UTXO processor...");
@@ -456,9 +473,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       });
 
       // Always use receive key for all addresses since we only use primary address
-      const privateKeys = pendingTransaction
-        .addresses()
-        .map(() => {
+      const privateKeys = pendingTransaction.addresses().map(() => {
           console.log("Using primary address key for signing");
           const key = privateKeyGenerator.receiveKey(0);
           if (!key) {
@@ -806,7 +821,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       address: sendMessage.toAddress,
       amount: minimumAmount,
         payload: payload,
-        payloadSize: totalPayloadBytes
+        payloadSize: totalPayloadBytes,
     });
     } catch (error) {
       console.error("Error in estimateSendMessage:", error);
@@ -905,7 +920,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     
     // The public key should be exactly 32 bytes (64 hex chars)
     // If it's shorter, pad it with zeros at the end
-    const paddedPublicKey = publicKeyWithoutPrefix.padEnd(64, '0');
+    const paddedPublicKey = publicKeyWithoutPrefix.padEnd(64, "0");
     
     // Create new hex with padded public key
     const modifiedHex = nonce + paddedPublicKey + ciphertext;
@@ -1056,12 +1071,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const prevTxId = input.previousOutpoint?.transactionId;
         const prevOutputIndex = input.previousOutpoint?.index;
         
-        if (prevTxId && typeof prevOutputIndex === 'number') {
+        if (prevTxId && typeof prevOutputIndex === "number") {
           try {
-            const prevTx = await this._fetchTransactionDetails(prevTxId);
-            if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
-              const output = prevTx.outputs[prevOutputIndex];
-              senderAddress = output.verboseData?.scriptPublicKeyAddress;
+              const prevTx = await this._fetchTransactionDetails(prevTxId);
+              if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
+                const output = prevTx.outputs[prevOutputIndex];
+                senderAddress = output.verboseData?.scriptPublicKeyAddress;
             }
           } catch (error) {
             console.error("Error getting sender address:", error);
@@ -1085,49 +1100,53 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      try {
-        this.ensurePasswordSet();
+        try {
+          this.ensurePasswordSet();
       } catch (error) {
-        return;
-      }
+          return;
+        }
 
-      const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
+        const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
       const handshakePrefix = "313a68616e647368616b653a";
       const commPrefix = "313a636f6d6d3a";
-      
-      let messageType = 'unknown';
-      let isHandshake = false;
-      let targetAlias = null;
+
+      let messageType = "unknown";
+        let isHandshake = false;
+        let targetAlias = null;
       let encryptedHex = messageHex;
-
-      if (messageHex.startsWith(handshakePrefix)) {
-        messageType = 'handshake';
-        isHandshake = true;
-        encryptedHex = messageHex;
-      } else if (messageHex.startsWith(commPrefix)) {
-        const hexToString = (hex: string) => {
-          let str = '';
-          for (let i = 0; i < hex.length; i += 2) {
-            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-          }
-          return str;
-        };
-
-        const messageStr = hexToString(messageHex);
-        const parts = messageStr.split(':');
         
-        if (parts.length >= 4) {
-          messageType = 'comm';
+        if (messageHex.startsWith(handshakePrefix)) {
+        messageType = "handshake";
+          isHandshake = true;
+        encryptedHex = messageHex;
+        } else if (messageHex.startsWith(commPrefix)) {
+          const hexToString = (hex: string) => {
+          let str = "";
+            for (let i = 0; i < hex.length; i += 2) {
+              str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+            }
+            return str;
+          };
+
+          const messageStr = hexToString(messageHex);
+        const parts = messageStr.split(":");
+          
+          if (parts.length >= 4) {
+          messageType = "comm";
           targetAlias = parts[2];
           encryptedHex = parts[3];
         }
       }
 
-      const isMonitoredAddress = (senderAddress && this.monitoredAddresses.has(senderAddress)) ||
-                              (recipientAddress && this.monitoredAddresses.has(recipientAddress));
-      const isCommForUs = messageType === 'comm' && targetAlias && this.monitoredConversations.has(targetAlias);
+      const isMonitoredAddress =
+        (senderAddress && this.monitoredAddresses.has(senderAddress)) ||
+                                (recipientAddress && this.monitoredAddresses.has(recipientAddress));
+      const isCommForUs =
+        messageType === "comm" &&
+        targetAlias &&
+        this.monitoredConversations.has(targetAlias);
 
-      try {
+        try {
         const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
           this.unlockedWallet,
           this.password!
@@ -1146,18 +1165,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           decryptedContent = result;
           decryptionSuccess = true;
 
-          if (decryptedContent.includes('"type":"handshake"')) {
-            messageType = 'handshake';
-            isHandshake = true;
-            try {
-              const handshakeData = JSON.parse(decryptedContent);
-              if (handshakeData.isResponse) {
-                await this.updateMonitoredConversations();
+            if (decryptedContent.includes('"type":"handshake"')) {
+            messageType = "handshake";
+              isHandshake = true;
+              try {
+                const handshakeData = JSON.parse(decryptedContent);
+                if (handshakeData.isResponse) {
+                  await this.updateMonitoredConversations();
+                }
+              } catch (error) {
+                console.error("Error parsing handshake data:", error);
               }
-            } catch (error) {
-              console.error("Error parsing handshake data:", error);
             }
-          }
         } catch (error) {
           if (process.env.NODE_ENV === 'development') {
             console.debug(`Failed to decrypt with receive key:`, error);
@@ -1175,18 +1194,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             decryptedContent = result;
             decryptionSuccess = true;
 
-            if (decryptedContent.includes('"type":"handshake"')) {
-              messageType = 'handshake';
-              isHandshake = true;
-              try {
-                const handshakeData = JSON.parse(decryptedContent);
-                if (handshakeData.isResponse) {
-                  await this.updateMonitoredConversations();
+              if (decryptedContent.includes('"type":"handshake"')) {
+              messageType = "handshake";
+                isHandshake = true;
+                try {
+                  const handshakeData = JSON.parse(decryptedContent);
+                  if (handshakeData.isResponse) {
+                    await this.updateMonitoredConversations();
+                  }
+                } catch (error) {
+                  console.error("Error parsing handshake data:", error);
                 }
-              } catch (error) {
-                console.error("Error parsing handshake data:", error);
               }
-            }
           } catch (error) {
             if (process.env.NODE_ENV === 'development') {
               console.debug(`Failed to decrypt with change key:`, error);
@@ -1235,9 +1254,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       } catch (error) {
         console.error("Error processing message:", error);
-      }
-    } catch (error) {
-      console.error(`Error processing message transaction ${tx.verboseData?.transactionId}:`, error);
+        }
+      } catch (error) {
+      console.error(
+        `Error processing message transaction ${tx.verboseData?.transactionId}:`,
+        error
+      );
     }
   }
 
@@ -1290,11 +1312,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     // We're involved if we're either the recipient (message output)
     // or the sender (change output)
     return messageAddress === ourAddress || changeAddress === ourAddress;
-  }
-
+    }
+    
   private stringifyWithBigInt(obj: any): string {
     return JSON.stringify(obj, (_, value) => 
-      typeof value === 'bigint' ? value.toString() : value
+      typeof value === "bigint" ? value.toString() : value
     );
   }
 
@@ -1357,9 +1379,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     // Create the payload with conversation context
     const prefix = "ciph_msg";
-    const version = "1";  // Use the current protocol version
-    const messageType = "comm";  // Use comm type for conversation messages
-    const payload = `${prefix}:${version}:${messageType}:${sendMessage.theirAlias}:${encryptedMessage.to_hex()}`;
+    const version = "1"; // Use the current protocol version
+    const messageType = "comm"; // Use comm type for conversation messages
+    const payload = `${prefix}:${version}:${messageType}:${
+      sendMessage.theirAlias
+    }:${encryptedMessage.to_hex()}`;
     
     // Convert the payload to hex
     const payloadHex = payload
@@ -1402,9 +1426,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const conversations = conversationManager.getMonitoredConversations();
       
       // Silently update monitored conversations
-      conversations.forEach((conv: { alias: string, address: string }) => {
-        this.monitoredConversations.add(conv.alias);
-        this.monitoredAddresses.set(conv.address, conv.alias);
+      conversations.forEach((conv: { alias: string; address: string }) => {
+          this.monitoredConversations.add(conv.alias);
+          this.monitoredAddresses.set(conv.address, conv.alias);
       });
     } catch (error) {
       console.error("Error updating monitored conversations:", error);
@@ -1435,8 +1459,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           try {
             // Process message transaction silently
             await this.processMessageTransaction(tx, blockHash, blockTime);
-          } catch (error) {
-            if (process.env.NODE_ENV === 'development') {
+              } catch (error) {
+            if (process.env.NODE_ENV === "development") {
               console.debug("Error processing message transaction:", error);
             }
           }
