@@ -523,6 +523,13 @@ export class ConversationManager {
             this.conversations.set(conversation.conversationId, conversation);
         }
 
+        // Update mappings
+        this.addressToConversation.set(conversation.kaspaAddress, conversation.conversationId);
+        this.aliasToConversation.set(conversation.myAlias, conversation.conversationId);
+        if (conversation.theirAlias) {
+            this.aliasToConversation.set(conversation.theirAlias, conversation.conversationId);
+        }
+
         // Save to storage
         this.saveToStorage();
     }

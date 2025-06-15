@@ -27,6 +27,9 @@ import { encrypt_message } from "cipher";
 import { CipherHelper } from "../utils/cipher-helper";
 import { create } from "zustand";
 import { useMessagingStore } from "../store/messaging.store";
+import { useWalletStore } from "../store/wallet.store";
+import { WalletInterface } from "../types/wallet.types";
+import { CreateTransactionArgs } from '../types/wallet-types';
 
 // Message related types
 type DecodedMessage = {
@@ -58,14 +61,6 @@ type AccountServiceEvents = {
   utxosChanged: (utxos: UtxoEntry[]) => void;
   transactionReceived: (transaction: any) => void;
   messageReceived: (message: DecodedMessage) => void;
-};
-
-type CreateTransactionArgs = {
-  address: Address;
-  amount: bigint;
-  payload: string;
-  payloadSize?: number;
-  messageLength?: number;
 };
 
 type SendMessageArgs = {
@@ -1020,6 +1015,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     // Check if this is a direct self-message (sending to our own receive address)
     const isDirectSelfMessage = destinationAddress.toString() === this.receiveAddress?.toString();
     
+    // Check if this is a message transaction by looking for the message prefix
+    const isMessageTransaction = transaction.payload.startsWith(this.MESSAGE_PREFIX_HEX);
+    
     // Check if we have an active conversation with this address
     const messagingStore = useMessagingStore.getState();
     const conversationManager = messagingStore?.conversationManager;
@@ -1037,21 +1035,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       });
     }
     
-    // Treat as self-message if either direct self-message or has active conversation
-    const isSelfMessage = isDirectSelfMessage || hasActiveConversation;
+    // Only treat as self-message if it's a message transaction AND either direct self-message or has active conversation
+    const isSelfMessage = isMessageTransaction && (isDirectSelfMessage || hasActiveConversation);
     console.log("Transaction type:", {
       isDirectSelfMessage,
       hasActiveConversation,
+      isMessageTransaction,
       isSelfMessage
     });
     
-    // For self-messages or active conversations, use receive address as both change and destination
+    // For regular transactions, always use the specified amount and destination
+    // For self-messages, use empty outputs array to only use change output
+    const outputs = isSelfMessage ? [] : [new PaymentOutput(destinationAddress, transaction.amount)];
+    
     return new Generator({
-      // For self-messages, use receive address as both change and destination
-      changeAddress: isSelfMessage ? destinationAddress : primaryAddress,
+      changeAddress: primaryAddress, // Always use primary address for change
       entries: this.context,
-      // For self-messages, use empty array to only use change output
-      outputs: isSelfMessage ? [] : [new PaymentOutput(destinationAddress, transaction.amount)],
+      outputs: outputs,
       payload: transaction.payload,
       networkId: this.networkId,
       priorityFee: BigInt(0),
@@ -1109,7 +1109,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
       const handshakePrefix = "313a68616e647368616b653a";
       const commPrefix = "313a636f6d6d3a";
-
+        
       let messageType = "unknown";
         let isHandshake = false;
         let targetAlias = null;
@@ -1161,7 +1161,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           if (!txId) {
             throw new Error("Transaction ID is missing");
           }
-          const result = await CipherHelper.tryDecrypt(encryptedHex, privateKey.toString(), txId);
+            const result = await CipherHelper.tryDecrypt(encryptedHex, privateKey.toString(), txId);
           decryptedContent = result;
           decryptionSuccess = true;
 
@@ -1190,7 +1190,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             if (!txId) {
               throw new Error("Transaction ID is missing");
             }
-            const result = await CipherHelper.tryDecrypt(encryptedHex, privateKey.toString(), txId);
+              const result = await CipherHelper.tryDecrypt(encryptedHex, privateKey.toString(), txId);
             decryptedContent = result;
             decryptionSuccess = true;
 
@@ -1213,7 +1213,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
         }
 
-        if (decryptionSuccess && (isHandshake || isMonitoredAddress || isCommForUs)) {
+          if (decryptionSuccess && (isHandshake || isMonitoredAddress || isCommForUs)) {
           const txId = tx.verboseData?.transactionId;
           if (!txId) {
             throw new Error("Transaction ID is missing");
@@ -1465,9 +1465,45 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             }
           }
         }
-      }
-    } catch (error) {
+                    }
+                  } catch (error) {
       console.error("Error processing block event:", error);
-    }
-  }
+                  }
+                }
 }
+
+export const sendTransaction = async (toAddress: string, amountKAS: number): Promise<void> => {
+  try {
+    // Convert KAS to Sompi (1 KAS = 100000000 Sompi)
+    const amountSompi = Math.floor(amountKAS * 100000000);
+    console.log('Sending transaction:', {
+      toAddress,
+      amountKAS,
+      amountSompi,
+    });
+
+    const walletStore = useWalletStore.getState();
+    const accountService = walletStore.accountService;
+    const password = walletStore.unlockedWallet?.password;
+    
+    if (!accountService) {
+      throw new Error("Account service not initialized");
+    }
+
+    if (!password) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.");
+    }
+
+    // Create and send a native transaction (no payload)
+    await accountService.createTransaction({
+      address: new Address(toAddress),
+      amount: BigInt(amountSompi),
+      payload: "00",  // Minimal payload required by the protocol
+    }, password);
+
+    console.log('Transaction sent successfully');
+            } catch (error) {
+    console.error("Send transaction error:", error);
+    throw new Error(error instanceof Error ? error.message : "Failed to send transaction");
+  }
+};

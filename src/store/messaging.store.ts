@@ -220,9 +220,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
             message.payload = message.content;
             message.content = handshakePayload.isResponse ? 'Handshake response received' : 'Handshake message received';
 
-            // Process handshake if we're the recipient
-            if (message.recipientAddress === walletAddress || handshakePayload.recipientAddress === walletAddress) {
-                console.log('Processing incoming handshake from:', message.senderAddress);
+            // Process handshake if we're the recipient or if this is a response to our handshake
+            if (message.recipientAddress === walletAddress || 
+                handshakePayload.recipientAddress === walletAddress ||
+                (handshakePayload.isResponse && message.senderAddress === handshakePayload.recipientAddress)) {
+                console.log('Processing handshake message:', {
+                    senderAddress: message.senderAddress,
+                    recipientAddress: message.recipientAddress,
+                    isResponse: handshakePayload.isResponse,
+                    handshakePayload
+                });
                 g().processHandshake(message.senderAddress, message.payload).catch(error => {
                     if (error.message === 'Cannot create conversation with self') {
                         console.log('Skipping self-conversation handshake');

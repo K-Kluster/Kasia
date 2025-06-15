@@ -4,6 +4,7 @@ import { FeeBuckets } from "./FeeBuckets";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
+import { sendTransaction } from '../service/account-service';
 
 type WalletInfoProps = {
   state: "connected" | "detected" | "not-detected";
@@ -36,6 +37,12 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const walletBalance = useWalletStore(state => state.balance);
   const selectedWalletId = useWalletStore(state => state.selectedWalletId);
   const wallets = useWalletStore(state => state.wallets);
+
+  // Add new state for withdraw functionality
+  const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawError, setWithdrawError] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
   // Clear timeout on unmount
   useEffect(() => {
@@ -92,6 +99,39 @@ export const WalletInfo: FC<WalletInfoProps> = ({
     } catch (error) {
       console.error("Error viewing seed phrase:", error);
       setError("Invalid password");
+    }
+  };
+
+  // Add handler for withdraw
+  const handleWithdraw = async () => {
+    try {
+      setWithdrawError("");
+      setIsSending(true);
+      
+      if (!withdrawAddress || !withdrawAmount) {
+        throw new Error("Please enter both address and amount");
+      }
+
+      const amount = parseFloat(withdrawAmount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error("Please enter a valid amount");
+      }
+
+      // Use mature balance directly since it's already in KAS
+      const matureBalanceKAS = walletBalance?.mature || 0;
+      console.log('Balance check:', { amount, matureBalanceKAS, walletBalance });
+      
+      if (amount > matureBalanceKAS) {
+        throw new Error(`Insufficient balance. Available: ${matureBalanceKAS.toFixed(8)} KAS`);
+      }
+
+      await sendTransaction(withdrawAddress, amount);
+      setWithdrawAddress("");
+      setWithdrawAmount("");
+    } catch (error) {
+      setWithdrawError(error instanceof Error ? error.message : "Failed to send transaction");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -162,6 +202,67 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           </ul>
           )}
         </div>
+        <div className="info-box">
+          <h3>Withdraw KAS</h3>
+          <div className="withdraw-section" style={{ marginTop: '10px' }}>
+            <input
+              type="text"
+              value={withdrawAddress}
+              onChange={(e) => setWithdrawAddress(e.target.value)}
+              placeholder="Enter Kaspa address"
+              style={{
+                width: '100%',
+                padding: '8px',
+                marginBottom: '8px',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '4px',
+                color: 'white',
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <input
+                type="number"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                placeholder="Amount (KAS)"
+                style={{
+                  flex: 1,
+                  padding: '8px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '4px',
+                  color: 'white',
+                }}
+              />
+              <button
+                onClick={handleWithdraw}
+                disabled={isSending}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#2196f3',
+                  border: 'none',
+                  borderRadius: '4px',
+                  color: 'white',
+                  cursor: 'pointer',
+                  opacity: isSending ? 0.7 : 1,
+                }}
+              >
+                {isSending ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+            {withdrawError && (
+              <div style={{
+                color: '#ff4444',
+                marginTop: '8px',
+                fontSize: '14px',
+                textAlign: 'center',
+              }}>
+                {withdrawError}
+              </div>
+            )}
+          </div>
+        </div>
         <div className="seed-phrase-section">
           <h4>Security</h4>
           <p className="warning">
@@ -207,7 +308,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         </div>
       </>
     );
-  }, [address, walletBalance, isAccountServiceRunning, showSeedPhrase, seedPhrase, password, error, isBlurred]);
+  }, [address, walletBalance, isAccountServiceRunning, showSeedPhrase, seedPhrase, password, error, isBlurred, withdrawAddress, withdrawAmount, withdrawError, isSending]);
 
   if (!isWalletReady) return null;
 
