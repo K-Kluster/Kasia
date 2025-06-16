@@ -1,39 +1,37 @@
-import React from 'react';
-import { useMessagingStore } from '../store/messaging.store';
-import { useWalletStore } from '../store/wallet.store';
-import { Address } from 'kaspa-wasm';
-import './HandshakeManager.css';
-import { HandshakeState } from '../types/messaging.types';
-import { Conversation } from '../utils/conversation-manager';
+import React from "react";
+import { useMessagingStore } from "../store/messaging.store";
+import "./HandshakeManager.css";
+import { HandshakeState, PendingConversation } from "../types/messaging.types";
 
 const HandshakeManager: React.FC = () => {
   const messagingStore = useMessagingStore();
-  const walletStore = useWalletStore();
   const pendingConversations = messagingStore.getPendingConversations();
 
-  const handleAcceptHandshake = async (conversation: Conversation) => {
+  const handleAcceptHandshake = async (
+    pendingConversation: PendingConversation
+  ) => {
     try {
-      if (!conversation.kaspaAddress) {
-        throw new Error('Invalid conversation: missing kaspaAddress');
+      if (!pendingConversation.kaspaAddress) {
+        throw new Error("Invalid conversation: missing kaspaAddress");
       }
 
       // Convert Conversation to HandshakeState
       const handshakeState: HandshakeState = {
-        conversationId: conversation.conversationId,
-        myAlias: conversation.myAlias || 'Anonymous',
-        theirAlias: conversation.theirAlias || null,
-        senderAddress: conversation.kaspaAddress,
-        kaspaAddress: conversation.kaspaAddress,
-        status: conversation.status,
-        createdAt: conversation.createdAt,
-        lastActivity: conversation.lastActivity,
-        initiatedByMe: conversation.initiatedByMe,
-        handshakeTimeout: conversation.handshakeTimeout
+        conversationId: pendingConversation.conversationId,
+        myAlias: pendingConversation.myAlias || "Anonymous",
+        theirAlias: pendingConversation.theirAlias || null,
+        senderAddress: pendingConversation.kaspaAddress,
+        kaspaAddress: pendingConversation.kaspaAddress,
+        status: pendingConversation.status,
+        createdAt: pendingConversation.createdAt,
+        lastActivity: pendingConversation.lastActivity,
+        initiatedByMe: pendingConversation.initiatedByMe,
+        handshakeTimeout: pendingConversation.handshakeTimeout,
       };
 
       await messagingStore.respondToHandshake(handshakeState);
     } catch (error) {
-      console.error('Error accepting handshake:', error);
+      console.error("Error accepting handshake:", error);
     }
   };
 
@@ -45,7 +43,7 @@ const HandshakeManager: React.FC = () => {
     <div className="handshake-manager">
       <h3>Pending Handshakes</h3>
       <div className="handshake-list">
-        {pendingConversations.map(conv => (
+        {pendingConversations.map((conv) => (
           <div key={conv.kaspaAddress} className="handshake-item">
             <div className="handshake-info">
               <p className="address">From: {conv.kaspaAddress}</p>
@@ -55,7 +53,7 @@ const HandshakeManager: React.FC = () => {
               <p className="status">Status: {conv.status}</p>
             </div>
             {!conv.initiatedByMe && (
-              <button 
+              <button
                 onClick={() => handleAcceptHandshake(conv)}
                 className="accept-button"
               >
@@ -72,4 +70,4 @@ const HandshakeManager: React.FC = () => {
   );
 };
 
-export default HandshakeManager; 
+export default HandshakeManager;

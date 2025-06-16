@@ -2,9 +2,10 @@ import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { formatKasAmount } from "../utils/format";
 import { FeeBuckets } from "./FeeBuckets";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "../utils/wallet-storage";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
-import { sendTransaction } from '../service/account-service';
+import { sendTransaction } from "../service/account-service";
+import { toDataURL } from "qrcode";
+import { StoredWallet, Wallet } from "src/types/wallet.type";
 
 type WalletInfoProps = {
   state: "connected" | "detected" | "not-detected";
@@ -22,8 +23,7 @@ type WalletInfoProps = {
 export const WalletInfo: FC<WalletInfoProps> = ({
   state,
   address,
-  balance,
-  isWalletReady
+  isWalletReady,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSeedPhrase, setShowSeedPhrase] = useState(false);
@@ -32,11 +32,13 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const [error, setError] = useState("");
   const [isBlurred, setIsBlurred] = useState(true);
   const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  const isAccountServiceRunning = useWalletStore(state => state.isAccountServiceRunning);
-  const walletBalance = useWalletStore(state => state.balance);
-  const selectedWalletId = useWalletStore(state => state.selectedWalletId);
-  const wallets = useWalletStore(state => state.wallets);
+
+  const isAccountServiceRunning = useWalletStore(
+    (state) => state.isAccountServiceRunning
+  );
+  const walletBalance = useWalletStore((state) => state.balance);
+  const selectedWalletId = useWalletStore((state) => state.selectedWalletId);
+  const wallets = useWalletStore((state) => state.wallets);
 
   // Add new state for withdraw functionality
   const [withdrawAddress, setWithdrawAddress] = useState("");
@@ -45,6 +47,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const [isSending, setIsSending] = useState(false);
   const [copyNotification, setCopyNotification] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
 
   // Clear timeout on unmount
   useEffect(() => {
@@ -55,19 +58,34 @@ export const WalletInfo: FC<WalletInfoProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!address) {
+      return;
+    }
+
+    toDataURL(address ?? "", (error, uriData) => {
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setQRCodeURL(uriData);
+    });
+  }, [address]);
+
   // Add handler for copy to clipboard
   const handleCopyAddress = async () => {
     console.log("Copy button clicked!");
-    
+
     if (!address) {
       console.log("No address to copy");
       setCopyNotification("No address available");
       setTimeout(() => setCopyNotification(""), 3000);
       return;
     }
-    
+
     console.log("Address to copy:", address);
-    
+
     // Try the modern clipboard API first
     if (navigator.clipboard && window.isSecureContext) {
       try {
@@ -81,24 +99,24 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         console.log("Modern clipboard API failed:", error);
       }
     }
-    
+
     // Fallback method
     console.log("Using fallback copy method");
     try {
-      const textArea = document.createElement('textarea');
+      const textArea = document.createElement("textarea");
       textArea.value = address;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      textArea.style.opacity = '0';
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      textArea.style.opacity = "0";
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
       textArea.setSelectionRange(0, 99999); // For mobile devices
-      
-      const successful = document.execCommand('copy');
+
+      const successful = document.execCommand("copy");
       document.body.removeChild(textArea);
-      
+
       if (successful) {
         console.log("Fallback copy successful");
         setCopyNotification("Address copied to clipboard!");
@@ -119,13 +137,6 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const handleShowQRCode = () => {
     console.log("QR button clicked, current state:", showQRCode);
     setShowQRCode(!showQRCode);
-  };
-
-  // Generate QR code URL using a free service
-  const getQRCodeURL = (text: string) => {
-    const url = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`;
-    console.log("Generated QR URL:", url);
-    return url;
   };
 
   const handleBlurToggle = (shouldBlur: boolean) => {
@@ -160,15 +171,20 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         return;
       }
 
-      const wallets = JSON.parse(walletsString);
-      const wallet = wallets.find((w: any) => w.id === selectedWalletId);
-      if (!wallet) {
+      const storedWallets: StoredWallet[] = JSON.parse(walletsString);
+      const foundStoredWallet = storedWallets.find(
+        (w) => w.id === selectedWalletId
+      );
+      if (!foundStoredWallet) {
         setError("Wallet not found");
         return;
       }
 
       // Decrypt the seed phrase
-      const phrase = decryptXChaCha20Poly1305(wallet.encryptedPhrase, password);
+      const phrase = decryptXChaCha20Poly1305(
+        foundStoredWallet.encryptedPhrase,
+        password
+      );
       setSeedPhrase(phrase);
       setShowSeedPhrase(true);
     } catch (error) {
@@ -182,7 +198,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
     try {
       setWithdrawError("");
       setIsSending(true);
-      
+
       if (!withdrawAddress || !withdrawAmount) {
         throw new Error("Please enter both address and amount");
       }
@@ -194,17 +210,25 @@ export const WalletInfo: FC<WalletInfoProps> = ({
 
       // Use mature balance directly since it's already in KAS
       const matureBalanceKAS = walletBalance?.mature || 0;
-      console.log('Balance check:', { amount, matureBalanceKAS, walletBalance });
-      
+      console.log("Balance check:", {
+        amount,
+        matureBalanceKAS,
+        walletBalance,
+      });
+
       if (amount > matureBalanceKAS) {
-        throw new Error(`Insufficient balance. Available: ${matureBalanceKAS.toFixed(8)} KAS`);
+        throw new Error(
+          `Insufficient balance. Available: ${matureBalanceKAS.toFixed(8)} KAS`
+        );
       }
 
       await sendTransaction(withdrawAddress, amount);
       setWithdrawAddress("");
       setWithdrawAmount("");
     } catch (error) {
-      setWithdrawError(error instanceof Error ? error.message : "Failed to send transaction");
+      setWithdrawError(
+        error instanceof Error ? error.message : "Failed to send transaction"
+      );
     } finally {
       setIsSending(false);
     }
@@ -213,10 +237,10 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const walletInfoNode = useMemo(() => {
     // Only show initialization state if the service isn't running
     const isInitializing = !isAccountServiceRunning;
-    
+
     // Use the wallet store's balance as the source of truth
     const currentBalance = walletBalance;
-    
+
     return (
       <>
         <h3>Wallet Information</h3>
@@ -224,14 +248,15 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           <strong>Address:</strong>
           <div className="address-row">
             <div className="address-info">
-              <span 
-                className="address" 
+              <span
+                className="address"
                 id="wallet-address"
                 onClick={() => {
                   // Select the text when clicked
                   const selection = window.getSelection();
                   const range = document.createRange();
-                  const addressElement = document.getElementById('wallet-address');
+                  const addressElement =
+                    document.getElementById("wallet-address");
                   if (addressElement && selection) {
                     range.selectNodeContents(addressElement);
                     selection.removeAllRanges();
@@ -244,38 +269,38 @@ export const WalletInfo: FC<WalletInfoProps> = ({
               </span>
             </div>
             <div className="address-actions">
-              <button 
-                className="copy-button" 
+              <button
+                className="copy-button"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  
+
                   if (!address) {
                     setCopyNotification("No address available");
                     setTimeout(() => setCopyNotification(""), 3000);
                     return;
                   }
-                  
+
                   try {
                     await navigator.clipboard.writeText(address);
                     setCopyNotification("Address copied!");
                     setTimeout(() => setCopyNotification(""), 3000);
                   } catch (error) {
                     try {
-                      const textArea = document.createElement('textarea');
+                      const textArea = document.createElement("textarea");
                       textArea.value = address;
-                      textArea.style.position = 'fixed';
-                      textArea.style.left = '-9999px';
-                      textArea.style.top = '-9999px';
-                      textArea.style.opacity = '0';
+                      textArea.style.position = "fixed";
+                      textArea.style.left = "-9999px";
+                      textArea.style.top = "-9999px";
+                      textArea.style.opacity = "0";
                       document.body.appendChild(textArea);
                       textArea.focus();
                       textArea.select();
                       textArea.setSelectionRange(0, 99999);
-                      
-                      const success = document.execCommand('copy');
+
+                      const success = document.execCommand("copy");
                       document.body.removeChild(textArea);
-                      
+
                       if (success) {
                         setCopyNotification("Address copied!");
                         setTimeout(() => setCopyNotification(""), 3000);
@@ -292,20 +317,38 @@ export const WalletInfo: FC<WalletInfoProps> = ({
                 title="Copy address to clipboard"
                 type="button"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
               </button>
-              <button 
-                className="qr-button" 
+              <button
+                className="qr-button"
                 onClick={() => {
                   handleShowQRCode();
                 }}
                 title="Show QR code"
                 type="button"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="3" y="3" width="5" height="5"></rect>
                   <rect x="16" y="3" width="5" height="5"></rect>
                   <rect x="3" y="16" width="5" height="5"></rect>
@@ -323,22 +366,22 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             </div>
           </div>
           {copyNotification && (
-            <div className="copy-notification">
-              {copyNotification}
-            </div>
+            <div className="copy-notification">{copyNotification}</div>
           )}
-          {showQRCode && address && (
+          {showQRCode && address && qrCodeURL && (
             <div className="qr-code-section">
               <h4>QR Code for Address</h4>
               <div className="qr-code-container">
-                <img 
-                  src={getQRCodeURL(address)} 
+                <img
+                  src={qrCodeURL}
                   alt="QR Code for wallet address"
                   className="qr-code-image"
-                  onLoad={() => console.log("QR code image loaded successfully")}
+                  onLoad={() =>
+                    console.log("QR code image loaded successfully")
+                  }
                   onError={(e) => {
                     console.error("QR code image failed to load:", e);
-                    console.log("Failed URL:", getQRCodeURL(address));
+                    console.log("Failed URL:", qrCodeURL);
                   }}
                 />
                 <p className="qr-code-text">Scan to get wallet address</p>
@@ -349,24 +392,27 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         <div className="balance-info">
           <h4>Balance</h4>
           {isInitializing ? (
-            <p>Click "Start Wallet Service" to load your balance and start messaging.</p>
+            <p>
+              Click "Start Wallet Service" to load your balance and start
+              messaging.
+            </p>
           ) : (
-          <ul className="balance-list">
-            <li>
-              <strong>Total:</strong>{" "}
-              <span className="amount">
-                  {formatKasAmount(currentBalance?.mature ?? 0)} KAS
-              </span>
-            </li>
-            <li>
-              <strong>Confirmed:</strong>{" "}
+            <ul className="balance-list">
+              <li>
+                <strong>Total:</strong>{" "}
                 <span className="amount">
                   {formatKasAmount(currentBalance?.mature ?? 0)} KAS
                 </span>
-            </li>
-            <li>
-              <strong>Unconfirmed:</strong>{" "}
-              <span className="amount">
+              </li>
+              <li>
+                <strong>Confirmed:</strong>{" "}
+                <span className="amount">
+                  {formatKasAmount(currentBalance?.mature ?? 0)} KAS
+                </span>
+              </li>
+              <li>
+                <strong>Unconfirmed:</strong>{" "}
+                <span className="amount">
                   {formatKasAmount(currentBalance?.pending ?? 0)} KAS
                 </span>
               </li>
@@ -374,9 +420,9 @@ export const WalletInfo: FC<WalletInfoProps> = ({
                 <strong>Outgoing:</strong>{" "}
                 <span className="amount">
                   {formatKasAmount(currentBalance?.outgoing ?? 0)} KAS
-              </span>
-            </li>
-          </ul>
+                </span>
+              </li>
+            </ul>
           )}
         </div>
         <div className="balance-info">
@@ -384,41 +430,49 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           {isInitializing ? (
             <p>Waiting for wallet service to start...</p>
           ) : (
-          <ul className="balance-list">
-            <li>
-              <strong>Mature UTXOs:</strong>{" "}
-                <span className="utxo-count">{currentBalance?.matureUtxoCount ?? '-'}</span>
+            <ul className="balance-list">
+              <li>
+                <strong>Mature UTXOs:</strong>{" "}
+                <span className="utxo-count">
+                  {currentBalance?.matureUtxoCount ?? "-"}
+                </span>
               </li>
               <li>
                 <strong>Pending UTXOs:</strong>{" "}
-                <span className="utxo-count">{currentBalance?.pendingUtxoCount ?? '-'}</span>
-            </li>
-            <li>
-              <strong>Status:</strong>{" "}
-                <span className="status">{!currentBalance?.matureUtxoCount ? 'Initializing...' : 'Ready'}</span>
-            </li>
-          </ul>
+                <span className="utxo-count">
+                  {currentBalance?.pendingUtxoCount ?? "-"}
+                </span>
+              </li>
+              <li>
+                <strong>Status:</strong>{" "}
+                <span className="status">
+                  {!currentBalance?.matureUtxoCount
+                    ? "Initializing..."
+                    : "Ready"}
+                </span>
+              </li>
+            </ul>
           )}
         </div>
         <div className="info-box">
           <h3>Withdraw KAS</h3>
-          <div className="withdraw-section" style={{ marginTop: '10px' }}>
+          <div className="withdraw-section" style={{ marginTop: "10px" }}>
             <input
               type="text"
               value={withdrawAddress}
               onChange={(e) => setWithdrawAddress(e.target.value)}
               placeholder="Enter Kaspa address"
               style={{
-                width: '100%',
-                padding: '8px',
-                marginBottom: '8px',
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '4px',
-                color: 'white',
+                width: "100%",
+                padding: "8px",
+                marginBottom: "8px",
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "4px",
+                color: "white",
               }}
             />
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <input
                 type="number"
                 value={withdrawAmount}
@@ -426,36 +480,38 @@ export const WalletInfo: FC<WalletInfoProps> = ({
                 placeholder="Amount (KAS)"
                 style={{
                   flex: 1,
-                  padding: '8px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '4px',
-                  color: 'white',
+                  padding: "8px",
+                  backgroundColor: "rgba(0, 0, 0, 0.3)",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  borderRadius: "4px",
+                  color: "white",
                 }}
               />
               <button
                 onClick={handleWithdraw}
                 disabled={isSending}
                 style={{
-                  padding: '8px 16px',
-                  backgroundColor: '#2196f3',
-                  border: 'none',
-                  borderRadius: '4px',
-                  color: 'white',
-                  cursor: 'pointer',
+                  padding: "8px 16px",
+                  backgroundColor: "#2196f3",
+                  border: "none",
+                  borderRadius: "4px",
+                  color: "white",
+                  cursor: "pointer",
                   opacity: isSending ? 0.7 : 1,
                 }}
               >
-                {isSending ? 'Sending...' : 'Send'}
+                {isSending ? "Sending..." : "Send"}
               </button>
             </div>
             {withdrawError && (
-              <div style={{
-                color: '#ff4444',
-                marginTop: '8px',
-                fontSize: '14px',
-                textAlign: 'center',
-              }}>
+              <div
+                style={{
+                  color: "#ff4444",
+                  marginTop: "8px",
+                  fontSize: "14px",
+                  textAlign: "center",
+                }}
+              >
                 {withdrawError}
               </div>
             )}
@@ -464,7 +520,8 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         <div className="seed-phrase-section">
           <h4>Security</h4>
           <p className="warning">
-            Warning: Never share your seed phrase with anyone. Anyone with access to your seed phrase can access your funds.
+            Warning: Never share your seed phrase with anyone. Anyone with
+            access to your seed phrase can access your funds.
           </p>
           {!showSeedPhrase ? (
             <div>
@@ -481,7 +538,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           ) : (
             <div>
               <p>Your seed phrase:</p>
-              <div className={`seed-phrase ${isBlurred ? 'blurred' : ''}`}>
+              <div className={`seed-phrase ${isBlurred ? "blurred" : ""}`}>
                 {seedPhrase}
               </div>
               <div className="visibility-toggle">
@@ -492,21 +549,43 @@ export const WalletInfo: FC<WalletInfoProps> = ({
                   onChange={(e) => handleBlurToggle(!e.target.checked)}
                 />
                 <label htmlFor="toggleVisibility" className="eye-icon">
-                  {isBlurred ? '👁️' : '👁️'}
+                  {isBlurred ? "👁️" : "👁️"}
                 </label>
               </div>
-              <button onClick={() => {
-                setShowSeedPhrase(false);
-                setSeedPhrase("");
-                setPassword("");
-                setIsBlurred(true);
-              }}>Hide Seed Phrase</button>
+              <button
+                onClick={() => {
+                  setShowSeedPhrase(false);
+                  setSeedPhrase("");
+                  setPassword("");
+                  setIsBlurred(true);
+                }}
+              >
+                Hide Seed Phrase
+              </button>
             </div>
           )}
         </div>
       </>
     );
-  }, [address, walletBalance, isAccountServiceRunning, showSeedPhrase, seedPhrase, password, error, isBlurred, withdrawAddress, withdrawAmount, withdrawError, isSending, copyNotification, showQRCode, handleCopyAddress, handleShowQRCode, getQRCodeURL]);
+  }, [
+    address,
+    walletBalance,
+    isAccountServiceRunning,
+    showSeedPhrase,
+    seedPhrase,
+    password,
+    error,
+    isBlurred,
+    withdrawAddress,
+    withdrawAmount,
+    withdrawError,
+    isSending,
+    copyNotification,
+    showQRCode,
+    handleCopyAddress,
+    handleShowQRCode,
+    qrCodeURL,
+  ]);
 
   if (!isWalletReady) return null;
 
@@ -514,25 +593,24 @@ export const WalletInfo: FC<WalletInfoProps> = ({
     <div className="wallet-info-container">
       <div className="wallet-info-wrapper">
         <FeeBuckets inline={true} />
-      <button 
-        className="wallet-info-button"
-        onClick={() => setIsOpen(true)}
-      >
-        Wallet Info
-      </button>
+        <button className="wallet-info-button" onClick={() => setIsOpen(true)}>
+          Wallet Info
+        </button>
       </div>
 
       {isOpen && (
         <div className="modal-overlay" onClick={() => setIsOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button className="close-button" onClick={() => setIsOpen(false)}>×</button>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="close-button" onClick={() => setIsOpen(false)}>
+              ×
+            </button>
             <div className="modal-body">
               {state === "connected" ? (
                 walletInfoNode
               ) : state === "detected" ? (
                 <p>
-                  KasWare Wallet detected. Click "Connect to Kasware" to view your
-                  transactions.
+                  KasWare Wallet detected. Click "Connect to Kasware" to view
+                  your transactions.
                 </p>
               ) : (
                 "Kasware Wallet not detected. Please install Kasware Wallet."

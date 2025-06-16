@@ -14,8 +14,8 @@ import {
 } from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "./errors";
 import { getNodesForNetwork, getApiEndpoint } from "../config/nodes";
-import { NetworkType } from "../type/all";
-import { BlockAddedData } from "../type/all";
+import { NetworkType } from "../types/all";
+import { BlockAddedData } from "../types/all";
 
 // Helper function to decode payload to text
 export function decodePayload(hex: string) {
@@ -38,7 +38,10 @@ export function decodePayload(hex: string) {
 }
 
 // Helper function to fetch transaction details
-export async function fetchTransactionDetails(txId: string, networkId: NetworkType = "testnet-10") {
+export async function fetchTransactionDetails(
+  txId: string,
+  networkId: NetworkType = "testnet-10"
+) {
   const baseUrl = getApiEndpoint(networkId);
   try {
     // First get the transaction to get its accepting block hash and blue score
@@ -222,8 +225,8 @@ export async function fetchAddressTransactions(address: string) {
 
 // Add this helper function at the top level
 function stringifyWithBigInt(obj: any): string {
-  return JSON.stringify(obj, (_, value) => 
-    typeof value === 'bigint' ? value.toString() : value
+  return JSON.stringify(obj, (_, value) =>
+    typeof value === "bigint" ? value.toString() : value
   );
 }
 
@@ -258,15 +261,15 @@ export class KaspaClient {
     this.networkId = networkId || "testnet-10";
     this.connected = false;
     this.retryCount = 0;
-    
+
     // Debug log the network ID
     this.log(`KaspaClient initialized with network ID: ${this.networkId}`);
   }
 
   // Log helper function
-  log(message: string, level: 'log' | 'warn' | 'error' = 'log') {
+  log(message: string, level: "log" | "warn" | "error" = "log") {
     // Only show errors and warnings
-    if (this.options.debug && (level === 'error' || level === 'warn')) {
+    if (this.options.debug && (level === "error" || level === "warn")) {
       console[level](`[KaspaClient] ${message}`);
     }
   }
@@ -285,21 +288,27 @@ export class KaspaClient {
     }
 
     if (this.retryCount >= this.options.maxRetries) {
-      throw new Error(`Failed to connect after ${this.options.maxRetries} attempts`);
+      throw new Error(
+        `Failed to connect after ${this.options.maxRetries} attempts`
+      );
     }
 
     try {
-      this.log(`Initializing connection for network: "${this.networkId}" (type: ${typeof this.networkId})`);
+      this.log(
+        `Initializing connection for network: "${
+          this.networkId
+        }" (type: ${typeof this.networkId})`
+      );
 
       // Always try resolver first for all networks
       let resolverError: unknown;
       try {
         this.log("Using resolver to find an available node");
-      this.rpc = new RpcClient({
-        resolver: new Resolver(),
-        networkId: this.networkId,
-        encoding: Encoding.Borsh,
-      });
+        this.rpc = new RpcClient({
+          resolver: new Resolver(),
+          networkId: this.networkId,
+          encoding: Encoding.Borsh,
+        });
 
         this.log("Resolver created, attempting connection...");
         await Promise.race([
@@ -307,16 +316,16 @@ export class KaspaClient {
           new Promise((_, reject) => {
             this.log("Setting resolver connection timeout for 20s");
             setTimeout(() => reject(new Error("Connection timeout")), 20000);
-          })
+          }),
         ]);
 
         this.log("Initial connection successful, waiting for stability...");
         // Add a small delay after connection to ensure stability
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         // Verify connection is still active
         if (this.rpc && this.rpc.isConnected) {
-      this.connected = true;
+          this.connected = true;
           this.log(`Connected via resolver to ${this.rpc.url}`);
           return this;
         } else {
@@ -324,7 +333,10 @@ export class KaspaClient {
         }
       } catch (error) {
         resolverError = error;
-        this.log(`Resolver connection failed: ${unknownErrorToErrorLike(error)}`, "warn");
+        this.log(
+          `Resolver connection failed: ${unknownErrorToErrorLike(error)}`,
+          "warn"
+        );
         this.log("Falling back to custom nodes", "warn");
       }
 
@@ -334,50 +346,73 @@ export class KaspaClient {
         const errors = [];
         for (const node of nodes) {
           try {
-            this.log(`Trying to connect to node: ${node.description} (${node.url})`);
-            
+            this.log(
+              `Trying to connect to node: ${node.description} (${node.url})`
+            );
+
             this.rpc = new RpcClient({
               url: node.url,
               networkId: this.networkId,
               encoding: Encoding.Borsh,
             });
-            
+
             await Promise.race([
               this.rpc.connect(),
               new Promise((_, reject) => {
-                this.log(`Setting ${node.description} connection timeout for 20s`);
-                setTimeout(() => reject(new Error("Connection timeout")), 20000);
-              })
+                this.log(
+                  `Setting ${node.description} connection timeout for 20s`
+                );
+                setTimeout(
+                  () => reject(new Error("Connection timeout")),
+                  20000
+                );
+              }),
             ]);
 
             // Add a small delay after connection to ensure stability
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
 
             // Verify connection is still active
             if (this.rpc && this.rpc.isConnected) {
               this.connected = true;
               this.log(`Connected to ${node.url}`);
-      return this;
+              return this;
             } else {
               throw new Error("Connection lost after initial establishment");
             }
           } catch (nodeError) {
-            errors.push(`${node.description}: ${unknownErrorToErrorLike(nodeError)}`);
-            this.log(`Connection failed to ${node.url}: ${unknownErrorToErrorLike(nodeError)}`, "warn");
-            
+            errors.push(
+              `${node.description}: ${unknownErrorToErrorLike(nodeError)}`
+            );
+            this.log(
+              `Connection failed to ${node.url}: ${unknownErrorToErrorLike(
+                nodeError
+              )}`,
+              "warn"
+            );
+
             // Clean up failed connection
             if (this.rpc) {
               try {
                 await this.rpc.disconnect();
               } catch (disconnectError) {
-                this.log(`Error during disconnect: ${unknownErrorToErrorLike(disconnectError)}`, "warn");
+                this.log(
+                  `Error during disconnect: ${unknownErrorToErrorLike(
+                    disconnectError
+                  )}`,
+                  "warn"
+                );
               }
               this.rpc = null;
             }
           }
         }
-        
-        throw new Error(`All connection attempts failed:\nResolver: ${unknownErrorToErrorLike(resolverError)}\nCustom nodes:\n${errors.join("\n")}`);
+
+        throw new Error(
+          `All connection attempts failed:\nResolver: ${unknownErrorToErrorLike(
+            resolverError
+          )}\nCustom nodes:\n${errors.join("\n")}`
+        );
       }
 
       throw new Error(`No available nodes for network ${this.networkId}`);
@@ -417,7 +452,7 @@ export class KaspaClient {
     let retryCount = 0;
 
     const attemptSubscribe = async (): Promise<void> => {
-    try {
+      try {
         if (!this.rpc) {
           throw new Error("RPC client not initialized");
         }
@@ -426,66 +461,77 @@ export class KaspaClient {
         if (!this.rpc.isConnected) {
           this.log("Not connected, attempting to reconnect...");
           await this.connect();
-      }
+        }
 
-      if (this.utxoNotificationCallback) {
-        this.rpc.removeEventListener(
+        if (this.utxoNotificationCallback) {
+          this.rpc.removeEventListener(
+            "utxos-changed",
+            this.utxoNotificationCallback
+          );
+          this.rpc.unsubscribeUtxosChanged(
+            this.utxoNotificationSubscribeAddresses
+          );
+          this.log("Removed existing UTXO change listener");
+        }
+
+        this.log(`Subscribing to UTXO changes for addresses: ${addresses}`);
+
+        const boundCallback = callback.bind(this);
+
+        const wrappedWithFilter = (notification: IUtxosChanged) => {
+          const transactionIds = notification.data.added?.map(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (utxo: any) => utxo?.outpoint?.transactionId
+          );
+
+          const notEmittedTxIds = transactionIds.filter(
+            (txId: string) =>
+              this.historyOfEmittedTxIdUtxoChanges.findIndex(
+                (item) => item === txId
+              ) === -1
+          );
+
+          if (notEmittedTxIds.length > 0) {
+            this.log(
+              `Emitting UTXO change notification for txids: ${notEmittedTxIds}`
+            );
+            this.historyOfEmittedTxIdUtxoChanges.push(...notEmittedTxIds);
+
+            boundCallback(notification);
+          }
+        };
+
+        this.utxoNotificationCallback = wrappedWithFilter.bind(this);
+        this.utxoNotificationSubscribeAddresses = addresses;
+
+        this.rpc.addEventListener(
           "utxos-changed",
           this.utxoNotificationCallback
         );
-        this.rpc.unsubscribeUtxosChanged(
+        await this.rpc.subscribeUtxosChanged(
           this.utxoNotificationSubscribeAddresses
         );
-        this.log("Removed existing UTXO change listener");
-      }
 
-      this.log(`Subscribing to UTXO changes for addresses: ${addresses}`);
-
-      const boundCallback = callback.bind(this);
-
-      const wrappedWithFilter = (notification: IUtxosChanged) => {
-        const transactionIds = notification.data.added?.map(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (utxo: any) => utxo?.outpoint?.transactionId
-        );
-
-        const notEmittedTxIds = transactionIds.filter(
-          (txId: string) =>
-            this.historyOfEmittedTxIdUtxoChanges.findIndex(
-              (item) => item === txId
-            ) === -1
-        );
-
-        if (notEmittedTxIds.length > 0) {
-          this.log(
-            `Emitting UTXO change notification for txids: ${notEmittedTxIds}`
-          );
-          this.historyOfEmittedTxIdUtxoChanges.push(...notEmittedTxIds);
-
-          boundCallback(notification);
-        }
-      };
-
-      this.utxoNotificationCallback = wrappedWithFilter.bind(this);
-      this.utxoNotificationSubscribeAddresses = addresses;
-
-      this.rpc.addEventListener("utxos-changed", this.utxoNotificationCallback);
-        await this.rpc.subscribeUtxosChanged(this.utxoNotificationSubscribeAddresses);
-
-      this.log("Successfully subscribed to UTXO changes");
-    } catch (error) {
+        this.log("Successfully subscribed to UTXO changes");
+      } catch (error) {
         retryCount++;
         if (retryCount < maxRetries) {
-          this.log(`Retry ${retryCount}/${maxRetries} for UTXO subscription after error: ${unknownErrorToErrorLike(error)}`);
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+          this.log(
+            `Retry ${retryCount}/${maxRetries} for UTXO subscription after error: ${unknownErrorToErrorLike(
+              error
+            )}`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
           return attemptSubscribe();
         }
-      this.log(
-        `Error subscribing to UTXO changes: ${unknownErrorToErrorLike(error)}`,
-        "error"
-      );
-      throw error;
-    }
+        this.log(
+          `Error subscribing to UTXO changes: ${unknownErrorToErrorLike(
+            error
+          )}`,
+          "error"
+        );
+        throw error;
+      }
     };
 
     return attemptSubscribe();
@@ -520,12 +566,14 @@ export class KaspaClient {
         const wrappedCallback = (event: IBlockAdded) => {
           try {
             // Log the event using BigInt-safe stringifier
-            this.log(`Received block-added event: ${stringifyWithBigInt(event)}`);
-            
+            this.log(
+              `Received block-added event: ${stringifyWithBigInt(event)}`
+            );
+
             // Process transactions if they exist
             const transactions = event?.transactions || [];
             this.log(`Block contains ${transactions.length} transactions`);
-            
+
             // Call the original callback
             callback(event);
           } catch (error) {
@@ -538,12 +586,13 @@ export class KaspaClient {
         await this.rpc.subscribeBlockAdded();
         this.rpc.addEventListener("block-added", wrappedCallback);
         this.log("Successfully subscribed to block-added events");
-
       } catch (error) {
         this.log(`Error subscribing to block-added events: ${error}`, "error");
         if (retryCount < maxRetries) {
           retryCount++;
-          this.log(`Retrying subscription (attempt ${retryCount} of ${maxRetries})...`);
+          this.log(
+            `Retrying subscription (attempt ${retryCount} of ${maxRetries})...`
+          );
           await attemptSubscribe();
         } else {
           throw error;

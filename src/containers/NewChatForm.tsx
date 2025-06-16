@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { useMessagingStore } from '../store/messaging.store';
-import { Address } from 'kaspa-wasm';
-import { Conversation } from 'src/utils/conversation-manager';
+import React, { useState } from "react";
+import { useMessagingStore } from "../store/messaging.store";
+import { Address } from "kaspa-wasm";
+import { Conversation } from "src/types/messaging.types";
 
 export const NewChatForm: React.FC = () => {
-  const [recipientAddress, setRecipientAddress] = useState('');
+  const [recipientAddress, setRecipientAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
   const messagingStore = useMessagingStore();
 
@@ -18,12 +18,12 @@ export const NewChatForm: React.FC = () => {
     try {
       // Validate address
       new Address(recipientAddress);
-      
+
       // Initiate handshake
       await messagingStore.initiateHandshake(recipientAddress);
-      
+
       // Clear form
-      setRecipientAddress('');
+      setRecipientAddress("");
     } catch (err) {
       setError((err as Error).message);
     }
@@ -58,11 +58,11 @@ export const NewChatForm: React.FC = () => {
       {pendingHandshakes.length > 0 && (
         <div className="pending-handshakes">
           <h3>Pending Handshakes</h3>
-          {pendingHandshakes.map(handshake => (
+          {pendingHandshakes.map((handshake) => (
             <div key={handshake.conversationId} className="handshake-item">
               <span>From: {handshake.kaspaAddress}</span>
               {!handshake.initiatedByMe && (
-                <button 
+                <button
                   onClick={() => handleRespondToHandshake(handshake)}
                   className="respond-button"
                 >
@@ -75,4 +75,4 @@ export const NewChatForm: React.FC = () => {
       )}
     </div>
   );
-}; 
+};

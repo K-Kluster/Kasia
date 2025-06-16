@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { checkKaswareAvailability } from "../utils/wallet-extension";
-import { NetworkType } from "../type/all";
+import { NetworkType } from "../types/all";
 
 interface KaswareState {
   balance:
@@ -58,7 +58,7 @@ export const useKaswareStore = create<KaswareState>((set, g) => ({
     };
 
     // If no network is set, default to mainnet
-const network = kaswareNetwork ? networkMap[kaswareNetwork] : "mainnet";
+    const network = kaswareNetwork ? networkMap[kaswareNetwork] : "mainnet";
 
     return network;
   },

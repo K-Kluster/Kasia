@@ -1,3 +1,6 @@
+import { KaspaClient } from "src/utils/all-in-one";
+import { PublicKeyGenerator } from "wasm/kaspa";
+
 export type Message = {
   transactionId: string;
   senderAddress: string;
@@ -20,7 +23,7 @@ export type Contact = {
   address: string;
   lastMessage: Message;
   messages: Message[];
-  status?: 'active' | 'pending' | 'rejected';
+  status?: "active" | "pending" | "rejected";
 };
 
 export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet";
@@ -119,3 +122,5 @@ export interface VerboseData3 {
   mergeSetRedsHashes: never[];
   isChainBlock: boolean;
 }
+
+

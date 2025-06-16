@@ -1,5 +1,5 @@
 import { FC, useMemo, useEffect, useRef } from "react";
-import { NetworkType } from "../type/all";
+import { NetworkType } from "../types/all";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 
 type NetworkSelectorProps = {
@@ -17,7 +17,10 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
 
   // Set default network to mainnet on component mount or if selectedNetwork is null/invalid
   useEffect(() => {
-    if (!selectedNetwork || selectedNetwork !== "mainnet") {
+    if (
+      !selectedNetwork ||
+      selectedNetwork !== (import.meta.env.VITE_KASPA_NETWORK ?? "mainnet")
+    ) {
       onNetworkChange("mainnet");
     }
   }, [selectedNetwork, onNetworkChange]);
@@ -32,9 +35,9 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
       // Handle wheel event if needed
     };
 
-    menuElement.addEventListener('wheel', handler, options);
+    menuElement.addEventListener("wheel", handler, options);
     return () => {
-      menuElement.removeEventListener('wheel', handler);
+      menuElement.removeEventListener("wheel", handler);
     };
   }, []);
 
@@ -43,14 +46,20 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
     if (isConnected) {
       return "Mainnet";
     }
-    return selectedNetwork === "mainnet" ? "Mainnet" : "Connecting to Mainnet...";
+    return selectedNetwork === "mainnet"
+      ? "Mainnet"
+      : "Connecting to Mainnet...";
   }, [selectedNetwork, isConnected]);
 
   return (
     <div className="network-selector-container" ref={menuRef}>
       <Menu>
         <MenuButton className="network-badge">
-          <span className={`connection-dot ${isConnected ? 'connected' : 'disconnected'}`} />
+          <span
+            className={`connection-dot ${
+              isConnected ? "connected" : "disconnected"
+            }`}
+          />
           {networkDisplay}
         </MenuButton>
         <MenuItems className="network-selector" anchor="bottom">

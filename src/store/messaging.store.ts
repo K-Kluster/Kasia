@@ -1,11 +1,21 @@
 import { create } from "zustand";
-import { Contact, Message } from "../type/all";
-import { encrypt_message, decrypt_message, decrypt_with_secret_key, EncryptedMessage } from "cipher";
-import { PrivateKey } from "kaspa-wasm";
-import { WalletStorage, UnlockedWallet } from "../utils/wallet-storage";
+import { Contact, Message } from "../types/all";
+import {
+  encrypt_message,
+  decrypt_with_secret_key,
+  EncryptedMessage,
+} from "cipher";
+import { WalletStorage } from "../utils/wallet-storage";
 import { Address, NetworkType } from "kaspa-wasm";
-import { ConversationManager, Conversation, ConversationEvents } from "../utils/conversation-manager";
+import { ConversationManager } from "../utils/conversation-manager";
 import { useWalletStore } from "./wallet.store";
+import {
+  ActiveConversation,
+  Conversation,
+  ConversationEvents,
+  PendingConversation,
+} from "src/types/messaging.types";
+import { UnlockedWallet } from "src/types/wallet.type";
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -13,7 +23,7 @@ interface HandshakeState {
   myAlias: string;
   theirAlias: string | null;
   kaspaAddress: string;
-  status: 'pending' | 'active' | 'rejected';
+  status: "pending" | "active" | "rejected";
   createdAt: number;
   lastActivity: number;
   initiatedByMe: boolean;
@@ -22,9 +32,9 @@ interface HandshakeState {
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
-  if (address.startsWith('kaspatest:')) {
+  if (address.startsWith("kaspatest:")) {
     return NetworkType.Mainnet;
-  } else if (address.startsWith('kaspadev:')) {
+  } else if (address.startsWith("kaspadev:")) {
     return NetworkType.Devnet;
   }
   return NetworkType.Mainnet;
@@ -44,7 +54,11 @@ interface MessagingState {
   setIsLoaded: (isLoaded: boolean) => void;
   storeMessage: (message: Message, walletAddress: string) => void;
   exportMessages: (wallet: UnlockedWallet, password: string) => Promise<Blob>;
-  importMessages: (file: File, wallet: UnlockedWallet, password: string) => Promise<void>;
+  importMessages: (
+    file: File,
+    wallet: UnlockedWallet,
+    password: string
+  ) => Promise<void>;
 
   openedRecipient: string | null;
   setOpenedRecipient: (contact: string | null) => void;
@@ -59,13 +73,16 @@ interface MessagingState {
     payload: string;
     conversation: Conversation;
   }>;
-  processHandshake: (senderAddress: string, payload: string) => Promise<{
+  processHandshake: (
+    senderAddress: string,
+    payload: string
+  ) => Promise<{
     isNewHandshake: boolean;
     requiresResponse: boolean;
     conversation: Conversation;
   }>;
   getActiveConversations: () => Conversation[];
-  getPendingConversations: () => Conversation[];
+  getPendingConversations: () => PendingConversation[];
 
   // New function to manually respond to a handshake
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
@@ -123,7 +140,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       // Determine if this is a message we should handle
       const isSender = msg.senderAddress === address;
       const isRecipient = msg.recipientAddress === address;
-      const isHandshakeMessage = msg.content?.includes(':handshake:') || msg.payload?.includes(':handshake:');
+      const isHandshakeMessage =
+        msg.content?.includes(":handshake:") ||
+        msg.payload?.includes(":handshake:");
 
       // Skip messages that don't involve us
       if (!isSender && !isRecipient) {
@@ -170,7 +189,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       const contact = contacts.get(otherParty);
       contact.messages.push(msg);
-      
+
       // Update last message if this message is more recent
       if (msg.timestamp > contact.lastMessage.timestamp) {
         contact.lastMessage = msg;
@@ -178,8 +197,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     });
 
     // Sort messages within each contact by timestamp
-    contacts.forEach(contact => {
-      contact.messages.sort((a: Message, b: Message) => a.timestamp - b.timestamp);
+    contacts.forEach((contact) => {
+      contact.messages.sort(
+        (a: Message, b: Message) => a.timestamp - b.timestamp
+      );
     });
 
     // Update state with sorted contacts and messages
@@ -201,56 +222,71 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   storeMessage: (message: Message, walletAddress: string) => {
     const manager = g().conversationManager;
-    
+
     // Check if this is a handshake message
-    if (message.content.startsWith('ciph_msg:') && message.content.includes(':handshake:')) {
-        try {
-            // Parse the handshake payload
-            const parts = message.content.split(':');
-            const jsonPart = parts.slice(3).join(':');
-            const handshakePayload = JSON.parse(jsonPart);
+    if (
+      message.content.startsWith("ciph_msg:") &&
+      message.content.includes(":handshake:")
+    ) {
+      try {
+        // Parse the handshake payload
+        const parts = message.content.split(":");
+        const jsonPart = parts.slice(3).join(":");
+        const handshakePayload = JSON.parse(jsonPart);
 
-            // Skip handshake processing if it's a self-message
-            if (message.senderAddress === walletAddress && message.recipientAddress === walletAddress) {
-                console.log('Skipping self-handshake message');
-                return;
-            }
-
-            // Move handshake message from content to payload
-            message.payload = message.content;
-            message.content = handshakePayload.isResponse ? 'Handshake response received' : 'Handshake message received';
-
-            // Process handshake if we're the recipient or if this is a response to our handshake
-            if (message.recipientAddress === walletAddress || 
-                handshakePayload.recipientAddress === walletAddress ||
-                (handshakePayload.isResponse && message.senderAddress === handshakePayload.recipientAddress)) {
-                console.log('Processing handshake message:', {
-                    senderAddress: message.senderAddress,
-                    recipientAddress: message.recipientAddress,
-                    isResponse: handshakePayload.isResponse,
-                    handshakePayload
-                });
-                g().processHandshake(message.senderAddress, message.payload).catch(error => {
-                    if (error.message === 'Cannot create conversation with self') {
-                        console.log('Skipping self-conversation handshake');
-                        return;
-                    }
-                    console.error('Error processing handshake:', error);
-                });
-            }
-        } catch (error) {
-            console.error('Error processing handshake message:', error);
+        // Skip handshake processing if it's a self-message
+        if (
+          message.senderAddress === walletAddress &&
+          message.recipientAddress === walletAddress
+        ) {
+          console.log("Skipping self-handshake message");
+          return;
         }
+
+        // Move handshake message from content to payload
+        message.payload = message.content;
+        message.content = handshakePayload.isResponse
+          ? "Handshake response received"
+          : "Handshake message received";
+
+        // Process handshake if we're the recipient or if this is a response to our handshake
+        if (
+          message.recipientAddress === walletAddress ||
+          handshakePayload.recipientAddress === walletAddress ||
+          (handshakePayload.isResponse &&
+            message.senderAddress === handshakePayload.recipientAddress)
+        ) {
+          console.log("Processing handshake message:", {
+            senderAddress: message.senderAddress,
+            recipientAddress: message.recipientAddress,
+            isResponse: handshakePayload.isResponse,
+            handshakePayload,
+          });
+          g()
+            .processHandshake(message.senderAddress, message.payload)
+            .catch((error) => {
+              if (error.message === "Cannot create conversation with self") {
+                console.log("Skipping self-conversation handshake");
+                return;
+              }
+              console.error("Error processing handshake:", error);
+            });
+        }
+      } catch (error) {
+        console.error("Error processing handshake message:", error);
+      }
     }
 
     // If we have an active conversation, update its last activity
     if (manager) {
-        const conv = manager.getConversationByAddress(
-            message.senderAddress === walletAddress ? message.recipientAddress : message.senderAddress
-        );
-        if (conv) {
-            manager.updateLastActivity(conv.conversationId);
-        }
+      const conv = manager.getConversationByAddress(
+        message.senderAddress === walletAddress
+          ? message.recipientAddress
+          : message.senderAddress
+      );
+      if (conv) {
+        manager.updateLastActivity(conv.conversationId);
+      }
     }
 
     const messagesMap = JSON.parse(
@@ -278,7 +314,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         fileData: message.fileData || existingMessage.fileData,
         // Ensure we have both addresses
         senderAddress: message.senderAddress || existingMessage.senderAddress,
-        recipientAddress: message.recipientAddress || existingMessage.recipientAddress
+        recipientAddress:
+          message.recipientAddress || existingMessage.recipientAddress,
       };
       messagesMap[walletAddress][existingMessageIndex] = mergedMessage;
     } else {
@@ -286,13 +323,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       if (!message.fileData && message.content) {
         try {
           const parsedContent = JSON.parse(message.content);
-          if (parsedContent.type === 'file') {
+          if (parsedContent.type === "file") {
             message.fileData = {
               type: parsedContent.type,
               name: parsedContent.name,
               size: parsedContent.size,
               mimeType: parsedContent.mimeType,
-              content: parsedContent.content
+              content: parsedContent.content,
             };
           }
         } catch (e) {
@@ -310,17 +347,21 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Update contacts and conversations
     const state = g();
-    const otherParty = message.senderAddress === walletAddress ? 
-      message.recipientAddress : message.senderAddress;
+    const otherParty =
+      message.senderAddress === walletAddress
+        ? message.recipientAddress
+        : message.senderAddress;
 
     // Update or create contact
-    const existingContactIndex = state.contacts.findIndex(c => c.address === otherParty);
+    const existingContactIndex = state.contacts.findIndex(
+      (c) => c.address === otherParty
+    );
     if (existingContactIndex !== -1) {
       // Update existing contact
       const updatedContact = {
         ...state.contacts[existingContactIndex],
         lastMessage: message,
-        messages: [...state.contacts[existingContactIndex].messages, message]
+        messages: [...state.contacts[existingContactIndex].messages, message],
       };
       const newContacts = [...state.contacts];
       newContacts[existingContactIndex] = updatedContact;
@@ -330,7 +371,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const newContact = {
         address: otherParty,
         lastMessage: message,
-        messages: [message]
+        messages: [message],
       };
       set({ contacts: [...state.contacts, newContact] });
     }
@@ -378,11 +419,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   exportMessages: async (wallet, password) => {
     try {
       console.log("Starting message export process...");
-      
+
       const messagesMap = JSON.parse(
         localStorage.getItem("kaspa_messages_by_wallet") || "{}"
       );
-      
+
       // Create backup object with metadata
       const backup = {
         version: "1.0",
@@ -391,16 +432,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         data: messagesMap,
         conversations: {
           active: g().conversationManager?.getActiveConversations() || [],
-          pending: g().conversationManager?.getPendingConversations() || []
-        }
+          pending: g().conversationManager?.getPendingConversations() || [],
+        },
       };
 
       console.log("Getting private key generator...");
-      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(wallet, password);
-      
+      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+        wallet,
+        password
+      );
+
       console.log("Getting receive key...");
       const receiveKey = privateKeyGenerator.receiveKey(0);
-      
+
       // Get the current network type from the first message's address
       let networkType = NetworkType.Mainnet; // Default to mainnet
       const addresses = Object.keys(messagesMap);
@@ -408,98 +452,113 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         networkType = getNetworkTypeFromAddress(addresses[0]);
       }
       console.log("Using network type:", networkType);
-      
+
       const receiveAddress = receiveKey.toAddress(networkType);
       console.log("Using receive address:", receiveAddress.toString());
-      
+
       console.log("Converting backup to string...");
       const backupStr = JSON.stringify(backup);
-      
+
       console.log("Encrypting backup data...");
       try {
         const encryptedData = await encrypt_message(
           receiveAddress.toString(),
           backupStr
         );
-        
+
         // Create a Blob with the encrypted data wrapped in JSON
         const backupFile = {
           type: "kaspa-messages-backup",
-          data: encryptedData.to_hex()
+          data: encryptedData.to_hex(),
         };
-        
-        const blob = new Blob(
-          [JSON.stringify(backupFile)],
-          { type: "application/json" }
-        );
-        
+
+        const blob = new Blob([JSON.stringify(backupFile)], {
+          type: "application/json",
+        });
+
         return blob;
       } catch (error: unknown) {
         console.error("Detailed export error:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         throw new Error(`Failed to create backup: ${errorMessage}`);
       }
     } catch (error: unknown) {
       console.error("Error exporting messages:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new Error(`Failed to create backup: ${errorMessage}`);
     }
   },
   importMessages: async (file, wallet, password) => {
     try {
       console.log("Starting import process...");
-      
+
       // Read and parse file content
       const fileContent = await file.text();
       console.log("Parsing backup file...");
       const backupFile = JSON.parse(fileContent);
-      
+
       // Validate backup file format
-      if (!backupFile.type || backupFile.type !== "kaspa-messages-backup" || !backupFile.data) {
+      if (
+        !backupFile.type ||
+        backupFile.type !== "kaspa-messages-backup" ||
+        !backupFile.data
+      ) {
         throw new Error("Invalid backup file format");
       }
-      
+
       console.log("Getting private key for decryption...");
-      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(wallet, password);
+      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+        wallet,
+        password
+      );
       const privateKey = privateKeyGenerator.receiveKey(0);
-      
+
       // Get private key bytes
       const privateKeyBytes = WalletStorage.getPrivateKeyBytes(privateKey);
       if (!privateKeyBytes) {
         throw new Error("Failed to get private key bytes");
       }
-      
+
       console.log("Creating EncryptedMessage from hex...");
       const encryptedMessage = new EncryptedMessage(backupFile.data);
-      
+
       console.log("Decrypting backup data...");
-      const decryptedStr = await decrypt_with_secret_key(encryptedMessage, privateKeyBytes);
-      
+      const decryptedStr = await decrypt_with_secret_key(
+        encryptedMessage,
+        privateKeyBytes
+      );
+
       console.log("Parsing decrypted data...");
       const decryptedData = JSON.parse(decryptedStr);
-      
+
       // Validate decrypted data structure
-      if (!decryptedData.version || !decryptedData.type || !decryptedData.data) {
+      if (
+        !decryptedData.version ||
+        !decryptedData.type ||
+        !decryptedData.data
+      ) {
         throw new Error("Invalid backup data structure");
       }
-      
+
       console.log("Merging with existing messages...");
       // Merge with existing messages
       const existingMessages = JSON.parse(
         localStorage.getItem("kaspa_messages_by_wallet") || "{}"
       );
-      
+
       const mergedMessages = {
         ...existingMessages,
-        ...decryptedData.data
+        ...decryptedData.data,
       };
-      
+
       // Save merged messages
       localStorage.setItem(
         "kaspa_messages_by_wallet",
         JSON.stringify(mergedMessages)
       );
-      
+
       // Get network type and current address first
       let networkType = NetworkType.Mainnet; // Default to mainnet
       const addresses = Object.keys(mergedMessages);
@@ -507,7 +566,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         networkType = getNetworkTypeFromAddress(addresses[0]);
       }
       console.log("Using network type:", networkType);
-      
+
       // Get the current address from the private key using detected network type
       const receiveAddress = privateKey.toAddress(networkType);
       const currentAddress = receiveAddress.toString();
@@ -517,49 +576,51 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       if (decryptedData.conversations) {
         console.log("Restoring conversations...");
         const { active = [], pending = [] } = decryptedData.conversations;
-        
+
         // Initialize conversation manager if needed
         if (!g().conversationManager) {
           g().initializeConversationManager(currentAddress);
         }
 
         // Type guard to validate conversation objects
-        const isValidConversation = (conv: any): conv is Conversation => {
+        const isValidConversation = (
+          conv: Conversation
+        ): conv is Conversation => {
           return (
-            typeof conv === 'object' &&
-            typeof conv.conversationId === 'string' &&
-            typeof conv.myAlias === 'string' &&
-            (conv.theirAlias === null || typeof conv.theirAlias === 'string') &&
-            typeof conv.kaspaAddress === 'string' &&
-            ['pending', 'active', 'rejected'].includes(conv.status) &&
-            typeof conv.createdAt === 'number' &&
-            typeof conv.lastActivity === 'number' &&
-            typeof conv.initiatedByMe === 'boolean'
+            typeof conv === "object" &&
+            typeof conv.conversationId === "string" &&
+            typeof conv.myAlias === "string" &&
+            (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
+            typeof conv.kaspaAddress === "string" &&
+            ["pending", "active", "rejected"].includes(conv.status) &&
+            typeof conv.createdAt === "number" &&
+            typeof conv.lastActivity === "number" &&
+            typeof conv.initiatedByMe === "boolean"
           );
         };
 
         // Restore active conversations
-        active.forEach((conv: unknown) => {
+        active.forEach((conv: ActiveConversation) => {
           if (isValidConversation(conv)) {
             g().conversationManager?.restoreConversation(conv);
           } else {
-            console.error('Invalid conversation object in backup:', conv);
+            console.error("Invalid conversation object in backup:", conv);
           }
         });
 
         // Restore pending conversations
-        pending.forEach((conv: unknown) => {
+        pending.forEach((conv: PendingConversation) => {
           if (isValidConversation(conv)) {
             g().conversationManager?.restoreConversation(conv);
           } else {
-            console.error('Invalid conversation object in backup:', conv);
+            console.error("Invalid conversation object in backup:", conv);
           }
         });
       }
-      
+
       // Reload messages using the current address
       g().loadMessages(currentAddress);
-      
+
       console.log("Import completed successfully");
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
@@ -572,35 +633,42 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   connectAccountService: (accountService) => {
     // Make the store available globally for the account service
     (window as any).messagingStore = g();
-    
+
     // Listen for new messages from the account service
     accountService.on("messageReceived", (message: Message) => {
       const state = g();
-      
+
       // Store the message
       state.storeMessage(message, message.senderAddress);
-      
+
       // Add the message to our state
       state.addMessages([message]);
-      
+
       // Refresh the UI if this message is for the currently opened chat
-      if (state.openedRecipient === message.senderAddress || 
-          state.openedRecipient === message.recipientAddress) {
+      if (
+        state.openedRecipient === message.senderAddress ||
+        state.openedRecipient === message.recipientAddress
+      ) {
         state.refreshMessagesOnOpenedRecipient();
       }
-      
+
       // Update contacts if needed
-      const otherParty = message.senderAddress === state.openedRecipient 
-        ? message.recipientAddress 
-        : message.senderAddress;
-        
-      const existingContact = state.contacts.find(c => c.address === otherParty);
+      const otherParty =
+        message.senderAddress === state.openedRecipient
+          ? message.recipientAddress
+          : message.senderAddress;
+
+      const existingContact = state.contacts.find(
+        (c) => c.address === otherParty
+      );
       if (!existingContact) {
-        state.addContacts([{
-          address: otherParty,
-          lastMessage: message,
-          messages: [message]
-        }]);
+        state.addContacts([
+          {
+            address: otherParty,
+            lastMessage: message,
+            messages: [message],
+          },
+        ]);
       }
     });
   },
@@ -608,35 +676,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   initializeConversationManager: (address: string) => {
     const events: Partial<ConversationEvents> = {
       onHandshakeInitiated: (conversation) => {
-        console.log('Handshake initiated:', conversation);
+        console.log("Handshake initiated:", conversation);
         // You might want to update UI or state here
       },
       onHandshakeCompleted: (conversation) => {
-        console.log('Handshake completed:', conversation);
+        console.log("Handshake completed:", conversation);
         // Update contacts list
         const contact: Contact = {
           address: conversation.kaspaAddress,
           lastMessage: {
-            content: 'Handshake completed',
+            content: "Handshake completed",
             timestamp: conversation.lastActivity,
             senderAddress: address,
             recipientAddress: conversation.kaspaAddress,
-            transactionId: '',
-            payload: '',
-            amount: 0
+            transactionId: "",
+            payload: "",
+            amount: 0,
           },
-          messages: []
+          messages: [],
         };
         g().addContacts([contact]);
       },
       onHandshakeExpired: (conversation) => {
-        console.log('Handshake expired:', conversation);
+        console.log("Handshake expired:", conversation);
         // You might want to update UI or state here
       },
       onError: (error, context) => {
-        console.error('Conversation error:', error, context);
+        console.error("Conversation error:", error, context);
         // You might want to show error in UI
-      }
+      },
     };
 
     const manager = new ConversationManager(address, events);
@@ -645,20 +713,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   initiateHandshake: async (recipientAddress: string) => {
     const manager = g().conversationManager;
     if (!manager) {
-      throw new Error('Conversation manager not initialized');
+      throw new Error("Conversation manager not initialized");
     }
 
     // Get the wallet store for sending the message
     const walletStore = useWalletStore.getState();
     if (!walletStore.unlockedWallet || !walletStore.address) {
-      throw new Error('Wallet not unlocked');
+      throw new Error("Wallet not unlocked");
     }
 
     // Create the handshake payload
-    const { payload, conversation } = await manager.initiateHandshake(recipientAddress);
+    const { payload, conversation } = await manager.initiateHandshake(
+      recipientAddress
+    );
 
     // Send the handshake message
-    console.log('Sending handshake message to:', recipientAddress);
+    console.log("Sending handshake message to:", recipientAddress);
     try {
       const txId = await walletStore.sendMessage(
         payload,
@@ -666,7 +736,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         walletStore.unlockedWallet.password
       );
 
-      console.log('Handshake message sent, transaction ID:', txId);
+      console.log("Handshake message sent, transaction ID:", txId);
 
       // Create a message object for the handshake
       const message: Message = {
@@ -674,9 +744,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipientAddress,
         timestamp: Date.now(),
-        content: 'Handshake initiated',
+        content: "Handshake initiated",
         amount: 20000000, // 0.2 KAS
-        payload: payload
+        payload: payload,
       };
 
       // Store the handshake message
@@ -685,14 +755,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       return { payload, conversation };
     } catch (error) {
-      console.error('Error sending handshake message:', error);
+      console.error("Error sending handshake message:", error);
       throw error;
     }
   },
   processHandshake: async (senderAddress: string, payload: string) => {
     const manager = g().conversationManager;
     if (!manager) {
-      throw new Error('Conversation manager not initialized');
+      throw new Error("Conversation manager not initialized");
     }
     return await manager.processHandshake(senderAddress, payload);
   },
@@ -708,22 +778,27 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   respondToHandshake: async (handshake: HandshakeState) => {
     try {
       if (!handshake || !handshake.kaspaAddress) {
-        throw new Error('Invalid handshake data: missing kaspaAddress');
+        throw new Error("Invalid handshake data: missing kaspaAddress");
       }
 
       const manager = g().conversationManager;
       if (!manager) {
-        throw new Error('Conversation manager not initialized');
+        throw new Error("Conversation manager not initialized");
       }
 
       console.log("Sending handshake response to:", handshake.kaspaAddress);
-      
+
       // Use the address exactly as provided - do not modify it
       const recipientAddress = handshake.kaspaAddress;
 
       // Ensure we have the correct prefix
-      if (!recipientAddress.startsWith('kaspa:') && !recipientAddress.startsWith('kaspatest:')) {
-        throw new Error('Invalid address format: must start with kaspa: or kaspatest:');
+      if (
+        !recipientAddress.startsWith("kaspa:") &&
+        !recipientAddress.startsWith("kaspatest:")
+      ) {
+        throw new Error(
+          "Invalid address format: must start with kaspa: or kaspatest:"
+        );
       }
 
       console.log("Using recipient address:", recipientAddress);
@@ -737,17 +812,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         version: 1,
         recipientAddress: recipientAddress,
         sendToRecipient: true,
-        isResponse: true
+        isResponse: true,
       };
 
       // Get wallet info
       const walletStore = useWalletStore.getState();
       if (!walletStore.unlockedWallet?.password || !walletStore.address) {
-        throw new Error('Wallet not unlocked');
+        throw new Error("Wallet not unlocked");
       }
 
       // Format the message with the correct prefix and type
-      const messageContent = `ciph_msg:1:handshake:${JSON.stringify(handshakeResponse)}`;
+      const messageContent = `ciph_msg:1:handshake:${JSON.stringify(
+        handshakeResponse
+      )}`;
 
       try {
         // Create a valid Kaspa address - use the address exactly as is
@@ -764,20 +841,23 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         // Update the conversation in the manager
         const conversation = manager.getConversationByAddress(recipientAddress);
         if (conversation) {
-          conversation.status = 'active';
+          if (conversation.status === "pending") {
+            delete conversation.handshakeTimeout;
+          }
+
+          conversation.status = "active";
           conversation.lastActivity = Date.now();
-          delete conversation.handshakeTimeout;
-          manager.updateConversation(conversation);
+          manager.updateConversation({ ...conversation, status: "active" });
         }
 
         // Update the handshake status in the store
         set((state) => ({
           ...state,
-          handshakes: state.handshakes.map(h => 
-            h.conversationId === handshake.conversationId 
+          handshakes: state.handshakes.map((h) =>
+            h.conversationId === handshake.conversationId
               ? { ...h, status: "active", lastActivity: Date.now() }
               : h
-          )
+          ),
         }));
 
         // Create a message object for the handshake response
@@ -786,9 +866,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           senderAddress: walletStore.address.toString(),
           recipientAddress: recipientAddress,
           timestamp: Date.now(),
-          content: 'Handshake response sent',
+          content: "Handshake response sent",
           amount: 20000000, // 0.2 KAS
-          payload: messageContent
+          payload: messageContent,
         };
 
         // Store the handshake response message
@@ -798,7 +878,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         return txId;
       } catch (error: unknown) {
         console.error("Error creating Kaspa address:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         throw new Error(`Invalid Kaspa address format: ${errorMessage}`);
       }
     } catch (error: unknown) {
