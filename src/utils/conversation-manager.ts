@@ -9,7 +9,6 @@ export interface Conversation {
     createdAt: number;
     lastActivity: number;
     status: 'active' | 'pending' | 'rejected';  // Changed from 'inactive' to 'rejected'
-    handshakeTimeout?: number;  // timestamp when handshake expires
     initiatedByMe: boolean;     // track who initiated the handshake
 }
 
@@ -28,27 +27,23 @@ export interface HandshakePayload {
 export interface ConversationEvents {
     onHandshakeInitiated: (conversation: Conversation) => void;
     onHandshakeCompleted: (conversation: Conversation) => void;
-    onHandshakeExpired: (conversation: Conversation) => void;
     onError: (error: Error, context?: any) => void;
 }
 
 export class ConversationManager {
     private static readonly STORAGE_KEY_PREFIX = 'encrypted_conversations';
-    private static readonly HANDSHAKE_TIMEOUT = 30 * 60 * 1000; // 30 minutes
     private static readonly ALIAS_LENGTH = 6; // 6 bytes = 12 hex characters
     private static readonly PROTOCOL_VERSION = 1;
 
     private conversations: Map<string, Conversation> = new Map();
     private aliasToConversation: Map<string, string> = new Map(); // alias -> conversationId
     private addressToConversation: Map<string, string> = new Map(); // kaspaAddress -> conversationId
-    private cleanupInterval: NodeJS.Timeout;
 
     constructor(
         private currentAddress: string,
         private events?: Partial<ConversationEvents>
     ) {
         this.loadConversations();
-        this.cleanupInterval = setInterval(() => this.cleanupExpiredHandshakes(), 60000);
     }
 
     private get storageKey(): string {
@@ -93,9 +88,7 @@ export class ConversationManager {
     }
 
     public destroy() {
-        if (this.cleanupInterval) {
-            clearInterval(this.cleanupInterval);
-        }
+        // Remove cleanup interval clearing since we're removing the timeout functionality
     }
 
     public async initiateHandshake(recipientAddress: string): Promise<{
@@ -115,13 +108,32 @@ export class ConversationManager {
                 if (conv && conv.status === 'active') {
                     throw new Error('Active conversation already exists with this address');
                 }
-                // Clean up old pending conversation
+                // Keep the first alias - reuse existing pending conversation
                 if (conv && conv.status === 'pending') {
-                    this.removeConversation(conv.conversationId);
+                    // Create handshake payload with the existing alias (keeps first alias)
+                    const handshakePayload: HandshakePayload = {
+                        type: 'handshake',
+                        alias: conv.myAlias,  // Keep the original alias
+                        timestamp: Date.now(),
+                        conversationId: conv.conversationId,
+                        version: ConversationManager.PROTOCOL_VERSION,
+                        recipientAddress: recipientAddress,
+                        sendToRecipient: true
+                    };
+
+                    // Format for blockchain transaction
+                    const payload = `ciph_msg:${ConversationManager.PROTOCOL_VERSION}:handshake:${JSON.stringify(handshakePayload)}`;
+
+                    // Update last activity to show it's still active
+                    conv.lastActivity = Date.now();
+                    this.saveConversation(conv);
+
+                    // Note: Not triggering onHandshakeInitiated again since it's a retry
+                    return { payload, conversation: conv };
                 }
             }
 
-            // Generate new conversation with unique alias
+            // Generate new conversation with unique alias (only for truly new handshakes)
             const conversation = this.createNewConversation(recipientAddress, true);
 
             // Create handshake payload - initial handshake is sent directly to recipient
@@ -177,7 +189,6 @@ export class ConversationManager {
                         existingConv.theirAlias = payload.alias;
                         existingConv.status = 'active';
                         existingConv.lastActivity = Date.now();
-                        delete existingConv.handshakeTimeout;
                         
                         // Save and notify
                         this.saveConversation(existingConv);
@@ -190,19 +201,75 @@ export class ConversationManager {
                         };
                     }
                     
-                    // If conversation is already active, just return it
+                    // If conversation is already active, check if this is a new handshake with different conversation ID
                     if (existingConv.status === 'active') {
+                        // Check if this is a new handshake from the same address (cache cleared scenario)
+                        if (!payload.isResponse && payload.conversationId !== existingConv.conversationId) {
+                            console.log('Detected new handshake from existing contact - they may have cleared their cache');
+                            console.log('Existing conversation ID:', existingConv.conversationId);
+                            console.log('New conversation ID:', payload.conversationId);
+                            console.log('Updating conversation with their new alias:', payload.alias);
+                            console.log('Our alias remains:', existingConv.myAlias);
+                            
+                            // Remove old alias mapping if it exists
+                            if (existingConv.theirAlias) {
+                                this.aliasToConversation.delete(existingConv.theirAlias);
+                            }
+                            
+                            // Update the existing conversation with new information
+                            existingConv.theirAlias = payload.alias;
+                            existingConv.lastActivity = Date.now();
+                            
+                            // Keep our conversation ID and alias, but update their alias
+                            // This maintains our conversation history while accepting their new identity
+                            
+                            // Save the updated conversation
+                            this.saveConversation(existingConv);
+                            
+                            // This requires a response to complete the re-handshake
+                            return {
+                                isNewHandshake: false,
+                                requiresResponse: true,
+                                conversation: existingConv
+                            };
+                        }
+                        
+                        // Normal case - existing active conversation with same ID
                         return {
                             isNewHandshake: false,
                             requiresResponse: false,
                             conversation: existingConv
                         };
+                    }
                 }
-            }
 
-            // If this is a response but we didn't find a matching conversation, ignore it
+            // If this is a response but we didn't find a matching conversation, create a new one
             if (payload.isResponse) {
-                throw new Error('No pending conversation found for handshake response');
+                console.log('Handshake response received but no pending conversation found. Creating new conversation.');
+                console.log('Available conversations:', Array.from(this.conversations.keys()));
+                console.log('Looking for conversation ID:', payload.conversationId);
+                console.log('Looking for sender address:', senderAddress);
+                
+                // Create a new conversation for this response
+                const newConversation: Conversation = {
+                    conversationId: payload.conversationId,
+                    myAlias: this.generateUniqueAlias(),
+                    theirAlias: payload.alias,
+                    kaspaAddress: senderAddress,
+                    createdAt: Date.now(),
+                    lastActivity: Date.now(),
+                    status: 'active',
+                    initiatedByMe: false
+                };
+                
+                this.saveConversation(newConversation);
+                this.events?.onHandshakeCompleted?.(newConversation);
+                
+                return {
+                    isNewHandshake: false,
+                    requiresResponse: false,
+                    conversation: newConversation
+                };
             }
 
             // This is a new handshake initiation
@@ -215,27 +282,37 @@ export class ConversationManager {
 
     public createHandshakeResponse(conversationId: string): string {
         const conversation = this.conversations.get(conversationId);
-        if (!conversation || conversation.status !== 'pending') {
-            throw new Error('Invalid conversation for handshake response');
+        if (!conversation) {
+            throw new Error('Conversation not found for handshake response');
+        }
+        
+        // Allow responses for both pending and active conversations (for cache recovery)
+        if (conversation.status !== 'pending' && conversation.status !== 'active') {
+            throw new Error('Invalid conversation status for handshake response');
         }
 
         if (!conversation.theirAlias) {
             throw new Error('Cannot create response without their alias');
         }
 
-        // Update conversation status to active when creating response
-        conversation.status = 'active';
-        conversation.lastActivity = Date.now();
-        delete conversation.handshakeTimeout;
-        this.saveConversation(conversation);
-        this.events?.onHandshakeCompleted?.(conversation);
+        // Update conversation status to active when creating response (if not already)
+        if (conversation.status !== 'active') {
+            conversation.status = 'active';
+            conversation.lastActivity = Date.now();
+            this.saveConversation(conversation);
+            this.events?.onHandshakeCompleted?.(conversation);
+        } else {
+            // For active conversations, just update last activity
+            conversation.lastActivity = Date.now();
+            this.saveConversation(conversation);
+        }
 
         const responsePayload: HandshakePayload = {
             type: 'handshake',
             alias: conversation.myAlias,
             theirAlias: conversation.theirAlias,  // Include their alias in response
             timestamp: Date.now(),
-            conversationId: conversation.conversationId,
+            conversationId: conversation.conversationId,  // Use our conversation ID
             version: ConversationManager.PROTOCOL_VERSION,
             recipientAddress: conversation.kaspaAddress,  // Include their address
             sendToRecipient: false,  // Set to false to use standard encryption
@@ -346,7 +423,6 @@ export class ConversationManager {
             createdAt: Date.now(),
             lastActivity: Date.now(),
             status: 'pending',
-            handshakeTimeout: Date.now() + ConversationManager.HANDSHAKE_TIMEOUT,
             initiatedByMe
         };
 
@@ -404,7 +480,6 @@ export class ConversationManager {
             createdAt: Date.now(),
             lastActivity: Date.now(),
             status: 'pending',
-            handshakeTimeout: Date.now() + ConversationManager.HANDSHAKE_TIMEOUT,
             initiatedByMe: false
         };
         
@@ -426,10 +501,6 @@ export class ConversationManager {
             throw new Error('Alias must be hexadecimal');
         }
 
-        if (Date.now() - payload.timestamp > ConversationManager.HANDSHAKE_TIMEOUT) {
-            throw new Error('Handshake payload expired');
-        }
-
         if (!payload.conversationId || typeof payload.conversationId !== 'string') {
             throw new Error('Invalid conversation ID');
         }
@@ -448,30 +519,6 @@ export class ConversationManager {
             this.aliasToConversation.set(conversation.theirAlias, conversation.conversationId);
         }
         this.saveToStorage();
-    }
-
-    private cleanupExpiredHandshakes() {
-        const now = Date.now();
-        const expiredConversations: Conversation[] = [];
-
-        for (const [id, conv] of this.conversations) {
-            if (conv.status === 'pending' && conv.handshakeTimeout && now > conv.handshakeTimeout) {
-                expiredConversations.push(conv);
-                this.conversations.delete(id);
-                this.addressToConversation.delete(conv.kaspaAddress);
-                this.aliasToConversation.delete(conv.myAlias);
-                if (conv.theirAlias) {
-                    this.aliasToConversation.delete(conv.theirAlias);
-                }
-            }
-        }
-
-        if (expiredConversations.length > 0) {
-            this.saveToStorage();
-            expiredConversations.forEach(conv => {
-                this.events?.onHandshakeExpired?.(conv);
-            });
-        }
     }
 
     public getMonitoredConversations(): { alias: string, address: string }[] {

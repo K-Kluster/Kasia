@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorage, WalletDerivationType } from "../utils/wallet-storage";
 import "./WalletGuard.css";
 import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../type/all";
 
 type Step = {
-  type: "home" | "create" | "import" | "unlock" | "finalizing";
+  type: "home" | "create" | "import" | "unlock" | "finalizing" | "migrate";
   mnemonic?: Mnemonic;
   name?: string;
-    };
+  walletId?: string; // For migration
+};
 
 type WalletGuardProps = {
   onSuccess: () => void;
@@ -23,6 +24,9 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
   const [step, setStep] = useState<Step>({ type: "home" });
   const [error, setError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [seedPhraseLength, setSeedPhraseLength] = useState<12 | 24>(24); // Default to 24 words
+  const [derivationType, setDerivationType] = useState<WalletDerivationType>('standard'); // Default to standard
+  const [focusedMnemonicIndex, setFocusedMnemonicIndex] = useState<number | null>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -37,6 +41,7 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
     deleteWallet,
     unlock,
     lock,
+    migrateLegacyWallet,
     selectedNetwork: currentSelectedNetwork
   } = useWalletStore();
 
@@ -55,8 +60,8 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
 
   if (!isMounted) return null;
 
-  const onClickStep = (type: Step["type"]) => {
-    setStep({ type });
+  const onClickStep = (type: Step["type"], walletId?: string) => {
+    setStep({ type, walletId });
     setError(null);
   };
 
@@ -67,10 +72,20 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
     }
 
     try {
-      const mnemonic = Mnemonic.random();
-      await createWallet(nameRef.current.value, mnemonic, passwordRef.current.value);
+      // Generate mnemonic with specified word count
+      // Pass the word count parameter to Mnemonic.random()
+      const mnemonic = Mnemonic.random(seedPhraseLength);
+      
+      // Verify the mnemonic has the correct word count
+      const wordCount = mnemonic.phrase.split(' ').length;
+      if (wordCount !== seedPhraseLength) {
+        throw new Error(`Generated mnemonic has ${wordCount} words, expected ${seedPhraseLength}`);
+      }
+      
+      await createWallet(nameRef.current.value, mnemonic, passwordRef.current.value, derivationType);
       setStep({ type: "finalizing", mnemonic });
     } catch (err) {
+      console.error("Wallet creation error:", err);
       setError(err instanceof Error ? err.message : "Failed to create wallet");
     }
   };
@@ -83,7 +98,7 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
 
     try {
       const mnemonic = new Mnemonic(mnemonicRef.current.value);
-      await createWallet(nameRef.current.value, mnemonic, passwordRef.current.value);
+      await createWallet(nameRef.current.value, mnemonic, passwordRef.current.value, derivationType);
       setStep({ type: "finalizing" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid mnemonic");
@@ -114,6 +129,23 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
     }
   };
 
+  const onMigrateWallet = async () => {
+    if (!step.walletId || !passwordRef.current?.value || !nameRef.current?.value) {
+      setError("Please enter all required fields");
+      return;
+    }
+
+    try {
+      await migrateLegacyWallet(step.walletId, passwordRef.current.value, nameRef.current.value);
+      setStep({ type: "home" });
+      setError(null);
+      // Show success message
+      alert("Wallet migrated successfully! You can now use the new standard wallet.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to migrate wallet");
+    }
+  };
+
   const onDeleteWallet = (walletId: string) => {
     if (window.confirm("Are you sure you want to delete this wallet?")) {
       deleteWallet(walletId);
@@ -125,6 +157,14 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
     setStep({ type: "unlock" });
   };
 
+  const getDerivationTypeDisplay = (derivationType?: WalletDerivationType) => {
+    if (derivationType === 'standard') {
+      return <span className="derivation-standard">Standard (Kaspium Compatible)</span>;
+    } else {
+      return <span className="derivation-legacy">Legacy</span>;
+    }
+  };
+
   if (step.type === "home") {
     return (
       <div className="wallet-guard">
@@ -134,24 +174,36 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
           isConnected={isConnected}
         />
         <h2>Select Wallet</h2>
-          <div className="wallet-list">
-            {wallets.map((wallet) => (
-              <div key={wallet.id} className="wallet-item">
-                <div className="wallet-info">
+        <div className="wallet-list">
+          {wallets.map((wallet) => (
+            <div key={wallet.id} className="wallet-item">
+              <div className="wallet-info">
                 <div className="wallet-name">{wallet.name}</div>
                 <div className="wallet-created">Created: {new Date(wallet.createdAt).toLocaleDateString()}</div>
+                <div className="wallet-derivation">
+                  {getDerivationTypeDisplay(wallet.derivationType)}
+                  {wallet.derivationType === 'legacy' && (
+                    <button 
+                      onClick={() => onClickStep("migrate", wallet.id)} 
+                      className="migrate-button"
+                      title="Migrate to standard derivation for Kaspium compatibility"
+                    >
+                      Migrate
+                    </button>
+                  )}
                 </div>
-                <div className="wallet-actions">
+              </div>
+              <div className="wallet-actions">
                 <button onClick={() => onSelectWallet(wallet)} className="select-button">
                   Select
                 </button>
                 <button onClick={() => onDeleteWallet(wallet.id)} className="delete-button">
                   Delete
                 </button>
-                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
         <div className="wallet-options">
           <button onClick={() => onClickStep("create")} className="create-wallet-button">
             Create New Wallet
@@ -168,21 +220,108 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
     return (
       <div className="wallet-guard">
         <h2>{step.type === "create" ? "Create New Wallet" : "Import Wallet"}</h2>
+        
+        {/* Derivation Type Selection */}
+        <div className="form-group">
+          <label>Derivation Standard</label>
+          <div className="derivation-options">
+            <label className="radio-option">
+              <input
+                type="radio"
+                name="derivationType"
+                value="standard"
+                checked={derivationType === 'standard'}
+                onChange={(e) => setDerivationType(e.target.value as WalletDerivationType)}
+              />
+              <span>Standard (Recommended)</span>
+              <small>Compatible with Kaspium and other standard wallets</small>
+            </label>
+            <label className="radio-option">
+              <input
+                type="radio"
+                name="derivationType"
+                value="legacy"
+                checked={derivationType === 'legacy'}
+                onChange={(e) => setDerivationType(e.target.value as WalletDerivationType)}
+              />
+              <span>Legacy</span>
+              <small>For compatibility with older wallets</small>
+            </label>
+          </div>
+        </div>
+
         <div className="form-group">
           <label>Wallet Name</label>
           <input ref={nameRef} type="text" placeholder="My Wallet" />
         </div>
+
+        {step.type === "create" && (
+          <div className="form-group">
+            <label>Seed Phrase Length</label>
+            <div className="seed-length-options">
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="seedLength"
+                  value="12"
+                  checked={seedPhraseLength === 12}
+                  onChange={() => setSeedPhraseLength(12)}
+                />
+                <span>12 words</span>
+                <small>128-bit entropy</small>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="seedLength"
+                  value="24"
+                  checked={seedPhraseLength === 24}
+                  onChange={() => setSeedPhraseLength(24)}
+                />
+                <span>24 words (Recommended)</span>
+                <small>256-bit entropy</small>
+              </label>
+            </div>
+          </div>
+        )}
+
         {step.type === "import" && (
           <div className="form-group">
+            <label>Seed Phrase Length</label>
+            <div className="seed-length-options">
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="importSeedLength"
+                  value="12"
+                  checked={seedPhraseLength === 12}
+                  onChange={() => setSeedPhraseLength(12)}
+                />
+                <span>12 words</span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="importSeedLength"
+                  value="24"
+                  checked={seedPhraseLength === 24}
+                  onChange={() => setSeedPhraseLength(24)}
+                />
+                <span>24 words</span>
+              </label>
+            </div>
+            
             <label>Mnemonic Phrase</label>
             <div className="mnemonic-input-grid">
-              {Array.from({ length: 24 }, (_, i) => (
+              {Array.from({ length: seedPhraseLength }, (_, i) => (
                 <input
                   key={i}
-                  type="password"
+                  type={focusedMnemonicIndex === i ? "text" : "password"}
                   placeholder={`Word ${i + 1}`}
                   className="mnemonic-word-input"
                   data-index={i}
+                  onFocus={() => setFocusedMnemonicIndex(i)}
+                  onBlur={() => setFocusedMnemonicIndex(null)}
                   onPaste={(e) => {
                     if (i === 0) {
                       e.preventDefault();
@@ -193,14 +332,14 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
                       const allInputs = inputElement.parentElement?.querySelectorAll('input');
                       if (!allInputs) return;
 
-                      words.slice(0, 24).forEach((word, index) => {
+                      words.slice(0, seedPhraseLength).forEach((word, index) => {
                         if (allInputs[index]) {
                           (allInputs[index] as HTMLInputElement).value = word;
                         }
                       });
 
                       if (mnemonicRef.current) {
-                        mnemonicRef.current.value = words.slice(0, 24).join(' ');
+                        mnemonicRef.current.value = words.slice(0, seedPhraseLength).join(' ');
                       }
                     }
                   }}
@@ -221,6 +360,7 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
             />
           </div>
         )}
+
         <div className="form-group">
           <label>Password</label>
           <input ref={passwordRef} type="password" placeholder="Enter password" />
@@ -231,6 +371,40 @@ export const WalletGuard = ({ onSuccess, selectedNetwork, onNetworkChange, isCon
           <button onClick={step.type === "create" ? onCreateWallet : onImportWallet}>
             {step.type === "create" ? "Create" : "Import"}
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step.type === "migrate") {
+    const walletToMigrate = wallets.find(w => w.id === step.walletId);
+    return (
+      <div className="wallet-guard">
+        <h2>Migrate Legacy Wallet</h2>
+        <div className="migration-info">
+          <p>Migrating wallet: <strong>{walletToMigrate?.name}</strong></p>
+          <p>This will create a new wallet using the standard Kaspa derivation path (m/44'/111111'/0') that is compatible with Kaspium and other standard wallets.</p>
+          <div className="warning-message">
+            ⚠️ Your original wallet will remain unchanged. You'll need to transfer funds to the new wallet addresses.
+          </div>
+        </div>
+        <div className="form-group">
+          <label>New Wallet Name</label>
+          <input 
+            ref={nameRef} 
+            type="text" 
+            placeholder={`${walletToMigrate?.name} (Standard)`}
+            defaultValue={`${walletToMigrate?.name} (Standard)`}
+          />
+        </div>
+        <div className="form-group">
+          <label>Password</label>
+          <input ref={passwordRef} type="password" placeholder="Enter your current wallet password" />
+        </div>
+        {error && <div className="error">{error}</div>}
+        <div className="form-actions">
+          <button onClick={() => onClickStep("home")}>Cancel</button>
+          <button onClick={onMigrateWallet}>Migrate Wallet</button>
         </div>
       </div>
     );

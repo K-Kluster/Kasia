@@ -8,6 +8,7 @@ import { getApiEndpoint } from "../config/nodes";
 import "./FetchApiMessages.css";
 import { CipherHelper } from "../utils/cipher-helper";
 import { Message } from "../type/all";
+import { decryptXChaCha20Poly1305, XPrv, PrivateKeyGenerator } from "kaspa-wasm";
 
 type FetchApiMessagesProps = {
   address: string;
@@ -60,7 +61,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
           ? encodeURIComponent(currentAddress)
           : encodeURIComponent(`${networkId === 'mainnet' ? 'kaspa:' : 'kaspatest:'}${currentAddress}`);
         
-        const apiUrl = `${baseUrl}/addresses/${formattedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`;
+        const apiUrl = `${baseUrl}/addresses/${formattedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=light`;
         
         console.log(`API Messages: Fetching from URL for address ${currentAddress}:`, apiUrl);
         
@@ -91,11 +92,19 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         console.log(`API Messages: Processing new transaction: ${tx.transaction_id}`);
         
         // For each transaction, determine if this is incoming or outgoing
+        // Use the original logic to preserve existing functionality
         const recipientAddress = tx.outputs[0]?.script_public_key_address || "Unknown";
-          const isIncoming = recipientAddress === currentAddress;
-        const senderAddress = isIncoming ? 
+        const isIncoming = recipientAddress === currentAddress;
+        let senderAddress = isIncoming ? 
           (tx.inputs[0]?.previous_outpoint_address || "Unknown") : 
-            currentAddress;
+          currentAddress;
+          
+        console.log(`API Messages: Transaction ${tx.transaction_id}:`);
+        console.log(`- Current address: ${currentAddress}`);
+        console.log(`- Recipient address: ${recipientAddress}`);
+        console.log(`- Is incoming: ${isIncoming}`);
+        console.log(`- Input[0] previous_outpoint_address: ${tx.inputs[0]?.previous_outpoint_address}`);
+        console.log(`- Determined sender address: ${senderAddress}`);
           
         // Try to decrypt the message
         let decryptedContent = "";
@@ -159,6 +168,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
               walletStore.unlockedWallet.password
             );
             
+            console.log(`API Messages: Using wallet derivation type: ${walletStore.unlockedWallet.derivationType}`);
+            
             // Try multiple private keys
               const maxKeys = 20; // Try up to 20 keys for each type
             let decryptionSuccess = false;
@@ -184,12 +195,39 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     successfulKeyIndex = i;
                     console.log(`API Messages: Successfully decrypted with receive key at index ${i} (${privateKeyHex.substring(0, 8)}...)`);
                     
+                    // If this is a handshake message and sender is still unknown, try to extract from payload
+                    if (senderAddress === "Unknown" && result.includes("handshake")) {
+                      try {
+                        const handshakeMatch = result.match(/ciph_msg:1:handshake:(.+)/);
+                        if (handshakeMatch) {
+                          const handshakeData = JSON.parse(handshakeMatch[1]);
+                          // For handshake responses, look for the original recipient address
+                          if (handshakeData.isResponse && handshakeData.recipientAddress) {
+                            // In a handshake response, the recipientAddress field contains the original initiator's address
+                            console.log(`API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`);
+                            senderAddress = handshakeData.recipientAddress;
+                          } else if (!handshakeData.isResponse) {
+                            // For initial handshakes, try to find sender from transaction outputs
+                            const changeOutput = tx.outputs.find(output => 
+                              output.script_public_key_address !== currentAddress
+                            );
+                            if (changeOutput) {
+                              console.log(`API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`);
+                              senderAddress = changeOutput.script_public_key_address || "Unknown";
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        console.log(`API Messages: Could not extract sender from handshake payload: ${e}`);
+                      }
+                    }
+                    
                     // Create and store the decrypted message
                     const message: Message = {
-                      senderAddress: tx.outputs[0].script_public_key_address || "Unknown",
-                      recipientAddress: walletStore.address?.toString() || "Unknown",
+                      senderAddress: senderAddress,
+                      recipientAddress: recipientAddress,
                       timestamp: tx.block_time || Date.now(),
-                      content: decryptedContent,
+                      content: result,
                       payload: tx.payload,
                       amount: tx.outputs[0].amount || 0,
                       fee: 0,
@@ -224,12 +262,39 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       successfulKeyIndex = i;
                       console.log(`API Messages: Successfully decrypted with change key at index ${i} (${privateKeyHex.substring(0, 8)}...)`);
                       
+                      // If this is a handshake message and sender is still unknown, try to extract from payload
+                      if (senderAddress === "Unknown" && result.includes("handshake")) {
+                        try {
+                          const handshakeMatch = result.match(/ciph_msg:1:handshake:(.+)/);
+                          if (handshakeMatch) {
+                            const handshakeData = JSON.parse(handshakeMatch[1]);
+                            // For handshake responses, look for the original recipient address
+                            if (handshakeData.isResponse && handshakeData.recipientAddress) {
+                              // In a handshake response, the recipientAddress field contains the original initiator's address
+                              console.log(`API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`);
+                              senderAddress = handshakeData.recipientAddress;
+                            } else if (!handshakeData.isResponse) {
+                              // For initial handshakes, try to find sender from transaction outputs
+                              const changeOutput = tx.outputs.find(output => 
+                                output.script_public_key_address !== currentAddress
+                              );
+                              if (changeOutput) {
+                                console.log(`API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`);
+                                senderAddress = changeOutput.script_public_key_address || "Unknown";
+                              }
+                            }
+                          }
+                        } catch (e) {
+                          console.log(`API Messages: Could not extract sender from handshake payload: ${e}`);
+                        }
+                      }
+                      
                       // Create and store the decrypted message
                       const message: Message = {
-                        senderAddress: tx.outputs[0].script_public_key_address || "Unknown",
-                        recipientAddress: walletStore.address?.toString() || "Unknown",
+                        senderAddress: senderAddress,
+                        recipientAddress: recipientAddress,
                         timestamp: tx.block_time || Date.now(),
-                        content: decryptedContent,
+                        content: result,
                         payload: tx.payload,
                         amount: tx.outputs[0].amount || 0,
                         fee: 0,
@@ -245,8 +310,71 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
               }
             }
             
+            // If still not decrypted and we're using standard derivation, try legacy derivation
+            if (!decryptionSuccess && walletStore.unlockedWallet.derivationType === 'standard') {
+              console.log(`API Messages: Trying legacy derivation keys as fallback...`);
+              
+              // Create a temporary legacy key generator
+              const seed = decryptXChaCha20Poly1305(walletStore.unlockedWallet.encryptedXPrv, walletStore.unlockedWallet.password);
+              const xprv = new XPrv(seed);
+              const legacyKeyGenerator = new PrivateKeyGenerator(xprv, false, BigInt(1)); // Legacy uses account index 1
+              
+              // Try legacy receive keys
+              for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
+                try {
+                  console.log(`API Messages: Trying legacy receive key at index ${i}`);
+                  const privateKey = legacyKeyGenerator.receiveKey(i);
+                  const privateKeyHex = privateKey.toString();
+                  
+                  const messageId = `${tx.transaction_id}_legacy_receive_${i}`;
+                  const result = await CipherHelper.tryDecrypt(encryptedContent, privateKeyHex, messageId);
+                  
+                  if (result) {
+                    decryptedContent = result;
+                    decryptionSuccess = true;
+                    successfulKeyType = 'legacy_receive';
+                    successfulKeyIndex = i;
+                    console.log(`API Messages: Successfully decrypted with legacy receive key at index ${i}`);
+                    
+                    // Extract sender from handshake payload if needed
+                    if (senderAddress === "Unknown" && result.includes("handshake")) {
+                      try {
+                        const handshakeMatch = result.match(/ciph_msg:1:handshake:(.+)/);
+                        if (handshakeMatch) {
+                          const handshakeData = JSON.parse(handshakeMatch[1]);
+                          if (handshakeData.isResponse && handshakeData.recipientAddress) {
+                            console.log(`API Messages: Extracted sender from legacy handshake response: ${handshakeData.recipientAddress}`);
+                            senderAddress = handshakeData.recipientAddress;
+                          }
+                        }
+                      } catch (e) {
+                        console.log(`API Messages: Could not extract sender from legacy handshake payload: ${e}`);
+                      }
+                    }
+                    
+                    // Create and store the decrypted message
+                    const message: Message = {
+                      senderAddress: senderAddress,
+                      recipientAddress: recipientAddress,
+                      timestamp: tx.block_time || Date.now(),
+                      content: result,
+                      payload: tx.payload,
+                      amount: tx.outputs[0].amount || 0,
+                      fee: 0,
+                      transactionId: tx.transaction_id
+                    };
+                    
+                    messagingStore.storeMessage(message, walletStore.address?.toString() || "");
+                    break;
+                  }
+                } catch (e: any) {
+                  console.log(`API Messages: Failed to decrypt with legacy receive key at index ${i}: ${e.message}`);
+                }
+              }
+            }
+            
             if (!decryptionSuccess) {
-                console.log(`API Messages: Could not decrypt message for transaction ${tx.transaction_id} after trying ${maxKeys} receive keys and ${maxKeys} change keys`);
+                console.log(`API Messages: Could not decrypt message for transaction ${tx.transaction_id} after trying ${maxKeys} receive keys and ${maxKeys} change keys${walletStore.unlockedWallet.derivationType === 'standard' ? ' and legacy keys' : ''}`);
               decryptedContent = "[Could not decrypt message]";
               } else {
                 console.log(`API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex}`);
