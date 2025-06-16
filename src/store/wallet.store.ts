@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { KaspaClient } from "../utils/all-in-one";
-import { UnlockedWallet, WalletStorage } from "../utils/wallet-storage";
+import { UnlockedWallet, WalletStorage, WalletDerivationType } from "../utils/wallet-storage";
 import { Address, Mnemonic, UtxoEntryReference } from "kaspa-wasm";
 import { AccountService } from "../service/account-service";
 import { encrypt_message } from "cipher";
@@ -10,7 +10,7 @@ import { formatKasAmount } from "../utils/format";
 import { NetworkType } from "../type/all";
 
 type WalletState = {
-  wallets: { id: string; name: string; createdAt: string }[];
+  wallets: { id: string; name: string; createdAt: string; derivationType?: WalletDerivationType }[];
   selectedWalletId: string | null;
   unlockedWallet: UnlockedWallet | null;
   address: Address | null;
@@ -29,10 +29,13 @@ type WalletState = {
   // wallet management
   loadWallets: () => void;
   selectWallet: (walletId: string) => void;
-  createWallet: (name: string, mnemonic: Mnemonic, password: string) => Promise<string>;
+  createWallet: (name: string, mnemonic: Mnemonic, password: string, derivationType?: WalletDerivationType) => Promise<string>;
   deleteWallet: (walletId: string) => void;
   unlock: (walletId: string, password: string) => Promise<UnlockedWallet | null>;
   lock: () => void;
+  
+  // migration functionality
+  migrateLegacyWallet: (walletId: string, password: string, newName?: string) => Promise<string>;
 
   // wallet operations
   start: (client: KaspaClient) => Promise<{ receiveAddress: Address }>;
@@ -74,8 +77,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
       set({ selectedWalletId: walletId });
     },
 
-    createWallet: async (name: string, mnemonic: Mnemonic, password: string) => {
-      const walletId = _walletStorage.create(name, mnemonic, password);
+    createWallet: async (name: string, mnemonic: Mnemonic, password: string, derivationType?: WalletDerivationType) => {
+      const walletId = _walletStorage.create(name, mnemonic, password, derivationType);
       get().loadWallets();
       return walletId;
     },
@@ -401,6 +404,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
         // Update the RPC client
         set({ rpcClient: client });
       }
+    },
+
+    migrateLegacyWallet: async (walletId: string, password: string, newName?: string) => {
+      const newWalletId = await _walletStorage.migrateLegacyWallet(walletId, password, newName);
+      get().loadWallets();
+      return newWalletId;
     },
   };
 });

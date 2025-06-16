@@ -22,8 +22,33 @@ export const ContactCard: FC<{
   const shortAddress = useMemo(() => {
     if (!contact?.address) return "Unknown";
     const addr = contact.address;
-    return `${addr.substring(0, 8)}...${addr.substring(addr.length - 8)}`;
-  }, [contact?.address]);
+    
+    // If address is "Unknown", try to extract a better name from the message content
+    if (addr === "Unknown") {
+      // Try to extract alias from handshake messages
+      if (contact.lastMessage?.payload?.includes("handshake")) {
+        try {
+          const handshakeMatch = contact.lastMessage.payload.match(/ciph_msg:1:handshake:(.+)/);
+          if (handshakeMatch) {
+            const handshakeData = JSON.parse(handshakeMatch[1]);
+            if (handshakeData.alias) {
+              return `Alias: ${handshakeData.alias}`;
+            }
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+      return "Unknown Contact";
+    }
+    
+    // For valid Kaspa addresses, show truncated version
+    if (addr.startsWith('kaspa:') || addr.startsWith('kaspatest:')) {
+      return `${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}`;
+    }
+    
+    return addr;
+  }, [contact?.address, contact?.lastMessage?.payload]);
 
   // Don't render if we don't have a valid contact
   if (!contact?.address) {
