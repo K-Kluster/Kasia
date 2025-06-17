@@ -32,6 +32,7 @@ export type RejectedConversation = BaseConversation & {
 
 export type PendingConversation = BaseConversation & {
   status: "pending";
+  // @QUESTION: where is this data populated?
   handshakeTimeout: number | undefined;
 };
 
@@ -56,5 +57,6 @@ export interface ConversationEvents {
   onHandshakeInitiated: (conversation: Conversation) => void;
   onHandshakeCompleted: (conversation: Conversation) => void;
   onHandshakeExpired: (conversation: Conversation) => void;
+  // @QUESTION: where is context defined? what is its purpose?
   onError: (error: Error, context?: any) => void;
 }

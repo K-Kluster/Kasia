@@ -1,11 +1,10 @@
-import { FC, useMemo, useState, useEffect, useRef } from "react";
+import { FC, useMemo, useState, useEffect, useCallback } from "react";
 import { formatKasAmount } from "../utils/format";
 import { FeeBuckets } from "./FeeBuckets";
 import { useWalletStore } from "../store/wallet.store";
-import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
-import { sendTransaction } from "../service/account-service";
 import { toDataURL } from "qrcode";
-import { StoredWallet, Wallet } from "src/types/wallet.type";
+import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
+import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 
 type WalletInfoProps = {
   state: "connected" | "detected" | "not-detected";
@@ -26,37 +25,15 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   isWalletReady,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [showSeedPhrase, setShowSeedPhrase] = useState(false);
-  const [seedPhrase, setSeedPhrase] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isBlurred, setIsBlurred] = useState(true);
-  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const isAccountServiceRunning = useWalletStore(
     (state) => state.isAccountServiceRunning
   );
   const walletBalance = useWalletStore((state) => state.balance);
-  const selectedWalletId = useWalletStore((state) => state.selectedWalletId);
-  const wallets = useWalletStore((state) => state.wallets);
 
-  // Add new state for withdraw functionality
-  const [withdrawAddress, setWithdrawAddress] = useState("");
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawError, setWithdrawError] = useState("");
-  const [isSending, setIsSending] = useState(false);
   const [copyNotification, setCopyNotification] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
-
-  // Clear timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (blurTimeoutRef.current) {
-        clearTimeout(blurTimeoutRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!address) {
@@ -134,105 +111,10 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   };
 
   // Add handler for QR code generation
-  const handleShowQRCode = () => {
+  const handleShowQRCode = useCallback(() => {
     console.log("QR button clicked, current state:", showQRCode);
     setShowQRCode(!showQRCode);
-  };
-
-  const handleBlurToggle = (shouldBlur: boolean) => {
-    // Clear any existing timeout
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-      blurTimeoutRef.current = null;
-    }
-
-    setIsBlurred(shouldBlur);
-
-    // If unblurring, set a timeout to re-blur after 5 seconds
-    if (!shouldBlur) {
-      blurTimeoutRef.current = setTimeout(() => {
-        setIsBlurred(true);
-      }, 5000);
-    }
-  };
-
-  const handleViewSeedPhrase = async () => {
-    try {
-      setError("");
-      if (!selectedWalletId) {
-        setError("No wallet selected");
-        return;
-      }
-
-      // Get the stored wallet data
-      const walletsString = localStorage.getItem("wallets");
-      if (!walletsString) {
-        setError("No wallets found");
-        return;
-      }
-
-      const storedWallets: StoredWallet[] = JSON.parse(walletsString);
-      const foundStoredWallet = storedWallets.find(
-        (w) => w.id === selectedWalletId
-      );
-      if (!foundStoredWallet) {
-        setError("Wallet not found");
-        return;
-      }
-
-      // Decrypt the seed phrase
-      const phrase = decryptXChaCha20Poly1305(
-        foundStoredWallet.encryptedPhrase,
-        password
-      );
-      setSeedPhrase(phrase);
-      setShowSeedPhrase(true);
-    } catch (error) {
-      console.error("Error viewing seed phrase:", error);
-      setError("Invalid password");
-    }
-  };
-
-  // Add handler for withdraw
-  const handleWithdraw = async () => {
-    try {
-      setWithdrawError("");
-      setIsSending(true);
-
-      if (!withdrawAddress || !withdrawAmount) {
-        throw new Error("Please enter both address and amount");
-      }
-
-      const amount = parseFloat(withdrawAmount);
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error("Please enter a valid amount");
-      }
-
-      // Use mature balance directly since it's already in KAS
-      const matureBalanceKAS = walletBalance?.mature || 0;
-      console.log("Balance check:", {
-        amount,
-        matureBalanceKAS,
-        walletBalance,
-      });
-
-      if (amount > matureBalanceKAS) {
-        throw new Error(
-          `Insufficient balance. Available: ${matureBalanceKAS.toFixed(8)} KAS`
-        );
-      }
-
-      await sendTransaction(withdrawAddress, amount);
-      setWithdrawAddress("");
-      setWithdrawAmount("");
-    } catch (error) {
-      setWithdrawError(
-        error instanceof Error ? error.message : "Failed to send transaction"
-      );
-    } finally {
-      setIsSending(false);
-    }
-  };
+  }, [showQRCode]);
 
   const walletInfoNode = useMemo(() => {
     // Only show initialization state if the service isn't running
@@ -455,136 +337,21 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           )}
         </div>
         <div className="info-box">
-          <h3>Withdraw KAS</h3>
-          <div className="withdraw-section" style={{ marginTop: "10px" }}>
-            <input
-              type="text"
-              value={withdrawAddress}
-              onChange={(e) => setWithdrawAddress(e.target.value)}
-              placeholder="Enter Kaspa address"
-              style={{
-                width: "100%",
-                padding: "8px",
-                marginBottom: "8px",
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "4px",
-                color: "white",
-              }}
-            />
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <input
-                type="number"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                placeholder="Amount (KAS)"
-                style={{
-                  flex: 1,
-                  padding: "8px",
-                  backgroundColor: "rgba(0, 0, 0, 0.3)",
-                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                  borderRadius: "4px",
-                  color: "white",
-                }}
-              />
-              <button
-                onClick={handleWithdraw}
-                disabled={isSending}
-                style={{
-                  padding: "8px 16px",
-                  backgroundColor: "#2196f3",
-                  border: "none",
-                  borderRadius: "4px",
-                  color: "white",
-                  cursor: "pointer",
-                  opacity: isSending ? 0.7 : 1,
-                }}
-              >
-                {isSending ? "Sending..." : "Send"}
-              </button>
-            </div>
-            {withdrawError && (
-              <div
-                style={{
-                  color: "#ff4444",
-                  marginTop: "8px",
-                  fontSize: "14px",
-                  textAlign: "center",
-                }}
-              >
-                {withdrawError}
-              </div>
-            )}
-          </div>
+          <WalletWithdrawal walletBalance={walletBalance} />
         </div>
         <div className="seed-phrase-section">
-          <h4>Security</h4>
-          <p className="warning">
-            Warning: Never share your seed phrase with anyone. Anyone with
-            access to your seed phrase can access your funds.
-          </p>
-          {!showSeedPhrase ? (
-            <div>
-              <p>Enter your password to view seed phrase:</p>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter wallet password"
-              />
-              <button onClick={handleViewSeedPhrase}>View Seed Phrase</button>
-              {error && <p className="error">{error}</p>}
-            </div>
-          ) : (
-            <div>
-              <p>Your seed phrase:</p>
-              <div className={`seed-phrase ${isBlurred ? "blurred" : ""}`}>
-                {seedPhrase}
-              </div>
-              <div className="visibility-toggle">
-                <input
-                  type="checkbox"
-                  id="toggleVisibility"
-                  checked={!isBlurred}
-                  onChange={(e) => handleBlurToggle(!e.target.checked)}
-                />
-                <label htmlFor="toggleVisibility" className="eye-icon">
-                  {isBlurred ? "👁️" : "👁️"}
-                </label>
-              </div>
-              <button
-                onClick={() => {
-                  setShowSeedPhrase(false);
-                  setSeedPhrase("");
-                  setPassword("");
-                  setIsBlurred(true);
-                }}
-              >
-                Hide Seed Phrase
-              </button>
-            </div>
-          )}
+          <WalletSeedRetreiveDisplay />
         </div>
       </>
     );
   }, [
-    address,
-    walletBalance,
     isAccountServiceRunning,
-    showSeedPhrase,
-    seedPhrase,
-    password,
-    error,
-    isBlurred,
-    withdrawAddress,
-    withdrawAmount,
-    withdrawError,
-    isSending,
+    walletBalance,
+    address,
     copyNotification,
     showQRCode,
-    handleCopyAddress,
-    handleShowQRCode,
     qrCodeURL,
+    handleShowQRCode,
   ]);
 
   if (!isWalletReady) return null;

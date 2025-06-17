@@ -1,6 +1,3 @@
-import { KaspaClient } from "src/utils/all-in-one";
-import { PublicKeyGenerator } from "wasm/kaspa";
-
 export type Message = {
   transactionId: string;
   senderAddress: string;
@@ -33,17 +30,17 @@ export interface BlockAddedData {
   data: Data;
 }
 
-export interface Data {
+interface Data {
   block: Block;
 }
 
-export interface Block {
+interface Block {
   header: Header;
   transactions: Transaction[];
   verboseData: VerboseData3;
 }
 
-export interface Header {
+interface Header {
   hash: string;
   version: number;
   parentsByLevel: string[][];
@@ -122,5 +119,3 @@ export interface VerboseData3 {
   mergeSetRedsHashes: never[];
   isChainBlock: boolean;
 }
-
-

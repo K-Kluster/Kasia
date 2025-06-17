@@ -1,12 +1,17 @@
 import { create } from "zustand";
 import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
-import { Address, Mnemonic } from "kaspa-wasm";
+import { Address, Mnemonic, UtxoEntryReference } from "kaspa-wasm";
 import { AccountService } from "../service/account-service";
 import { encrypt_message } from "cipher";
 import { useMessagingStore } from "./messaging.store";
 import { NetworkType } from "../types/all";
-import { WalletDerivationType, UnlockedWallet } from "src/types/wallet.type";
+import {
+  WalletDerivationType,
+  UnlockedWallet,
+  WalletBalance,
+} from "../types/wallet.type";
+import { TransactionId } from "../types/transactions";
 
 type WalletState = {
   wallets: {
@@ -18,13 +23,7 @@ type WalletState = {
   selectedWalletId: string | null;
   unlockedWallet: UnlockedWallet | null;
   address: Address | null;
-  balance: {
-    mature: number;
-    pending: number;
-    outgoing: number;
-    matureUtxoCount: number;
-    pendingUtxoCount: number;
-  } | null;
+  balance: WalletBalance;
   rpcClient: KaspaClient | null;
   isAccountServiceRunning: boolean;
   accountService: AccountService | null;
@@ -60,13 +59,13 @@ type WalletState = {
     message: string,
     toAddress: Address,
     password: string
-  ) => Promise<any>;
+  ) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
     preEncryptedHex: string,
     toAddress: Address,
     password: string
-  ) => Promise<any>;
-  getMatureUtxos: () => any[];
+  ) => Promise<TransactionId>;
+  getMatureUtxos: () => UtxoEntryReference[];
 
   // new methods
   estimateMessageFee: (
@@ -386,11 +385,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
           message.startsWith("ciph_msg:") &&
           message.includes(":handshake:")
         ) {
-          // Parse the handshake payload
-          const parts = message.split(":");
-          const jsonPart = parts.slice(3).join(":");
-          const handshakePayload = JSON.parse(jsonPart);
-
           // Always send handshake messages to the recipient's address
           console.log("Sending handshake message to:", toAddress.toString());
           const encryptedMessage = await encrypt_message(

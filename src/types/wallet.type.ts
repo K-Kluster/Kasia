@@ -31,3 +31,11 @@ export type StoredWallet = {
   // Add derivation type to track wallet standard
   derivationType?: WalletDerivationType; // Optional for backward compatibility
 };
+
+export type WalletBalance = {
+  mature: number;
+  pending: number;
+  outgoing: number;
+  matureUtxoCount: number;
+  pendingUtxoCount: number;
+} | null;

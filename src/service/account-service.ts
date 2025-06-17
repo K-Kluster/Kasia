@@ -9,6 +9,7 @@ import {
   UtxoEntry,
   IUtxosChanged,
   ITransaction,
+  FeeSource,
 } from "kaspa-wasm";
 import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -18,6 +19,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { UnlockedWallet } from "src/types/wallet.type";
+import { TransactionId } from "src/types/transactions";
 
 // Message related types
 type DecodedMessage = {
@@ -67,7 +69,7 @@ type SendMessageWithContextArgs = {
 type CreateTransactionArgs = {
   address: Address;
   amount: bigint;
-  payload: string;
+  payload?: string;
   payloadSize?: number;
   messageLength?: number;
 };
@@ -436,7 +438,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   public async createTransaction(
     transaction: CreateTransactionArgs,
     password: string
-  ): Promise<string> {
+  ): Promise<TransactionId> {
     if (!this.isStarted || !this.rpcClient.rpc) {
       throw new Error("Account service is not started");
     }
@@ -451,10 +453,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     if (!transaction.amount) {
       throw new Error("Transaction amount is required");
-    }
-
-    if (!transaction.payload) {
-      throw new Error("Transaction payload is required");
     }
 
     console.log("=== CREATING TRANSACTION ===");
@@ -473,7 +471,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         transaction.amount
       } sompi)`
     );
-    console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
+
+    if (transaction.payload) {
+      console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
+    }
 
     const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
       this.unlockedWallet,
@@ -485,6 +486,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     // Ensure the destination address has the proper prefix
+    // @QUESTION: shouldn't we use the 'corrected' version of the address?
+    //            it's ignored currently
     const destinationAddress = this.ensureAddressPrefix(transaction.address);
 
     if (!this.context) {
@@ -888,7 +891,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  public async sendMessage(sendMessage: SendMessageArgs): Promise<string> {
+  public async sendMessage(
+    sendMessage: SendMessageArgs
+  ): Promise<TransactionId> {
     this.ensurePasswordSet();
     const minimumAmount = kaspaToSompi("0.2");
 
@@ -1086,10 +1091,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const isDirectSelfMessage =
       destinationAddress.toString() === this.receiveAddress?.toString();
 
-    // Check if this is a message transaction by looking for the message prefix
-    const isMessageTransaction = transaction.payload.startsWith(
-      this.MESSAGE_PREFIX_HEX
-    );
+    let isMessageTransaction = false;
+    if (transaction.payload) {
+      // Check if this is a message transaction by looking for the message prefix
+      isMessageTransaction = transaction.payload.startsWith(
+        this.MESSAGE_PREFIX_HEX
+      );
+    }
 
     // Check if we have an active conversation with this address
     const messagingStore = useMessagingStore.getState();
@@ -1130,7 +1138,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       outputs: outputs,
       payload: transaction.payload,
       networkId: this.networkId,
-      priorityFee: BigInt(0),
+      priorityFee: {
+        amount: BigInt(0),
+        source: FeeSource.ReceiverPays,
+      },
     });
   }
 
@@ -1604,7 +1615,6 @@ export const sendTransaction = async (
       {
         address: new Address(toAddress),
         amount: BigInt(amountSompi),
-        payload: "00", // Minimal payload required by the protocol
       },
       password
     );
