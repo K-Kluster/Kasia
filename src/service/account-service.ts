@@ -289,43 +289,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private async _onUtxoChanged(notification: IUtxosChanged) {
-    console.log("Processing UTXO change:", notification);
-
-    // Get all mature UTXOs for the UTXO update event
-    const utxos = this.context.getMatureRange(0, this.context.matureLength);
-
-    // Log UTXO details for debugging
-    console.log(
-      "Current UTXOs:",
-      utxos.map((utxo) => ({
-        transactionId: utxo.outpoint.transactionId,
-        amount: Number(utxo.entry.amount) / 100000000,
-        amountSompi: utxo.entry.amount.toString(),
-        scriptPublicKey: utxo.entry.scriptPublicKey.toString(),
-        isMature: true, // Since we got it from getMatureRange
-      }))
-    );
-
-    // Emit the balance update
-    this._emitBalanceUpdate();
-
-    // Calculate total amount in sompi first, then convert to KAS
-    const totalSompi = utxos.reduce(
-      (sum, utxo) => sum + utxo.entry.amount,
-      BigInt(0)
-    );
-    const totalKAS = Number(totalSompi) / 100000000;
-
-    // Emit UTXO update
-    console.log("UTXOs updated:", {
-      count: utxos.length,
-      matureLength: this.context.matureLength,
-      totalAmount: totalKAS,
-    });
-    this.emit("utxosChanged", utxos);
-  }
-
   async start() {
     try {
       // Get the receive address from the wallet
@@ -358,25 +321,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Only track primary address
       const addressesToTrack = [this.receiveAddress!];
-      const addressStrings = addressesToTrack.map((addr) => addr.toString());
-
-      // First, get initial UTXOs from RPC
-      console.log("Fetching initial UTXOs...");
-      const utxoResponse = await this.rpcClient.rpc?.getUtxosByAddresses(
-        addressStrings
-      );
-
-      if (
-        utxoResponse &&
-        utxoResponse.entries &&
-        utxoResponse.entries.length > 0
-      ) {
-        console.log(
-          `Found ${utxoResponse.entries.length} initial UTXOs from RPC`
-        );
-      } else {
-        console.log("No initial UTXOs found from RPC");
-      }
 
       // Now track addresses in UTXO processor
       console.log("Starting address tracking for primary address...");
@@ -619,7 +563,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Submit the transaction
       console.log("Submitting transaction to network...");
+
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
+
+      // reset the context to workaround "withdraw all" use-case where change address isn't the user
+      // @IMPROVEMENT: this could be only executed when "withdraw all", currently done even if it's partial
+      await this.context.clear();
+      await this.context.trackAddresses([this.receiveAddress!]);
+
       console.log(`Transaction submitted with ID: ${txId}`);
       console.log("========================");
 
