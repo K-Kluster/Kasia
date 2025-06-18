@@ -10,6 +10,7 @@ import {
   IUtxosChanged,
   ITransaction,
   sompiToKaspaString,
+  FeeSource,
 } from "kaspa-wasm";
 import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -1184,36 +1185,24 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Account service is not started");
     }
 
-    // Ensure both addresses have the correct prefixes
-    const destinationAddress = this.ensureAddressPrefix(transaction.address);
-    const primaryAddress = this.ensureAddressPrefix(this.receiveAddress!);
-
-    console.log("Using destination address:", destinationAddress.toString());
+    console.log("Using destination address:", transaction.address.toString());
 
     const isFullBalance = transaction.amount === this.context.balance?.mature;
 
-    // If transfering full balance, no output and changeAddress = destinationAddress
-    // Else, create output of desired amout to destinationAddress and keep changeAddress = primaryAddress
-    const outputs = isFullBalance
-      ? []
-      : [new PaymentOutput(destinationAddress, transaction.amount)];
-
-    const changeAddress = isFullBalance ? destinationAddress : primaryAddress;
-
-    console.log(
-      "Using outputs:",
-      outputs.map((o) => o.toJSON()),
-      "Using change address:",
-      changeAddress.toString()
-    );
+    const changeAddress = isFullBalance
+      ? new Address(transaction.address.toString())
+      : this.receiveAddress!;
 
     return new Generator({
       changeAddress,
       entries: this.context,
-      outputs: outputs,
-      payload: undefined,
+      // priorityEntries: this.context.getMatureRange(0, this.context.matureLength),
+      outputs: [new PaymentOutput(transaction.address, transaction.amount)],
       networkId: this.networkId,
-      priorityFee: BigInt(0),
+      priorityFee: {
+        amount: BigInt(0),
+        source: FeeSource.ReceiverPays,
+      },
     });
   }
 
