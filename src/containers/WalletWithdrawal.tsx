@@ -78,8 +78,8 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
         throw new Error("Please enter both address and amount");
       }
 
-      const amount = parseFloat(withdrawAmount);
-      if (isNaN(amount) || amount <= 0) {
+      const amount = kaspaToSompi(withdrawAmount);
+      if (amount === undefined) {
         throw new Error("Please enter a valid amount");
       }
 

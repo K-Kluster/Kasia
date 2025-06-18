@@ -1659,14 +1659,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
 export const createWithdrawTransaction = async (
   toAddress: string,
-  amountKAS: number
+  amountSompi: bigint
 ): Promise<void> => {
   try {
-    // Convert KAS to Sompi (1 KAS = 100000000 Sompi)
-    const amountSompi = Math.floor(amountKAS * 100000000);
     console.log("Sending withdraw transaction:", {
       toAddress,
-      amountKAS,
       amountSompi,
     });
 
@@ -1686,7 +1683,7 @@ export const createWithdrawTransaction = async (
     await accountService.createWithdrawTransaction(
       {
         address: new Address(toAddress),
-        amount: BigInt(amountSompi),
+        amount: amountSompi,
       },
       password
     );
