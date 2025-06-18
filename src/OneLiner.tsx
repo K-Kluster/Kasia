@@ -367,7 +367,6 @@ export const OneLiner: FC = () => {
           <WalletInfo
             state={walletStore.address ? "connected" : "detected"}
             address={walletStore.address?.toString()}
-            balance={walletStore.balance}
             isWalletReady={isWalletReady}
           />
         </div>

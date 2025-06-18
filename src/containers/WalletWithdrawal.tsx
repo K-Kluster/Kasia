@@ -1,7 +1,7 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
 import { createWithdrawTransaction } from "../service/account-service";
 import { WalletBalance } from "../types/wallet.type";
-import { kaspaToSompi } from "kaspa-wasm";
+import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../store/wallet.store";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
@@ -34,8 +34,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
       }
 
       const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0);
-
-      const matureBalanceAmount = BigInt((balance?.mature ?? 0) * 100000000);
+      const matureBalanceAmount = balance?.mature ?? BigInt(0);
 
       // if value is equal to total balance, set it as valid
       if (
@@ -85,16 +84,16 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
       }
 
       // Use mature balance directly since it's already in KAS
-      const matureBalanceKAS = walletBalance?.mature || 0;
+      const matureBalanceKAS = sompiToKaspaString(walletBalance?.mature || 0);
       console.log("Balance check:", {
         amount,
         matureBalanceKAS,
         walletBalance,
       });
 
-      if (amount > matureBalanceKAS) {
+      if (amount > Number(matureBalanceKAS)) {
         throw new Error(
-          `Insufficient balance. Available: ${matureBalanceKAS.toFixed(8)} KAS`
+          `Insufficient balance. Available: ${matureBalanceKAS} KAS`
         );
       }
 

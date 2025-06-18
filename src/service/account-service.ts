@@ -9,7 +9,7 @@ import {
   UtxoEntry,
   IUtxosChanged,
   ITransaction,
-  FeeSource,
+  sompiToKaspaString,
 } from "kaspa-wasm";
 import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -42,9 +42,12 @@ type DecodedMessage = {
 // strictly typed events
 type AccountServiceEvents = {
   balance: (balance: {
-    mature: number;
-    pending: number;
-    outgoing: number;
+    mature: bigint;
+    pending: bigint;
+    outgoing: bigint;
+    matureDisplay: string;
+    pendingDisplay: string;
+    outgoingDisplay: string;
     matureUtxoCount: number;
     pendingUtxoCount: number;
   }) => void;
@@ -78,13 +81,6 @@ type CreateWithdrawTransactionArgs = {
   address: Address;
   amount: bigint;
 };
-
-// Add this helper function at the top level
-function stringifyWithBigInt(obj: any): string {
-  return JSON.stringify(obj, (_, value) =>
-    typeof value === "bigint" ? value.toString() : value
-  );
-}
 
 interface Conversation {
   conversationId: string;
@@ -158,8 +154,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private async _emitBalanceUpdate() {
-    const balance = await this.context.balance;
+  private _emitBalanceUpdate() {
+    const balance = this.context.balance;
     if (!balance) return;
 
     // Get UTXOs for counting
@@ -169,26 +165,21 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     );
     const pendingUtxos = this.context.getPending();
 
-    // Convert balance values from sompi to KAS
-    const matureKAS = Number(balance.mature) / 100000000;
-    const pendingKAS = Number(balance.pending) / 100000000;
-    const outgoingKAS = Number(balance.outgoing) / 100000000;
-
-    console.log("Balance update (in KAS):", {
-      mature: matureKAS,
-      pending: pendingKAS,
-      outgoing: outgoingKAS,
+    console.log("Balance update:", {
       matureUtxoCount: matureUtxos.length,
       pendingUtxoCount: pendingUtxos.length,
-      rawMature: balance.mature.toString(),
-      rawPending: balance.pending.toString(),
-      rawOutgoing: balance.outgoing.toString(),
+      mature: balance.mature.toString(),
+      pending: balance.pending.toString(),
+      outgoing: balance.outgoing.toString(),
     });
 
     this.emit("balance", {
-      mature: matureKAS,
-      pending: pendingKAS,
-      outgoing: outgoingKAS,
+      mature: balance.mature,
+      pending: balance.pending,
+      outgoing: balance.outgoing,
+      matureDisplay: sompiToKaspaString(balance.mature),
+      pendingDisplay: sompiToKaspaString(balance.pending),
+      outgoingDisplay: sompiToKaspaString(balance.outgoing),
       matureUtxoCount: matureUtxos.length,
       pendingUtxoCount: pendingUtxos.length,
     });
@@ -362,19 +353,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Set up balance change listener
       this.processor.addEventListener("balance", async () => {
         console.log("Balance event received");
-        await this._emitBalanceUpdate();
-      });
-
-      // Set up maturity change listener
-      this.processor.addEventListener("maturity", async () => {
-        console.log("Maturity event received");
-        await this._emitBalanceUpdate();
-      });
-
-      // Set up pending change listener
-      this.processor.addEventListener("pending", async () => {
-        console.log("Pending event received");
-        await this._emitBalanceUpdate();
+        this._emitBalanceUpdate();
       });
 
       // Only track primary address
@@ -414,7 +393,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       await this.fetchHistoricalMessages();
 
       // Get initial state one more time to ensure we're up to date
-      await this._emitBalanceUpdate();
+      this._emitBalanceUpdate();
 
       this.isStarted = true;
     } catch (error) {
@@ -1768,49 +1747,6 @@ export const createWithdrawTransaction = async (
       error instanceof Error
         ? error.message
         : "Failed to send withdraw transaction"
-    );
-  }
-};
-
-export const sendTransaction = async (
-  toAddress: string,
-  amountKAS: number
-): Promise<void> => {
-  try {
-    // Convert KAS to Sompi (1 KAS = 100000000 Sompi)
-    const amountSompi = Math.floor(amountKAS * 100000000);
-    console.log("Sending transaction:", {
-      toAddress,
-      amountKAS,
-      amountSompi,
-    });
-
-    const walletStore = useWalletStore.getState();
-    const accountService = walletStore.accountService;
-    const password = walletStore.unlockedWallet?.password;
-
-    if (!accountService) {
-      throw new Error("Account service not initialized");
-    }
-
-    if (!password) {
-      throw new Error("Wallet is locked. Please unlock your wallet first.");
-    }
-
-    // Create and send a native transaction (no payload)
-    await accountService.createTransaction(
-      {
-        address: new Address(toAddress),
-        amount: BigInt(amountSompi),
-      },
-      password
-    );
-
-    console.log("Transaction sent successfully");
-  } catch (error) {
-    console.error("Send transaction error:", error);
-    throw new Error(
-      error instanceof Error ? error.message : "Failed to send transaction"
     );
   }
 };

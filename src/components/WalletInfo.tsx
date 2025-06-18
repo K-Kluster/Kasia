@@ -1,5 +1,4 @@
 import { FC, useMemo, useState, useEffect, useCallback } from "react";
-import { formatKasAmount } from "../utils/format";
 import { FeeBuckets } from "./FeeBuckets";
 import { useWalletStore } from "../store/wallet.store";
 import { toDataURL } from "qrcode";
@@ -9,13 +8,6 @@ import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 type WalletInfoProps = {
   state: "connected" | "detected" | "not-detected";
   address?: string;
-  balance?: {
-    mature: number;
-    pending: number;
-    outgoing: number;
-    matureUtxoCount: number;
-    pendingUtxoCount: number;
-  } | null;
   isWalletReady?: boolean;
 };
 
@@ -283,25 +275,25 @@ export const WalletInfo: FC<WalletInfoProps> = ({
               <li>
                 <strong>Total:</strong>{" "}
                 <span className="amount">
-                  {formatKasAmount(currentBalance?.mature ?? 0)} KAS
+                  {currentBalance?.matureDisplay} KAS
                 </span>
               </li>
               <li>
                 <strong>Confirmed:</strong>{" "}
                 <span className="amount">
-                  {formatKasAmount(currentBalance?.mature ?? 0)} KAS
+                  {currentBalance?.matureDisplay} KAS
                 </span>
               </li>
               <li>
                 <strong>Unconfirmed:</strong>{" "}
                 <span className="amount">
-                  {formatKasAmount(currentBalance?.pending ?? 0)} KAS
+                  {currentBalance?.pendingDisplay} KAS
                 </span>
               </li>
               <li>
                 <strong>Outgoing:</strong>{" "}
                 <span className="amount">
-                  {formatKasAmount(currentBalance?.outgoing ?? 0)} KAS
+                  {currentBalance?.outgoingDisplay} KAS
                 </span>
               </li>
             </ul>

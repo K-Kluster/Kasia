@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
-import { Address, Mnemonic, UtxoEntryReference } from "kaspa-wasm";
+import {
+  Address,
+  Mnemonic,
+  sompiToKaspaString,
+  UtxoEntryReference,
+} from "kaspa-wasm";
 import { AccountService } from "../service/account-service";
 import { encrypt_message } from "cipher";
 import { useMessagingStore } from "./messaging.store";
@@ -224,9 +229,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
           set({
             balance: {
-              mature: Number(initialBalance.mature) / 100000000,
-              pending: Number(initialBalance.pending) / 100000000,
-              outgoing: Number(initialBalance.outgoing) / 100000000,
+              mature: initialBalance.mature,
+              pending: initialBalance.pending,
+              outgoing: initialBalance.outgoing,
+              matureDisplay: sompiToKaspaString(initialBalance.mature),
+              pendingDisplay: sompiToKaspaString(initialBalance.pending),
+              outgoingDisplay: sompiToKaspaString(initialBalance.outgoing),
               matureUtxoCount: matureUtxos.length,
               pendingUtxoCount: pendingUtxos.length,
             },
@@ -341,9 +349,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
         set({
           balance: {
-            mature: Number(initialBalance.mature) / 100000000,
-            pending: Number(initialBalance.pending) / 100000000,
-            outgoing: Number(initialBalance.outgoing) / 100000000,
+            mature: initialBalance.mature,
+            pending: initialBalance.pending,
+            outgoing: initialBalance.outgoing,
+            matureDisplay: sompiToKaspaString(initialBalance.mature),
+            outgoingDisplay: sompiToKaspaString(initialBalance.outgoing),
+            pendingDisplay: sompiToKaspaString(initialBalance.pending),
             matureUtxoCount: matureUtxos.length,
             pendingUtxoCount: pendingUtxos.length,
           },

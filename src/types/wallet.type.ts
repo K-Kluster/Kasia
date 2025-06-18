@@ -33,9 +33,12 @@ export type StoredWallet = {
 };
 
 export type WalletBalance = {
-  mature: number;
-  pending: number;
-  outgoing: number;
+  mature: bigint;
+  pending: bigint;
+  outgoing: bigint;
+  matureDisplay: string;
+  pendingDisplay: string;
+  outgoingDisplay: string;
   matureUtxoCount: number;
   pendingUtxoCount: number;
 } | null;
