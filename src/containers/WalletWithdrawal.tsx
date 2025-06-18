@@ -84,16 +84,18 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
       }
 
       // Use mature balance directly since it's already in KAS
-      const matureBalanceKAS = sompiToKaspaString(walletBalance?.mature || 0);
+      const matureSompiBalance = walletBalance?.mature || BigInt(0);
       console.log("Balance check:", {
         amount,
-        matureBalanceKAS,
+        matureSompiBalance,
         walletBalance,
       });
 
-      if (amount > Number(matureBalanceKAS)) {
+      if (amount > matureSompiBalance) {
         throw new Error(
-          `Insufficient balance. Available: ${matureBalanceKAS} KAS`
+          `Insufficient balance. Available: ${sompiToKaspaString(
+            matureSompiBalance
+          )} KAS`
         );
       }
 
