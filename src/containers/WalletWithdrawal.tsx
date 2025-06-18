@@ -65,6 +65,18 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
     [balance]
   );
 
+  const handleMaxClick = useCallback(() => {
+    const matureBalance = balance?.mature ?? BigInt(0);
+    const maxAmount = sompiToKaspaString(matureBalance);
+    setWithdrawAmount(maxAmount);
+    
+    // Trigger validation by creating a synthetic event
+    const syntheticEvent = {
+      target: { value: maxAmount }
+    } as ChangeEvent<HTMLInputElement>;
+    inputAmountUpdated(syntheticEvent);
+  }, [balance, inputAmountUpdated]);
+
   const handleWithdraw = useCallback(async () => {
     if (amountInputError !== null) {
       return;
@@ -88,7 +100,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
       console.log("Balance check:", {
         amount,
         matureSompiBalance,
-        walletBalance,
+        storeBalance: balance,
       });
 
       if (amount > matureSompiBalance) {
@@ -109,7 +121,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
     } finally {
       setIsSending(false);
     }
-  }, [walletBalance, withdrawAddress, withdrawAmount, amountInputError]);
+  }, [walletBalance, withdrawAddress, withdrawAmount, amountInputError, balance]);
 
   return (
     <>
@@ -131,20 +143,49 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
           }}
         />
         <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <input
-            type="text"
-            value={withdrawAmount}
-            onChange={inputAmountUpdated}
-            placeholder="Amount (KAS)"
-            style={{
-              flex: 1,
-              padding: "8px",
-              backgroundColor: "rgba(0, 0, 0, 0.3)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "4px",
-              color: "white",
-            }}
-          />
+          <div style={{ position: "relative", flex: 1 }}>
+            <input
+              type="text"
+              value={withdrawAmount}
+              onChange={inputAmountUpdated}
+              placeholder="Amount (KAS)"
+              style={{
+                width: "100%",
+                padding: "8px 50px 8px 8px", // Add right padding for Max button
+                backgroundColor: "rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "4px",
+                color: "white",
+                boxSizing: "border-box",
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleMaxClick}
+              style={{
+                position: "absolute",
+                right: "8px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
+                color: "#2196f3",
+                cursor: "pointer",
+                fontSize: "12px",
+                fontWeight: "bold",
+                padding: "0",
+                textDecoration: "none",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#1976d2";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#2196f3";
+              }}
+            >
+              Max
+            </button>
+          </div>
           <button
             onClick={handleWithdraw}
             disabled={isSending || amountInputError !== null}
