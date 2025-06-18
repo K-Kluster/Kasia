@@ -69,9 +69,14 @@ type SendMessageWithContextArgs = {
 type CreateTransactionArgs = {
   address: Address;
   amount: bigint;
-  payload?: string;
+  payload: string;
   payloadSize?: number;
   messageLength?: number;
+};
+
+type CreateWithdrawTransactionArgs = {
+  address: Address;
+  amount: bigint;
 };
 
 // Add this helper function at the top level
@@ -472,9 +477,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       } sompi)`
     );
 
-    if (transaction.payload) {
-      console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
-    }
+    console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
 
     const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
       this.unlockedWallet,
@@ -497,6 +500,108 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     try {
       // Use our optimized generator creation method
       const generator = this._getGeneratorForTransaction(transaction);
+
+      console.log("Generating transaction...");
+      const pendingTransaction: PendingTransaction | null =
+        await generator.next();
+
+      if (!pendingTransaction) {
+        throw new Error("Failed to generate transaction");
+      }
+
+      if ((await generator.next()) !== null) {
+        throw new Error("Unexpected multiple transaction generation");
+      }
+
+      // Log the addresses that need signing
+      const addressesToSign = pendingTransaction.addresses();
+      console.log(
+        `Transaction requires signing ${addressesToSign.length} addresses:`
+      );
+      addressesToSign.forEach((addr, i) => {
+        console.log(`  Address ${i + 1}: ${addr.toString()}`);
+      });
+
+      // Always use receive key for all addresses since we only use primary address
+      const privateKeys = pendingTransaction.addresses().map(() => {
+        console.log("Using primary address key for signing");
+        const key = privateKeyGenerator.receiveKey(0);
+        if (!key) {
+          throw new Error("Failed to generate private key for signing");
+        }
+        return key;
+      });
+
+      // Sign the transaction
+      console.log("Signing transaction...");
+      pendingTransaction.sign(privateKeys);
+
+      // Submit the transaction
+      console.log("Submitting transaction to network...");
+      const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
+      console.log(`Transaction submitted with ID: ${txId}`);
+      console.log("========================");
+
+      return txId;
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      throw error;
+    }
+  }
+
+  public async createWithdrawTransaction(
+    withdrawTransaction: CreateWithdrawTransactionArgs,
+    password: string
+  ) {
+    if (!this.isStarted || !this.rpcClient.rpc) {
+      throw new Error("Account service is not started");
+    }
+
+    if (!this.receiveAddress) {
+      throw new Error("Receive address not initialized");
+    }
+
+    if (!withdrawTransaction.address) {
+      throw new Error("Transaction address is required");
+    }
+
+    if (!withdrawTransaction.amount) {
+      throw new Error("Transaction amount is required");
+    }
+
+    console.log("=== CREATING WITHDRAW TRANSACTION ===");
+    const primaryAddress = this.receiveAddress;
+    console.log(
+      "Creating withdraw transaction from primary address:",
+      primaryAddress.toString()
+    );
+    console.log(
+      "Change will go back to primary address:",
+      primaryAddress.toString()
+    );
+    console.log(`Destination: ${withdrawTransaction.address.toString()}`);
+    console.log(
+      `Amount: ${Number(withdrawTransaction.amount) / 100000000} KAS (${
+        withdrawTransaction.amount
+      } sompi)`
+    );
+    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+      this.unlockedWallet,
+      password
+    );
+
+    if (!privateKeyGenerator) {
+      throw new Error("Failed to generate private key");
+    }
+
+    if (!this.context) {
+      throw new Error("UTXO context not initialized");
+    }
+
+    try {
+      // Use our optimized generator creation method
+      const generator =
+        this._getGeneratorForWithdrawTransaction(withdrawTransaction);
 
       console.log("Generating transaction...");
       const pendingTransaction: PendingTransaction | null =
@@ -1138,10 +1243,47 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       outputs: outputs,
       payload: transaction.payload,
       networkId: this.networkId,
-      priorityFee: {
-        amount: BigInt(0),
-        source: FeeSource.ReceiverPays,
-      },
+      priorityFee: BigInt(0),
+    });
+  }
+
+  private _getGeneratorForWithdrawTransaction(
+    transaction: CreateWithdrawTransactionArgs
+  ) {
+    if (!this.isStarted) {
+      throw new Error("Account service is not started");
+    }
+
+    // Ensure both addresses have the correct prefixes
+    const destinationAddress = this.ensureAddressPrefix(transaction.address);
+    const primaryAddress = this.ensureAddressPrefix(this.receiveAddress!);
+
+    console.log("Using destination address:", destinationAddress.toString());
+
+    const isFullBalance = transaction.amount === this.context.balance?.mature;
+
+    // If transfering full balance, no output and changeAddress = destinationAddress
+    // Else, create output of desired amout to destinationAddress and keep changeAddress = primaryAddress
+    const outputs = isFullBalance
+      ? []
+      : [new PaymentOutput(destinationAddress, transaction.amount)];
+
+    const changeAddress = isFullBalance ? destinationAddress : primaryAddress;
+
+    console.log(
+      "Using outputs:",
+      outputs.map((o) => o.toJSON()),
+      "Using change address:",
+      changeAddress.toString()
+    );
+
+    return new Generator({
+      changeAddress,
+      entries: this.context,
+      outputs: outputs,
+      payload: undefined,
+      networkId: this.networkId,
+      priorityFee: BigInt(0),
     });
   }
 
@@ -1584,6 +1726,51 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 }
+
+export const createWithdrawTransaction = async (
+  toAddress: string,
+  amountKAS: number
+): Promise<void> => {
+  try {
+    // Convert KAS to Sompi (1 KAS = 100000000 Sompi)
+    const amountSompi = Math.floor(amountKAS * 100000000);
+    console.log("Sending withdraw transaction:", {
+      toAddress,
+      amountKAS,
+      amountSompi,
+    });
+
+    const walletStore = useWalletStore.getState();
+    const accountService = walletStore.accountService;
+    const password = walletStore.unlockedWallet?.password;
+
+    if (!accountService) {
+      throw new Error("Account service not initialized");
+    }
+
+    if (!password) {
+      throw new Error("Wallet is locked. Please unlock your wallet first.");
+    }
+
+    // Create and send a native transaction (no payload)
+    await accountService.createWithdrawTransaction(
+      {
+        address: new Address(toAddress),
+        amount: BigInt(amountSompi),
+      },
+      password
+    );
+
+    console.log("Withdraw transaction sent successfully");
+  } catch (error) {
+    console.error("Send withdraw transaction error:", error);
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Failed to send withdraw transaction"
+    );
+  }
+};
 
 export const sendTransaction = async (
   toAddress: string,

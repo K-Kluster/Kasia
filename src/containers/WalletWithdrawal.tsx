@@ -1,6 +1,10 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
-import { sendTransaction } from "../service/account-service";
+import { createWithdrawTransaction } from "../service/account-service";
 import { WalletBalance } from "../types/wallet.type";
+import { kaspaToSompi } from "kaspa-wasm";
+import { useWalletStore } from "../store/wallet.store";
+
+const maxDustAmount = kaspaToSompi("0.19")!;
 
 export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
   walletBalance,
@@ -10,18 +14,63 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
   const [withdrawError, setWithdrawError] = useState("");
   const [isSending, setIsSending] = useState(false);
 
+  const [amountInputError, setAmountInputError] = useState<string | null>(null);
+
+  const balance = useWalletStore((store) => store.balance);
+
   const inputAmountUpdated = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       if (/^-?\d*\.?\d*$/.test(event.target.value) === false) {
         return;
       }
 
+      // update input value
       setWithdrawAmount(event.target.value);
+
+      const unValidatedAmountAsSompi = kaspaToSompi(event.target.value);
+
+      if (unValidatedAmountAsSompi === undefined) {
+        setAmountInputError("Invalid amount.");
+      }
+
+      const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0);
+
+      const matureBalanceAmount = BigInt((balance?.mature ?? 0) * 100000000);
+
+      // if value is equal to total balance, set it as valid
+      if (
+        validatedAmountAsSompi === BigInt(0) ||
+        matureBalanceAmount === validatedAmountAsSompi
+      ) {
+        setAmountInputError(null);
+        return;
+      }
+
+      const leftAmount = matureBalanceAmount - validatedAmountAsSompi;
+
+      if (validatedAmountAsSompi < maxDustAmount) {
+        setAmountInputError("Amount must be greater than 0.19 KAS.");
+        return;
+      }
+
+      if (leftAmount < maxDustAmount) {
+        setAmountInputError(
+          `Cannot transfer ${event.target.value} KAS as it would left dust amount than is lower than 0.19 KAS. Either transfer it all, or lower the withdraw amount`
+        );
+        return;
+      }
+
+      setAmountInputError(null);
+      return;
     },
-    []
+    [balance]
   );
 
   const handleWithdraw = useCallback(async () => {
+    if (amountInputError !== null) {
+      return;
+    }
+
     try {
       setWithdrawError("");
       setIsSending(true);
@@ -49,7 +98,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
         );
       }
 
-      await sendTransaction(withdrawAddress, amount);
+      await createWithdrawTransaction(withdrawAddress, amount);
       setWithdrawAddress("");
       setWithdrawAmount("");
     } catch (error) {
@@ -59,7 +108,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
     } finally {
       setIsSending(false);
     }
-  }, [walletBalance, withdrawAddress, withdrawAmount]);
+  }, [walletBalance, withdrawAddress, withdrawAmount, amountInputError]);
 
   return (
     <>
@@ -97,7 +146,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
           />
           <button
             onClick={handleWithdraw}
-            disabled={isSending}
+            disabled={isSending || amountInputError !== null}
             style={{
               padding: "8px 16px",
               backgroundColor: "#2196f3",
@@ -121,6 +170,18 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
             }}
           >
             {withdrawError}
+          </div>
+        )}
+        {amountInputError && (
+          <div
+            style={{
+              color: "#ff4444",
+              marginTop: "8px",
+              fontSize: "14px",
+              textAlign: "center",
+            }}
+          >
+            {amountInputError}
           </div>
         )}
       </div>
