@@ -275,7 +275,11 @@ export const OneLiner: FC = () => {
  <div className="px-8 py-4 bg-[var(--primary-bg)]">
   <div className="flex items-center gap-4">
     {isWalletReady ? (
-      <div className="flex flex-row justify-between items-start gap-4 w-full">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4 w-full"> 
+        <div className="flex flex-col items-start text-xs gap-1 whitespace-nowrap">
+          <div><strong>Network:</strong> {walletStore.selectedNetwork}</div>
+          <div><strong>Wallet Name:</strong> {unlockedWalletName}</div>
+        </div>
         <div className="flex items-center gap-2 text-sm">
           <button
             className={clsx(
@@ -298,11 +302,6 @@ export const OneLiner: FC = () => {
           >
             Close Wallet
           </button>
-        </div>
-
-        <div className="flex flex-col items-start text-xs gap-1 whitespace-nowrap">
-          <div><strong>Network:</strong> {walletStore.selectedNetwork}</div>
-          <div><strong>Wallet Name:</strong> {unlockedWalletName}</div>
         </div>
       </div>
   ) : (
