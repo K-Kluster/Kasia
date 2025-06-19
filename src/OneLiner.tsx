@@ -289,7 +289,7 @@ export const OneLiner: FC = () => {
             messageStore.setOpenedRecipient(null);
             messageStore.setIsCreatingNewChat(false);
           }}
-          className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded  cursor-pointer"
+          className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
         >
           Close Wallet
         </button>
