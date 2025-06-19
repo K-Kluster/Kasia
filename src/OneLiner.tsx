@@ -189,6 +189,18 @@ export const OneLiner: FC = () => {
     connectionAttemptInProgress,
   ]);
 
+  // Auto-clear connection-related errors when connection succeeds
+  useEffect(() => {
+    if (isConnected && connectionStatus.includes("Connected")) {
+      // Clear any connection-related error messages
+      if (errorMessage?.includes("WebSocket") || 
+          errorMessage?.includes("RPC") || 
+          errorMessage?.includes("Failed to start messaging")) {
+        setErrorMessage(null);
+      }
+    }
+  }, [isConnected, connectionStatus, errorMessage]);
+
   const onWalletUnlocked = useCallback(() => {
     setIsWalletReady(true);
   }, []);
@@ -214,6 +226,9 @@ export const OneLiner: FC = () => {
 
   const onStartMessagingProcessClicked = useCallback(async () => {
     try {
+      // Clear any previous error messages
+      setErrorMessage(null);
+      
       if (!currentClient || !currentClient.connected) {
         setErrorMessage(
           "Please choose a network and connect to the Kaspa Network first"
@@ -235,6 +250,9 @@ export const OneLiner: FC = () => {
       // Load existing messages
       messageStore.loadMessages(receiveAddressStr);
       messageStore.setIsLoaded(true);
+      
+      // Clear error message on success
+      setErrorMessage(null);
     } catch (error) {
       console.error("Failed to start messaging process:", error);
       setErrorMessage(
@@ -352,7 +370,10 @@ export const OneLiner: FC = () => {
         </div>
       ) : null}
       <div id="transactions">
-        <ErrorCard error={errorMessage} />
+        <ErrorCard 
+          error={errorMessage} 
+          onDismiss={() => setErrorMessage(null)} 
+        />
       </div>
 
       {/* Add NewChatForm when isCreatingNewChat is true */}

@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "Messaging-ghost",
+			"path": "../.."
+		},
+		{
+			"name": "kaspia",
+			"path": "../../../kaspia"
+		}
+	],
+	"settings": {}
+}
