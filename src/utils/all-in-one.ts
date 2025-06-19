@@ -130,18 +130,6 @@ export async function fetchKasplexData(daaScore: string) {
   }
 }
 
-// @QUESTION(): this wasn't called, should we remove it ?
-//   // Function to update the UI with new transaction data
-//   function updateTransactionUI(txId, txData) {
-//     // Find the transaction element in the UI
-//     const txElement = document.querySelector(`[data-tx-id="${txId}"]`);
-//     if (txElement) {
-//       // Update the UI with the new data
-//       // This is just a placeholder - you'll need to implement the actual UI update logic
-//       console.log(`Updating UI for transaction ${txId} with new data:`, txData);
-//     }
-//   }
-
 // Helper function to fetch address transactions
 export async function fetchAddressTransactions(address: string) {
   try {

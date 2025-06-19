@@ -26,7 +26,6 @@ const HandshakeManager: React.FC = () => {
         createdAt: pendingConversation.createdAt,
         lastActivity: pendingConversation.lastActivity,
         initiatedByMe: pendingConversation.initiatedByMe,
-        handshakeTimeout: pendingConversation.handshakeTimeout,
       };
 
       await messagingStore.respondToHandshake(handshakeState);

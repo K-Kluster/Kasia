@@ -27,7 +27,6 @@ interface HandshakeState {
   createdAt: number;
   lastActivity: number;
   initiatedByMe: boolean;
-  handshakeTimeout?: number;
 }
 
 // Helper function to determine network type from address
@@ -701,8 +700,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         console.log("Handshake expired:", conversation);
         // You might want to update UI or state here
       },
-      onError: (error, context) => {
-        console.error("Conversation error:", error, context);
+      onError: (error) => {
+        console.error("Conversation error:", error);
         // You might want to show error in UI
       },
     };
@@ -841,10 +840,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         // Update the conversation in the manager
         const conversation = manager.getConversationByAddress(recipientAddress);
         if (conversation) {
-          if (conversation.status === "pending") {
-            delete conversation.handshakeTimeout;
-          }
-
           conversation.status = "active";
           conversation.lastActivity = Date.now();
           manager.updateConversation({ ...conversation, status: "active" });

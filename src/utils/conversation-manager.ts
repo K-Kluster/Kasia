@@ -146,10 +146,7 @@ export class ConversationManager {
 
       return { payload, conversation };
     } catch (error) {
-      this.events?.onError?.(error as Error, {
-        action: "initiateHandshake",
-        recipientAddress,
-      });
+      this.events?.onError?.(error);
       throw error;
     }
   }
@@ -291,10 +288,7 @@ export class ConversationManager {
       // This is a new handshake initiation
       return this.processNewHandshake(payload, senderAddress);
     } catch (error) {
-      this.events?.onError?.(error as Error, {
-        action: "processHandshake",
-        senderAddress,
-      });
+      this.events?.onError?.(error);
       throw error;
     }
   }

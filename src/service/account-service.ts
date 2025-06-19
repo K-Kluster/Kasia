@@ -412,11 +412,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Failed to generate private key");
     }
 
-    // Ensure the destination address has the proper prefix
-    // @QUESTION: shouldn't we use the 'corrected' version of the address?
-    //            it's ignored currently
-    const destinationAddress = this.ensureAddressPrefix(transaction.address);
-
     if (!this.context) {
       throw new Error("UTXO context not initialized");
     }

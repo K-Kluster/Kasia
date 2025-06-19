@@ -27,10 +27,6 @@ export const HandshakeResponse: React.FC<{
         createdAt: conversation.createdAt,
         lastActivity: conversation.lastActivity,
         initiatedByMe: conversation.initiatedByMe,
-        handshakeTimeout:
-          conversation.status === "pending"
-            ? conversation.handshakeTimeout
-            : undefined,
       });
     } catch (error) {
       console.error("Error responding to handshake:", error);
