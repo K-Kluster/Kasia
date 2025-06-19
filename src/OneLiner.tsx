@@ -32,6 +32,7 @@ export const OneLiner: FC = () => {
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
+  const selectedWallet = useWalletStore(state => state.getSelectedWalletName());
 
   const connectToNetwork = useCallback(
     async (networkId: NetworkType) => {
@@ -273,30 +274,39 @@ export const OneLiner: FC = () => {
  <div className="px-8 py-4 bg-[var(--primary-bg)]">
   <div className="flex items-center gap-4">
     {isWalletReady ? (
-      <>
-        <button
-          className={clsx("bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
-             { "opacity-50 cursor-not-allowed": messageStore.isLoaded })}
-          onClick={onStartMessagingProcessClicked}
-        >
-          Start Wallet Service
-        </button>
-        <button
-          onClick={() => {
-            walletStore.lock();
-            setIsWalletReady(false);
-            messageStore.setIsLoaded(false);
-            messageStore.setOpenedRecipient(null);
-            messageStore.setIsCreatingNewChat(false);
-          }}
-          className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
-        >
-          Close Wallet
-        </button>
-      </>
-    ) : (
-      <WalletGuard
-        onSuccess={onWalletUnlocked}
+      <div className="flex flex-row justify-between items-start gap-4 w-full">
+        <div className="flex items-center gap-2 text-sm">
+          <button
+            className={clsx(
+              "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
+              { "opacity-50 cursor-not-allowed": messageStore.isLoaded }
+            )}
+            onClick={onStartMessagingProcessClicked}
+          >
+            Start Wallet Service
+          </button>
+          <button
+            onClick={() => {
+              walletStore.lock();
+              setIsWalletReady(false);
+              messageStore.setIsLoaded(false);
+              messageStore.setOpenedRecipient(null);
+              messageStore.setIsCreatingNewChat(false);
+            }}
+            className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
+          >
+            Close Wallet
+          </button>
+        </div>
+
+        <div className="flex flex-col items-start text-xs gap-1 whitespace-nowrap">
+          <div><strong>Network:</strong> {walletStore.selectedNetwork}</div>
+          <div><strong>Wallet Name:</strong> {selectedWallet}</div>
+        </div>
+      </div>
+  ) : (
+    <WalletGuard
+      onSuccess={onWalletUnlocked}
         selectedNetwork={selectedNetwork}
         onNetworkChange={setSelectedNetwork}
         isConnected={isConnected}
