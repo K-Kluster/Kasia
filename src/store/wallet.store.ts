@@ -63,7 +63,8 @@ type WalletState = {
   sendMessage: (
     message: string,
     toAddress: Address,
-    password: string
+    password: string,
+    customAmount?: bigint
   ) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
     preEncryptedHex: string,
@@ -383,7 +384,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
     sendMessage: async (
       message: string,
       toAddress: Address,
-      password: string
+      password: string,
+      customAmount?: bigint
     ) => {
       const state = get();
       if (!state.unlockedWallet || !state.accountService) {
@@ -409,6 +411,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
             message: encryptedMessage.to_hex(),
             toAddress,
             password,
+            amount: customAmount,
           });
         }
 
@@ -428,6 +431,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
           message: encryptedMessage.to_hex(),
           toAddress,
           password,
+          amount: customAmount,
         });
       } catch (error) {
         console.error("Error sending message:", error);

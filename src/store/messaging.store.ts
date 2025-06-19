@@ -68,7 +68,7 @@ interface MessagingState {
 
   conversationManager: ConversationManager | null;
   initializeConversationManager: (address: string) => void;
-  initiateHandshake: (recipientAddress: string) => Promise<{
+  initiateHandshake: (recipientAddress: string, customAmount?: bigint) => Promise<{
     payload: string;
     conversation: Conversation;
   }>;
@@ -709,7 +709,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     const manager = new ConversationManager(address, events);
     set({ conversationManager: manager });
   },
-  initiateHandshake: async (recipientAddress: string) => {
+  initiateHandshake: async (recipientAddress: string, customAmount?: bigint) => {
     const manager = g().conversationManager;
     if (!manager) {
       throw new Error("Conversation manager not initialized");
@@ -732,7 +732,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const txId = await walletStore.sendMessage(
         payload,
         new Address(recipientAddress),
-        walletStore.unlockedWallet.password
+        walletStore.unlockedWallet.password,
+        customAmount // Pass custom amount to sendMessage
       );
 
       console.log("Handshake message sent, transaction ID:", txId);
@@ -744,7 +745,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         recipientAddress: recipientAddress,
         timestamp: Date.now(),
         content: "Handshake initiated",
-        amount: 20000000, // 0.2 KAS
+        amount: Number(customAmount || 20000000n) / 100000000, // Convert bigint to KAS number
         payload: payload,
       };
 
@@ -862,7 +863,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           recipientAddress: recipientAddress,
           timestamp: Date.now(),
           content: "Handshake response sent",
-          amount: 20000000, // 0.2 KAS
+          amount: 0.2, // Default 0.2 KAS for handshake responses
           payload: messageContent,
         };
 

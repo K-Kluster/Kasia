@@ -61,6 +61,7 @@ type SendMessageArgs = {
   toAddress: Address;
   message: string;
   password: string;
+  amount?: bigint; // Optional custom amount, defaults to 0.2 KAS
 };
 
 type SendMessageWithContextArgs = {
@@ -926,10 +927,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     sendMessage: SendMessageArgs
   ): Promise<TransactionId> {
     this.ensurePasswordSet();
-    const minimumAmount = kaspaToSompi("0.2");
+    // Use custom amount if provided, otherwise default to 0.2 KAS
+    const defaultAmount = kaspaToSompi("0.2");
+    const messageAmount = sendMessage.amount || defaultAmount;
 
-    if (!minimumAmount) {
-      throw new Error("Minimum amount missing");
+    if (!messageAmount) {
+      throw new Error("Message amount missing");
     }
 
     if (!sendMessage.toAddress) {
@@ -982,7 +985,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const txId = await this.createTransaction(
         {
           address: destinationAddress,
-          amount: minimumAmount,
+          amount: messageAmount,
           payload: payload,
         },
         sendMessage.password
