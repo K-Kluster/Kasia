@@ -32,7 +32,8 @@ export const OneLiner: FC = () => {
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
-  const selectedWallet = useWalletStore(state => state.getSelectedWalletName());
+  const unlockedWalletName = useWalletStore(state => state.unlockedWallet?.name);
+
 
   const connectToNetwork = useCallback(
     async (networkId: NetworkType) => {
@@ -301,7 +302,7 @@ export const OneLiner: FC = () => {
 
         <div className="flex flex-col items-start text-xs gap-1 whitespace-nowrap">
           <div><strong>Network:</strong> {walletStore.selectedNetwork}</div>
-          <div><strong>Wallet Name:</strong> {selectedWallet}</div>
+          <div><strong>Wallet Name:</strong> {unlockedWalletName}</div>
         </div>
       </div>
   ) : (
