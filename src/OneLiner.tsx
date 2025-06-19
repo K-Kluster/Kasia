@@ -264,44 +264,44 @@ export const OneLiner: FC = () => {
           <WalletInfo
             state={walletStore.address ? "connected" : "detected"}
             address={walletStore.address?.toString()}
-            isWalletReady={isWalletReady}
-          />
+              isWalletReady={isWalletReady}
+            />
         </div>
       </div>
 
-      <div className="wallet-controls">
-        <div className="wallet-controls-left">
-          {isWalletReady ? (
-            <>
-              <button
-                onClick={onStartMessagingProcessClicked}
-                id="connectButton"
-              >
-                Start Wallet Service
-              </button>
-              <button
-                onClick={() => {
-                  walletStore.lock();
-                  setIsWalletReady(false);
-                  messageStore.setIsLoaded(false);
-                  messageStore.setOpenedRecipient(null);
-                  messageStore.setIsCreatingNewChat(false);
-                }}
-                className="close-wallet-button"
-              >
-                Close Wallet
-              </button>
-            </>
-          ) : (
-            <WalletGuard
-              onSuccess={onWalletUnlocked}
-              selectedNetwork={selectedNetwork}
-              onNetworkChange={setSelectedNetwork}
-              isConnected={isConnected}
-            />
-          )}
-        </div>
-      </div>
+ <div className="px-8 py-4 bg-[var(--primary-bg)]">
+  <div className="flex items-center gap-4">
+    {isWalletReady ? (
+      <>
+        <button
+          className={`bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer ${messageStore.isLoaded ? "opacity-50 cursor-not-allowed" : "" }`}
+          onClick={onStartMessagingProcessClicked}
+        >
+          Start Wallet Service
+        </button>
+        <button
+          onClick={() => {
+            walletStore.lock();
+            setIsWalletReady(false);
+            messageStore.setIsLoaded(false);
+            messageStore.setOpenedRecipient(null);
+            messageStore.setIsCreatingNewChat(false);
+          }}
+          className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded  cursor-pointer"
+        >
+          Close Wallet
+        </button>
+      </>
+    ) : (
+      <WalletGuard
+        onSuccess={onWalletUnlocked}
+        selectedNetwork={selectedNetwork}
+        onNetworkChange={setSelectedNetwork}
+        isConnected={isConnected}
+      />
+    )}
+  </div>
+</div>
 
       {messageStore.isLoaded ? (
         <div className="messages-container">
