@@ -42,15 +42,15 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
         return;
       }
 
-      // Check if amount is too small
-      if (validatedAmountAsSompi < maxDustAmount) {
-        setAmountInputError("Amount must be greater than 0.19 KAS.");
+      // Check if amount exceeds balance first
+      if (validatedAmountAsSompi > matureBalanceAmount) {
+        setAmountInputError("Amount exceeds available balance.");
         return;
       }
 
-      // Check if amount exceeds balance
-      if (validatedAmountAsSompi > matureBalanceAmount) {
-        setAmountInputError("Amount exceeds available balance.");
+      // Check if amount is too small
+      if (validatedAmountAsSompi < maxDustAmount) {
+        setAmountInputError("Amount must be greater than 0.19 KAS.");
         return;
       }
 
