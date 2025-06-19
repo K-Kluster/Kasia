@@ -6,6 +6,8 @@ import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
 
+const PASSWORD_MIN_LENGTH = 4; // Minimum password length
+
 type Step = {
   type: "home" | "create" | "import" | "unlock" | "finalizing" | "migrate";
   mnemonic?: Mnemonic;
@@ -92,6 +94,11 @@ export const WalletGuard = ({
         );
       }
 
+      if (passwordRef.current!.value.length < PASSWORD_MIN_LENGTH) {
+        setError("Password must be at least 4 characters");
+        return;
+      }
+
       await createWallet(
         nameRef.current.value,
         mnemonic,
@@ -112,6 +119,11 @@ export const WalletGuard = ({
       !passwordRef.current?.value
     ) {
       setError("Please enter all fields");
+      return;
+    }
+
+    if (passwordRef.current!.value.length < PASSWORD_MIN_LENGTH) {
+      setError("Password must be at least 4 characters");
       return;
     }
 
