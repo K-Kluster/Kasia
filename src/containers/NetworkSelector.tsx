@@ -1,6 +1,7 @@
 import { FC, useMemo, useEffect, useRef } from "react";
 import { NetworkType } from "../types/all";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
+import { getDisplayableNetworkFromNetworkString } from "../utils/network-display";
 
 type NetworkSelectorProps = {
   onNetworkChange: (network: NetworkType) => void;
@@ -19,9 +20,10 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   useEffect(() => {
     if (
       !selectedNetwork ||
-      selectedNetwork !== (import.meta.env.VITE_KASPA_NETWORK ?? "mainnet")
+      selectedNetwork !==
+        (import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet")
     ) {
-      onNetworkChange("mainnet");
+      onNetworkChange(selectedNetwork ?? "mainnet");
     }
   }, [selectedNetwork, onNetworkChange]);
 
@@ -42,14 +44,25 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   }, []);
 
   const networkDisplay = useMemo(() => {
-    // Always show Mainnet if connected, otherwise show appropriate status
-    if (isConnected) {
-      return "Mainnet";
+    if (!isConnected) {
+      return "Connecting...";
     }
-    return selectedNetwork === "mainnet"
-      ? "Mainnet"
-      : "Connecting to Mainnet...";
+
+    return getDisplayableNetworkFromNetworkString(
+      selectedNetwork as NetworkType
+    );
   }, [selectedNetwork, isConnected]);
+
+  const allowedNetworks = useMemo<
+    { id: NetworkType; displayableString: string }[]
+  >(() => {
+    return (import.meta.env.VITE_ALLOWED_KASPA_NETWORKS ?? "mainnet")
+      .split(",")
+      .map((s: string) => ({
+        id: s,
+        displayableString: getDisplayableNetworkFromNetworkString(s),
+      }));
+  }, []);
 
   return (
     <div className="network-selector-container" ref={menuRef}>
@@ -63,16 +76,18 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
           {networkDisplay}
         </MenuButton>
         <MenuItems className="network-selector" anchor="bottom">
-          <MenuItem>
-            <div
-              onClick={() => onNetworkChange("mainnet")}
-              className={`${
-                selectedNetwork === "mainnet" ? "active" : ""
-              } network-option`}
-            >
-              Mainnet
-            </div>
-          </MenuItem>
+          {allowedNetworks.map((allowedNetwork) => (
+            <MenuItem key={allowedNetwork.id}>
+              <div
+                onClick={() => onNetworkChange(allowedNetwork.id)}
+                className={`${
+                  selectedNetwork === allowedNetwork.id ? "active" : ""
+                } network-option`}
+              >
+                {allowedNetwork.displayableString}
+              </div>
+            </MenuItem>
+          ))}
         </MenuItems>
       </Menu>
     </div>
