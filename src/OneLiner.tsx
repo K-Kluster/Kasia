@@ -13,6 +13,7 @@ import { useWalletStore } from "./store/wallet.store";
 import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
 import styles from "./OneLiner.module.css";
+import clsx from 'clsx'
 import { MessageSection } from "./containers/MessagesSection";
 
 export const OneLiner: FC = () => {
@@ -274,7 +275,8 @@ export const OneLiner: FC = () => {
     {isWalletReady ? (
       <>
         <button
-          className={`bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer ${messageStore.isLoaded ? "opacity-50 cursor-not-allowed" : "" }`}
+          className={clsx("bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
+             { "opacity-50 cursor-not-allowed": messageStore.isLoaded })}
           onClick={onStartMessagingProcessClicked}
         >
           Start Wallet Service
