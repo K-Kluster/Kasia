@@ -36,29 +36,25 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
       const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0);
       const matureBalanceAmount = balance?.mature ?? BigInt(0);
 
-      // if value is equal to total balance, set it as valid
-      if (
-        validatedAmountAsSompi === BigInt(0) ||
-        matureBalanceAmount === validatedAmountAsSompi
-      ) {
+      // if value is empty, clear any errors
+      if (validatedAmountAsSompi === BigInt(0)) {
         setAmountInputError(null);
         return;
       }
 
-      const leftAmount = matureBalanceAmount - validatedAmountAsSompi;
-
+      // Check if amount is too small
       if (validatedAmountAsSompi < maxDustAmount) {
         setAmountInputError("Amount must be greater than 0.19 KAS.");
         return;
       }
 
-      if (leftAmount < maxDustAmount) {
-        setAmountInputError(
-          `Cannot transfer ${event.target.value} KAS as it would left dust amount than is lower than 0.19 KAS. Either transfer it all, or lower the withdraw amount`
-        );
+      // Check if amount exceeds balance
+      if (validatedAmountAsSompi > matureBalanceAmount) {
+        setAmountInputError("Amount exceeds available balance.");
         return;
       }
 
+      // Amount is valid
       setAmountInputError(null);
       return;
     },
@@ -69,13 +65,9 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
     const matureBalance = balance?.mature ?? BigInt(0);
     const maxAmount = sompiToKaspaString(matureBalance);
     setWithdrawAmount(maxAmount);
-    
-    // Trigger validation by creating a synthetic event
-    const syntheticEvent = {
-      target: { value: maxAmount }
-    } as ChangeEvent<HTMLInputElement>;
-    inputAmountUpdated(syntheticEvent);
-  }, [balance, inputAmountUpdated]);
+    // Clear any existing errors since max amount is always valid
+    setAmountInputError(null);
+  }, [balance]);
 
   const handleWithdraw = useCallback(async () => {
     if (amountInputError !== null) {
