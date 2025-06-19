@@ -14,10 +14,6 @@
   --accent-yellow: #f59e0b;
 }
 
-button {
-  @apply bg-blue-700 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded;
-}
-
 input {
   @apply bg-gray-700 text-white border border-gray-600 rounded py-2 px-4;
 }
@@ -64,18 +60,6 @@ h1 {
   align-items: center;
   justify-content: space-between;
   background-color: var(--secondary-bg);
-}
-
-.wallet-controls {
-  padding: 1rem 2rem;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--primary-bg);
-}
-
-.wallet-controls-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 .network-badge {
@@ -165,14 +149,6 @@ h1 {
 .connection-status::before {
   content: "●";
   color: var(--accent-green);
-}
-
-#connectButton, .close-wallet-button {
-  height: 32px;
-  padding: 0 1rem;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
 }
 
 .mono {
