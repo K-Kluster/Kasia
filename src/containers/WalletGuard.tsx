@@ -598,7 +598,11 @@ export const WalletGuard = ({
             </button>
           </div>
         )}
-        <button onClick={() => onClickStep("home")}>Back to Wallets</button>
+        <button
+        className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer" 
+        onClick={() => onClickStep("home")}>
+          Back to Wallets
+        </button>
       </div>
     );
   }
