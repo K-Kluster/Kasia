@@ -15,6 +15,7 @@ import { NewChatForm } from "./components/NewChatForm";
 import styles from "./OneLiner.module.css";
 import clsx from "clsx";
 import { MessageSection } from "./containers/MessagesSection";
+import { FetchApiMessages } from "./components/FetchApiMessages";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -251,6 +252,22 @@ export const OneLiner: FC = () => {
       messageStore.loadMessages(receiveAddressStr);
       messageStore.setIsLoaded(true);
       
+      // Check if we should trigger API message fetching for imported wallets
+      const shouldFetchApi = localStorage.getItem('kasia_fetch_api_on_start');
+      if (shouldFetchApi === 'true') {
+        console.log('Triggering API message fetch for imported wallet...');
+        // Set a flag to trigger API fetching after a short delay
+        setTimeout(() => {
+          const event = new CustomEvent('kasia-trigger-api-fetch', {
+            detail: { address: receiveAddressStr }
+          });
+          window.dispatchEvent(event);
+        }, 1000);
+        
+        // Clear the flag after use
+        localStorage.removeItem('kasia_fetch_api_on_start');
+      }
+      
       // Clear error message on success
       setErrorMessage(null);
     } catch (error) {
@@ -367,6 +384,12 @@ export const OneLiner: FC = () => {
             </div>
           </div>
           <MessageSection />
+          {/* Add invisible FetchApiMessages component to listen for localStorage trigger events */}
+          {walletStore.address && (
+            <div style={{ display: 'none' }}>
+              <FetchApiMessages address={walletStore.address.toString()} />
+            </div>
+          )}
         </div>
       ) : null}
       <div id="transactions">

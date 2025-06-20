@@ -620,7 +620,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       // Reload messages using the current address
       g().loadMessages(currentAddress);
 
+      // Set flag to trigger API fetching after next account service start
+      localStorage.setItem('kasia_fetch_api_on_start', 'true');
+
       console.log("Import completed successfully");
+      console.log("Set flag to fetch API messages on next wallet service start");
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
       if (error instanceof Error) {

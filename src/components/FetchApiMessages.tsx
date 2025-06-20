@@ -31,6 +31,28 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
     }
   }, [address, walletStore.unlockedWallet]);
 
+  // Add event listener for triggering API fetch from localStorage
+  useEffect(() => {
+    const handleTriggerApiFetch = (event: CustomEvent) => {
+      const { address: eventAddress } = event.detail;
+      console.log('Received kasia-trigger-api-fetch event for address:', eventAddress);
+      
+      // Only trigger if this component matches the address
+      if (eventAddress === address && walletStore.unlockedWallet) {
+        console.log('Triggering API fetch due to localStorage flag');
+        fetchAndProcessMessages();
+      }
+    };
+
+    // Listen for the custom event
+    window.addEventListener('kasia-trigger-api-fetch', handleTriggerApiFetch as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('kasia-trigger-api-fetch', handleTriggerApiFetch as EventListener);
+    };
+  }, [address, walletStore.unlockedWallet]);
+
   const fetchAndProcessMessages = async () => {
     setLoading(true);
     setError(null);
