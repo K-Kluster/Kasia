@@ -11,6 +11,7 @@ import {
   ITransaction,
   sompiToKaspaString,
   FeeSource,
+  GeneratorSummary,
 } from "kaspa-wasm";
 import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -62,6 +63,11 @@ type SendMessageArgs = {
   message: string;
   password: string;
   amount?: bigint; // Optional custom amount, defaults to 0.2 KAS
+};
+
+type EstimateSendMessageFeesArgs = {
+  toAddress: Address;
+  message: string;
 };
 
 type SendMessageWithContextArgs = {
@@ -626,303 +632,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  public async estimateTransactionDetails(
-    transaction: CreateTransactionArgs
-  ): Promise<{
-    fees: number;
-    finalAmount: number;
-    transactions: number;
-    utxos: number;
-  }> {
-    try {
-      const summary = await this.estimateTransaction(transaction);
-      if (!summary) {
-        throw new Error("Failed to get transaction summary");
-      }
-
-      // Base transaction components
-      const baseTransactionMass = 200; // Base transaction overhead
-      const inputMass = 165; // Per input mass (including signature)
-      const outputMass = 35; // Per output mass
-      const sigOpMass = 1000; // Mass per signature operation
-
-      const numInputs = summary.utxos || 1;
-      const numOutputs = 1; // Always 1 output since all messages are self-messages
-      const numSigOps = numInputs; // One signature operation per input
-
-      // Use provided payload size or calculate from hex
-      const payloadSize =
-        transaction.payloadSize ||
-        (() => {
-          const payloadHex = transaction.payload || "";
-          return Math.ceil(payloadHex.length / 2); // Convert hex to bytes
-        })();
-
-      // Calculate compute mass
-      const computeMass = Math.floor(
-        // Ensure integer mass
-        baseTransactionMass +
-          inputMass * numInputs +
-          outputMass * numOutputs +
-          sigOpMass * numSigOps +
-          payloadSize
-      );
-
-      // Calculate storage mass based on KIP-0009
-      // For our messaging transactions, we're always within the safe limits:
-      // - We use 1-2 outputs max
-      // - Our amounts are above 0.02 KAS
-      // So storage mass won't be the limiting factor
-      const storageMass = computeMass;
-
-      // Network mass is the max of compute and storage mass
-      const networkMass = Math.floor(Math.max(computeMass, storageMass)); // Ensure integer mass
-
-      // Final fee is 1 sompi per gram of mass
-      const fees = networkMass;
-
-      console.log("Transaction mass calculation:", {
-        baseTransactionMass,
-        inputMassTotal: inputMass * numInputs,
-        outputMassTotal: outputMass * numOutputs,
-        sigOpMassTotal: sigOpMass * numSigOps,
-        payloadSize,
-        computeMass,
-        storageMass,
-        networkMass,
-        numInputs,
-        numOutputs,
-        numSigOps,
-        payloadHex: transaction.payload?.substring(0, 50) + "...", // Log first part of payload for debugging
-        // Log the full payload for debugging
-        fullPayload: transaction.payload,
-      });
-
-      const result = {
-        fees: fees / 100000000, // Convert to KAS
-        finalAmount: Number(summary.finalAmount) / 100000000,
-        transactions: summary.transactions,
-        utxos: summary.utxos,
-      };
-
-      return result;
-    } catch (error) {
-      console.error("Error in estimateTransactionDetails:", error);
-      throw error;
-    }
-  }
-
-  public async estimateSendMessage(sendMessage: SendMessageArgs): Promise<{
-    fees: number;
-    finalAmount: number;
-    transactions: number;
-    utxos: number;
-  }> {
-    try {
-      const minimumAmount = kaspaToSompi("0.2");
-
-      if (!minimumAmount) {
-        throw new Error("Minimum amount missing");
-      }
-
-      // Log original message details
-      const originalMessageBytes = new TextEncoder().encode(
-        sendMessage.message
-      ).length;
-      console.log("Original message details:", {
-        message: sendMessage.message,
-        length: sendMessage.message.length,
-        bytes: originalMessageBytes,
-      });
-
-      // Encrypt the message to get actual encrypted length
-      const encryptedMessage = encrypt_message(
-        sendMessage.toAddress.toString(),
-        sendMessage.message
-      );
-
-      // Create the full payload with all protocol components
-      const protocolPrefix = "ciph_msg:1:comm:"; // 13 bytes
-      const alias = "f74137627867"; // Fixed 13 bytes
-      const separator = ":"; // 1 byte
-      const encryptedHex = encryptedMessage.to_hex();
-
-      // Calculate actual byte sizes (not hex lengths)
-      const protocolPrefixBytes = 13; // Fixed size from actual transaction
-      const aliasBytes = 13; // Fixed size from actual transaction
-      const separatorBytes = 1; // Fixed size from actual transaction
-
-      // Calculate encryption overhead dynamically
-      // Base overhead: 360 bytes (from previous transaction)
-      // Additional overhead: ~2 bytes per message byte (from comparing transactions)
-      // Fixed overhead: 12 bytes (from comparing actual transactions)
-      const baseEncryptionOverhead = 360;
-      const perByteOverhead = 2;
-      const fixedOverhead = 12;
-      const encryptedBytes =
-        baseEncryptionOverhead +
-        originalMessageBytes * perByteOverhead -
-        fixedOverhead;
-
-      const totalPayloadBytes =
-        protocolPrefixBytes + aliasBytes + separatorBytes + encryptedBytes;
-
-      // Create the full payload hex
-      const prefix = "ciph_msg:1:comm:"
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
-
-      const aliasHex = alias
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
-
-      const separatorHex = ":"
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
-
-      const payload = prefix + aliasHex + separatorHex + encryptedHex;
-
-      // Calculate the actual mass
-      const baseTransactionMass = 200; // Base transaction overhead
-      const inputMass = 165; // Per input mass (including signature)
-      const outputMass = 35; // Per output mass
-      const sigOpMass = 1000; // Mass per signature operation
-
-      const numInputs = 1;
-      const numOutputs = 1;
-      const numSigOps = 1;
-
-      // Calculate compute mass using actual byte sizes
-      const computeMass = Math.floor(
-        // Ensure integer mass
-        baseTransactionMass +
-          inputMass * numInputs +
-          outputMass * numOutputs +
-          sigOpMass * numSigOps +
-          totalPayloadBytes
-      );
-
-      // Calculate storage mass based on KIP-0009
-      const storageMass = computeMass;
-
-      // Network mass is the max of compute and storage mass
-      const networkMass = Math.floor(Math.max(computeMass, storageMass)); // Ensure integer mass
-
-      // Final fee is 1 sompi per gram of mass
-      const fees = networkMass;
-
-      // Log detailed encryption overhead
-      console.log("Encryption overhead breakdown:", {
-        originalMessage: {
-          text: sendMessage.message,
-          length: sendMessage.message.length,
-          bytes: originalMessageBytes,
-        },
-        encryptedMessage: {
-          hex: encryptedHex,
-          hexLength: encryptedHex.length,
-          bytes: encryptedBytes,
-          overhead: encryptedBytes - originalMessageBytes,
-          breakdown: {
-            baseOverhead: baseEncryptionOverhead,
-            perByteOverhead: perByteOverhead,
-            messageOverhead: originalMessageBytes * perByteOverhead,
-            fixedOverhead: fixedOverhead,
-            totalOverhead:
-              baseEncryptionOverhead +
-              originalMessageBytes * perByteOverhead -
-              fixedOverhead,
-          },
-        },
-        protocolComponents: {
-          prefix: {
-            text: "ciph_msg:1:comm:",
-            bytes: protocolPrefixBytes,
-            hex: prefix,
-            hexLength: prefix.length,
-          },
-          alias: {
-            text: alias,
-            bytes: aliasBytes,
-            hex: aliasHex,
-            hexLength: aliasHex.length,
-          },
-          separator: {
-            text: ":",
-            bytes: separatorBytes,
-            hex: separatorHex,
-            hexLength: separatorHex.length,
-          },
-        },
-        totalPayload: {
-          bytes: totalPayloadBytes,
-          hex: payload,
-          hexLength: payload.length,
-          breakdown: {
-            protocolPrefix: protocolPrefixBytes,
-            alias: aliasBytes,
-            separator: separatorBytes,
-            encryptedMessage: encryptedBytes,
-          },
-        },
-        // Add hex encoding analysis
-        hexEncodingAnalysis: {
-          originalBytes: originalMessageBytes,
-          encryptedBytes: encryptedBytes,
-          protocolBytes: protocolPrefixBytes + aliasBytes + separatorBytes,
-          totalBytes: totalPayloadBytes,
-          hexMultiplier: 2, // Each byte becomes 2 hex characters
-          expectedHexLength: totalPayloadBytes * 2,
-          // Add reference to actual transaction
-          actualTransaction: {
-            protocolPrefix: "ciph_msg:1:comm:",
-            alias: "f74137627867",
-            separator: ":",
-            totalBytes: 379, // From actual transaction
-            hexLength: 758, // From actual transaction
-            computeMass: 1791,
-            fee: 0.00001791,
-          },
-        },
-      });
-
-      // Log mass calculation
-      console.log("Mass calculation:", {
-        baseTransactionMass,
-        inputMassTotal: inputMass * numInputs,
-        outputMassTotal: outputMass * numOutputs,
-        sigOpMassTotal: sigOpMass * numSigOps,
-        payloadSize: totalPayloadBytes,
-        computeMass,
-        storageMass,
-        networkMass,
-        numInputs,
-        numOutputs,
-        numSigOps,
-        finalFee: fees / 100000000, // Convert to KAS
-        // Add reference to actual transaction
-        actualTransaction: {
-          computeMass: 1791,
-          fee: 0.00001791,
-        },
-      });
-
-      // Use a direct approach, minimizing string operations on addresses
-      return this.estimateTransactionDetails({
-        address: sendMessage.toAddress,
-        amount: minimumAmount,
-        payload: payload,
-        payloadSize: totalPayloadBytes,
-      });
-    } catch (error) {
-      console.error("Error in estimateSendMessage:", error);
-      throw error;
-    }
-  }
-
   public async sendMessage(
     sendMessage: SendMessageArgs
   ): Promise<TransactionId> {
@@ -962,6 +671,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         .join("");
       payload = prefix + sendMessage.message;
     } else {
+      console.log("ENCRYPT MESSAGE", sendMessage.message);
       // Message needs to be encrypted
       const encryptedMessage = encrypt_message(
         addressString,
@@ -994,6 +704,59 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       return txId;
     } catch (error) {
       console.error("Error sending message:", error);
+      throw error;
+    }
+  }
+
+  public async estimateSendMessageFees(
+    sendMessage: EstimateSendMessageFeesArgs
+  ): Promise<GeneratorSummary> {
+    if (!sendMessage.toAddress) {
+      throw new Error("Destination address is required");
+    }
+
+    if (!sendMessage.message) {
+      throw new Error("Message is required");
+    }
+
+    const destinationAddress = this.ensureAddressPrefix(sendMessage.toAddress);
+    const addressString = destinationAddress.toString();
+
+    // Message needs to be encrypted
+    const encryptedMessage = encrypt_message(
+      addressString,
+      sendMessage.message
+    );
+    if (!encryptedMessage) {
+      throw new Error("Failed to encrypt message");
+    }
+    const prefix = "ciph_msg:1:comm:"
+      .split("")
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("");
+    const payload = prefix + "f74137627867:" + encryptedMessage.to_hex();
+
+    // console.log({
+    //   payload,
+    //   addressString,
+    //   toHex: encryptedMessage.to_hex(),
+    //   message: sendMessage.message,
+    // });
+
+    if (!payload) {
+      throw new Error("Failed to create message payload");
+    }
+
+    try {
+      const summary = await this.estimateTransaction({
+        address: destinationAddress,
+        amount: BigInt(0),
+        payload: payload,
+      });
+
+      return summary;
+    } catch (error) {
+      console.error("Error estimating transaction fees:", error);
       throw error;
     }
   }

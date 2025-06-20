@@ -3,6 +3,7 @@ import { KaspaClient } from "../utils/all-in-one";
 import { WalletStorage } from "../utils/wallet-storage";
 import {
   Address,
+  GeneratorSummary,
   Mnemonic,
   sompiToKaspaString,
   UtxoEntryReference,
@@ -73,17 +74,10 @@ type WalletState = {
   ) => Promise<TransactionId>;
   getMatureUtxos: () => UtxoEntryReference[];
 
-  // new methods
-  estimateMessageFee: (
+  estimateSendMessageFees: (
     message: string,
-    toAddress: Address,
-    password: string
-  ) => Promise<{
-    fees: number;
-    finalAmount: number;
-    transactions: number;
-    utxos: number;
-  }>;
+    toAddress: Address
+  ) => Promise<GeneratorSummary>;
 
   // Actions
   setSelectedNetwork: (network: NetworkType) => void;
@@ -381,6 +375,18 @@ export const useWalletStore = create<WalletState>((set, get) => {
       set({ rpcClient: null, address: null, isAccountServiceRunning: false });
     },
 
+    estimateSendMessageFees: async (message: string, toAddress: Address) => {
+      const state = get();
+      if (!state.unlockedWallet || !state.accountService) {
+        throw new Error("Wallet not unlocked or account service not running");
+      }
+
+      return state.accountService.estimateSendMessageFees({
+        message,
+        toAddress,
+      });
+    },
+
     sendMessage: async (
       message: string,
       toAddress: Address,
@@ -455,40 +461,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
         throw Error("Account service not initialized.");
       }
       return _accountService.getMatureUtxos();
-    },
-
-    estimateMessageFee: async (message, toAddress, password) => {
-      if (!_accountService) {
-        throw new Error("Account service not initialized.");
-      }
-
-      try {
-        const result = await _accountService.estimateSendMessage({
-          message,
-          toAddress,
-          password,
-        });
-
-        return result;
-      } catch (error) {
-        console.error(
-          "Error estimating message fee, using fallback estimate:",
-          error
-        );
-
-        const baseTransactionSize = 200;
-        const bytesPerChar = 4;
-        const estimatedSize =
-          baseTransactionSize + message.length * bytesPerChar;
-        const estimatedFee = 0.0001 + estimatedSize * 0.00001;
-
-        return {
-          fees: estimatedFee,
-          finalAmount: 0.2,
-          transactions: 1,
-          utxos: 1,
-        };
-      }
     },
 
     setSelectedNetwork: (network: NetworkType) =>

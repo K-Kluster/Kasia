@@ -1,13 +1,11 @@
 import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
-import { amountFromMessage } from "../utils/amount-from-message";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { Input } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
-import { encrypt_message } from "cipher";
 
 type SendMessageFormProps = unknown;
 
@@ -71,14 +69,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       setIsEstimating(true);
       setIsUsingFallback(false);
-      const estimate = await walletStore.estimateMessageFee(
+      const estimate = await walletStore.estimateSendMessageFees(
         message,
-        new Address(recipient),
-        walletStore.unlockedWallet.password
+        new Address(recipient)
       );
 
       console.log("Fee estimate received:", estimate);
-      setFeeEstimate(estimate.fees);
+      setFeeEstimate(Number(estimate.fees) / 100_000_000);
       setIsEstimating(false);
 
       // Check if we got a fallback estimate (always has exactly 1 transaction and 1 utxo)
