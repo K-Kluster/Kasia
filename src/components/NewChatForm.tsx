@@ -238,7 +238,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
               id="recipientAddress"
               value={recipientAddress}
               onChange={(e) => setRecipientAddress(e.target.value)}
-              placeholder="kaspa:... or kaspatest:..."
+              placeholder="kaspa:..."
               disabled={isLoading}
               required
             />
