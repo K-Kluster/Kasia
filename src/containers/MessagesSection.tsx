@@ -126,7 +126,6 @@ export const MessageSection: FC = () => {
           {" "}
           <div className="messages-header">
             <h3>Messages</h3>
-
             <div className="header-actions">
               {walletStore.address && (
                 <FetchApiMessages address={walletStore.address.toString()} />

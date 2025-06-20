@@ -334,14 +334,30 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         ref={recipientInputRef}
         type="text"
         id="recipientAddress"
-        placeholder="Recipient address"
+        placeholder={
+          isCreatingNewChat ? "Enter recipient address" : "Conversation with:"
+        }
         className="recipient-input"
         value={recipient}
+        readOnly={!isCreatingNewChat}
+        style={{
+          cursor: !isCreatingNewChat ? "default" : "text",
+          fontFamily: !isCreatingNewChat
+            ? "Monaco, Menlo, Ubuntu Mono, monospace"
+            : "",
+          fontSize: !isCreatingNewChat ? "12px" : "",
+          color: !isCreatingNewChat ? "#666" : "",
+        }}
+        title={
+          !isCreatingNewChat ? `Conversation with: ${recipient}` : undefined
+        }
         onChange={(e) => {
-          const value = e.target.value;
-          setRecipient(value);
-          setFeeEstimate(null);
-          setIsUsingFallback(false);
+          if (isCreatingNewChat) {
+            const value = e.target.value;
+            setRecipient(value);
+            setFeeEstimate(null);
+            setIsUsingFallback(false);
+          }
         }}
       />
       <div className="message-input-wrapper">
