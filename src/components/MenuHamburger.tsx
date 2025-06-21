@@ -1,4 +1,5 @@
 import { FC } from "react";
+import { FeeBuckets } from "./FeeBuckets";
 import {
   InformationCircleIcon,
   ArrowLongLeftIcon,
@@ -21,10 +22,13 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
 
   return (
     <div
-      className="absolute right-0 top-full mt-2 w-56 bg-[var(--primary-bg)] border border-gray-700 rounded shadow-lg z-10"
+      className="absolute right-0 top-full mt-2 w-56 bg-[var(--primary-bg)] border-1 border-gray-500 rounded shadow-lg z-10"
       onClick={(e) => e.stopPropagation()}
     >
       <ul className="divide-y divide-gray-700">
+        <li className="block sm:hidden px-4 py-3">
+          <FeeBuckets inline={false} />
+        </li>
         <li
           onClick={() => {
             onOpenWalletInfo();

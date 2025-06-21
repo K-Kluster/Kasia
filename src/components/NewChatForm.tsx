@@ -180,7 +180,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   if (showConfirmation) {
     return (
-      <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+        onClick={handleOverlayClick}>
         <div className={styles['new-chat-form']} onClick={(e) => e.stopPropagation()}>
           <h3 className={styles.title}>Confirm Handshake</h3>
           <div className={styles['confirmation-details']}>
@@ -224,7 +225,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
+<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+      onClick={handleOverlayClick}>
       <div className={styles['new-chat-form']} onClick={(e) => e.stopPropagation()}>
         <h3 className={styles.title}>Start New Conversation</h3>
         <form onSubmit={handleSubmit}>

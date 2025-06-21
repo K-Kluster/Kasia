@@ -135,7 +135,7 @@ export const ContactCard: FC<{
     >
       <div className="font-semibold text-base mb-2">
         {isEditingNickname ? (
-          <div className="flex items-center gap-2 w-full">
+          <div className="w-full flex flex-col md:flex-row md:items-center md:gap-2">
             <input
               type="text"
               value={tempNickname}
@@ -148,23 +148,25 @@ export const ContactCard: FC<{
               placeholder="Enter nickname..."
               className="flex-1 rounded-sm text-xs h-5 leading-none"
             />
-            <button
-              onClick={handleNicknameSave}
-              className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
-            >
-              <CheckCircleIcon className="h-5 w-5 text-green-500 fill-current" />
-            </button>
-            <button
-              onClick={handleNicknameCancel}
-              className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
-            >
-              <XCircleIcon className="h-5 w-5 text-red-500 fill-current" />
-            </button>
+            <div className="flex justify-between md:justify-start gap-2 mt-2 md:mt-0 w-full md:w-auto">
+              <button
+                onClick={handleNicknameSave}
+                className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
+              >
+                <CheckCircleIcon className="h-5 w-5 text-green-500 fill-current" />
+              </button>
+              <button
+                onClick={handleNicknameCancel}
+                className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
+              >
+                <XCircleIcon className="h-5 w-5 text-red-500 fill-current" />
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="flex items-center gap-1 w-full">
+          <div className="flex items-center gap-1 w-full justify-between">
             <span
-              className={`flex-1 ${
+              className={`break-all truncate max-w-full ${
                 contact.nickname?.trim() ? "cursor-help" : "cursor-default"
               }`}
               title={
