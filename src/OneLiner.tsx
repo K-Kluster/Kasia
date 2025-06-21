@@ -19,26 +19,17 @@ import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./components/MenuHamburger";
 import { FeeBuckets } from "./components/FeeBuckets";
 import { WalletAddressSection } from "./components/WalletAddressSection";
-<<<<<<< Updated upstream
-import { useKaspaClient } from "./hooks/useKaspaClient";
-=======
 import { useNetworkStore } from "./store/network.store";
->>>>>>> Stashed changes
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWalletReady, setIsWalletReady] = useState(false);
   const [messageStoreLoading, setMessageStoreLoading] = useState(false);
-<<<<<<< Updated upstream
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(
-    import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet"
-  );
-=======
 
   const networkStore = useNetworkStore();
   const isConnected = useNetworkStore((state) => state.isConnected);
   const connect = useNetworkStore((state) => state.connect);
->>>>>>> Stashed changes
+  // handle network error
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
@@ -50,21 +41,6 @@ export const OneLiner: FC = () => {
     (state) => state.unlockedWallet?.name
   );
 
-<<<<<<< Updated upstream
-  const {
-    client: currentClient,
-    status: connectionStatus,
-    isConnected,
-    connect,
-    disconnect,
-  } = useKaspaClient(selectedNetwork, {
-    onConnect: (c) => {
-      walletStore.setSelectedNetwork(c.networkId);
-      walletStore.setRpcClient(c);
-    },
-    onError: (e) => setErrorMessage(`Connection Failed: ${e.message}`),
-  });
-=======
   // Network connection effect
   useEffect(() => {
     // Skip if no network selected or connection attempt in progress
@@ -80,7 +56,6 @@ export const OneLiner: FC = () => {
   const onNetworkChange = useCallback(
     (network: NetworkType) => {
       networkStore.setNetwork(network);
->>>>>>> Stashed changes
 
       // Trigger reconnection when network changes
       connect();
@@ -183,7 +158,7 @@ export const OneLiner: FC = () => {
     },
     [messageStore, walletStore.address]
   );
-  
+
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
 
   const handleCloseWallet = () => {
