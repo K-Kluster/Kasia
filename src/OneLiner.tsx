@@ -311,7 +311,7 @@ export const OneLiner: FC = () => {
 
       {isAddressModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-          <div className="modal-content">
+          <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]">
             <WalletAddressSection address={walletStore.address?.toString()} />
             <button
               onClick={() => setIsAddressModalOpen(false)}

@@ -698,19 +698,6 @@ h1 {
   font-family: monospace;
 }
 
-.modal-content {
-  background-color: var(--secondary-bg);
-  padding: 20px;
-  border-radius: 12px;
-  position: relative;
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  animation: modalFadeIn 0.3s ease-out;
-}
-
 .modal-body {
   margin-top: 20px;
 }

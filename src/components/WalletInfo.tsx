@@ -118,7 +118,8 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
       onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]"
+       onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>
           ×
         </button>
