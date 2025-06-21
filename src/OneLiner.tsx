@@ -1,8 +1,7 @@
 // this file is the legacy code that came from old codebase
 // it is intended to be temporary to progressively move towards modularization
 
-import { FC, useCallback, useEffect, useState } from "react";
-import { KaspaClient } from "./utils/all-in-one";
+import { FC, useCallback, useEffect, useState, useRef } from "react";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, NetworkType } from "./types/all";
 import { useMessagingStore } from "./store/messaging.store";
@@ -12,7 +11,6 @@ import { ErrorCard } from "./components/ErrorCard";
 import { useWalletStore } from "./store/wallet.store";
 import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
-import styles from "./OneLiner.module.css";
 import clsx from "clsx";
 import { MessageSection } from "./containers/MessagesSection";
 import { FetchApiMessages } from "./components/FetchApiMessages";
@@ -20,24 +18,20 @@ import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./components/MenuHamburger";
 import { FeeBuckets } from "./components/FeeBuckets";
 import { WalletAddressSection } from "./components/WalletAddressSection";
+import { useKaspaClient } from "./hooks/useKaspaClient";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWalletReady, setIsWalletReady] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
   const [messageStoreLoading, setMessageStoreLoading] = useState(false);
-  const [currentClient, setCurrentClient] = useState<KaspaClient | null>(null);
-  const [connectionStatus, setConnectionStatus] = useState(
-    "Waiting for interaction"
-  );
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(
     import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet"
   );
-  const [connectionAttemptInProgress, setConnectionAttemptInProgress] =
-    useState(false);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
@@ -45,158 +39,19 @@ export const OneLiner: FC = () => {
     (state) => state.unlockedWallet?.name
   );
 
-  const connectToNetwork = useCallback(
-    async (networkId: NetworkType) => {
-      // Skip if already attempting connection
-      if (connectionAttemptInProgress) {
-        console.log("Connection attempt already in progress, skipping");
-        return;
-      }
-
-      setConnectionAttemptInProgress(true);
-
-      try {
-        setConnectionStatus("Connecting...");
-        setIsConnected(false);
-
-        // Disconnect existing client if any
-        if (currentClient?.connected) {
-          console.log("Disconnecting existing client");
-          await currentClient.disconnect();
-          setCurrentClient(null);
-        }
-
-        console.log(
-          `Attempting to connect to ${networkId} (type: ${typeof networkId})`
-        );
-        const client = new KaspaClient(networkId);
-
-        // Try to connect
-        console.log("Calling connect() on KaspaClient...");
-        await client.connect();
-        console.log("Connect() call completed");
-
-        if (client.connected) {
-          console.log(`Successfully connected to ${networkId}`);
-          setCurrentClient(client);
-          setIsConnected(true);
-          setConnectionStatus(`Connected to ${networkId}`);
-          walletStore.setSelectedNetwork(networkId);
-          // Update the RPC client in the wallet store
-          walletStore.setRpcClient(client);
-        } else {
-          console.log(`Failed to connect to ${networkId}`);
-          setIsConnected(false);
-          setConnectionStatus("Connection Failed");
-          setCurrentClient(null);
-          // Clear the RPC client in the wallet store
-          walletStore.setRpcClient(null);
-        }
-      } catch (error) {
-        console.error("Failed to connect:", error);
-        setIsConnected(false);
-        setCurrentClient(null);
-        if (error instanceof Error) {
-          setConnectionStatus(`Connection Failed: ${error.message}`);
-        } else {
-          setConnectionStatus("Connection Failed: Unknown error");
-        }
-      } finally {
-        setConnectionAttemptInProgress(false);
-      }
+  const {
+    client: currentClient,
+    status: connectionStatus,
+    isConnected,
+    connect,
+    disconnect,
+  } = useKaspaClient(selectedNetwork, {
+    onConnect: (c) => {
+      walletStore.setSelectedNetwork(c.networkId);
+      walletStore.setRpcClient(c);
     },
-    [currentClient, walletStore, connectionAttemptInProgress]
-  );
-
-  // Network connection effect
-  useEffect(() => {
-    // Skip if no network selected or connection attempt in progress
-    if (!selectedNetwork || connectionAttemptInProgress) {
-      return;
-    }
-
-    let isEffectActive = true;
-    let reconnectAttempts = 0;
-    const MAX_RECONNECT_ATTEMPTS = 3;
-    const RECONNECT_DELAY = 1000; // 1 second delay between attempts
-
-    const connect = async () => {
-      try {
-        if (!isEffectActive) return;
-
-        // Check if we need to reconnect
-        const needsReconnect =
-          !currentClient?.connected ||
-          currentClient?.networkId !== selectedNetwork;
-
-        if (needsReconnect) {
-          if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-            setConnectionStatus(
-              "Failed to establish stable connection after multiple attempts"
-            );
-            setIsConnected(false);
-            setCurrentClient(null);
-            return;
-          }
-
-          reconnectAttempts++;
-          console.log(
-            `Connection attempt ${reconnectAttempts} of ${MAX_RECONNECT_ATTEMPTS} for ${selectedNetwork}`
-          );
-
-          // Add delay between reconnection attempts
-          if (reconnectAttempts > 1) {
-            await new Promise((resolve) =>
-              setTimeout(resolve, RECONNECT_DELAY)
-            );
-          }
-
-          // Disconnect existing client if network changed
-          if (
-            currentClient?.connected &&
-            currentClient.networkId !== selectedNetwork
-          ) {
-            console.log(
-              `Disconnecting from ${currentClient.networkId} to connect to ${selectedNetwork}`
-            );
-            await currentClient.disconnect();
-            setCurrentClient(null);
-          }
-
-          await connectToNetwork(selectedNetwork);
-        } else {
-          console.log(
-            `Already connected to ${selectedNetwork}, no reconnection needed`
-          );
-          // Ensure connection state is synced with current client
-          setIsConnected(true);
-          setConnectionStatus(`Connected to ${selectedNetwork}`);
-        }
-      } catch (error) {
-        console.error("Network connection error:", error);
-        if (isEffectActive) {
-          setConnectionStatus(
-            `Connection error: ${
-              error instanceof Error ? error.message : "Unknown error"
-            }`
-          );
-          setIsConnected(false);
-          setCurrentClient(null);
-        }
-      }
-    };
-
-    connect();
-
-    return () => {
-      isEffectActive = false;
-    };
-  }, [
-    selectedNetwork,
-    connectToNetwork,
-    currentClient,
-    connectionAttemptInProgress,
-  ]);
+    onError: (e) => setErrorMessage(`Connection Failed: ${e.message}`),
+  });
 
   // Auto-clear connection-related errors when connection succeeds
   useEffect(() => {
@@ -212,6 +67,20 @@ export const OneLiner: FC = () => {
     }
   }, [isConnected, connectionStatus, errorMessage]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  
+
   const onWalletUnlocked = useCallback(() => {
     setIsWalletReady(true);
   }, []);
@@ -224,9 +93,6 @@ export const OneLiner: FC = () => {
       }
 
       messageStore.setIsCreatingNewChat(true);
-
-      // The UI should now show a form to enter recipient address
-      // When address is entered, it will call initiateHandshake
     } catch (error) {
       console.error("Failed to start new chat:", error);
       setErrorMessage(
@@ -303,7 +169,7 @@ export const OneLiner: FC = () => {
     },
     [messageStore, walletStore.address]
   );
-
+  
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
 
   const handleCloseWallet = () => {
@@ -318,15 +184,17 @@ export const OneLiner: FC = () => {
 
   return (
     <div className="container">
-      <div className="header-container">
+      <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
         <div className="app-title flex items-center gap-2">
           <img src="/kasia-logo.png" alt="Kasia Logo" className="app-logo" />
           <h1 className="text-xl font-bold">Kasia</h1>
         </div>
 
         {isWalletReady && (
-          <div className="relative flex items-center gap-2">
-            <FeeBuckets inline={true} />
+          <div ref={menuRef} className="relative flex items-center gap-2">
+            <div className="hidden sm:block">
+              <FeeBuckets inline={true} />
+            </div>
 
             <button
               onClick={toggleSettings}
@@ -362,8 +230,8 @@ export const OneLiner: FC = () => {
       <div className="px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           {isWalletReady ? (
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 w-full">
-              <div className="flex flex-col items-start text-xs gap-1 whitespace-nowrap">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start items-center gap-4 w-full text-xs">
+              <div className="flex flex-col items-start sm:items-start items-center gap-1 whitespace-nowrap">
                 <div>
                   <strong>Network:</strong> {walletStore.selectedNetwork}
                 </div>
@@ -372,10 +240,10 @@ export const OneLiner: FC = () => {
                 </div>
               </div>
               {!messageStore.isLoaded ? (
-                <div className="flex items-center gap-2 text-sm">
+                <div className="text-sm">
                   <button
                     className={clsx(
-                      "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
+                      "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white font-bold py-2 px-4 rounded cursor-pointer",
                       { "opacity-50 cursor-not-allowed": messageStoreLoading }
                     )}
                     onClick={onStartMessagingProcessClicked}
@@ -406,9 +274,9 @@ export const OneLiner: FC = () => {
       </div>
 
       {messageStore.isLoaded ? (
-        <div className="messages-container">
-          <div className="contacts-sidebar">
-            <div className="contacts-header">
+        <div className="bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[70vh] min-h-[300px]">
+          <div className="w-[200px] md:w-[280px] bg-[var(--primary-bg)] border-r border-[var(--border-color)] flex flex-col">
+            <div className="px-4 py-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]">
               <div className="font-bold">Conversations</div>
               <button
                 onClick={onNewChatClicked}
@@ -417,7 +285,7 @@ export const OneLiner: FC = () => {
                 <PlusIcon className="size-8" />
               </button>
             </div>
-            <div className="contacts-list overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-2">
               {messageStore.contacts
                 ?.filter(
                   (c) =>
@@ -442,7 +310,7 @@ export const OneLiner: FC = () => {
           )}
         </div>
       ) : null}
-      <div id="transactions">
+      <div>
         <ErrorCard
           error={errorMessage}
           onDismiss={() => setErrorMessage(null)}
@@ -451,7 +319,7 @@ export const OneLiner: FC = () => {
 
       {/* Add NewChatForm when isCreatingNewChat is true */}
       {messageStore.isCreatingNewChat && (
-        <div className={styles["modal-overlay"]}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
           />
@@ -459,8 +327,8 @@ export const OneLiner: FC = () => {
       )}
 
       {isAddressModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+          <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]">
             <WalletAddressSection address={walletStore.address?.toString()} />
             <button
               onClick={() => setIsAddressModalOpen(false)}
