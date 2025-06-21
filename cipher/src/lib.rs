@@ -15,6 +15,10 @@ use wasm_bindgen::{JsError, UnwrapThrowExt, prelude::wasm_bindgen};
 #[wasm_bindgen(inspectable)]
 #[derive(Debug, Clone)]
 pub struct EncryptedMessage {
+    // size is 1 byte
+    #[wasm_bindgen(skip)]
+    pub version: u8,
+
     // size is 12 bytes
     #[wasm_bindgen(skip)]
     pub nonce: Vec<u8>,
@@ -28,8 +32,9 @@ pub struct EncryptedMessage {
 
 #[wasm_bindgen]
 impl EncryptedMessage {
-    pub fn new(ciphertext: &[u8], nonce: &[u8], ephemeral_public_key: &[u8]) -> Self {
+    pub fn new(version: u8, ciphertext: &[u8], nonce: &[u8], ephemeral_public_key: &[u8]) -> Self {
         Self {
+            version,
             ciphertext: ciphertext.to_vec(),
             nonce: nonce.to_vec(),
             ephemeral_public_key: ephemeral_public_key.to_vec(),
@@ -38,6 +43,7 @@ impl EncryptedMessage {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
+        bytes.push(self.version);
         bytes.extend_from_slice(&self.nonce);
         bytes.extend_from_slice(&self.ephemeral_public_key);
         bytes.extend_from_slice(&self.ciphertext);
@@ -45,36 +51,41 @@ impl EncryptedMessage {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Self {
+        // The version is always the first byte
+        let version = bytes[0];
+
         // The nonce is always 12 bytes
-        let nonce = bytes[0..12].to_vec();
-        
+        let nonce = bytes[1..13].to_vec();
+
         // Check if the key starts with SEC1 compressed format marker (02 or 03)
-        let is_sec1_compressed = bytes.len() > 12 && (bytes[12] == 0x02 || bytes[12] == 0x03);
-        
+        let is_sec1_compressed = bytes.len() > 12 && (bytes[13] == 0x02 || bytes[13] == 0x03);
+
         // If it's a SEC1 compressed key, it's 33 bytes, otherwise assume 32 bytes
         let key_size = if is_sec1_compressed { 33 } else { 32 };
-        let key_end = 12 + key_size;
-        
+        let key_end = 13 + key_size;
+
         // Ensure we don't go out of bounds
         if bytes.len() < key_end {
             // Not enough bytes for the key, use what we have
-            let ephemeral_public_key = bytes[12..].to_vec();
+            let ephemeral_public_key = bytes[13..].to_vec();
             return Self {
+                version,
                 nonce,
                 ephemeral_public_key,
                 ciphertext: Vec::new(), // No bytes left for ciphertext
             };
         }
-        
+
         // Extract the key and ciphertext
-        let ephemeral_public_key = bytes[12..key_end].to_vec();
+        let ephemeral_public_key = bytes[13..key_end].to_vec();
         let ciphertext = if bytes.len() > key_end {
             bytes[key_end..].to_vec()
         } else {
             Vec::new()
         };
-        
+
         Self {
+            version,
             nonce,
             ephemeral_public_key,
             ciphertext,
@@ -99,63 +110,63 @@ pub fn debug_address_to_pubkey(address_string: &str) -> Result<String, JsError> 
         Ok(addr) => addr,
         Err(e) => return Err(JsError::new(&format!("Address parsing error: {}", e))),
     };
-    
+
     // Extract X-only public key from address payload
     let xonly_pk = match XOnlyPublicKey::from_slice(address.payload.as_slice()) {
         Ok(pk) => pk,
         Err(e) => return Err(JsError::new(&format!("XOnlyPublicKey error: {}", e))),
     };
-    
+
     // Convert to full public key (assuming even parity)
     let pk_even = SecpPublicKey::from_x_only_public_key(xonly_pk, secp256k1::Parity::Even);
-    
+
     // Convert to k256 PublicKey format
     let k256_pk = match PublicKey::from_sec1_bytes(&pk_even.serialize()) {
         Ok(pk) => pk,
         Err(e) => return Err(JsError::new(&format!("k256 PublicKey error: {}", e))),
     };
-    
+
     // Return the hex representation
     Ok(hex::encode(k256_pk.to_sec1_bytes()))
 }
 
 // Debug function to check if private key can decrypt a message
 #[wasm_bindgen]
-pub fn debug_can_decrypt(
-    encrypted_hex: &str,
-    private_key_hex: &str
-) -> Result<String, JsError> {
+pub fn debug_can_decrypt(encrypted_hex: &str, private_key_hex: &str) -> Result<String, JsError> {
     // Try to parse the hex string into EncryptedMessage
     let encrypted_bytes = match hex::decode(encrypted_hex) {
         Ok(bytes) => bytes,
         Err(_) => return Err(JsError::new("Invalid encrypted message hex")),
     };
-    
+
     let encrypted_message = EncryptedMessage::from_bytes(&encrypted_bytes);
-    
+
     // Try to parse the private key
     let private_key_bytes = match hex::decode(private_key_hex) {
         Ok(bytes) => bytes,
         Err(_) => return Err(JsError::new("Invalid private key hex")),
     };
-    
+
     // Create WalletPrivateKey from bytes
     let wallet_private_key = match WalletPrivateKey::try_from_slice(&private_key_bytes) {
         Ok(pk) => pk,
         Err(e) => return Err(JsError::new(&format!("Invalid wallet private key: {}", e))),
     };
-    
+
     // Attempt to get k256 SecretKey
     let secret_key = match SecretKey::from_slice(&wallet_private_key.secret_bytes()) {
         Ok(sk) => sk,
         Err(e) => return Err(JsError::new(&format!("Invalid k256 secret key: {}", e))),
     };
-    
+
     // Get the public key from the private key
     let derived_public_key = secret_key.public_key();
-    
+
     // Return success with public key for verification
-    Ok(format!("Private key valid. Derived public key: {}", hex::encode(derived_public_key.to_sec1_bytes())))
+    Ok(format!(
+        "Private key valid. Derived public key: {}",
+        hex::encode(derived_public_key.to_sec1_bytes())
+    ))
 }
 
 #[wasm_bindgen]
@@ -194,6 +205,7 @@ pub fn encrypt_message(
         .expect_throw("Failed to encrypt message");
 
     let encrypted_message = EncryptedMessage::new(
+        1,
         ciphertext.as_slice(),
         nonce.as_slice(),
         ephemeral_public_key.to_sec1_bytes().deref(),
@@ -217,7 +229,7 @@ pub fn decrypt_message(
         Ok(pk) => pk,
         Err(_) => return Err(JsError::new("Invalid ephemeral public key")),
     };
-    
+
     // Get nonce
     let nonce = Nonce::from_slice(&encrypted_message.nonce);
 
@@ -228,20 +240,28 @@ pub fn decrypt_message(
     let exctracted_2 = shared_secret_2.extract::<sha2::Sha256>(None);
     let mut okm_2 = [0u8; 32];
     match exctracted_2.expand(b"", &mut okm_2) {
-        Ok(_) => {},
-        Err(_) => return Err(JsError::new("Failed to expand shared secret for decryption")),
+        Ok(_) => {}
+        Err(_) => {
+            return Err(JsError::new(
+                "Failed to expand shared secret for decryption",
+            ));
+        }
     }
-    
+
     // Create cipher
     let cipher_2 = ChaCha20Poly1305::new(&okm_2.into());
-    
+
     // Decrypt
     let plaintext = match cipher_2.decrypt(
-            &nonce,
-            Payload::from(encrypted_message.ciphertext.as_slice()),
+        &nonce,
+        Payload::from(encrypted_message.ciphertext.as_slice()),
     ) {
         Ok(pt) => pt,
-        Err(_) => return Err(JsError::new("Decryption failed - incorrect key or corrupted data")),
+        Err(_) => {
+            return Err(JsError::new(
+                "Decryption failed - incorrect key or corrupted data",
+            ));
+        }
     };
 
     // Convert to string
@@ -261,7 +281,7 @@ pub fn decrypt_message_with_bytes(
         Ok(pk) => pk,
         Err(e) => return Err(JsError::new(&format!("Invalid wallet private key: {}", e))),
     };
-    
+
     // Use the existing decrypt_message function
     decrypt_message(encrypted_message, wallet_private_key)
 }
@@ -282,7 +302,7 @@ pub fn decrypt_with_secret_key(
         Ok(pk) => pk,
         Err(_) => return Err(JsError::new("Invalid ephemeral public key")),
     };
-    
+
     // Get nonce
     let nonce = Nonce::from_slice(&encrypted_message.nonce);
 
@@ -293,20 +313,28 @@ pub fn decrypt_with_secret_key(
     let extracted = shared_secret.extract::<sha2::Sha256>(None);
     let mut okm = [0u8; 32];
     match extracted.expand(b"", &mut okm) {
-        Ok(_) => {},
-        Err(_) => return Err(JsError::new("Failed to expand shared secret for decryption")),
+        Ok(_) => {}
+        Err(_) => {
+            return Err(JsError::new(
+                "Failed to expand shared secret for decryption",
+            ));
+        }
     }
-    
+
     // Create cipher
     let cipher = ChaCha20Poly1305::new(&okm.into());
-    
+
     // Decrypt
     let plaintext = match cipher.decrypt(
-            &nonce,
-            Payload::from(encrypted_message.ciphertext.as_slice()),
+        &nonce,
+        Payload::from(encrypted_message.ciphertext.as_slice()),
     ) {
         Ok(pt) => pt,
-        Err(_) => return Err(JsError::new("Decryption failed - incorrect key or corrupted data")),
+        Err(_) => {
+            return Err(JsError::new(
+                "Decryption failed - incorrect key or corrupted data",
+            ));
+        }
     };
 
     // Convert to string

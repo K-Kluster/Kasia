@@ -90,6 +90,13 @@ type CreateWithdrawTransactionArgs = {
   amount: bigint;
 };
 
+// Add this helper function at the top level
+function stringifyWithBigInt(obj: any): string {
+  return JSON.stringify(obj, (_, value) =>
+    typeof value === "bigint" ? value.toString() : value
+  );
+}
+
 interface Conversation {
   conversationId: string;
   myAlias: string;
@@ -407,7 +414,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         transaction.amount
       } sompi)`
     );
-
     console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
 
     const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
