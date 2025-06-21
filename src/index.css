@@ -449,19 +449,6 @@ h1 {
   height: 32px;
 }
 
-.new-conversation-btn {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9em;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
 
 .contact-preview {
   font-size: 0.8em;
