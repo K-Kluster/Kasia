@@ -426,16 +426,6 @@ h1 {
   padding: 8px;
 }
 
-.contact-item {
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 8px;
-  background-color: var(--secondary-bg);
-  border: 1px solid transparent;
-}
-
 .message {
   position: relative;
   background-color: var(--secondary-bg);
@@ -471,11 +461,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 4px;
-}
-
-.contact-name {
-  font-weight: 600;
-  margin-bottom: 4px;
 }
 
 .contact-preview {
