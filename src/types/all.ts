@@ -21,6 +21,7 @@ export type Contact = {
   lastMessage: Message;
   messages: Message[];
   status?: "active" | "pending" | "rejected";
+  nickname?: string;
 };
 
 export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet";

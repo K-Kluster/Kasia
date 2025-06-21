@@ -68,7 +68,10 @@ interface MessagingState {
 
   conversationManager: ConversationManager | null;
   initializeConversationManager: (address: string) => void;
-  initiateHandshake: (recipientAddress: string, customAmount?: bigint) => Promise<{
+  initiateHandshake: (
+    recipientAddress: string,
+    customAmount?: bigint
+  ) => Promise<{
     payload: string;
     conversation: Conversation;
   }>;
@@ -85,6 +88,10 @@ interface MessagingState {
 
   // New function to manually respond to a handshake
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
+
+  // Nickname management
+  setContactNickname: (address: string, nickname: string) => void;
+  removeContactNickname: (address: string) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -107,6 +114,47 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     fullMessages.sort((a, b) => a.timestamp - b.timestamp);
 
     set({ messages: fullMessages });
+
+    // Update contacts with new messages
+    const state = g();
+    const walletStore = useWalletStore.getState();
+    const walletAddress = walletStore.address?.toString();
+
+    if (walletAddress) {
+      messages.forEach((message) => {
+        const otherParty =
+          message.senderAddress === walletAddress
+            ? message.recipientAddress
+            : message.senderAddress;
+
+        // Update existing contact if found
+        const existingContactIndex = state.contacts.findIndex(
+          (c) => c.address === otherParty
+        );
+
+        if (existingContactIndex !== -1) {
+          const existingContact = state.contacts[existingContactIndex];
+          // Only update if this message is newer than the current lastMessage
+          if (message.timestamp > existingContact.lastMessage.timestamp) {
+            const updatedContacts = [...state.contacts];
+            updatedContacts[existingContactIndex] = {
+              ...existingContact,
+              lastMessage: message,
+              messages: [...existingContact.messages, message].sort(
+                (a, b) => a.timestamp - b.timestamp
+              ),
+            };
+
+            // Sort contacts by most recent message timestamp
+            const sortedContacts = updatedContacts.sort(
+              (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+            );
+
+            set({ contacts: sortedContacts });
+          }
+        }
+      });
+    }
 
     g().refreshMessagesOnOpenedRecipient();
   },
@@ -202,10 +250,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       );
     });
 
+    // Load saved nicknames
+    const storageKey = `contact_nicknames_${address}`;
+    const savedNicknames = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
     // Update state with sorted contacts and messages
-    const sortedContacts = [...contacts.values()].sort(
-      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
-    );
+    const sortedContacts = [...contacts.values()]
+      .map((contact) => ({
+        ...contact,
+        nickname: savedNicknames[contact.address] || undefined,
+      }))
+      .sort((a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp);
 
     set({
       contacts: sortedContacts,
@@ -621,10 +676,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       g().loadMessages(currentAddress);
 
       // Set flag to trigger API fetching after next account service start
-      localStorage.setItem('kasia_fetch_api_on_start', 'true');
+      localStorage.setItem("kasia_fetch_api_on_start", "true");
 
       console.log("Import completed successfully");
-      console.log("Set flag to fetch API messages on next wallet service start");
+      console.log(
+        "Set flag to fetch API messages on next wallet service start"
+      );
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
       if (error instanceof Error) {
@@ -713,7 +770,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     const manager = new ConversationManager(address, events);
     set({ conversationManager: manager });
   },
-  initiateHandshake: async (recipientAddress: string, customAmount?: bigint) => {
+  initiateHandshake: async (
+    recipientAddress: string,
+    customAmount?: bigint
+  ) => {
     const manager = g().conversationManager;
     if (!manager) {
       throw new Error("Conversation manager not initialized");
@@ -886,5 +946,37 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.error("Error sending handshake response:", error);
       throw error;
     }
+  },
+
+  // Nickname management functions
+  setContactNickname: (address: string, nickname: string) => {
+    const contacts = g().contacts;
+    const contactIndex = contacts.findIndex((c) => c.address === address);
+
+    if (contactIndex !== -1) {
+      const updatedContacts = [...contacts];
+      updatedContacts[contactIndex] = {
+        ...updatedContacts[contactIndex],
+        nickname: nickname.trim() || undefined,
+      };
+      set({ contacts: updatedContacts });
+
+      // Save to localStorage
+      const walletStore = useWalletStore.getState();
+      if (walletStore.address) {
+        const storageKey = `contact_nicknames_${walletStore.address.toString()}`;
+        const nicknames = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        if (nickname.trim()) {
+          nicknames[address] = nickname.trim();
+        } else {
+          delete nicknames[address];
+        }
+        localStorage.setItem(storageKey, JSON.stringify(nicknames));
+      }
+    }
+  },
+
+  removeContactNickname: (address: string) => {
+    g().setContactNickname(address, "");
   },
 }));

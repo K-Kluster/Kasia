@@ -257,13 +257,6 @@
   align-items: center;
 }
 
-.mnemonic-input-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
 .mnemonic-word-input {
   width: 100%;
   padding: 8px;
@@ -512,9 +505,5 @@
   
   .radio-option {
     padding: 0.5rem;
-  }
-  
-  .mnemonic-input-grid {
-    grid-template-columns: repeat(3, 1fr);
   }
 } 

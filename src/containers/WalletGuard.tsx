@@ -6,6 +6,7 @@ import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
 import { PASSWORD_MIN_LENGTH, disablePasswordRequirements } from "../config/password";
+import {MnemonicEntry} from "../components/MnemonicEntry";
 
 type Step = {
   type: "home" | "create" | "import" | "unlock" | "finalizing" | "migrate";
@@ -33,9 +34,6 @@ export const WalletGuard = ({
   const [seedPhraseLength, setSeedPhraseLength] = useState<12 | 24>(24); // Default to 24 words
   const [derivationType, setDerivationType] =
     useState<WalletDerivationType>("standard"); // Default to standard
-  const [focusedMnemonicIndex, setFocusedMnemonicIndex] = useState<
-    number | null
-  >(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -384,60 +382,10 @@ export const WalletGuard = ({
                 <span>24 words</span>
               </label>
             </div>
-
-            <label>Mnemonic Phrase</label>
-            <div className="mnemonic-input-grid">
-              {Array.from({ length: seedPhraseLength }, (_, i) => (
-                <input
-                  key={i}
-                  type={focusedMnemonicIndex === i ? "text" : "password"}
-                  placeholder={`Word ${i + 1}`}
-                  className="mnemonic-word-input"
-                  data-index={i}
-                  onFocus={() => setFocusedMnemonicIndex(i)}
-                  onBlur={() => setFocusedMnemonicIndex(null)}
-                  onPaste={(e) => {
-                    if (i === 0) {
-                      e.preventDefault();
-                      const pastedText = e.clipboardData.getData("text");
-                      const words = pastedText.trim().split(/\s+/);
-
-                      const inputElement = e.target as HTMLInputElement;
-                      const allInputs =
-                        inputElement.parentElement?.querySelectorAll("input");
-                      if (!allInputs) return;
-
-                      words
-                        .slice(0, seedPhraseLength)
-                        .forEach((word, index) => {
-                          if (allInputs[index]) {
-                            (allInputs[index] as HTMLInputElement).value = word;
-                          }
-                        });
-
-                      if (mnemonicRef.current) {
-                        mnemonicRef.current.value = words
-                          .slice(0, seedPhraseLength)
-                          .join(" ");
-                      }
-                    }
-                  }}
-                  onChange={(e) => {
-                    const inputElement = e.target as HTMLInputElement;
-                    const allInputs =
-                      inputElement.parentElement?.querySelectorAll("input") ||
-                      [];
-                    const words = Array.from(allInputs)
-                      .map((input) => input.value)
-                      .join(" ");
-                    if (mnemonicRef.current) {
-                      mnemonicRef.current.value = words;
-                    }
-                  }}
-                />
-              ))}
-            </div>
-            <textarea ref={mnemonicRef} style={{ display: "none" }} />
+            <MnemonicEntry
+              seedPhraseLength={seedPhraseLength}
+              mnemonicRef={mnemonicRef}
+            />
           </div>
         )}
 
