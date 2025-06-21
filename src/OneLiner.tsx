@@ -293,7 +293,7 @@ export const OneLiner: FC = () => {
           )}
         </div>
       ) : null}
-      <div id="transactions">
+      <div>
         <ErrorCard
           error={errorMessage}
           onDismiss={() => setErrorMessage(null)}
