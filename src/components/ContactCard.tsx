@@ -2,6 +2,7 @@ import { FC, useMemo, useState } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
+import { PencilIcon } from "@heroicons/react/24/solid";
 
 export const ContactCard: FC<{
   contact: Contact;
@@ -218,7 +219,7 @@ export const ContactCard: FC<{
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
             >
-              ✏️
+              <PencilIcon/>
             </button>
           </div>
         )}
