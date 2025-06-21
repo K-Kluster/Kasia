@@ -1,6 +1,5 @@
 import { FC, useMemo } from "react";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 import { WalletAddressSection } from "./WalletAddressSection";
 
@@ -101,13 +100,8 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             </ul>
           )}
         </div>
-
         <div className="info-box">
           <WalletWithdrawal walletBalance={walletBalance} />
-        </div>
-
-        <div className="seed-phrase-section">
-          <WalletSeedRetreiveDisplay />
         </div>
       </>
     );
