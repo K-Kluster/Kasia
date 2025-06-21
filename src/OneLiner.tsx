@@ -205,8 +205,8 @@ export const OneLiner: FC = () => {
       if (
         errorMessage?.includes("WebSocket") ||
         errorMessage?.includes("RPC") ||
-        errorMessage?.includes("Failed to start messaging"))
-      {
+        errorMessage?.includes("Failed to start messaging")
+      ) {
         setErrorMessage(null);
       }
     }
@@ -239,7 +239,6 @@ export const OneLiner: FC = () => {
     try {
       // Clear any previous error messages
       setErrorMessage(null);
-
       if (!currentClient || !currentClient.connected) {
         setErrorMessage(
           "Please choose a network and connect to the Kaspa Network first"

@@ -1,6 +1,5 @@
-import { FC, useMemo, useState, useEffect, useCallback } from "react";
+import { FC, useMemo } from "react";
 import { useWalletStore } from "../store/wallet.store";
-import { toDataURL } from "qrcode";
 import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 import { WalletAddressSection } from "./WalletAddressSection";
@@ -20,87 +19,10 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   open,
   onClose,
 }) => {
-  const [copyNotification, setCopyNotification] = useState("");
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
-
   const isAccountServiceRunning = useWalletStore(
     (s) => s.isAccountServiceRunning
   );
   const walletBalance = useWalletStore((s) => s.balance);
-
-  useEffect(() => {
-    if (!address) return;
-    toDataURL(address, (err, uri) => {
-      if (!err) setQRCodeURL(uri);
-    });
-  }, [address]);
-
-  // Add handler for copy to clipboard
-  const handleCopyAddress = async () => {
-    console.log("Copy button clicked!");
-
-    if (!address) {
-      console.log("No address to copy");
-      setCopyNotification("No address available");
-      setTimeout(() => setCopyNotification(""), 3000);
-      return;
-    }
-
-    console.log("Address to copy:", address);
-
-    // Try the modern clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-      try {
-        console.log("Using modern clipboard API");
-        await navigator.clipboard.writeText(address);
-        console.log("Modern clipboard API successful");
-        setCopyNotification("Address copied to clipboard!");
-        setTimeout(() => setCopyNotification(""), 3000);
-        return;
-      } catch (error) {
-        console.log("Modern clipboard API failed:", error);
-      }
-    }
-
-    // Fallback method
-    console.log("Using fallback copy method");
-    try {
-      const textArea = document.createElement("textarea");
-      textArea.value = address;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-999999px";
-      textArea.style.top = "-999999px";
-      textArea.style.opacity = "0";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      textArea.setSelectionRange(0, 99999); // For mobile devices
-
-      const successful = document.execCommand("copy");
-      document.body.removeChild(textArea);
-
-      if (successful) {
-        console.log("Fallback copy successful");
-        setCopyNotification("Address copied to clipboard!");
-        setTimeout(() => setCopyNotification(""), 3000);
-      } else {
-        console.log("Fallback copy failed");
-        setCopyNotification("Copy failed - please copy manually");
-        setTimeout(() => setCopyNotification(""), 3000);
-      }
-    } catch (fallbackError) {
-      console.error("Fallback copy method failed:", fallbackError);
-      setCopyNotification("Copy failed - please copy manually");
-      setTimeout(() => setCopyNotification(""), 3000);
-    }
-  };
-
-  // Add handler for QR code generation
-  const handleShowQRCode = useCallback(() => {
-    console.log("QR button clicked, current state:", showQRCode);
-    setShowQRCode(!showQRCode);
-  }, [showQRCode]);
 
   const walletInfoNode = useMemo(() => {
     // Only show initialization state if the service isn't running
@@ -189,15 +111,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         </div>
       </>
     );
-  }, [
-    isAccountServiceRunning,
-    walletBalance,
-    address,
-    copyNotification,
-    showQRCode,
-    qrCodeURL,
-    handleShowQRCode,
-  ]);
+  }, [isAccountServiceRunning, walletBalance, address]);
 
   if (!isWalletReady || !open) return null;
 
@@ -211,7 +125,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           {state === "connected"
             ? walletInfoNode
             : state === "detected"
-            ? "KasWare Wallet detected. Click \"Connect to Kasware\" to view your transactions."
+            ? 'KasWare Wallet detected. Click "Connect to Kasware" to view your transactions.'
             : "Kasware Wallet not detected. Please install Kasware Wallet."}
         </div>
       </div>

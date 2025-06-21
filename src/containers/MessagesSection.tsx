@@ -106,7 +106,7 @@ export const MessageSection: FC = () => {
           <div className="messages-list">
             <div className="no-messages">
               Start by funding your wallet with some Kas (should be a small
-              amount such as 10 Kas) and chat to someone by clicking New Chat
+              amount such as 10 Kas) and chat to someone by clicking the add (+) button on the top-left corner
             </div>
           </div>
         </>
