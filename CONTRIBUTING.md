@@ -21,6 +21,12 @@ For less formal discussions there is also a [Discord Server](https://discord.gg/
 Inherited from default prettier settings, subject to evolution. We recommend that you add the `prettier` extension on your favorite IDE, and enable format on save capability.\
 For VsCode user, this is automatically done through .vscode workspace settings.
 
+## Coding guide
+
+### Web style
+
+For any new implementations, we enforce the use of inline TailwindCSS. A well-known utility `clsx` is available within the codebase for more conplex style application (e.g.: conditional style)
+
 ## Submitting Changes
 
 Kasia uses GitHub's pull-request workflow and all contributions in terms of code should be done through pull requests.\
