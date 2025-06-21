@@ -123,7 +123,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         <button className="close-button" onClick={onClose}>
           ×
         </button>
-        <div className="modal-body">
+        <div>
           {state === "connected"
             ? walletInfoNode
             : state === "detected"
