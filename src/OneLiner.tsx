@@ -258,7 +258,7 @@ export const OneLiner: FC = () => {
 
       {messageStore.isLoaded ? (
         <div className="bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[70vh] min-h-[300px]">
-          <div className="contacts-sidebar">
+          <div className="w-[200px] md:w-[280px] bg-[var(--primary-bg)] border-r border-[var(--border-color)] flex flex-col">
             <div className="contacts-header">
               <div className="font-bold">Conversations</div>
               <button
