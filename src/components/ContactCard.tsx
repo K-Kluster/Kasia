@@ -2,7 +2,8 @@ import { FC, useMemo, useState } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
-import { PencilIcon } from "@heroicons/react/24/solid";
+import { PencilIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import clsx from "clsx";
 
 export const ContactCard: FC<{
   contact: Contact;
@@ -17,7 +18,6 @@ export const ContactCard: FC<{
     if (!contact?.lastMessage) return "";
 
     const message = contact.lastMessage;
-
     // Handle different message types
     if (message.content) {
       // If it's a handshake message
@@ -120,19 +120,15 @@ export const ContactCard: FC<{
 
   return (
     <div
-      className={`contact-item ${isSelected ? "active" : ""}`}
+      className={clsx(
+        "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2 bg-[var(--secondary-bg)] border border-transparent",
+        { "border-[var(--accent-blue)]": isSelected }
+      )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
     >
-      <div className="contact-name">
+      <div className="font-semibold text-base mb-2">
         {isEditingNickname ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              width: "100%",
-            }}
-          >
+          <div className="flex items-center gap-2 w-full">
             <input
               type="text"
               value={tempNickname}
@@ -143,57 +139,27 @@ export const ContactCard: FC<{
               }}
               autoFocus
               placeholder="Enter nickname..."
-              style={{
-                flex: 1,
-                padding: "2px 6px",
-                border: "1px solid #ccc",
-                borderRadius: "3px",
-                fontSize: "12px",
-              }}
+              className="flex-1 rounded-sm text-xs h-5 leading-none"
             />
             <button
               onClick={handleNicknameSave}
-              style={{
-                padding: "2px 6px",
-                border: "none",
-                borderRadius: "3px",
-                cursor: "pointer",
-                fontSize: "12px",
-                background: "#4CAF50",
-                color: "white",
-              }}
+              className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
             >
-              ✓
+              <CheckCircleIcon className="h-5 w-5 text-green-500 fill-current" />
             </button>
             <button
               onClick={handleNicknameCancel}
-              style={{
-                padding: "2px 6px",
-                border: "none",
-                borderRadius: "3px",
-                cursor: "pointer",
-                fontSize: "12px",
-                background: "#f44336",
-                color: "white",
-              }}
+              className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
             >
-              ✗
+              <XCircleIcon className="h-5 w-5 text-red-500 fill-current" />
             </button>
           </div>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              width: "100%",
-            }}
-          >
+          <div className="flex items-center gap-1 w-full">
             <span
-              style={{
-                flex: 1,
-                cursor: contact.nickname?.trim() ? "help" : "default",
-              }}
+              className={`flex-1 ${
+                contact.nickname?.trim() ? "cursor-help" : "cursor-default"
+              }`}
               title={
                 contact.nickname?.trim()
                   ? `Address: ${shortAddress}`
@@ -208,18 +174,9 @@ export const ContactCard: FC<{
                 setIsEditingNickname(true);
               }}
               title="Edit nickname"
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                opacity: 0.6,
-                fontSize: "12px",
-                padding: "2px",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+              className="bg-transparent border-0 cursor-pointer opacity-60 hover:opacity-100 text-xs"
             >
-              <PencilIcon/>
+              <PencilIcon className="h-4 w-4" />
             </button>
           </div>
         )}
