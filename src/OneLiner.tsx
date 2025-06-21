@@ -16,11 +16,16 @@ import styles from "./OneLiner.module.css";
 import clsx from "clsx";
 import { MessageSection } from "./containers/MessagesSection";
 import { FetchApiMessages } from "./components/FetchApiMessages";
+import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
+import MenuHamburger from "./components/MenuHamburger";
+import { FeeBuckets } from "./components/FeeBuckets";
+import { WalletAddressSection } from "./components/WalletAddressSection";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWalletReady, setIsWalletReady] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [messageStoreLoading, setMessageStoreLoading] = useState(false);
   const [currentClient, setCurrentClient] = useState<KaspaClient | null>(null);
   const [connectionStatus, setConnectionStatus] = useState(
     "Waiting for interaction"
@@ -30,6 +35,9 @@ export const OneLiner: FC = () => {
   );
   const [connectionAttemptInProgress, setConnectionAttemptInProgress] =
     useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
@@ -194,9 +202,11 @@ export const OneLiner: FC = () => {
   useEffect(() => {
     if (isConnected && connectionStatus.includes("Connected")) {
       // Clear any connection-related error messages
-      if (errorMessage?.includes("WebSocket") || 
-          errorMessage?.includes("RPC") || 
-          errorMessage?.includes("Failed to start messaging")) {
+      if (
+        errorMessage?.includes("WebSocket") ||
+        errorMessage?.includes("RPC") ||
+        errorMessage?.includes("Failed to start messaging")
+      ) {
         setErrorMessage(null);
       }
     }
@@ -229,7 +239,6 @@ export const OneLiner: FC = () => {
     try {
       // Clear any previous error messages
       setErrorMessage(null);
-      
       if (!currentClient || !currentClient.connected) {
         setErrorMessage(
           "Please choose a network and connect to the Kaspa Network first"
@@ -242,6 +251,8 @@ export const OneLiner: FC = () => {
         return;
       }
 
+      setMessageStoreLoading(true);
+
       const { receiveAddress } = await walletStore.start(currentClient);
       const receiveAddressStr = receiveAddress.toString();
 
@@ -251,23 +262,23 @@ export const OneLiner: FC = () => {
       // Load existing messages
       messageStore.loadMessages(receiveAddressStr);
       messageStore.setIsLoaded(true);
-      
+
       // Check if we should trigger API message fetching for imported wallets
-      const shouldFetchApi = localStorage.getItem('kasia_fetch_api_on_start');
-      if (shouldFetchApi === 'true') {
-        console.log('Triggering API message fetch for imported wallet...');
+      const shouldFetchApi = localStorage.getItem("kasia_fetch_api_on_start");
+      if (shouldFetchApi === "true") {
+        console.log("Triggering API message fetch for imported wallet...");
         // Set a flag to trigger API fetching after a short delay
         setTimeout(() => {
-          const event = new CustomEvent('kasia-trigger-api-fetch', {
-            detail: { address: receiveAddressStr }
+          const event = new CustomEvent("kasia-trigger-api-fetch", {
+            detail: { address: receiveAddressStr },
           });
           window.dispatchEvent(event);
         }, 1000);
-        
+
         // Clear the flag after use
-        localStorage.removeItem('kasia_fetch_api_on_start');
+        localStorage.removeItem("kasia_fetch_api_on_start");
       }
-      
+
       // Clear error message on success
       setErrorMessage(null);
     } catch (error) {
@@ -275,6 +286,8 @@ export const OneLiner: FC = () => {
       setErrorMessage(
         `Failed to start messaging: ${unknownErrorToErrorLike(error)}`
       );
+    } finally {
+      setMessageStoreLoading(false);
     }
   }, [currentClient, walletStore, messageStore]);
 
@@ -291,21 +304,59 @@ export const OneLiner: FC = () => {
     [messageStore, walletStore.address]
   );
 
+  const toggleSettings = () => setIsSettingsOpen((v) => !v);
+
+  const handleCloseWallet = () => {
+    walletStore.lock();
+    setIsWalletReady(false);
+    messageStore.setIsLoaded(false);
+    messageStore.setOpenedRecipient(null);
+    messageStore.setIsCreatingNewChat(false);
+    setIsSettingsOpen(false);
+    setIsWalletInfoOpen(false);
+  };
+
   return (
     <div className="container">
       <div className="header-container">
-        <div className="app-title">
+        <div className="app-title flex items-center gap-2">
           <img src="/kasia-logo.png" alt="Kasia Logo" className="app-logo" />
-          <h1>Kasia</h1>
+          <h1 className="text-xl font-bold">Kasia</h1>
         </div>
 
-        <div className="header-right">
-          <WalletInfo
-            state={walletStore.address ? "connected" : "detected"}
-            address={walletStore.address?.toString()}
-            isWalletReady={isWalletReady}
-          />
-        </div>
+        {isWalletReady && (
+          <div className="relative flex items-center gap-2">
+            <FeeBuckets inline={true} />
+
+            <button
+              onClick={toggleSettings}
+              className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
+              aria-label="Settings"
+            >
+              <Bars3Icon className="h-6 w-6 text-white" />
+            </button>
+
+            {!isWalletInfoOpen ? (
+              <MenuHamburger
+                open={isSettingsOpen}
+                onCloseMenu={() => setIsSettingsOpen(false)}
+                onOpenWalletInfo={() => {
+                  setIsWalletInfoOpen(true);
+                  setIsSettingsOpen(false);
+                }}
+                onCloseWallet={handleCloseWallet}
+              />
+            ) : (
+              <WalletInfo
+                state={walletStore.address ? "connected" : "detected"}
+                address={walletStore.address?.toString()}
+                isWalletReady={isWalletReady}
+                open={isWalletInfoOpen}
+                onClose={() => setIsWalletInfoOpen(false)}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="px-8 py-4 bg-[var(--primary-bg)]">
@@ -320,29 +371,28 @@ export const OneLiner: FC = () => {
                   <strong>Wallet Name:</strong> {unlockedWalletName}
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm">
+              {!messageStore.isLoaded ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <button
+                    className={clsx(
+                      "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
+                      { "opacity-50 cursor-not-allowed": messageStoreLoading }
+                    )}
+                    onClick={onStartMessagingProcessClicked}
+                  >
+                    {messageStoreLoading
+                      ? "Loading..."
+                      : "Start Wallet Service"}
+                  </button>
+                </div>
+              ) : (
                 <button
-                  className={clsx(
-                    "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
-                    { "opacity-50 cursor-not-allowed": messageStore.isLoaded }
-                  )}
-                  onClick={onStartMessagingProcessClicked}
-                >
-                  Start Wallet Service
-                </button>
-                <button
-                  onClick={() => {
-                    walletStore.lock();
-                    setIsWalletReady(false);
-                    messageStore.setIsLoaded(false);
-                    messageStore.setOpenedRecipient(null);
-                    messageStore.setIsCreatingNewChat(false);
-                  }}
+                  onClick={() => setIsAddressModalOpen(true)}
                   className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
                 >
-                  Close Wallet
+                  See Your Address
                 </button>
-              </div>
+              )}
             </div>
           ) : (
             <WalletGuard
@@ -359,25 +409,25 @@ export const OneLiner: FC = () => {
         <div className="messages-container">
           <div className="contacts-sidebar">
             <div className="contacts-header">
-              <h3>Conversations</h3>
+              <div className="font-bold">Conversations</div>
               <button
                 onClick={onNewChatClicked}
-                className="new-conversation-btn"
+                className="cursor-pointer text-[#49EACB] transition-transform duration-150 ease-in-out hover:scale-110"
               >
-                New Chat
+                <PlusIcon className="size-8" />
               </button>
             </div>
-            <div className="contacts-list">
+            <div className="contacts-list overflow-y-auto">
               {messageStore.contacts
                 ?.filter(
                   (c) =>
-                    c?.address && c.address !== walletStore.address?.toString()
+                    c.address && c.address !== walletStore.address?.toString()
                 )
                 .map((c) => (
                   <ContactCard
-                    isSelected={c.address === messageStore.openedRecipient}
-                    key={`${c.address}-${c.status || "unknown"}`}
+                    key={c.address}
                     contact={c}
+                    isSelected={c.address === messageStore.openedRecipient}
                     onClick={onContactClicked}
                   />
                 ))}
@@ -386,16 +436,16 @@ export const OneLiner: FC = () => {
           <MessageSection />
           {/* Add invisible FetchApiMessages component to listen for localStorage trigger events */}
           {walletStore.address && (
-            <div style={{ display: 'none' }}>
+            <div style={{ display: "none" }}>
               <FetchApiMessages address={walletStore.address.toString()} />
             </div>
           )}
         </div>
       ) : null}
       <div id="transactions">
-        <ErrorCard 
-          error={errorMessage} 
-          onDismiss={() => setErrorMessage(null)} 
+        <ErrorCard
+          error={errorMessage}
+          onDismiss={() => setErrorMessage(null)}
         />
       </div>
 
@@ -405,6 +455,20 @@ export const OneLiner: FC = () => {
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
           />
+        </div>
+      )}
+
+      {isAddressModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <WalletAddressSection address={walletStore.address?.toString()} />
+            <button
+              onClick={() => setIsAddressModalOpen(false)}
+              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+            >
+              Close
+            </button>
+          </div>
         </div>
       )}
     </div>

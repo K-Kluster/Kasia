@@ -449,20 +449,6 @@ h1 {
   height: 32px;
 }
 
-.new-conversation-btn {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9em;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .contact-preview {
   font-size: 0.8em;
   color: var(--text-secondary);
@@ -589,7 +575,8 @@ h1 {
   user-select: all;
 }
 
-.message-id:hover, .message-id:focus {
+.message-id:hover,
+.message-id:focus {
   max-width: none;
   background-color: rgba(0, 0, 0, 0.3);
   z-index: 10;
@@ -632,7 +619,7 @@ h1 {
   .message {
     max-width: 85%;
   }
-  
+
   .messages-container {
     height: calc(100vh - 100px);
   }
