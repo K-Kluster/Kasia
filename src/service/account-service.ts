@@ -727,21 +727,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       addressString,
       sendMessage.message
     );
+
     if (!encryptedMessage) {
       throw new Error("Failed to encrypt message");
     }
-    const prefix = "ciph_msg:1:comm:"
+
+    const prefix = "ciph_msg";
+    const version = "1";
+    const messageType = "comm";
+    const payload = `${prefix}:${version}:${messageType}:b4e3da89391b:${encryptedMessage.to_hex()}`;
+
+    const payloadHex = payload
       .split("")
       .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
       .join("");
-    const payload = prefix + "f74137627867:" + encryptedMessage.to_hex();
-
-    // console.log({
-    //   payload,
-    //   addressString,
-    //   toHex: encryptedMessage.to_hex(),
-    //   message: sendMessage.message,
-    // });
 
     if (!payload) {
       throw new Error("Failed to create message payload");
@@ -750,8 +749,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     try {
       const summary = await this.estimateTransaction({
         address: destinationAddress,
-        amount: BigInt(0),
-        payload: payload,
+        amount: BigInt(0.2 * 100_000_000),
+        payload: payloadHex,
       });
 
       return summary;

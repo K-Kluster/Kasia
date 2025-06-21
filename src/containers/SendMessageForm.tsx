@@ -15,7 +15,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const isCreatingNewChat = useMessagingStore((s) => s.isCreatingNewChat);
   const [feeEstimate, setFeeEstimate] = useState<number | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
-  const [isUsingFallback, setIsUsingFallback] = useState(false);
   const [recipient, setRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -68,7 +67,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       });
 
       setIsEstimating(true);
-      setIsUsingFallback(false);
       const estimate = await walletStore.estimateSendMessageFees(
         message,
         new Address(recipient)
@@ -77,11 +75,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       console.log("Fee estimate received:", estimate);
       setFeeEstimate(Number(estimate.fees) / 100_000_000);
       setIsEstimating(false);
-
-      // Check if we got a fallback estimate (always has exactly 1 transaction and 1 utxo)
-      if (estimate.transactions === 1 && estimate.utxos === 1) {
-        setIsUsingFallback(true);
-      }
     } catch (error) {
       console.error("Error estimating fee:", error);
       setIsEstimating(false);
@@ -356,7 +349,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             const value = e.target.value;
             setRecipient(value);
             setFeeEstimate(null);
-            setIsUsingFallback(false);
           }
         }}
       />
@@ -372,7 +364,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             const value = e.target.value;
             setMessage(value);
             setFeeEstimate(null);
-            setIsUsingFallback(false);
           }}
           autoComplete="off"
           spellCheck="false"
@@ -399,16 +390,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       </div>
       {isEstimating && <div className="fee-estimate">Estimating fee...</div>}
       {!isEstimating && feeEstimate !== null && (
-        <div
-          className={`fee-estimate ${
-            isUsingFallback ? "fee-estimate-fallback" : ""
-          }`}
-        >
-          {isUsingFallback
-            ? `Estimated fee (approximate): ~${formatKasAmount(
-                feeEstimate
-              )} KAS`
-            : `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`}
+        <div className="fee-estimate">
+          Estimated fee: ${formatKasAmount(feeEstimate)} KAS
         </div>
       )}
     </div>

@@ -5,9 +5,8 @@ import "./WalletGuard.css";
 import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
+import { PASSWORD_MIN_LENGTH, disablePasswordRequirements } from "../config/password";
 import {MnemonicEntry} from "../components/MnemonicEntry";
-
-const PASSWORD_MIN_LENGTH = 4; // Minimum password length
 
 type Step = {
   type: "home" | "create" | "import" | "unlock" | "finalizing" | "migrate";
@@ -92,8 +91,9 @@ export const WalletGuard = ({
         );
       }
 
-      if (passwordRef.current!.value.length < PASSWORD_MIN_LENGTH) {
-        setError("Password must be at least 4 characters");
+      const pw = passwordRef.current!.value;
+      if (!disablePasswordRequirements && pw.length < PASSWORD_MIN_LENGTH) {
+        setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
         return;
       }
 
@@ -120,8 +120,9 @@ export const WalletGuard = ({
       return;
     }
 
-    if (passwordRef.current!.value.length < PASSWORD_MIN_LENGTH) {
-      setError("Password must be at least 4 characters");
+    const pw = passwordRef.current!.value;
+    if (!disablePasswordRequirements && pw.length < PASSWORD_MIN_LENGTH) {
+      setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
       return;
     }
 
