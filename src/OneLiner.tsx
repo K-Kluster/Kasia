@@ -268,7 +268,7 @@ export const OneLiner: FC = () => {
                 <PlusIcon className="size-8" />
               </button>
             </div>
-            <div className="contacts-list overflow-y-auto">
+            <div className="flex-1 overflow-y-auto p-2">
               {messageStore.contacts
                 ?.filter(
                   (c) =>
