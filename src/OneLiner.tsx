@@ -1,7 +1,7 @@
 // this file is the legacy code that came from old codebase
 // it is intended to be temporary to progressively move towards modularization
 
-import { FC, useCallback, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useState, useRef } from "react";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, NetworkType } from "./types/all";
 import { useMessagingStore } from "./store/messaging.store";
@@ -31,6 +31,7 @@ export const OneLiner: FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
@@ -65,6 +66,20 @@ export const OneLiner: FC = () => {
       }
     }
   }, [isConnected, connectionStatus, errorMessage]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+  
 
   const onWalletUnlocked = useCallback(() => {
     setIsWalletReady(true);
@@ -176,8 +191,10 @@ export const OneLiner: FC = () => {
         </div>
 
         {isWalletReady && (
-          <div className="relative flex items-center gap-2">
-            <FeeBuckets inline={true} />
+          <div ref={menuRef} className="relative flex items-center gap-2">
+            <div className="hidden sm:block">
+              <FeeBuckets inline={true} />
+            </div>
 
             <button
               onClick={toggleSettings}
