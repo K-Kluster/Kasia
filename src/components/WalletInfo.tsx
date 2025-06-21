@@ -116,7 +116,8 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   if (!isWalletReady || !open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+      onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>
           ×

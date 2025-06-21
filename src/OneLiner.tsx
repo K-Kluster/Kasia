@@ -11,7 +11,6 @@ import { ErrorCard } from "./components/ErrorCard";
 import { useWalletStore } from "./store/wallet.store";
 import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
-import styles from "./OneLiner.module.css";
 import clsx from "clsx";
 import { MessageSection } from "./containers/MessagesSection";
 import { FetchApiMessages } from "./components/FetchApiMessages";
@@ -303,7 +302,7 @@ export const OneLiner: FC = () => {
 
       {/* Add NewChatForm when isCreatingNewChat is true */}
       {messageStore.isCreatingNewChat && (
-        <div className={styles["modal-overlay"]}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
           />
@@ -311,7 +310,7 @@ export const OneLiner: FC = () => {
       )}
 
       {isAddressModalOpen && (
-        <div className="modal-overlay">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
           <div className="modal-content">
             <WalletAddressSection address={walletStore.address?.toString()} />
             <button
