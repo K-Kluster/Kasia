@@ -293,15 +293,6 @@ h1 {
   margin-top: 20px;
 }
 
-.contacts-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background-color: var(--secondary-bg);
-  height: 60px;
-}
 
 .messages-header {
   padding: 16px;
