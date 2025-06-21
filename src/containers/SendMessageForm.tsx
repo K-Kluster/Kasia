@@ -224,8 +224,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Keep the conversation open with the same recipient
       messageStore.setOpenedRecipient(recipient);
       messageStore.setIsCreatingNewChat(false);
-
-      toast.success("Message sent!");
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
@@ -311,8 +309,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       if (messageInputRef.current) {
         messageInputRef.current.value = `[File: ${file.name}]`;
       }
-
-      toast.success("File attached successfully.");
     } catch (error) {
       console.error("Error reading file:", error);
       toast.error(
