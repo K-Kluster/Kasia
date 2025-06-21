@@ -3,19 +3,11 @@ import {
   Resolver,
   Encoding,
   IUtxosChanged,
-  NetworkId,
-  RpcEvent,
-  RpcEventCallback,
-  RpcEventMap,
-  IVirtualChainChanged,
-  IRawBlock,
-  ITransaction,
   IBlockAdded,
 } from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "./errors";
 import { getNodesForNetwork, getApiEndpoint } from "../config/nodes";
 import { NetworkType } from "../types/all";
-import { BlockAddedData } from "../types/all";
 
 // Helper function to decode payload to text
 export function decodePayload(hex: string) {
@@ -218,6 +210,11 @@ function stringifyWithBigInt(obj: any): string {
   );
 }
 
+export interface KaspaClientArgs {
+  networkId?: NetworkType;
+  nodeUrl?: string;
+}
+
 // Create a simple client for API requests
 export class KaspaClient {
   options: {
@@ -228,6 +225,7 @@ export class KaspaClient {
 
   rpc: RpcClient | null;
   networkId: NetworkType;
+  nodeUrl?: string;
   connected: boolean;
   retryCount: number;
 
@@ -238,7 +236,7 @@ export class KaspaClient {
   // Add block notification callback
   blockNotificationCallback?: (event: IBlockAdded) => void;
 
-  constructor(networkId?: NetworkType) {
+  constructor(args?: KaspaClientArgs) {
     this.options = {
       debug: true,
       retryDelay: 2000,
@@ -246,7 +244,8 @@ export class KaspaClient {
     };
 
     this.rpc = null;
-    this.networkId = networkId || "testnet-10";
+    this.networkId = args?.networkId || "testnet-10";
+    this.nodeUrl = args?.nodeUrl;
     this.connected = false;
     this.retryCount = 0;
 
@@ -296,6 +295,7 @@ export class KaspaClient {
           resolver: new Resolver(),
           networkId: this.networkId,
           encoding: Encoding.Borsh,
+          url: this.nodeUrl,
         });
 
         this.log("Resolver created, attempting connection...");

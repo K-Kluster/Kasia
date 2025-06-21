@@ -16,17 +16,6 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Set default network to mainnet on component mount or if selectedNetwork is null/invalid
-  useEffect(() => {
-    if (
-      !selectedNetwork ||
-      selectedNetwork !==
-        (import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet")
-    ) {
-      onNetworkChange(selectedNetwork ?? "mainnet");
-    }
-  }, [selectedNetwork, onNetworkChange]);
-
   // Add passive wheel event listeners
   useEffect(() => {
     const menuElement = menuRef.current;
