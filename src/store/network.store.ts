@@ -38,7 +38,6 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
     isConnecting: false,
     connectionError: undefined,
     network: initialNetwork,
-    client: new KaspaClient(initialNetwork),
     nodeUrl: initialNodeUrl,
     kaspaClient: new KaspaClient({
       networkId: initialNetwork,
@@ -74,19 +73,40 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
 
       set({ isConnecting: true, connectionError: undefined });
 
-      // @TODO: re-implement exponential backoff
-      try {
-        await kaspaClient.connect();
-        unstable_batchedUpdates(() => {
-          useWalletStore.getState().setRpcClient(kaspaClient);
-        });
-        set({ isConnected: true, connectionError: undefined });
-      } catch (error) {
-        console.error("Failed to connect to KaspaClient:", error);
-        set({ connectionError: unknownErrorToErrorLike(error).message });
-      } finally {
-        set({ isConnecting: false });
+      let attempt = 0;
+      // initial delay in milliseconds
+      let delay = 200;
+      const maxRetries = 5;
+      while (attempt < maxRetries) {
+        try {
+          await kaspaClient.connect();
+          unstable_batchedUpdates(() => {
+            useWalletStore.getState().setRpcClient(kaspaClient);
+            useWalletStore.getState().setSelectedNetwork(g().network);
+          });
+          set({ isConnected: true, connectionError: undefined });
+          return; // Exit the function if connection is successful
+        } catch (error) {
+          console.error(
+            `Failed to connect to KaspaClient (attempt ${attempt + 1}):`,
+            error
+          );
+          set({ connectionError: unknownErrorToErrorLike(error).message });
+          attempt++;
+          if (attempt < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            delay *= 2; // Exponential backoff
+          }
+        } finally {
+          set({ isConnecting: false });
+        }
       }
+
+      console.error("Max retries reached. Could not connect to KaspaClient.");
+      set({
+        connectionError:
+          "Max retries reached. Could not connect to KaspaClient.",
+      });
     },
     async disconnect() {
       const kaspaClient = g().kaspaClient;
