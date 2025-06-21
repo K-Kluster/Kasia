@@ -4,7 +4,7 @@ import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { toast } from "src/utils/toast";
+import { toast } from "../utils/toast";
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore();
