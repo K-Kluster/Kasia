@@ -34,6 +34,6 @@ If the change is considered an "hotfix" (something to be shipped right away), pl
 
 Anyone interested in Kasia may review your code. One of the core developers will merge your pull request when they think it is ready. For every pull request, we aim to promptly either merge it or say why it is not yet ready; if you go a few days without a reply, please feel free to ping the thread by adding a new comment.
 
-To get your pull request merged sooner, you should explain why you are making the change.
+To get your pull request merged sooner, you should explain why you are making the change **and** how a reviewer can test it. For visual changes, please include before-and-after screenshots when possible.
 
 Also, do not squash your commits after you have submitted a pull request, as this erases context during review. We will squash commits when the pull request is merged.
