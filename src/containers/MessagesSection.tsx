@@ -4,6 +4,7 @@ import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
+import { toast } from "src/utils/toast";
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore();
@@ -40,7 +41,7 @@ export const MessageSection: FC = () => {
 
   const onExportMessages = useCallback(async () => {
     if (!walletStore.unlockedWallet?.password) {
-      alert("Please unlock your wallet first");
+      toast.error("Please unlock your wallet first");
       return;
     }
 
@@ -63,7 +64,7 @@ export const MessageSection: FC = () => {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error exporting messages:", error);
-      alert("Failed to export messages");
+      toast.error("Failed to export messages");
     }
   }, [messageStore, walletStore.unlockedWallet]);
 
@@ -73,7 +74,7 @@ export const MessageSection: FC = () => {
       if (!file) return;
 
       if (!walletStore.unlockedWallet?.password) {
-        alert("Please unlock your wallet first");
+        toast.error("Please unlock your wallet first");
         return;
       }
 
@@ -83,10 +84,10 @@ export const MessageSection: FC = () => {
           walletStore.unlockedWallet,
           walletStore.unlockedWallet.password
         );
-        alert("Messages imported successfully!");
+        toast.success("Messages imported successfully!");
       } catch (error: unknown) {
         console.error("Error importing messages:", error);
-        alert(
+        toast.error(
           error instanceof Error ? error.message : "Failed to import messages"
         );
       }
