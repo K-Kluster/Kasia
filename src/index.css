@@ -51,17 +51,6 @@ h1 {
   letter-spacing: -0.025em;
 }
 
-.header-container {
-  text-align: center;
-  padding: 0.25rem 2rem;
-  border-bottom: 1px solid var(--border-color);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--secondary-bg);
-}
-
 .network-badge {
   display: inline-flex;
   align-items: center;

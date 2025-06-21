@@ -169,7 +169,7 @@ export const OneLiner: FC = () => {
 
   return (
     <div className="container">
-      <div className="header-container">
+      <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
         <div className="app-title flex items-center gap-2">
           <img src="/kasia-logo.png" alt="Kasia Logo" className="app-logo" />
           <h1 className="text-xl font-bold">Kasia</h1>
