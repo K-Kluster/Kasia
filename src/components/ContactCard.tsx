@@ -2,7 +2,11 @@ import { FC, useMemo, useState } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
-import { PencilIcon, CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import {
+  PencilIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from "@heroicons/react/24/solid";
 import clsx from "clsx";
 
 export const ContactCard: FC<{
@@ -121,8 +125,11 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2 bg-[var(--secondary-bg)] border border-transparent",
-        { "border-[var(--accent-blue)]": isSelected }
+        "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2 bg-[var(--secondary-bg)] border",
+        {
+          "border-[var(--accent-blue)]": isSelected,
+          "border-transparent": !isSelected,
+        }
       )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
     >
