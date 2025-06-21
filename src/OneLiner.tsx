@@ -230,8 +230,8 @@ export const OneLiner: FC = () => {
       <div className="px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           {isWalletReady ? (
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 w-full">
-              <div className="flex flex-col items-start text-xs gap-1 whitespace-nowrap">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start items-center gap-4 w-full text-xs">
+              <div className="flex flex-col items-start sm:items-start items-center gap-1 whitespace-nowrap">
                 <div>
                   <strong>Network:</strong> {walletStore.selectedNetwork}
                 </div>
@@ -240,10 +240,10 @@ export const OneLiner: FC = () => {
                 </div>
               </div>
               {!messageStore.isLoaded ? (
-                <div className="flex items-center gap-2 text-sm">
+                <div className="text-sm">
                   <button
                     className={clsx(
-                      "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
+                      "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white font-bold py-2 px-4 rounded cursor-pointer",
                       { "opacity-50 cursor-not-allowed": messageStoreLoading }
                     )}
                     onClick={onStartMessagingProcessClicked}
