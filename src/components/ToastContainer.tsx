@@ -1,4 +1,10 @@
 import { useToastStore } from "../store/toast.store";
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/solid";
 
 export function ToastContainer() {
   const { toasts, remove } = useToastStore();
@@ -20,11 +26,11 @@ export function ToastContainer() {
             }
             animate-fade-in`}
         >
-          <span>
-            {toast.type === "success" && "✔️"}
-            {toast.type === "error" && "❌"}
-            {toast.type === "warning" && "⚠️"}
-            {toast.type === "info" && "ℹ️"}
+          <span className="w-6 h-6">
+            {toast.type === "success" && <CheckCircleIcon />}
+            {toast.type === "error" && <XCircleIcon />}
+            {toast.type === "warning" && <ExclamationTriangleIcon />}
+            {toast.type === "info" && <InformationCircleIcon />}
           </span>
           <span className="flex-1">{toast.message}</span>
           <button
