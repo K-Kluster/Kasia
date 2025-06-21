@@ -48,6 +48,7 @@ interface MessagingState {
   handshakes: HandshakeState[];
   addMessages: (messages: Message[]) => void;
   flushCache: (address: string) => void;
+  clearAllHistory: (address: string) => void;
   addContacts: (contacts: Contact[]) => void;
   loadMessages: (address: string) => Message[];
   setIsLoaded: (isLoaded: boolean) => void;
@@ -169,6 +170,58 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       "kaspa_messages_by_wallet",
       JSON.stringify(messagesMap)
     );
+  },
+  clearAllHistory: (address: string) => {
+    // 1. Clear ALL messages from localStorage (complete wipe)
+    localStorage.removeItem("kaspa_messages_by_wallet");
+
+    // 2. Clear nickname mappings for this wallet
+    const nicknameKey = `contact_nicknames_${address}`;
+    localStorage.removeItem(nicknameKey);
+
+    // 3. Clear conversation manager data for this wallet
+    const conversationKey = `encrypted_conversations_${address}`;
+    localStorage.removeItem(conversationKey);
+
+    // 4. Clear any other messaging-related localStorage keys
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        key.includes(address) &&
+        (key.includes("messages") ||
+          key.includes("conversation") ||
+          key.includes("nickname") ||
+          key.includes("handshake"))
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+
+    // 5. Reset all UI state immediately
+    set({
+      contacts: [],
+      messages: [],
+      messagesOnOpenedRecipient: [],
+      handshakes: [],
+      openedRecipient: null,
+      isCreatingNewChat: false,
+    });
+
+    // 6. Clear and reinitialize conversation manager
+    const manager = g().conversationManager;
+    if (manager) {
+      // Clear all conversations from the current manager
+      const activeConversations = manager.getActiveConversations();
+      const pendingConversations = manager.getPendingConversations();
+
+      [...activeConversations, ...pendingConversations].forEach((conv) => {
+        manager.removeConversation(conv.conversationId);
+      });
+
+      // Reinitialize fresh conversation manager
+      g().initializeConversationManager(address);
+    }
+
+    console.log("Complete history clear completed - all data wiped");
   },
   loadMessages: (address): Message[] => {
     const messages: Record<string, Message[]> = JSON.parse(
