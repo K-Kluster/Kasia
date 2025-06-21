@@ -31,10 +31,10 @@ export const MessageSection: FC = () => {
 
     if (
       confirm(
-        "Are you sure you want to clear all message history? This cannot be undone."
+        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
       )
     ) {
-      messageStore.flushCache(walletStore.address.toString());
+      messageStore.flushWalletHistory(walletStore.address.toString());
     }
   }, [walletStore.address, messageStore]);
 

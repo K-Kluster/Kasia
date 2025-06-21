@@ -47,7 +47,7 @@ interface MessagingState {
   messagesOnOpenedRecipient: Message[];
   handshakes: HandshakeState[];
   addMessages: (messages: Message[]) => void;
-  flushCache: (address: string) => void;
+  flushWalletHistory: (address: string) => void;
   addContacts: (contacts: Contact[]) => void;
   loadMessages: (address: string) => Message[];
   setIsLoaded: (isLoaded: boolean) => void;
@@ -158,17 +158,45 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     g().refreshMessagesOnOpenedRecipient();
   },
-  flushCache: (address: string) => {
-    const messagesMap = JSON.parse(
+  flushWalletHistory: (address: string) => {
+    // 1. Clear wallet messages from localStorage
+    const messagesOnWallet = JSON.parse(
       localStorage.getItem("kaspa_messages_by_wallet") || "{}"
     );
-    if (address) {
-      delete messagesMap[address];
-    }
+
+    delete messagesOnWallet[address];
+
     localStorage.setItem(
       "kaspa_messages_by_wallet",
-      JSON.stringify(messagesMap)
+      JSON.stringify(messagesOnWallet)
     );
+
+    // 2. Clear nickname mappings for this wallet
+    const nicknameKey = `contact_nicknames_${address}`;
+    localStorage.removeItem(nicknameKey);
+
+    // 3. Clear conversation manager data for this wallet
+    const conversationKey = `encrypted_conversations_${address}`;
+    localStorage.removeItem(conversationKey);
+
+    // 4. Reset all UI state immediately
+    set({
+      contacts: [],
+      messages: [],
+      messagesOnOpenedRecipient: [],
+      handshakes: [],
+      openedRecipient: null,
+      isCreatingNewChat: false,
+    });
+
+    // 5. Clear and reinitialize conversation manager
+    const manager = g().conversationManager;
+    if (manager) {
+      // Reinitialize fresh conversation manager
+      g().initializeConversationManager(address);
+    }
+
+    console.log("Complete history clear completed - all data wiped");
   },
   loadMessages: (address): Message[] => {
     const messages: Record<string, Message[]> = JSON.parse(
