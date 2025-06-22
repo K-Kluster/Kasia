@@ -1,7 +1,5 @@
 import { FC, useMemo } from "react";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
-import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 import { WalletAddressSection } from "./WalletAddressSection";
 
 type WalletInfoProps = {
@@ -101,14 +99,6 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             </ul>
           )}
         </div>
-
-        <div className="info-box">
-          <WalletWithdrawal walletBalance={walletBalance} />
-        </div>
-
-        <div className="seed-phrase-section">
-          <WalletSeedRetreiveDisplay />
-        </div>
       </>
     );
   }, [isAccountServiceRunning, walletBalance, address]);
@@ -116,12 +106,14 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   if (!isWalletReady || !open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+      onClick={onClose}>
+      <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]"
+       onClick={(e) => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>
           ×
         </button>
-        <div className="modal-body">
+        <div>
           {state === "connected"
             ? walletInfoNode
             : state === "detected"
@@ -129,85 +121,6 @@ export const WalletInfo: FC<WalletInfoProps> = ({
             : "Kasware Wallet not detected. Please install Kasware Wallet."}
         </div>
       </div>
-
-      <style>
-        {`
-        .seed-phrase-section {
-          margin-top: 20px;
-          padding: 15px;
-          border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .seed-phrase {
-          background: rgba(0, 0, 0, 0.3);
-          padding: 15px;
-          border-radius: 5px;
-          margin: 10px 0;
-          word-break: break-all;
-          font-family: monospace;
-          color: #fff;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          transition: filter 0.2s ease;
-        }
-        .seed-phrase.blurred {
-          filter: blur(5px);
-          user-select: none;
-        }
-        .warning {
-          color: #ff4444;
-          font-size: 0.9em;
-          margin: 10px 0;
-          text-align: center;
-        }
-        .visibility-toggle {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-top: 5px;
-        }
-        .visibility-toggle input[type="checkbox"] {
-          display: none;
-        }
-        .eye-icon {
-          cursor: pointer;
-          user-select: none;
-          font-size: 20px;
-          opacity: 0.8;
-          transition: opacity 0.2s;
-        }
-        .eye-icon:hover {
-          opacity: 1;
-        }
-        .error {
-          color: #ff4444;
-          margin-top: 5px;
-        }
-        .seed-phrase-section input {
-          width: 100%;
-          padding: 8px;
-          margin: 10px 0;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 4px;
-          background: rgba(0, 0, 0, 0.3);
-          color: #fff;
-        }
-        .seed-phrase-section input::placeholder {
-          color: rgba(255, 255, 255, 0.5);
-        }
-        .seed-phrase-section button {
-          background: #2196f3;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 4px;
-          cursor: pointer;
-          margin-top: 10px;
-          transition: background-color 0.2s;
-        }
-        .seed-phrase-section button:hover {
-          background: #1976d2;
-        }
-        `}
-      </style>
     </div>
   );
 };
