@@ -390,17 +390,6 @@ h1 {
   hyphens: auto;
 }
 
-.clear-history-button {
-  background-color: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85em;
-  height: 32px;
-}
-
 .contact-preview {
   font-size: 0.8em;
   color: var(--text-secondary);

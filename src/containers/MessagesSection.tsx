@@ -4,6 +4,7 @@ import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
+import { TrashIcon } from "@heroicons/react/24/outline";
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore();
@@ -146,12 +147,11 @@ export const MessageSection: FC = () => {
                   onChange={onImportMessages}
                 />
               </label>
-              <button
+                  <button
+                    className="cursor-pointer p-2"
                 onClick={onClearHistory}
-                id="clearHistoryButton"
-                className="clear-history-button"
               >
-                Clear History
+                <TrashIcon className="w-6 h-6 text-red-200" />
               </button>
             </div>
           </div>
