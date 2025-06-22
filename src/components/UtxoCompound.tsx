@@ -3,7 +3,12 @@ import { useWalletStore } from "../store/wallet.store";
 import { formatKasAmount } from "../utils/format";
 import { Address, kaspaToSompi } from "kaspa-wasm";
 import { clsx } from "clsx";
-import { CheckCircleIcon } from "@heroicons/react/24/solid";
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+  InformationCircleIcon,
+} from "@heroicons/react/24/solid";
 
 export const UtxoCompound: FC = () => {
   const [isCompounding, setIsCompounding] = useState(false);
@@ -95,7 +100,7 @@ export const UtxoCompound: FC = () => {
   }
 
   const shouldShowCompound =
-    balance.matureUtxoCount && balance.matureUtxoCount > 1;
+    balance.matureUtxoCount && balance.matureUtxoCount >= 2;
   const isHighUtxoCount =
     balance.matureUtxoCount && balance.matureUtxoCount > 100;
 
@@ -112,7 +117,7 @@ export const UtxoCompound: FC = () => {
       </div>
 
       {/* UTXO Information */}
-      <div className="bg-gray-800 rounded-lg p-4 border border-gray-600">
+      <div className="bg-[var(--primary-bg)] rounded-lg p-4 border border-[var(--border-color)]">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-gray-400">Mature UTXOs:</span>
@@ -141,7 +146,7 @@ export const UtxoCompound: FC = () => {
       {isHighUtxoCount && (
         <div className="bg-orange-500 bg-opacity-10 border border-orange-500 border-opacity-30 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <span className="text-orange-400 text-lg">⚠️</span>
+            <ExclamationTriangleIcon className="w-5 h-5 text-orange-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
               <p className="text-orange-400 font-medium">
                 High UTXO Count Detected
@@ -156,23 +161,33 @@ export const UtxoCompound: FC = () => {
       )}
 
       {/* Information Box */}
-      <div className="bg-blue-500 bg-opacity-10 border border-blue-500 border-opacity-30 rounded-lg p-3">
-        <div className="text-sm text-gray-300">
-          <p className="font-medium text-blue-400 mb-1">How it works:</p>
-          <ul className="space-y-1 text-xs">
-            <li>• Combines multiple small UTXOs into fewer larger ones</li>
-            <li>• Reduces memory usage and improves transaction speed</li>
-            <li>• Uses batch transactions to handle mass limits efficiently</li>
-            <li>• Recommended when you have 100+ UTXOs</li>
-          </ul>
+      <div className="bg-[var(--primary-bg)] rounded-lg p-3 border border-[var(--border-color)]">
+        <div className="flex items-start gap-2">
+          <InformationCircleIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+          <div className="text-sm text-gray-300">
+            <p className="font-medium text-white mb-1">How it works:</p>
+            <ul className="space-y-1 text-xs">
+              <li>• Combines multiple small UTXOs into fewer larger ones</li>
+              <li>• Reduces memory usage and improves transaction speed</li>
+              <li>
+                • Uses batch transactions to handle mass limits efficiently
+              </li>
+              <li>• Recommended when you have 100+ UTXOs</li>
+            </ul>
+          </div>
         </div>
       </div>
 
       {/* Action Buttons */}
       <div className="space-y-3">
         {!shouldShowCompound ? (
-          <div className="text-center text-gray-400 text-sm">
-            Need at least 2 UTXOs to compound
+          <div className="bg-[var(--primary-bg)] rounded-lg p-3 border border-[var(--border-color)] text-center">
+            <p className="text-gray-300 text-sm">
+              Need at least 2 UTXOs to compound
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              Current UTXOs: {balance.matureUtxoCount || 0}
+            </p>
           </div>
         ) : (
           <button
@@ -203,7 +218,7 @@ export const UtxoCompound: FC = () => {
       {error && (
         <div className="bg-red-500 bg-opacity-10 border border-red-500 border-opacity-30 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <span className="text-red-400 text-lg">❌</span>
+            <XCircleIcon className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
               <p className="text-red-400 font-medium">Error</p>
               <p className="text-gray-300 mt-1">{error}</p>
@@ -213,23 +228,23 @@ export const UtxoCompound: FC = () => {
       )}
 
       {compoundResult && (
-        <div className="bg-green-500 bg-opacity-10 border border-green-500 border-opacity-30 rounded-lg p-3">
+        <div className="bg-green-600 bg-opacity-20 border border-green-500 border-opacity-50 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <CheckCircleIcon className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+            <CheckCircleIcon className="w-5 h-5 text-green-300 mt-0.5 flex-shrink-0" />
             <div className="text-sm">
-              <p className="text-green-400 font-medium">Success</p>
-              <p className="text-gray-300 mt-1">
+              <p className="text-green-300 font-medium">Success</p>
+              <p className="text-white mt-1">
                 Compound transaction successful! Your {compoundResult.utxoCount}{" "}
                 UTXOs have been consolidated into 1 larger UTXO. The transaction
                 is now confirming on the network.
               </p>
-              <p className="text-gray-300 mt-2">
-                <span className="text-gray-400">Transaction ID:</span>{" "}
+              <p className="text-gray-200 mt-2">
+                <span className="text-gray-300">Transaction ID:</span>{" "}
                 <a
                   href={getExplorerUrl(compoundResult.txId)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 underline break-all"
+                  className="text-blue-300 hover:text-blue-200 underline break-all"
                 >
                   {compoundResult.txId.substring(0, 8)}...
                 </a>

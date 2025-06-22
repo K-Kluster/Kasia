@@ -141,7 +141,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
           onClick={() => setShowUtxoCompound(false)}
         >
           <div
-            className="bg-[var(--primary-bg)] p-6 rounded-lg w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto relative"
+            className="bg-[var(--secondary-bg)] p-6 rounded-lg w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
