@@ -7,11 +7,13 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   UserIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/solid";
 import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 import { MessageBackup } from "./MessageBackup";
 import { WalletAddressSection } from "./WalletAddressSection";
+import clsx from "clsx";
 
 type WalletSettingsProps = {
   open: boolean;
@@ -60,10 +62,18 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         <ul className="divide-y divide-gray-700">
           <li
             onClick={() => setShowAddressModal(true)}
-            className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
+            className={clsx(
+              "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
+              { "opacity-50 pointer-events-none": !address }
+            )}
           >
             <UserIcon className="h-5 w-5 text-white" />
-            <span className="text-white text-sm">Show Address</span>
+            <span className="text-white text-sm flex items-center">
+              Show Address
+              {address === "" || address === undefined ? (
+                <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
+              ) : null}
+            </span>
           </li>
           <li
             onClick={() => {
