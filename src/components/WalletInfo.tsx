@@ -1,6 +1,5 @@
 import { FC, useMemo } from "react";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 import { WalletAddressSection } from "./WalletAddressSection";
 
 type WalletInfoProps = {
@@ -99,9 +98,6 @@ export const WalletInfo: FC<WalletInfoProps> = ({
               </li>
             </ul>
           )}
-        </div>
-        <div className="info-box">
-          <WalletWithdrawal walletBalance={walletBalance} />
         </div>
       </>
     );

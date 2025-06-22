@@ -1,14 +1,11 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
 import { createWithdrawTransaction } from "../service/account-service";
-import { WalletBalance } from "../types/wallet.type";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../store/wallet.store";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 
-export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
-  walletBalance,
-}) => {
+export const WalletWithdrawal: FC = () => {
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawError, setWithdrawError] = useState("");
@@ -17,7 +14,6 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
   const [amountInputError, setAmountInputError] = useState<string | null>(null);
 
   const balance = useWalletStore((store) => store.balance);
-
   const inputAmountUpdated = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       if (/^-?\d*\.?\d*$/.test(event.target.value) === false) {
@@ -88,7 +84,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
       }
 
       // Use mature balance directly since it's already in KAS
-      const matureSompiBalance = walletBalance?.mature || BigInt(0);
+      const matureSompiBalance = balance?.mature || BigInt(0);
       console.log("Balance check:", {
         amount,
         matureSompiBalance,
@@ -113,7 +109,7 @@ export const WalletWithdrawal: FC<{ walletBalance: WalletBalance }> = ({
     } finally {
       setIsSending(false);
     }
-  }, [walletBalance, withdrawAddress, withdrawAmount, amountInputError, balance]);
+  }, [withdrawAddress, withdrawAmount, amountInputError, balance]);
 
   return (
     <>
