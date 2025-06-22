@@ -1,5 +1,5 @@
-import React from "react";
-import { OneLiner } from "./OneLiner";
+import React from 'react';
+import { OneLiner } from './OneLiner';
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "./components/ToastContainer";
 
