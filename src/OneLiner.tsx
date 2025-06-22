@@ -12,6 +12,7 @@ import clsx from "clsx";
 import { MessageSection } from "./containers/MessagesSection";
 import { FetchApiMessages } from "./components/FetchApiMessages";
 import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
+import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./components/MenuHamburger";
 import { FeeBuckets } from "./components/FeeBuckets";
 import { useNetworkStore } from "./store/network.store";
