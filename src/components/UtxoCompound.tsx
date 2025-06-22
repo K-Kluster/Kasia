@@ -4,10 +4,8 @@ import { formatKasAmount } from "../utils/format";
 import { Address, kaspaToSompi } from "kaspa-wasm";
 import { clsx } from "clsx";
 import {
-  CheckCircleIcon,
   ExclamationTriangleIcon,
   XCircleIcon,
-  InformationCircleIcon,
 } from "@heroicons/react/24/solid";
 
 export const UtxoCompound: FC = () => {
@@ -162,20 +160,15 @@ export const UtxoCompound: FC = () => {
 
       {/* Information Box */}
       <div className="bg-[var(--primary-bg)] rounded-lg p-3 border border-[var(--border-color)]">
-        <div className="flex items-start gap-2">
-          <InformationCircleIcon className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-          <div className="text-sm text-gray-300">
-            <p className="font-medium text-white mb-1">How it works:</p>
-            <ul className="space-y-1 text-xs">
-              <li>• Combines multiple small UTXOs into fewer larger ones</li>
-              <li>• Reduces memory usage and improves transaction speed</li>
-              <li>
-                • Uses batch transactions to handle mass limits efficiently
-              </li>
-              <li>• Recommended when you have 100+ UTXOs</li>
-            </ul>
-          </div>
+        <div className="flex items-center justify-center gap-2 w-full">
+          <p className="font-medium text-white text-sm">How it works:</p>
         </div>
+        <ul className="space-y-1 text-xs text-gray-300">
+          <li>• Combines multiple small UTXOs into fewer larger ones</li>
+          <li>• Reduces memory usage and improves transaction speed</li>
+          <li>• Uses batch transactions to handle mass limits efficiently</li>
+          <li>• Recommended when you have 100+ UTXOs</li>
+        </ul>
       </div>
 
       {/* Action Buttons */}
@@ -230,10 +223,9 @@ export const UtxoCompound: FC = () => {
       {compoundResult && (
         <div className="bg-green-600 bg-opacity-20 border border-green-500 border-opacity-50 rounded-lg p-3">
           <div className="flex items-start gap-2">
-            <CheckCircleIcon className="w-5 h-5 text-green-300 mt-0.5 flex-shrink-0" />
-            <div className="text-sm">
-              <p className="text-green-300 font-medium">Success</p>
-              <p className="text-white mt-1">
+            <div className="text-sm text-white">
+              <p className="font-semibold">Success</p>
+              <p className="mt-1">
                 Compound transaction successful! Your {compoundResult.utxoCount}{" "}
                 UTXOs have been consolidated into 1 larger UTXO. The transaction
                 is now confirming on the network.
