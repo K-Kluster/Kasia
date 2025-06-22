@@ -1,4 +1,4 @@
-/* API Messages Display Component Styling */
+/* API Messages Display Component Styling
 .api-messages-display {
   display: flex;
   flex-direction: column;
@@ -124,7 +124,7 @@
 }
 
 /* Mobile responsiveness */
-@media (max-width: 600px) {
+/* @media (max-width: 600px) {
   .api-messages-display {
     padding: 0.5rem;
   }
@@ -138,37 +138,6 @@
   }
 }
 
-/* Add styles for the fetch API messages button */
-.api-messages-button {
-  position: relative;
-  display: inline-block;
-}
-
-.api-messages-button button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 160px;
-}
-
-.api-messages-button button:hover {
-  background-color: var(--accent-purple);
-}
-
-.api-messages-button button:disabled {
-  background-color: var(--secondary-bg);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
 .api-error-tooltip {
   position: absolute;
   bottom: -30px;
@@ -180,4 +149,4 @@
   font-size: 12px;
   white-space: nowrap;
   z-index: 10;
-} 
+}  */ 

@@ -13,6 +13,8 @@ import {
   PrivateKeyGenerator,
 } from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "../utils/errors";
+import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import clsx from "clsx";
 
 type FetchApiMessagesProps = {
   address: string;
@@ -34,21 +36,30 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
   useEffect(() => {
     const handleTriggerApiFetch = (event: CustomEvent) => {
       const { address: eventAddress } = event.detail;
-      console.log('Received kasia-trigger-api-fetch event for address:', eventAddress);
-      
+      console.log(
+        "Received kasia-trigger-api-fetch event for address:",
+        eventAddress
+      );
+
       // Only trigger if this component matches the address
       if (eventAddress === address && walletStore.unlockedWallet) {
-        console.log('Triggering API fetch due to localStorage flag');
+        console.log("Triggering API fetch due to localStorage flag");
         fetchAndProcessMessages();
       }
     };
 
     // Listen for the custom event
-    window.addEventListener('kasia-trigger-api-fetch', handleTriggerApiFetch as EventListener);
+    window.addEventListener(
+      "kasia-trigger-api-fetch",
+      handleTriggerApiFetch as EventListener
+    );
 
     // Cleanup
     return () => {
-      window.removeEventListener('kasia-trigger-api-fetch', handleTriggerApiFetch as EventListener);
+      window.removeEventListener(
+        "kasia-trigger-api-fetch",
+        handleTriggerApiFetch as EventListener
+      );
     };
   }, [address, walletStore.unlockedWallet]);
 
@@ -642,15 +653,23 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
   };
 
   return (
-    <div className="api-messages-button">
+    <div>
       <button
         onClick={fetchAndProcessMessages}
         disabled={loading}
+        className={clsx(
+          "flex items-center justify-center gap-2 px-4 py-2 rounded-md w-full cursor-pointer",
+          { "cursor-not-allowed": loading }
+        )}
         title={
           error ? `Error: ${error}` : "Fetch latest messages from blockchain"
         }
       >
-        {loading ? "Loading..." : "Refresh Messages"}
+        {loading ? (
+          <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
+        ) : (
+          <ArrowPathIcon className="h-6 w-6 text-[#49EACB] hover:scale-110" />
+        )}
       </button>
       {error && <div className="api-error-tooltip">{error}</div>}
     </div>

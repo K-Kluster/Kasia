@@ -67,7 +67,7 @@ export const MessageSection: FC = () => {
         <>
           {" "}
           <div className="messages-header">
-            <h3>Messages</h3>
+            <h3 className="text-base font-semibold">Messages</h3>
             <div className="header-actions">
               {walletStore.address && (
                 <FetchApiMessages address={walletStore.address.toString()} />
@@ -76,7 +76,7 @@ export const MessageSection: FC = () => {
                     className="cursor-pointer p-2"
                 onClick={onClearHistory}
               >
-                <TrashIcon className="w-6 h-6 text-red-200" />
+                <TrashIcon className="w-6 h-6 text-red-200 hover:scale-110" />
               </button>
             </div>
           </div>
