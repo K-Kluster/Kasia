@@ -5,6 +5,7 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/solid";
+import clsx from "clsx";
 
 export function ToastContainer() {
   const { toasts, remove } = useToastStore();
@@ -14,17 +15,15 @@ export function ToastContainer() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm
-            ${
-              toast.type === "success"
-                ? "bg-green-100 text-green-900"
-                : toast.type === "error"
-                ? "bg-red-100 text-red-900"
-                : toast.type === "warning"
-                ? "bg-yellow-100 text-yellow-900"
-                : "bg-blue-100 text-blue-900"
+          className={clsx(
+            "flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm animate-fade-in",
+            {
+              "bg-green-100 text-green-900": toast.type === "success",
+              "bg-red-100 text-red-900": toast.type === "error",
+              "bg-yellow-100 text-yellow-900": toast.type === "warning",
+              "bg-blue-100 text-blue-900": toast.type === "info",
             }
-            animate-fade-in`}
+          )}
         >
           <span className="w-6 h-6">
             {toast.type === "success" && <CheckCircleIcon />}
