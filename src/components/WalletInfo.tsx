@@ -20,6 +20,9 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const isAccountServiceRunning = useWalletStore(
     (s) => s.isAccountServiceRunning
   );
+  const unlockedWalletName = useWalletStore(
+    (state) => state.unlockedWallet?.name
+  );
   const walletBalance = useWalletStore((s) => s.balance);
 
   const walletInfoNode = useMemo(() => {
@@ -31,8 +34,12 @@ export const WalletInfo: FC<WalletInfoProps> = ({
 
     return (
       <>
-        <h3>Wallet Information</h3>
+        <h3 className="text-base font-semibold">Wallet Information</h3>
         <WalletAddressSection address={address} />
+        <div className="balance-info">
+          <h4>Wallet Name</h4>
+          <div className="text-base font-semibold">{unlockedWalletName}</div>
+        </div>
         <div className="balance-info">
           <h4>Balance</h4>
           {isInitializing ? (

@@ -70,6 +70,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
     console.log("QR code visibility toggled");
   }, []);
 
+  if (!address) return null; 
   return (
     <div className="relative">
       <div className="mb-2">
