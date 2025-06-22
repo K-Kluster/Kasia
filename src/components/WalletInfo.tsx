@@ -1,15 +1,15 @@
 import { FC, useMemo } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletAddressSection } from "./WalletAddressSection";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 type WalletInfoProps = {
-  state: "connected" | "detected" | "not-detected";
+  state: "connected" | "loading";
   address?: string;
   isWalletReady?: boolean;
   open: boolean;
   onClose: () => void;
 };
-
 export const WalletInfo: FC<WalletInfoProps> = ({
   state,
   address,
@@ -23,10 +23,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   const walletBalance = useWalletStore((s) => s.balance);
 
   const walletInfoNode = useMemo(() => {
-    // Only show initialization state if the service isn't running
     const isInitializing = !isAccountServiceRunning;
-
-    // Use the wallet store's balance as the source of truth
     const currentBalance = walletBalance;
 
     return (
@@ -103,23 +100,27 @@ export const WalletInfo: FC<WalletInfoProps> = ({
     );
   }, [isAccountServiceRunning, walletBalance, address]);
 
+  const loadingWalletNode = (
+    <div className="flex justify-center items-center">
+      <ArrowPathIcon className="w-12 h-12 animate-spin text-gray-300" />
+    </div>
+  );  
+
   if (!isWalletReady || !open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
-      onClick={onClose}>
-      <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]"
-       onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button className="close-button" onClick={onClose}>
           ×
         </button>
-        <div>
-          {state === "connected"
-            ? walletInfoNode
-            : state === "detected"
-            ? 'KasWare Wallet detected. Click "Connect to Kasware" to view your transactions.'
-            : "Kasware Wallet not detected. Please install Kasware Wallet."}
-        </div>
+        <div>{state === "connected" ? walletInfoNode : loadingWalletNode}</div>
       </div>
     </div>
   );
