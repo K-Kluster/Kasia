@@ -331,7 +331,10 @@ export const OneLiner: FC = () => {
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
           onClick={() => setIsAddressModalOpen(false)}
         >
-          <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]">
+          <div
+            className="bg-[var(--secondary-bg)] p-6 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Close button (X) at the top-right */}
             <button
               onClick={() => setIsAddressModalOpen(false)}
@@ -340,7 +343,7 @@ export const OneLiner: FC = () => {
               <XMarkIcon className="h-6 w-6" />
             </button>
 
-            <div className="my-2">
+            <div className="my-2 flex-grow">
               <WalletAddressSection address={walletStore.address?.toString()} />
             </div>
           </div>
