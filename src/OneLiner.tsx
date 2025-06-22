@@ -1,6 +1,3 @@
-// this file is the legacy code that came from old codebase
-// it is intended to be temporary to progressively move towards modularization
-
 import { FC, useCallback, useEffect, useState, useRef } from "react";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, NetworkType } from "./types/all";
@@ -17,7 +14,6 @@ import { FetchApiMessages } from "./components/FetchApiMessages";
 import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./components/MenuHamburger";
 import { FeeBuckets } from "./components/FeeBuckets";
-import { WalletAddressSection } from "./components/WalletAddressSection";
 import { useNetworkStore } from "./store/network.store";
 
 export const OneLiner: FC = () => {
@@ -32,14 +28,10 @@ export const OneLiner: FC = () => {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
-  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
-  const unlockedWalletName = useWalletStore(
-    (state) => state.unlockedWallet?.name
-  );
 
   // Network connection effect
   useEffect(() => {
@@ -75,7 +67,6 @@ export const OneLiner: FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
 
   const onWalletUnlocked = useCallback(() => {
     setIsWalletReady(true);
@@ -210,16 +201,18 @@ export const OneLiner: FC = () => {
             {!isWalletInfoOpen ? (
               <MenuHamburger
                 open={isSettingsOpen}
+                address={walletStore.address?.toString()}
                 onCloseMenu={() => setIsSettingsOpen(false)}
                 onOpenWalletInfo={() => {
                   setIsWalletInfoOpen(true);
                   setIsSettingsOpen(false);
                 }}
                 onCloseWallet={handleCloseWallet}
+                messageStoreLoaded={messageStore.isLoaded}
               />
             ) : (
               <WalletInfo
-                state={walletStore.address ? "connected" : "detected"}
+                state={walletStore.address ? "connected" : "loading"}
                 address={walletStore.address?.toString()}
                 isWalletReady={isWalletReady}
                 open={isWalletInfoOpen}
@@ -233,16 +226,8 @@ export const OneLiner: FC = () => {
       <div className="px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           {isWalletReady ? (
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start items-center gap-4 w-full text-xs">
-              <div className="flex flex-col items-start sm:items-start items-center gap-1 whitespace-nowrap">
-                <div>
-                  <strong>Network:</strong> {walletStore.selectedNetwork}
-                </div>
-                <div>
-                  <strong>Wallet Name:</strong> {unlockedWalletName}
-                </div>
-              </div>
-              {!messageStore.isLoaded ? (
+            <div className="flex flex-col items-center w-full text-xs">
+              {!messageStore.isLoaded && (
                 <div className="text-sm">
                   <button
                     className={clsx(
@@ -256,13 +241,6 @@ export const OneLiner: FC = () => {
                       : "Start Wallet Service"}
                   </button>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setIsAddressModalOpen(true)}
-                  className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
-                >
-                  See Your Address
-                </button>
               )}
             </div>
           ) : (
@@ -326,20 +304,6 @@ export const OneLiner: FC = () => {
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
           />
-        </div>
-      )}
-
-      {isAddressModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-          <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]">
-            <WalletAddressSection address={walletStore.address?.toString()} />
-            <button
-              onClick={() => setIsAddressModalOpen(false)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-            >
-              Close
-            </button>
-          </div>
         </div>
       )}
     </div>

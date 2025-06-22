@@ -14,8 +14,13 @@ export const SettingsPage: React.FC = () => {
   const connect = useNetworkStore((state) => state.connect);
 
   const connectionError = useNetworkStore((s) => s.connectionError);
+  const [connectionSuccess, setConnectionSuccess] = useState(false);
 
-  const [nodeUrl, setNodeUrl] = useState(networkStore.nodeUrl ?? "");
+  const [nodeUrl, setNodeUrl] = useState(
+    networkStore.nodeUrl ??
+      localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
+      ""
+  );
 
   // Network connection effect
   useEffect(() => {
@@ -31,21 +36,31 @@ export const SettingsPage: React.FC = () => {
 
   const onNetworkChange = useCallback(
     (network: NetworkType) => {
+      setConnectionSuccess(false);
+
       networkStore.setNetwork(network);
+
+      const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`);
+
+      setNodeUrl(savedNetwork ?? "");
 
       connect();
     },
     [connect, networkStore]
   );
 
-  const handleSaveNodeUrl = useCallback(() => {
+  const handleSaveNodeUrl = useCallback(async () => {
+    setConnectionSuccess(false);
+
     if (isConnecting) {
       return;
     }
 
-    networkStore.setNodeUrl(nodeUrl);
+    networkStore.setNodeUrl(nodeUrl === "" ? undefined : nodeUrl);
 
-    connect();
+    const isSuccess = await connect();
+
+    setConnectionSuccess(isSuccess);
   }, [connect, isConnecting, networkStore, nodeUrl]);
 
   return (
@@ -98,6 +113,11 @@ export const SettingsPage: React.FC = () => {
             </div>
             {connectionError && (
               <div className="text-red-500 mt-4">{connectionError}</div>
+            )}
+            {connectionSuccess && (
+              <div className="text-green-500 mt-4">
+                Successfully connected to the node!
+              </div>
             )}
             <div className="flex justify-start mt-16">
               <Link to="/">

@@ -18,13 +18,13 @@ interface NetworkState {
    *
    * note: this persist the node url on the local storage and will be re-used on next startup
    */
-  setNodeUrl: (url: string) => void;
+  setNodeUrl: (url?: string) => void;
   /**
    * requires a call to `.connect(network: NetworkType)` if you want changes to be applied
    */
   setNetwork: (network: NetworkType) => void;
 
-  connect: () => Promise<void>;
+  connect: () => Promise<boolean>;
   disconnect: () => Promise<void>;
 }
 
@@ -82,19 +82,26 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
             `kasia_node_url_${kaspaClient.networkId}`,
             kaspaClient.nodeUrl ?? ""
           );
+        } else {
+          localStorage.removeItem(`kasia_node_url_${kaspaClient.networkId}`);
         }
 
         unstable_batchedUpdates(() => {
           useWalletStore.getState().setRpcClient(kaspaClient);
           useWalletStore.getState().setSelectedNetwork(g().network);
         });
-        set({ isConnected: true, connectionError: undefined });
-        return; // Exit the function if connection is successful
+        set({
+          isConnected: true,
+          connectionError: undefined,
+          isConnecting: false,
+        });
+        return true; // Exit the function if connection is successful
       } catch (error) {
         console.error(`Failed to connect to KaspaClient`, error);
-        set({ connectionError: unknownErrorToErrorLike(error).message });
-      } finally {
-        set({ isConnecting: false });
+        set({
+          connectionError: unknownErrorToErrorLike(error).message,
+          isConnecting: false,
+        });
       }
 
       console.error("Max retries reached. Could not connect to KaspaClient.");
@@ -102,6 +109,8 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
         connectionError:
           "Max retries reached. Could not connect to KaspaClient.",
       });
+
+      return false;
     },
     async disconnect() {
       const kaspaClient = g().kaspaClient;

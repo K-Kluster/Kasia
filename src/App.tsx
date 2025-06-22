@@ -1,7 +1,6 @@
 import React from "react";
 import { OneLiner } from "./OneLiner";
 import { Routes, Route } from "react-router-dom";
-import "./styles/api-messages.css";
 import { SettingsPage } from "./SettingsPage";
 
 const App: React.FC = () => {

@@ -277,7 +277,6 @@ h1 {
   margin-top: 20px;
 }
 
-
 .messages-header {
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
@@ -383,17 +382,6 @@ h1 {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
-}
-
-.clear-history-button {
-  background-color: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85em;
-  height: 32px;
 }
 
 .contact-preview {
@@ -568,6 +556,15 @@ h1 {
   }
 }
 
+.wallet-guard {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin: 2rem auto;
+  max-width: 600px;
+  padding: 2rem;
+}
+
 .wallet-info-container {
   position: static;
   display: flex;
@@ -635,10 +632,6 @@ h1 {
   color: var(--accent-green);
   font-weight: 600;
   font-family: monospace;
-}
-
-.modal-body {
-  margin-top: 20px;
 }
 
 .close-button {
