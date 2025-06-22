@@ -213,6 +213,7 @@ export const OneLiner: FC = () => {
                   setIsSettingsOpen(false);
                 }}
                 onCloseWallet={handleCloseWallet}
+                messageStoreLoaded={messageStore.isLoaded}
               />
             ) : (
               <WalletInfo
