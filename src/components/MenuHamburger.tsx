@@ -3,10 +3,12 @@ import { FeeBuckets } from "./FeeBuckets";
 import {
   InformationCircleIcon,
   ArrowLongLeftIcon,
-  StarIcon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronRightIcon,
+  ChevronDownIcon
 } from "@heroicons/react/24/solid";
 import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
+import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 
 type WalletSettingsProps = {
   open: boolean;
@@ -23,14 +25,16 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
 }) => {
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [showSeedRetrieveModal, setShowSeedRetrieveModal] = useState(false);
+  const [showWalletWithdrawal, setShowWalletWithdrawal] = useState(false);
 
-  // Close the sub menu when we close the hamburger
   useEffect(() => {
     if (!open) {
       setActionsMenuOpen(false);
+      setShowWalletWithdrawal(false);
+      setShowSeedRetrieveModal(false);
     }
   }, [open]);
-  
+
   if (!open) return null;
 
   return (
@@ -58,17 +62,30 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
             onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
           >
             <span className="text-white text-sm flex items-center gap-2">
-              <StarIcon className="h-5 w-5 text-white" />
+              {actionsMenuOpen ? (
+                <ChevronDownIcon className="h-5 w-5 text-white" />
+              ) : (
+                <ChevronRightIcon className="h-5 w-5 text-white" />
+              )}
               Actions
             </span>
           </li>
 
-          {/* Items inside actions submenu */}
           {actionsMenuOpen && (
-            <ul className="pl-0 text-sm font-semibold">
+            <ul className="pl-0 text-sm font-semibold text-left ml-2">
+              <li
+                onClick={() => {
+                  setShowWalletWithdrawal(true);
+                  setActionsMenuOpen(false);
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Withdraw Funds</span>
+              </li>
               <li
                 onClick={() => {
                   setShowSeedRetrieveModal(true);
+                  setActionsMenuOpen(false);
                 }}
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
@@ -87,7 +104,6 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         </ul>
       </div>
 
-      {/* Modal for getting your seed */}
       {showSeedRetrieveModal && (
         <div
           className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
@@ -97,7 +113,6 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
             className="bg-[var(--primary-bg)] p-6 rounded-lg w-96 flex flex-col items-center relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button (X) at the top-right */}
             <button
               onClick={() => setShowSeedRetrieveModal(false)}
               className="absolute top-2 right-2 text-gray-200 hover:text-white p-2 cursor-pointer"
@@ -105,6 +120,26 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               <XMarkIcon className="h-6 w-6" />
             </button>
             <WalletSeedRetreiveDisplay />
+          </div>
+        </div>
+      )}
+
+      {showWalletWithdrawal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
+          onClick={() => setShowWalletWithdrawal(false)}
+        >
+          <div
+            className="bg-[var(--primary-bg)] p-6 rounded-lg w-96 flex flex-col items-center relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowWalletWithdrawal(false)}
+              className="absolute top-2 right-2 text-gray-200 hover:text-white p-2 cursor-pointer"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <WalletWithdrawal />
           </div>
         </div>
       )}

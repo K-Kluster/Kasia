@@ -80,7 +80,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
         >
           <div className="flex">
             <span
-              className="cursor-pointer px-3 py-6 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-xs break-all leading-[1.4] w-full h-10 flex items-center"
+              className="cursor-pointer px-3 py-6 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full h-10 flex items-center"
               onClick={() => {
                 console.log("Address text selected");
                 // Select the text when clicked
@@ -109,7 +109,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
               }}
               title="Copy address to clipboard"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-12 h-12 shadow cursor-pointer transition-all duration-200"
+              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-12 h-12 shadow transition-all duration-200"
             >
               <DocumentDuplicateIcon className="w-5 h-5 text-white" />
             </button>
@@ -117,7 +117,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
               onClick={toggleQRCode}
               title="Show QR code"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-12 h-12 shadow cursor-pointer transition-all duration-200"
+              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-12 h-12 shadow transition-all duration-200"
             >
               <QrCodeIcon className="w-5 h-5 text-white" />
             </button>
@@ -135,7 +135,8 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
           {copyNotification}
         </div>
         {showQRCode && address && qrCodeURL && (
-          <div className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300">
+          <div
+            className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300">
             <h4 className="text-white text-center mb-4">QR Code for Address</h4>
             <div className="flex flex-col items-center gap-4">
               <img
