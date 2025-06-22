@@ -14,7 +14,7 @@ import { NewChatForm } from "./components/NewChatForm";
 import clsx from "clsx";
 import { MessageSection } from "./containers/MessagesSection";
 import { FetchApiMessages } from "./components/FetchApiMessages";
-import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
+import { PlusIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./components/MenuHamburger";
 import { FeeBuckets } from "./components/FeeBuckets";
 import { WalletAddressSection } from "./components/WalletAddressSection";
@@ -327,15 +327,25 @@ export const OneLiner: FC = () => {
       )}
 
       {isAddressModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
-          <div className="bg-[var(--secondary-bg)] p-5 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out]">
-            <WalletAddressSection address={walletStore.address?.toString()} />
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+          onClick={() => setIsAddressModalOpen(false)}
+        >
+          <div
+            className="bg-[var(--secondary-bg)] p-6 rounded-xl relative max-w-[500px] w-[90%] max-h-[90vh] overflow-y-auto border border-[var(--border-color)] animate-[modalFadeIn_0.3s_ease-out] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button (X) at the top-right */}
             <button
               onClick={() => setIsAddressModalOpen(false)}
-              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+              className="absolute top-2 right-2 text-gray-200 hover:text-white p-2 cursor-pointer"
             >
-              Close
+              <XMarkIcon className="h-6 w-6" />
             </button>
+
+            <div className="my-2 flex-grow">
+              <WalletAddressSection address={walletStore.address?.toString()} />
+            </div>
           </div>
         </div>
       )}
