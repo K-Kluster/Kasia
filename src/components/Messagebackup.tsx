@@ -20,6 +20,7 @@ export const MessageBackup: React.FC = () => {
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
+<<<<<<< HEAD
       const now = new Date();
       a.href = url;
       // Build file name with prefix, short date and short time - YYMMDD-HHMM - ty gippity for this
@@ -33,11 +34,18 @@ export const MessageBackup: React.FC = () => {
         .getMinutes()
         .toString()
         .padStart(2, "0")}.json`;
+=======
+      a.href = url;
+      a.download = `kaspa-messages-backup-${new Date().toISOString().split("T")[0]}.json`;
+>>>>>>> 5e94b1a (refactor: add messagebackup component)
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+<<<<<<< HEAD
       alert("Messages exported successfully!");
+=======
+>>>>>>> 5e94b1a (refactor: add messagebackup component)
     } catch (error) {
       console.error("Error exporting messages:", error);
       alert("Failed to export messages");
