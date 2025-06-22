@@ -9,14 +9,15 @@ import {
 } from "@heroicons/react/24/solid";
 import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../containers/WalletWithdrawal";
-import { MessageBackup } from "./MessageBackup";
+import { MessageBackup } from "./Messagebackup";
+import { UtxoCompound } from "./UtxoCompound";
 
 type WalletSettingsProps = {
   open: boolean;
   onCloseMenu: () => void;
   onOpenWalletInfo: () => void;
   onCloseWallet: () => void;
-  messageStoreLoaded: boolean; 
+  messageStoreLoaded: boolean;
 };
 
 const MenuHamburger: FC<WalletSettingsProps> = ({
@@ -29,7 +30,8 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [showSeedRetrieveModal, setShowSeedRetrieveModal] = useState(false);
   const [showWalletWithdrawal, setShowWalletWithdrawal] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false); // State to toggle the modal
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showUtxoCompound, setShowUtxoCompound] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -37,6 +39,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
       setShowWalletWithdrawal(false);
       setShowSeedRetrieveModal(false);
       setShowMessageModal(false);
+      setShowUtxoCompound(false);
     }
   }, [open]);
 
@@ -93,6 +96,15 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               </li>
               <li
                 onClick={() => {
+                  setShowUtxoCompound(true);
+                  setActionsMenuOpen(false);
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Compound UTXOs</span>
+              </li>
+              <li
+                onClick={() => {
                   setShowSeedRetrieveModal(true);
                   setActionsMenuOpen(false);
                 }}
@@ -122,10 +134,31 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         </ul>
       </div>
 
+      {/* UTXO Compound Modal */}
+      {showUtxoCompound && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20"
+          onClick={() => setShowUtxoCompound(false)}
+        >
+          <div
+            className="bg-[var(--primary-bg)] p-6 rounded-lg w-96 max-w-[90vw] max-h-[90vh] overflow-y-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowUtxoCompound(false)}
+              className="absolute top-2 right-2 text-gray-200 hover:text-white p-2 cursor-pointer"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <UtxoCompound />
+          </div>
+        </div>
+      )}
+
       {/* Export/Import Messages Modal */}
       {showMessageModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20"
           onClick={() => setShowMessageModal(false)}
         >
           <div
@@ -146,7 +179,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
       {/* Seed and Withdrawal Modal */}
       {showSeedRetrieveModal && (
         <div
-          className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20"
           onClick={() => setShowSeedRetrieveModal(false)}
         >
           <div
@@ -167,7 +200,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
       {/* Show wallet address modal */}
       {showWalletWithdrawal && (
         <div
-          className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20"
           onClick={() => setShowWalletWithdrawal(false)}
         >
           <div
