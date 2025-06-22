@@ -5,16 +5,18 @@ import {
   ArrowLongLeftIcon,
   XMarkIcon,
   ChevronRightIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
 } from "@heroicons/react/24/solid";
 import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../containers/WalletWithdrawal";
+import { MessageBackup } from "./MessageBackup";
 
 type WalletSettingsProps = {
   open: boolean;
   onCloseMenu: () => void;
   onOpenWalletInfo: () => void;
   onCloseWallet: () => void;
+  messageStoreLoaded: boolean; 
 };
 
 const MenuHamburger: FC<WalletSettingsProps> = ({
@@ -22,20 +24,27 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
   onCloseMenu,
   onOpenWalletInfo,
   onCloseWallet,
+  messageStoreLoaded,
 }) => {
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [showSeedRetrieveModal, setShowSeedRetrieveModal] = useState(false);
   const [showWalletWithdrawal, setShowWalletWithdrawal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false); // State to toggle the modal
 
   useEffect(() => {
     if (!open) {
       setActionsMenuOpen(false);
       setShowWalletWithdrawal(false);
       setShowSeedRetrieveModal(false);
+      setShowMessageModal(false);
     }
   }, [open]);
 
   if (!open) return null;
+
+  const handleExportClick = () => {
+    setShowMessageModal(true);
+  };
 
   return (
     <>
@@ -91,9 +100,18 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               >
                 <span className="text-white text-sm">View Seed Phrase</span>
               </li>
+              {messageStoreLoaded && (
+                <li
+                  onClick={handleExportClick}
+                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                >
+                  <span className="text-white text-sm">
+                    Import / Export <br /> Messages
+                  </span>
+                </li>
+              )}
             </ul>
           )}
-
           <li
             onClick={onCloseWallet}
             className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
@@ -104,6 +122,28 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         </ul>
       </div>
 
+      {/* Export/Import Messages Modal */}
+      {showMessageModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
+          onClick={() => setShowMessageModal(false)}
+        >
+          <div
+            className="bg-[var(--primary-bg)] p-6 rounded-lg w-96 flex flex-col items-center relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowMessageModal(false)}
+              className="absolute top-2 right-2 text-gray-200 hover:text-white p-2 cursor-pointer"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
+            <MessageBackup />
+          </div>
+        </div>
+      )}
+
+      {/* Seed and Withdrawal Modal */}
       {showSeedRetrieveModal && (
         <div
           className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"
@@ -124,6 +164,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         </div>
       )}
 
+      {/* Show wallet address modal */}
       {showWalletWithdrawal && (
         <div
           className="fixed inset-0 bg-black/50 flex justify-center items-center z-20"

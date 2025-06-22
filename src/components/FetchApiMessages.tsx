@@ -2,7 +2,6 @@ import { FC, useState, useEffect } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { WalletStorage } from "../utils/wallet-storage";
-import { decrypt_message, EncryptedMessage } from "cipher";
 import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import "./FetchApiMessages.css";
