@@ -1,6 +1,3 @@
-// this file is the legacy code that came from old codebase
-// it is intended to be temporary to progressively move towards modularization
-
 import { FC, useCallback, useEffect, useState, useRef } from "react";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, NetworkType } from "./types/all";
@@ -35,9 +32,6 @@ export const OneLiner: FC = () => {
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
-  const unlockedWalletName = useWalletStore(
-    (state) => state.unlockedWallet?.name
-  );
 
   const {
     client: currentClient,
@@ -232,14 +226,6 @@ export const OneLiner: FC = () => {
         <div className="flex items-center gap-4">
           {isWalletReady ? (
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start items-center gap-4 w-full text-xs">
-              <div className="flex flex-col items-start sm:items-start items-center gap-1 whitespace-nowrap">
-                <div>
-                  <strong>Network:</strong> {walletStore.selectedNetwork}
-                </div>
-                <div>
-                  <strong>Wallet Name:</strong> {unlockedWalletName}
-                </div>
-              </div>
               {!messageStore.isLoaded ? (
                 <div className="text-sm">
                   <button
