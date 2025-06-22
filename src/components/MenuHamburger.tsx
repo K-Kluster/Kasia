@@ -60,6 +60,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <ul className="divide-y divide-gray-700">
+          {/* Show Address Item */}
           <li
             onClick={() => setShowAddressModal(true)}
             className={clsx(
@@ -75,6 +76,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               ) : null}
             </span>
           </li>
+          {/* Show Wallet Info Item */}
           <li
             onClick={() => {
               onOpenWalletInfo();
@@ -85,9 +87,11 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
             <InformationCircleIcon className="h-5 w-5 text-white" />
             <span className="text-white text-sm">Wallet Info</span>
           </li>
+          {/* Show Feebuckets on mobile Item */}
           <li className="block sm:hidden px-4 py-3">
             <FeeBuckets inline={false} />
           </li>
+          {/* Show Action List Sub Items */}
           <li
             className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
             onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
@@ -104,6 +108,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
 
           {actionsMenuOpen && (
             <ul className="pl-0 text-sm font-semibold text-left ml-2">
+              {/* Show Fund Withdraw Item */}
               <li
                 onClick={() => {
                   setShowWalletWithdrawal(true);
@@ -113,6 +118,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               >
                 <span className="text-white text-sm">Withdraw Funds</span>
               </li>
+              {/* Show Seed extract Item */}
               <li
                 onClick={() => {
                   setShowSeedRetrieveModal(true);
@@ -122,6 +128,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               >
                 <span className="text-white text-sm">View Seed Phrase</span>
               </li>
+              {/* Show IO messages Item */}
               {messageStoreLoaded && (
                 <li
                   onClick={handleExportClick}
@@ -134,6 +141,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               )}
             </ul>
           )}
+          {/* Show close wallet Item */}
           <li
             onClick={onCloseWallet}
             className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
