@@ -1,31 +1,98 @@
-import { FC, useState, useCallback } from "react";
+import { FC, useState, useCallback, useEffect } from "react";
 import { useWalletStore } from "../store/wallet.store";
-import { formatKasAmount } from "../utils/format";
-import { Address, kaspaToSompi } from "kaspa-wasm";
+import { Address } from "kaspa-wasm";
 import { clsx } from "clsx";
 import {
   ExclamationTriangleIcon,
   XCircleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/solid";
+
+// Type definitions
+type CompoundResult = {
+  txId: string;
+  utxoCount: number;
+};
+
+type FrozenBalance = {
+  matureUtxoCount: number;
+  matureDisplay: string;
+};
+
+type BatchProgress = {
+  current: number;
+  total: number;
+  txIds: string[];
+};
+
+// Constants
+const BATCH_SIZE = 60; // Conservative limit to avoid storage mass issues
+const BATCH_DELAY_MS = 2000; // Delay between batches to allow balance stabilization
+const HIGH_UTXO_THRESHOLD = 100; // Threshold for showing high UTXO warning
 
 export const UtxoCompound: FC = () => {
   const [isCompounding, setIsCompounding] = useState(false);
-  const [compoundResult, setCompoundResult] = useState<{
-    txId: string;
-    utxoCount: number;
-  } | null>(null);
+  const [compoundResult, setCompoundResult] = useState<CompoundResult | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
+  const [pendingResult, setPendingResult] = useState<CompoundResult | null>(
+    null
+  );
+  const [frozenBalance, setFrozenBalance] = useState<FrozenBalance | null>(
+    null
+  );
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(
+    null
+  );
 
   const walletStore = useWalletStore();
   const { accountService, unlockedWallet, balance, address, selectedNetwork } =
     walletStore;
 
-  // Get the correct explorer URL based on network
-  const getExplorerUrl = (txId: string) => {
-    return selectedNetwork === "mainnet"
-      ? `https://explorer.kaspa.org/txs/${txId}`
-      : `https://explorer-tn10.kaspa.org/txs/${txId}`;
-  };
+  // Monitor balance changes to detect when compound is complete
+  useEffect(() => {
+    if (pendingResult && balance?.matureUtxoCount === 1 && !isCompounding) {
+      // Compound is complete: we have exactly 1 UTXO and not processing anymore
+      setCompoundResult(pendingResult);
+      setPendingResult(null);
+      setFrozenBalance(null); // Clear frozen balance to show final result
+      setBatchProgress(null); // Clear batch progress
+    }
+  }, [balance?.matureUtxoCount, isCompounding, pendingResult]);
+
+  // Helper functions
+  const getExplorerUrl = useCallback(
+    (txId: string) => {
+      return selectedNetwork === "mainnet"
+        ? `https://explorer.kaspa.org/txs/${txId}`
+        : `https://explorer-tn10.kaspa.org/txs/${txId}`;
+    },
+    [selectedNetwork]
+  );
+
+  const resetAllStates = useCallback(() => {
+    setError(null);
+    setCompoundResult(null);
+    setBatchProgress(null);
+    setFrozenBalance(null);
+    setPendingResult(null);
+  }, []);
+
+  const getUserFriendlyErrorMessage = useCallback((err: unknown): string => {
+    if (!(err instanceof Error)) return "Transaction failed. Please try again.";
+
+    if (err.message.includes("insufficient")) {
+      return "Insufficient balance to cover transaction fees.";
+    }
+    if (err.message.includes("No balance available")) {
+      return "Balance unavailable during batch processing. Please try again.";
+    }
+    if (err.message.includes("Wallet not properly initialized")) {
+      return "Wallet connection lost. Please refresh and try again.";
+    }
+    return "Transaction failed. Please check your connection and try again.";
+  }, []);
 
   const handleCompoundUtxos = useCallback(async () => {
     if (!accountService || !unlockedWallet || !address) {
@@ -34,60 +101,114 @@ export const UtxoCompound: FC = () => {
     }
 
     if (!balance?.matureUtxoCount || balance.matureUtxoCount < 2) {
-      setError("Need at least 2 UTXOs to compound");
-      return;
+      return; // Silently do nothing if not enough UTXOs
     }
 
     setIsCompounding(true);
-    setError(null);
-    setCompoundResult(null);
+    resetAllStates();
+
+    // Freeze the balance display during processing
+    setFrozenBalance({
+      matureUtxoCount: balance.matureUtxoCount,
+      matureDisplay: balance.matureDisplay,
+    });
 
     try {
-      // Get current UTXOs and balance
-      const matureUtxos = accountService.getMatureUtxos();
-      const utxoCount = matureUtxos.length;
-      const totalBalance = balance.mature;
-
+      const utxoCount = balance.matureUtxoCount;
       console.log(`Starting UTXO compounding for ${utxoCount} UTXOs`);
       console.log(`Total balance: ${balance.matureDisplay} KAS`);
 
-      // Use the withdrawal transaction method with "send all" approach
-      // This avoids KIP-9 dust issues by letting the generator handle fees properly
-      const txId = await accountService.createWithdrawTransaction(
-        {
-          address: new Address(address.toString()), // Send to self
-          amount: totalBalance, // Send entire balance (generator will handle fees)
-        },
-        unlockedWallet.password
-      );
+      const needsBatching = utxoCount > BATCH_SIZE;
 
-      console.log(`Compound transaction created: ${txId}`);
+      if (needsBatching) {
+        // Process in batches
+        const totalBatches = Math.ceil(utxoCount / BATCH_SIZE);
+        const txIds: string[] = [];
 
-      setCompoundResult({
-        txId,
-        utxoCount,
-      });
+        console.log(
+          `Processing ${utxoCount} UTXOs in ${totalBatches} batches of ${BATCH_SIZE}`
+        );
+
+        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+          setBatchProgress({
+            current: batchIndex + 1,
+            total: totalBatches,
+            txIds: [...txIds],
+          });
+
+          console.log(`Processing batch ${batchIndex + 1}/${totalBatches}`);
+
+          // Wait for balance to stabilize between batches
+          if (batchIndex > 0) {
+            await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
+          }
+
+          // Wait for balance to update and get current balance
+          // Note: Balance will be updated automatically through the wallet store
+
+          // Get fresh balance for this batch (it changes after each batch)
+          const currentBalance = walletStore.balance;
+          if (!currentBalance?.mature) {
+            throw new Error("No balance available for batch processing");
+          }
+
+          // Create withdrawal transaction for current balance
+          const txId = await accountService.createWithdrawTransaction(
+            {
+              address: new Address(address.toString()), // Send to self
+              amount: currentBalance.mature, // Send current balance
+            },
+            unlockedWallet.password
+          );
+
+          txIds.push(txId);
+          console.log(`Batch ${batchIndex + 1} transaction created: ${txId}`);
+        }
+
+        // Store final result
+        setPendingResult({
+          txId: txIds[txIds.length - 1], // Last transaction ID
+          utxoCount,
+        });
+
+        console.log(
+          `All ${totalBatches} batches completed. Transaction IDs:`,
+          txIds
+        );
+      } else {
+        // Single transaction for smaller UTXO counts
+        const txId = await accountService.createWithdrawTransaction(
+          {
+            address: new Address(address.toString()), // Send to self
+            amount: balance.mature, // Send entire balance
+          },
+          unlockedWallet.password
+        );
+
+        console.log(`Single compound transaction created: ${txId}`);
+
+        setPendingResult({
+          txId,
+          utxoCount,
+        });
+      }
     } catch (err) {
       console.error("UTXO compounding failed:", err);
-
-      // Provide more helpful error messages
-      let errorMessage = "Failed to compound UTXOs";
-      if (err instanceof Error) {
-        if (err.message.includes("Storage mass exceeds maximum")) {
-          errorMessage =
-            "Too many UTXOs to compound in one transaction. Try withdrawing some funds first to reduce UTXO count.";
-        } else if (err.message.includes("insufficient")) {
-          errorMessage = "Insufficient balance to cover transaction fees.";
-        } else {
-          errorMessage = err.message;
-        }
-      }
-
-      setError(errorMessage);
+      setError(getUserFriendlyErrorMessage(err));
+      setFrozenBalance(null); // Clear frozen balance on error
+      setBatchProgress(null); // Clear batch progress on error
     } finally {
       setIsCompounding(false);
     }
-  }, [accountService, unlockedWallet, balance, address]);
+  }, [
+    accountService,
+    unlockedWallet,
+    balance,
+    address,
+    walletStore.balance,
+    resetAllStates,
+    getUserFriendlyErrorMessage,
+  ]);
 
   if (!balance) {
     return (
@@ -97,10 +218,16 @@ export const UtxoCompound: FC = () => {
     );
   }
 
-  const shouldShowCompound =
-    balance.matureUtxoCount && balance.matureUtxoCount >= 2;
-  const isHighUtxoCount =
-    balance.matureUtxoCount && balance.matureUtxoCount > 100;
+  // Use frozen balance during processing, otherwise use current balance
+  const displayBalance = frozenBalance || balance;
+
+  const shouldShowCompound = Boolean(
+    balance?.matureUtxoCount && balance.matureUtxoCount >= 2
+  );
+  const isHighUtxoCount = Boolean(
+    displayBalance?.matureUtxoCount &&
+      displayBalance.matureUtxoCount > HIGH_UTXO_THRESHOLD
+  );
 
   return (
     <div className="p-4 space-y-4">
@@ -125,7 +252,7 @@ export const UtxoCompound: FC = () => {
                 "text-white": !isHighUtxoCount,
               })}
             >
-              {balance.matureUtxoCount || 0}
+              {displayBalance?.matureUtxoCount ?? "-"}
               {isHighUtxoCount && (
                 <span className="text-xs text-orange-400 ml-1">(High)</span>
               )}
@@ -134,7 +261,7 @@ export const UtxoCompound: FC = () => {
           <div>
             <span className="text-gray-400">Total Balance:</span>
             <div className="font-semibold text-white">
-              {balance.matureDisplay} KAS
+              {displayBalance?.matureDisplay} KAS
             </div>
           </div>
         </div>
@@ -165,45 +292,86 @@ export const UtxoCompound: FC = () => {
         </div>
         <ul className="space-y-1 text-xs text-gray-300">
           <li>• Combines multiple small UTXOs into fewer larger ones</li>
-          <li>• Reduces memory usage and improves transaction speed</li>
-          <li>• Uses batch transactions to handle mass limits efficiently</li>
-          <li>• Recommended when you have 100+ UTXOs</li>
         </ul>
       </div>
 
       {/* Action Buttons */}
       <div className="space-y-3">
-        {!shouldShowCompound ? (
-          <div className="bg-[var(--primary-bg)] rounded-lg p-3 border border-[var(--border-color)] text-center">
-            <p className="text-gray-300 text-sm">
-              Need at least 2 UTXOs to compound
-            </p>
-            <p className="text-gray-400 text-xs mt-1">
-              Current UTXOs: {balance.matureUtxoCount || 0}
-            </p>
-          </div>
-        ) : (
-          <button
-            onClick={handleCompoundUtxos}
-            disabled={isCompounding}
-            className={clsx(
-              "w-full px-4 py-3 rounded-lg font-medium transition-all duration-200",
-              {
-                "bg-gray-600 text-gray-400 cursor-not-allowed": isCompounding,
-                "bg-blue-600 hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500":
-                  !isCompounding,
-              }
-            )}
-          >
-            {isCompounding ? (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                Compounding UTXOs...
+        {/* Show compound button only if we have enough UTXOs and not processing/completed */}
+        {shouldShowCompound &&
+          !isCompounding &&
+          !compoundResult &&
+          !pendingResult && (
+            <button
+              onClick={handleCompoundUtxos}
+              className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Compound {balance?.matureUtxoCount ?? 0} UTXOs
+            </button>
+          )}
+
+        {/* Processing State */}
+        {(isCompounding || pendingResult) && !compoundResult && (
+          <div className="bg-[var(--primary-bg)] rounded-lg p-4 border border-[var(--border-color)] text-center">
+            <div className="flex items-center justify-center gap-2 text-blue-400">
+              <ArrowPathIcon className="w-5 h-5 animate-spin" />
+              <span className="text-white font-medium">
+                {batchProgress
+                  ? `Processing batch ${batchProgress.current}/${batchProgress.total}`
+                  : "Processing compound transaction"}
+              </span>
+            </div>
+            {batchProgress && (
+              <div className="mt-2">
+                <div className="w-full bg-gray-700 rounded-full h-2 relative overflow-hidden">
+                  <div
+                    className={clsx(
+                      "bg-blue-500 h-2 rounded-full transition-all duration-300 absolute top-0 left-0",
+                      // Use Tailwind width classes for exact matches
+                      {
+                        "w-full": batchProgress.current === batchProgress.total,
+                        "w-1/2":
+                          batchProgress.total === 2 &&
+                          batchProgress.current === 1,
+                        "w-1/3":
+                          batchProgress.total === 3 &&
+                          batchProgress.current === 1,
+                        "w-2/3":
+                          batchProgress.total === 3 &&
+                          batchProgress.current === 2,
+                        "w-1/4":
+                          batchProgress.total === 4 &&
+                          batchProgress.current === 1,
+                        "w-2/4":
+                          batchProgress.total === 4 &&
+                          batchProgress.current === 2,
+                        "w-3/4":
+                          batchProgress.total === 4 &&
+                          batchProgress.current === 3,
+                        "w-1/5":
+                          batchProgress.total === 5 &&
+                          batchProgress.current === 1,
+                        "w-2/5":
+                          batchProgress.total === 5 &&
+                          batchProgress.current === 2,
+                        "w-3/5":
+                          batchProgress.total === 5 &&
+                          batchProgress.current === 3,
+                        "w-4/5":
+                          batchProgress.total === 5 &&
+                          batchProgress.current === 4,
+                      }
+                    )}
+                  ></div>
+                </div>
+                <p className="text-gray-400 text-sm mt-1">
+                  {batchProgress.current === batchProgress.total
+                    ? "Finalizing compound..."
+                    : `${batchProgress.txIds.length} transactions completed`}
+                </p>
               </div>
-            ) : (
-              `Compound ${balance.matureUtxoCount} UTXOs`
             )}
-          </button>
+          </div>
         )}
       </div>
 
