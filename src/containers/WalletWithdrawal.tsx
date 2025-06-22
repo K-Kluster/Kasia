@@ -113,15 +113,16 @@ export const WalletWithdrawal: FC = () => {
 
   return (
     <>
-      <h3>Withdraw KAS</h3>
+      <h4 className="font-semibold text-lg">Withdraw KAS</h4>
       <div className="mt-2">
-        <input
-          type="text"
+        <textarea
           value={withdrawAddress}
           onChange={(e) => setWithdrawAddress(e.target.value)}
           placeholder="Enter Kaspa address"
-          className="w-full p-2 mb-2 bg-black/30 border border-white/20 rounded-md text-white resize-none break-all"
+          rows={2}
+          className="w-full p-2 mb-2 bg-black/30 border border-white/20 rounded-md text-white resize-none break-words whitespace-pre-wrap"
         />
+
         <div className="flex gap-2 items-center">
           <div className="relative flex-1">
             <input
