@@ -84,11 +84,6 @@ h1 {
   box-shadow: 0 0 4px #ef4444;
 }
 
-.network-selector-container {
-  position: relative;
-  display: inline-block;
-}
-
 .network-selector {
   position: absolute;
   top: calc(100% + 2px);

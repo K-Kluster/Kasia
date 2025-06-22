@@ -5,8 +5,13 @@ import "./WalletGuard.css";
 import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
-import { PASSWORD_MIN_LENGTH, disablePasswordRequirements } from "../config/password";
-import {MnemonicEntry} from "../components/MnemonicEntry";
+import {
+  PASSWORD_MIN_LENGTH,
+  disablePasswordRequirements,
+} from "../config/password";
+import { MnemonicEntry } from "../components/MnemonicEntry";
+import { Cog6ToothIcon } from "@heroicons/react/24/outline";
+import { Link } from "react-router";
 
 type Step = {
   type: "home" | "create" | "import" | "unlock" | "finalizing" | "migrate";
@@ -219,13 +224,19 @@ export const WalletGuard = ({
 
   if (step.type === "home") {
     return (
-      <div className="wallet-guard">
-        <NetworkSelector
-          selectedNetwork={selectedNetwork}
-          onNetworkChange={onNetworkChange}
-          isConnected={isConnected}
-        />
-        <h2>Select Wallet</h2>
+      <div className="max-w-[600px] relative mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]">
+        <Link to="/settings">
+          <Cog6ToothIcon className="absolute top-4 right-4 size-6 hover:cursor-pointer hover:opacity-80" />
+        </Link>
+
+        <div className="grow flex items-center justify-center mb-1">
+          <NetworkSelector
+            selectedNetwork={selectedNetwork}
+            onNetworkChange={onNetworkChange}
+            isConnected={isConnected}
+          />
+        </div>
+        <h2 className="text-center my-8 text-[var(--text-primary)] text-[1.5rem] font-semibold">Select Wallet</h2>
         <div className="wallet-list">
           {wallets.map((wallet) => (
             <div key={wallet.id} className="wallet-item">
@@ -548,8 +559,9 @@ export const WalletGuard = ({
           </div>
         )}
         <button
-        className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer" 
-        onClick={() => onClickStep("home")}>
+          className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
+          onClick={() => onClickStep("home")}
+        >
           Back to Wallets
         </button>
       </div>

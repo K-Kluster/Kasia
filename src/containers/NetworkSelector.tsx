@@ -14,24 +14,6 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   selectedNetwork,
   isConnected,
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Add passive wheel event listeners
-  useEffect(() => {
-    const menuElement = menuRef.current;
-    if (!menuElement) return;
-
-    const options = { passive: true };
-    const handler = (e: WheelEvent) => {
-      // Handle wheel event if needed
-    };
-
-    menuElement.addEventListener("wheel", handler, options);
-    return () => {
-      menuElement.removeEventListener("wheel", handler);
-    };
-  }, []);
-
   const networkDisplay = useMemo(() => {
     if (!isConnected) {
       return "Connecting...";
@@ -54,7 +36,6 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   }, []);
 
   return (
-    <div className="network-selector-container" ref={menuRef}>
       <Menu>
         <MenuButton className="network-badge">
           <span
@@ -79,6 +60,5 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
           ))}
         </MenuItems>
       </Menu>
-    </div>
   );
 };
