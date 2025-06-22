@@ -4,6 +4,7 @@ import {
   InformationCircleIcon,
   ArrowLongLeftIcon,
   StarIcon,
+  XMarkIcon
 } from "@heroicons/react/24/solid";
 import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
 
@@ -29,7 +30,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
       setActionsMenuOpen(false);
     }
   }, [open]);
-
+  
   if (!open) return null;
 
   return (
@@ -73,14 +74,6 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               >
                 <span className="text-white text-sm">View Seed Phrase</span>
               </li>
-              {/* <li
-                onClick={() => {
-                  console.log("Yo");
-                }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
-              >
-                <span className="text-white text-sm">The next thing or whataver</span>
-              </li> */}
             </ul>
           )}
 
@@ -101,9 +94,16 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
           onClick={() => setShowSeedRetrieveModal(false)}
         >
           <div
-            className="bg-[var(--primary-bg)] p-6 rounded-lg w-96"
+            className="bg-[var(--primary-bg)] p-6 rounded-lg w-96 flex flex-col items-center relative"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close button (X) at the top-right */}
+            <button
+              onClick={() => setShowSeedRetrieveModal(false)}
+              className="absolute top-2 right-2 text-gray-200 hover:text-white p-2 cursor-pointer"
+            >
+              <XMarkIcon className="h-6 w-6" />
+            </button>
             <WalletSeedRetreiveDisplay />
           </div>
         </div>
