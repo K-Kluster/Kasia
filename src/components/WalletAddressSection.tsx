@@ -83,7 +83,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
         >
           <div className="flex">
             <span
-              className="cursor-pointer px-3 py-6 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full h-10 flex items-center"
+              className="cursor-pointer px-3 py-2 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full min-h-10 flex items-center"
               onClick={() => {
                 console.log("Address text selected");
                 // Select the text when clicked
