@@ -196,7 +196,7 @@ export const OneLiner: FC = () => {
               isConnected={networkStore.isConnected}
             />
           ) : messageStore.isLoaded ? (
-            <div className="bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[70vh] min-h-[300px]">
+            <div className="bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[85vh] min-h-[300px]">
               <ContactSection
                 contacts={messageStore.contacts}
                 onNewChatClicked={onNewChatClicked}
@@ -215,7 +215,7 @@ export const OneLiner: FC = () => {
           ) : (
             <div className="flex flex-col items-center w-full text-xs">
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-              <div className="bg-[var(--secondary-bg)]/20 rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[70vh] min-h-[300px] relative">
+              <div className="bg-[var(--secondary-bg)]/20 rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[85vh] min-h-[300px] relative">
                 <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col justify-center items-center space-y-4">
                   <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
                     Connecting message client...
