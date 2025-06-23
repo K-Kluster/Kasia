@@ -5,6 +5,7 @@ import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { TrashIcon } from "@heroicons/react/24/outline";
+import { KaspaAddress } from "../components/KaspaAddress";
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore();
@@ -66,9 +67,10 @@ export const MessageSection: FC = () => {
       ) : (
         // SELECTED A CONTACT
         <>
-          {" "}
           <div className="messages-header">
-            <h3 className="text-base font-semibold">Messages</h3>
+            <h3 className="text-base font-semibold">
+              <KaspaAddress address={openedRecipient ?? ""} />
+            </h3>
             <div className="header-actions">
               {walletStore.address && (
                 <FetchApiMessages address={walletStore.address.toString()} />

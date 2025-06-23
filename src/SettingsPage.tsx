@@ -115,7 +115,7 @@ export const SettingsPage: React.FC = () => {
               <div className="text-red-500 mt-4">{connectionError}</div>
             )}
             {connectionSuccess && (
-              <div className="text-green-500 mt-4">
+              <div className="text-success mt-4">
                 Successfully connected to the node!
               </div>
             )}

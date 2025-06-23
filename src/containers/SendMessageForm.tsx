@@ -14,33 +14,23 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const walletStore = useWalletStore();
   const [feeEstimate, setFeeEstimate] = useState<number | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
-  const [recipient, setRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   const messageStore = useMessagingStore();
 
-  const recipientInputRef = useRef<HTMLInputElement | null>(null);
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log("Opened recipient:", openedRecipient);
-
-    if (openedRecipient && recipientInputRef.current) {
-      recipientInputRef.current.value = openedRecipient;
-      setRecipient(openedRecipient);
-      messageInputRef.current?.focus();
-    }
+    messageInputRef.current?.focus();
+    setMessage("");
   }, [openedRecipient]);
 
   useEffect(() => {
-    if (recipientInputRef.current && messageInputRef.current) {
-      recipientInputRef.current.value = "";
+    if (messageInputRef.current) {
       messageInputRef.current.value = "";
-      setRecipient("");
       setMessage("");
-      recipientInputRef.current.focus();
     }
   }, []);
 
@@ -50,7 +40,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       return;
     }
 
-    if (!message || !recipient) {
+    if (!message || !openedRecipient) {
       console.log("Cannot estimate fee: missing message or recipient");
       return;
     }
@@ -58,13 +48,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     try {
       console.log("Estimating fee for message:", {
         length: message.length,
-        recipient,
+        openedRecipient,
       });
 
       setIsEstimating(true);
       const estimate = await walletStore.estimateSendMessageFees(
         message,
-        new Address(recipient)
+        new Address(openedRecipient)
       );
 
       console.log("Fee estimate received:", estimate);
@@ -75,19 +65,19 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setIsEstimating(false);
       setFeeEstimate(null);
     }
-  }, [walletStore, message, recipient]);
+  }, [walletStore, message, openedRecipient]);
 
   // Use effect to trigger fee estimation when message or recipient changes
   useEffect(() => {
     const delayEstimation = setTimeout(() => {
-      if (recipient && message) {
+      if (openedRecipient && message) {
         console.log("Triggering fee estimation after delay");
         estimateFee();
       }
     }, 500);
 
     return () => clearTimeout(delayEstimation);
-  }, [message, recipient, estimateFee]);
+  }, [message, openedRecipient, estimateFee]);
 
   const onSendClicked = useCallback(async () => {
     if (!walletStore.address) {
@@ -104,7 +94,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       alert("Please enter a message");
       return;
     }
-    if (!recipient) {
+    if (!openedRecipient) {
       alert("Please enter a recipient address");
       return;
     }
@@ -118,7 +108,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Check if we have an active conversation with this recipient
       const activeConversations = messageStore.getActiveConversations();
       const existingConversation = activeConversations.find(
-        (conv) => conv.kaspaAddress === recipient
+        (conv) => conv.kaspaAddress === openedRecipient
       );
 
       let messageToSend = message;
@@ -162,7 +152,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // If we have an active conversation, use the context-aware sending
       if (existingConversation && existingConversation.theirAlias) {
         console.log("Sending message with conversation context:", {
-          recipient,
+          openedRecipient,
           theirAlias: existingConversation.theirAlias,
         });
 
@@ -172,7 +162,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
         // Use the account service directly for context-aware sending
         txId = await walletStore.accountService.sendMessageWithContext({
-          toAddress: new Address(recipient),
+          toAddress: new Address(openedRecipient),
           message: messageToSend,
           password: walletStore.unlockedWallet.password,
           theirAlias: existingConversation.theirAlias,
@@ -182,7 +172,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         console.log("No active conversation found, sending regular message");
         txId = await walletStore.sendMessage(
           messageToSend,
-          new Address(recipient),
+          new Address(openedRecipient),
           walletStore.unlockedWallet.password
         );
       }
@@ -193,7 +183,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       const newMessageData: Message = {
         transactionId: txId,
         senderAddress: walletStore.address.toString(),
-        recipientAddress: recipient,
+        recipientAddress: openedRecipient,
         timestamp: Date.now(),
         content: fileDataForStorage
           ? JSON.stringify(fileDataForStorage)
@@ -206,7 +196,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Store message under both sender and recipient addresses for proper conversation grouping
       messageStore.storeMessage(newMessageData, walletStore.address.toString());
-      messageStore.storeMessage(newMessageData, recipient);
+      messageStore.storeMessage(newMessageData, openedRecipient);
       messageStore.addMessages([newMessageData]);
 
       // Only reset the message input, keep the recipient
@@ -215,12 +205,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setFeeEstimate(null);
 
       // Keep the conversation open with the same recipient
-      messageStore.setOpenedRecipient(recipient);
+      messageStore.setOpenedRecipient(openedRecipient);
     } catch (error) {
       console.error("Error sending message:", error);
       alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [messageStore, walletStore, message, recipient, feeEstimate]);
+  }, [messageStore, walletStore, message, openedRecipient, feeEstimate]);
 
   const onMessageInputKeyPressed = useCallback(
     (e: KeyboardEvent) => {
@@ -317,16 +307,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   return (
     <div className="message-input-container cursor-text">
-      <Input
-        ref={recipientInputRef}
-        type="text"
-        id="recipientAddress"
-        placeholder={"Conversation with:"}
-        className="recipient-input"
-        value={recipient}
-        readOnly={true}
-        title={`Conversation with: ${recipient}`}
-      />
       <div className="message-input-wrapper">
         <Input
           ref={messageInputRef}
