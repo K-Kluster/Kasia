@@ -372,7 +372,11 @@ export const useWalletStore = create<WalletState>((set, get) => {
         _accountService = null;
       }
 
-      set({ rpcClient: null, address: null, isAccountServiceRunning: false });
+      set({
+        rpcClient: null,
+        address: null,
+        isAccountServiceRunning: false,
+      });
     },
 
     estimateSendMessageFees: async (message: string, toAddress: Address) => {

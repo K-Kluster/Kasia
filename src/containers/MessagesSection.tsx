@@ -6,6 +6,7 @@ import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { toast } from "../utils/toast";
 import { TrashIcon } from "@heroicons/react/24/outline";
+import { KaspaAddress } from "../components/KaspaAddress";
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore();
@@ -49,7 +50,8 @@ export const MessageSection: FC = () => {
           <div className="messages-list">
             <div className="no-messages">
               Start by funding your wallet with some Kas (should be a small
-              amount such as 10 Kas) and chat to someone by clicking the add (+) button on the top-left corner
+              amount such as 10 Kas) and chat to someone by clicking the add (+)
+              button on the top-left corner
             </div>
           </div>
         </>
@@ -66,17 +68,15 @@ export const MessageSection: FC = () => {
       ) : (
         // SELECTED A CONTACT
         <>
-          {" "}
           <div className="messages-header">
-            <h3 className="text-base font-semibold">Messages</h3>
+            <h3 className="text-base font-semibold">
+              <KaspaAddress address={openedRecipient ?? ""} />
+            </h3>
             <div className="header-actions">
               {walletStore.address && (
                 <FetchApiMessages address={walletStore.address.toString()} />
               )}
-              <button
-                    className="cursor-pointer p-2"
-                onClick={onClearHistory}
-              >
+              <button className="cursor-pointer p-2" onClick={onClearHistory}>
                 <TrashIcon className="w-6 h-6 text-red-200 hover:scale-110" />
               </button>
             </div>
@@ -90,11 +90,7 @@ export const MessageSection: FC = () => {
               }
             }}
           >
-            {messageStore.isCreatingNewChat ? (
-              <div className="no-messages">
-                Enter a recipient address to start a new conversation.
-              </div>
-            ) : messageStore.messagesOnOpenedRecipient.length ? (
+            {messageStore.messagesOnOpenedRecipient.length ? (
               messageStore.messagesOnOpenedRecipient.map((msg) => (
                 <MessageDisplay
                   isOutgoing={

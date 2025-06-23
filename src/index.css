@@ -12,6 +12,11 @@
   --accent-purple: #8b5cf6;
   --accent-green: #10b981;
   --accent-yellow: #f59e0b;
+  --color-success: #10b981;
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
 
   --animate-fade-in: fade-in 0.5s ease forwards;
 
@@ -921,4 +926,3 @@ h1 {
   align-items: center;
   gap: 0.5rem;
 }
-

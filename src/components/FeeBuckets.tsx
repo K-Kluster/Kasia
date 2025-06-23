@@ -1,6 +1,6 @@
-import { FC, useEffect, useState } from 'react';
-import { formatKasAmount } from '../utils/format';
-import { useWalletStore } from '../store/wallet.store';
+import { FC, useEffect, useState } from "react";
+import { formatKasAmount } from "../utils/format";
+import { useWalletStore } from "../store/wallet.store";
 
 interface FeeBucketsProps {
   inline?: boolean;
@@ -26,27 +26,27 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
   useEffect(() => {
     const fetchFeeEstimates = async () => {
       if (!rpcClient?.rpc) return;
-      
+
       try {
         setLoading(true);
         setError(null);
-        
+
         // Get fee estimates from RPC client
         const result = await rpcClient.rpc.getFeeEstimate();
-        console.log('Fee estimates raw response:', result);
-        
+        console.log("Fee estimates raw response:", result);
+
         // Store the entire response for debugging
         setFeeEstimate(result);
       } catch (err) {
-        console.error('Failed to fetch fee estimates:', err);
-        setError('Failed to fetch fee estimates');
+        console.error("Failed to fetch fee estimates:", err);
+        setError("Failed to fetch fee estimates");
       } finally {
         setLoading(false);
       }
     };
 
     fetchFeeEstimates();
-    
+
     // Refresh every 2 minutes
     const interval = setInterval(fetchFeeEstimates, 2 * 60 * 1000);
     return () => clearInterval(interval);
@@ -72,7 +72,7 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
 
   // Early return if no estimate available
   if (!feeEstimate) return null;
-  
+
   // Get the estimate from the response
   const estimate = feeEstimate.estimate || {};
 
@@ -85,9 +85,9 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
 
   // Helper function to safely format time
   const formatTime = (seconds: any) => {
-    if (seconds === undefined || seconds === null) return 'N/A';
+    if (seconds === undefined || seconds === null) return "N/A";
     const value = Number(seconds);
-    if (isNaN(value)) return 'N/A';
+    if (isNaN(value)) return "N/A";
 
     // Handle different time scales
     if (value < 0.001) {
@@ -106,30 +106,36 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
     return (
       <div className="fee-buckets-inline">
         {estimate.priorityBucket && (
-          <div 
-            className="fee-rate-inline priority" 
+          <div
+            className="fee-rate-inline priority"
             title={`Fast - Time: ${formatTime(estimate.priorityBucket.estimatedSeconds)} - Fee: ${calculateAndFormatFee(estimate.priorityBucket.feerate)} KAS`}
           >
             <span className="fee-label">P:</span>
-            <span className="fee-value">{calculateAndFormatFee(estimate.priorityBucket.feerate)}</span>
+            <span className="fee-value">
+              {calculateAndFormatFee(estimate.priorityBucket.feerate)}
+            </span>
           </div>
         )}
         {estimate.normalBuckets && estimate.normalBuckets.length > 0 && (
-          <div 
-            className="fee-rate-inline normal" 
+          <div
+            className="fee-rate-inline normal"
             title={`Normal - Time: ${formatTime(estimate.normalBuckets[0]?.estimatedSeconds)} - Fee: ${calculateAndFormatFee(estimate.normalBuckets[0]?.feerate)} KAS`}
           >
             <span className="fee-label">N:</span>
-            <span className="fee-value">{calculateAndFormatFee(estimate.normalBuckets[0]?.feerate)}</span>
+            <span className="fee-value">
+              {calculateAndFormatFee(estimate.normalBuckets[0]?.feerate)}
+            </span>
           </div>
         )}
         {estimate.lowBuckets && estimate.lowBuckets.length > 0 && (
-          <div 
-            className="fee-rate-inline low" 
+          <div
+            className="fee-rate-inline low"
             title={`Slow - Time: ${formatTime(estimate.lowBuckets[0]?.estimatedSeconds)} - Fee: ${calculateAndFormatFee(estimate.lowBuckets[0]?.feerate)} KAS`}
           >
             <span className="fee-label">L:</span>
-            <span className="fee-value">{calculateAndFormatFee(estimate.lowBuckets[0]?.feerate)}</span>
+            <span className="fee-value">
+              {calculateAndFormatFee(estimate.lowBuckets[0]?.feerate)}
+            </span>
           </div>
         )}
       </div>
@@ -139,7 +145,7 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
   return (
     <div className="fee-buckets">
       <h4>Network Fees</h4>
-      
+
       {estimate.priorityBucket && (
         <div className="fee-bucket priority">
           <div className="fee-bucket-header">Fast</div>
@@ -151,7 +157,7 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
           </div>
         </div>
       )}
-      
+
       {estimate.normalBuckets && estimate.normalBuckets.length > 0 && (
         <div className="fee-bucket normal">
           <div className="fee-bucket-header">Normal</div>
@@ -163,7 +169,7 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
           </div>
         </div>
       )}
-      
+
       {estimate.lowBuckets && estimate.lowBuckets.length > 0 && (
         <div className="fee-bucket low">
           <div className="fee-bucket-header">Slow</div>
@@ -177,8 +183,11 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
       )}
 
       <div className="fee-buckets-info">
-        <small>Fees calculated for standard transaction size ({STANDARD_TRANSACTION_MASS} grams)</small>
+        <small>
+          Fees calculated for standard transaction size (
+          {STANDARD_TRANSACTION_MASS} grams)
+        </small>
       </div>
     </div>
   );
-}; 
+};

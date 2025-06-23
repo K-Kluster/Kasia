@@ -469,13 +469,13 @@ export class KaspaClient {
         const wrappedCallback = (event: IBlockAdded) => {
           try {
             // Log the event using BigInt-safe stringifier
-            console.log(
-              `Received block-added event: ${stringifyWithBigInt(event)}`
-            );
+            // console.log(
+            //   `Received block-added event: ${stringifyWithBigInt(event)}`
+            // );
 
             // Process transactions if they exist
             const transactions = event?.transactions || [];
-            console.log(`Block contains ${transactions.length} transactions`);
+            // console.log(`Block contains ${transactions.length} transactions`);
 
             // Call the original callback
             callback(event);

@@ -493,10 +493,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   setIsCreatingNewChat: (isCreatingNewChat) => {
     set({ isCreatingNewChat });
-
-    if (isCreatingNewChat) {
-      set({ openedRecipient: null, messagesOnOpenedRecipient: [] });
-    }
   },
   exportMessages: async (wallet, password) => {
     try {
@@ -814,9 +810,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     // Create the handshake payload
-    const { payload, conversation } = await manager.initiateHandshake(
-      recipientAddress
-    );
+    const { payload, conversation } =
+      await manager.initiateHandshake(recipientAddress);
 
     // Send the handshake message
     console.log("Sending handshake message to:", recipientAddress);
@@ -935,7 +930,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         if (conversation) {
           conversation.status = "active";
           conversation.lastActivity = Date.now();
-          manager.updateConversation({ ...conversation, status: "active" });
+          manager.updateConversation({
+            ...conversation,
+            status: "active",
+          });
         }
 
         // Update the handshake status in the store
@@ -943,7 +941,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           ...state,
           handshakes: state.handshakes.map((h) =>
             h.conversationId === handshake.conversationId
-              ? { ...h, status: "active", lastActivity: Date.now() }
+              ? {
+                  ...h,
+                  status: "active",
+                  lastActivity: Date.now(),
+                }
               : h
           ),
         }));

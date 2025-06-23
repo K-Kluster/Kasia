@@ -142,7 +142,7 @@
 }
 
 .form-actions button:last-child {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 
@@ -294,7 +294,7 @@
 }
 
 .show-phrase-toggle label {
-  color: #4CAF50;
+  color: #4caf50;
   font-size: 14px;
   cursor: pointer;
   user-select: none;
@@ -333,7 +333,7 @@
   padding: 8px;
   background-color: #2a3042;
   border-radius: 4px;
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .word-number {
@@ -469,18 +469,18 @@
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .wallet-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .derivation-options,
   .seed-length-options {
     gap: 0.5rem;
   }
-  
+
   .radio-option {
     padding: 0.5rem;
   }
-} 
+}

@@ -1,12 +1,6 @@
 import { FC, useState, useEffect, useRef } from "react";
 import { Message as MessageType } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
-import { formatKasAmount } from "../utils/format";
-import {
-  decrypt_message,
-  decrypt_message_with_bytes,
-  decrypt_with_secret_key,
-} from "cipher";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
@@ -28,13 +22,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     timestamp,
     payload,
     content,
-    amount,
     fee,
     transactionId,
     fileData,
   } = message;
 
-  const displayAddress = isOutgoing ? recipientAddress : senderAddress;
   const walletStore = useWalletStore();
   const messagingStore = useMessagingStore();
   const mounted = useRef(true);
@@ -144,7 +136,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     }
 
     // Only use decrypted content if decryption was attempted and successful
-    let messageToRender = (decryptionAttempted && decryptedContent) || content;
+    const messageToRender =
+      (decryptionAttempted && decryptedContent) || content;
 
     // Handle file/image messages
     if (fileData && fileData.type === "file") {
@@ -160,7 +153,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return (
         <div className="file-message">
           <div className="file-info">
-            📎 {fileData.name} ({Math.round(fileData.size / 1024)}KB)
+            📎 {fileData.name} ({Math.round(fileData.size / 1024)}
+            KB)
           </div>
           <button
             className="download-button"
