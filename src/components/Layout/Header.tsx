@@ -31,9 +31,15 @@ export const Header: FC<Props> = ({
 }) => {
   return (
     <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
-      <div className="app-title flex items-center gap-2">
-        <img src="/kasia-logo.png" alt="Kasia Logo" className="app-logo" />
-        <h1 className="text-xl font-bold">Kasia</h1>
+      <div className="flex items-center gap-2">
+        <img
+          src="/kasia-logo.png"
+          alt="Kasia Logo"
+          className="w-[60px] h-[60px] object-contain -mr-6"
+        />
+        <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
+          Kasia
+        </div>
       </div>
 
       {isWalletReady && (
@@ -47,7 +53,7 @@ export const Header: FC<Props> = ({
             className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
             aria-label="Settings"
           >
-            <Bars3Icon className="h-6 w-6 text-white" />
+            <Bars3Icon className="h-8 w-8 text-kas-primary animate-pulse" />
           </button>
 
           {!isWalletInfoOpen ? (

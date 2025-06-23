@@ -20,7 +20,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
   walletAddress,
 }) => {
   return (
-    <div className="w-[200px] md:w-[280px] bg-[var(--primary-bg)] border-r border-[var(--border-color)] flex flex-col">
+    <div className="w-full sm:w-[200px] md:w-[280px] bg-[var(--primary-bg)] border-r border-[var(--border-color)] flex flex-col">
       <div className="px-4 py-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]">
         <div className="font-bold">Conversations</div>
         <button

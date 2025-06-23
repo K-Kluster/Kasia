@@ -880,27 +880,6 @@ h1 {
   cursor: pointer;
 }
 
-.app-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.app-logo {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-  margin-right: -1.5rem;
-}
-
-.app-title h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-  margin-left: 1rem;
-  color: var(--text-primary);
-}
-
 .header-right {
   display: flex;
   align-items: center;
