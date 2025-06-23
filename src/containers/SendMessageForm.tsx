@@ -217,6 +217,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       toast.error("Please enter a message.");
       return;
     }
+
     if (!openedRecipient) {
       toast.error("Please enter a recipient address.");
     }
