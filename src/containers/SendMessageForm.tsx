@@ -8,6 +8,7 @@ import { Address, kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
 import { createWithdrawTransaction } from "../service/account-service";
 import clsx from "clsx";
+import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 
 // Backwards K icon component for Kaspa
 const BackwardsKIcon: FC<{ className?: string }> = ({ className }) => (
@@ -439,7 +440,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           onChange={(e) => {
             const value = e.target.value;
             setMessage(value);
-            setFeeEstimate(null);
           }}
           autoComplete="off"
           spellCheck="false"
@@ -454,11 +454,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="file-upload-button"
+          className="w-5 h-5 m-1 flex items-center justify-center cursor-pointer text-gray-300 hover:text-gray-200"
           title="Upload file (images up to 100KB, other files up to 10KB)"
           disabled={isUploading}
         >
-          📎
+          <PaperClipIcon className="w-full h-full" />
         </button>
         <button
           onClick={handlePayClick}
@@ -476,8 +476,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <BackwardsKIcon className="w-4 h-4" />
           Pay
         </button>
-        <button onClick={onSendClicked} id="sendButton" className="send-button">
-          Send
+        <button
+          onClick={onSendClicked}
+          className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
+        >
+          <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
 
@@ -543,10 +546,22 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         </div>
       )}
 
-      {isEstimating && <div className="fee-estimate">Estimating fee...</div>}
-      {!isEstimating && feeEstimate !== null && (
+      {/* Enhanced fee estimate - no more flashing */}
+      {recipient && message && (
         <div className="fee-estimate">
-          Estimated fee: {formatKasAmount(feeEstimate)} KAS
+          {isEstimating ? (
+            <span>
+              {feeEstimate !== null ? (
+                <>Updating fee estimate... {formatKasAmount(feeEstimate)} KAS</>
+              ) : (
+                <>Estimating fee...</>
+              )}
+            </span>
+          ) : feeEstimate !== null ? (
+            <span>Estimated fee: {formatKasAmount(feeEstimate)} KAS</span>
+          ) : (
+            <span>Calculating fee...</span>
+          )}
         </div>
       )}
     </div>
