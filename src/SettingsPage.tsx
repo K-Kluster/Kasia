@@ -19,7 +19,7 @@ export const SettingsPage: React.FC = () => {
   const [nodeUrl, setNodeUrl] = useState(
     networkStore.nodeUrl ??
       localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
-      "",
+      ""
   );
 
   // Network connection effect
@@ -46,7 +46,7 @@ export const SettingsPage: React.FC = () => {
 
       connect();
     },
-    [connect, networkStore],
+    [connect, networkStore]
   );
 
   const handleSaveNodeUrl = useCallback(async () => {
@@ -105,7 +105,7 @@ export const SettingsPage: React.FC = () => {
                 onClick={handleSaveNodeUrl}
                 className={clsx(
                   "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
-                  isConnecting && "opacity-50 cursor-not-allowed",
+                  isConnecting && "opacity-50 cursor-not-allowed"
                 )}
               >
                 Save

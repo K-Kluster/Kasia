@@ -52,7 +52,7 @@ export const OneLiner: FC = () => {
       // Trigger reconnection when network changes
       connect();
     },
-    [connect, networkStore],
+    [connect, networkStore]
   );
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export const OneLiner: FC = () => {
     } catch (error) {
       console.error("Failed to start new chat:", error);
       setErrorMessage(
-        `Failed to start new chat: ${unknownErrorToErrorLike(error)}`,
+        `Failed to start new chat: ${unknownErrorToErrorLike(error)}`
       );
     }
   }, [walletStore.unlockedWallet, messageStore]);
@@ -94,7 +94,7 @@ export const OneLiner: FC = () => {
       setErrorMessage(null);
       if (!networkStore.kaspaClient || !networkStore.isConnected) {
         setErrorMessage(
-          "Please choose a network and connect to the Kaspa Network first",
+          "Please choose a network and connect to the Kaspa Network first"
         );
         return;
       }
@@ -107,7 +107,7 @@ export const OneLiner: FC = () => {
       setMessageStoreLoading(true);
 
       const { receiveAddress } = await walletStore.start(
-        networkStore.kaspaClient,
+        networkStore.kaspaClient
       );
       const receiveAddressStr = receiveAddress.toString();
 
@@ -139,7 +139,7 @@ export const OneLiner: FC = () => {
     } catch (error) {
       console.error("Failed to start messaging process:", error);
       setErrorMessage(
-        `Failed to start messaging: ${unknownErrorToErrorLike(error)}`,
+        `Failed to start messaging: ${unknownErrorToErrorLike(error)}`
       );
     } finally {
       setMessageStoreLoading(false);
@@ -161,7 +161,7 @@ export const OneLiner: FC = () => {
       messageStore.setIsCreatingNewChat(false);
       messageStore.setOpenedRecipient(contact.address);
     },
-    [messageStore, walletStore.address],
+    [messageStore, walletStore.address]
   );
 
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
@@ -232,7 +232,7 @@ export const OneLiner: FC = () => {
                   <button
                     className={clsx(
                       "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white font-bold py-2 px-4 rounded cursor-pointer",
-                      { "opacity-50 cursor-not-allowed": messageStoreLoading },
+                      { "opacity-50 cursor-not-allowed": messageStoreLoading }
                     )}
                     onClick={onStartMessagingProcessClicked}
                   >
@@ -270,7 +270,7 @@ export const OneLiner: FC = () => {
               {messageStore.contacts
                 ?.filter(
                   (c) =>
-                    c.address && c.address !== walletStore.address?.toString(),
+                    c.address && c.address !== walletStore.address?.toString()
                 )
                 .map((c) => (
                   <ContactCard

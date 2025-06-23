@@ -38,7 +38,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       const { address: eventAddress } = event.detail;
       console.log(
         "Received kasia-trigger-api-fetch event for address:",
-        eventAddress,
+        eventAddress
       );
 
       // Only trigger if this component matches the address
@@ -51,14 +51,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
     // Listen for the custom event
     window.addEventListener(
       "kasia-trigger-api-fetch",
-      handleTriggerApiFetch as EventListener,
+      handleTriggerApiFetch as EventListener
     );
 
     // Cleanup
     return () => {
       window.removeEventListener(
         "kasia-trigger-api-fetch",
-        handleTriggerApiFetch as EventListener,
+        handleTriggerApiFetch as EventListener
       );
     };
   }, [address, walletStore.unlockedWallet]);
@@ -74,7 +74,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
     // Get the private key generator
     const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
       walletStore.unlockedWallet,
-      walletStore.unlockedWallet.password,
+      walletStore.unlockedWallet.password
     );
 
     try {
@@ -99,7 +99,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       // Load existing messages to avoid duplicates
       const existingMessages = messagingStore.loadMessages(address);
       const existingTxIds = new Set(
-        existingMessages.map((msg) => msg.transactionId),
+        existingMessages.map((msg) => msg.transactionId)
       );
 
       // Fetch and process messages for each address, in parallel
@@ -111,36 +111,36 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             : encodeURIComponent(
                 `${
                   networkId === "mainnet" ? "kaspa:" : "kaspatest:"
-                }${currentAddress}`,
+                }${currentAddress}`
               );
 
           const apiUrl = `${baseUrl}/addresses/${formattedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=light`;
 
           console.log(
             `API Messages: Fetching from URL for address ${currentAddress}:`,
-            apiUrl,
+            apiUrl
           );
 
           const response = await fetch(apiUrl);
           if (!response.ok) {
             console.error(
-              `API error for address ${currentAddress}: ${response.status} ${response.statusText}`,
+              `API error for address ${currentAddress}: ${response.status} ${response.statusText}`
             );
             return;
           }
 
           const transactions: Transaction[] = await response.json();
           console.log(
-            `API Messages: Fetched ${transactions.length} transactions for ${currentAddress}`,
+            `API Messages: Fetched ${transactions.length} transactions for ${currentAddress}`
           );
 
           // Process only encrypted message transactions
           const messageTxs = transactions.filter(
-            (tx) => tx.payload && tx.payload.startsWith("636970685f6d73673a"),
+            (tx) => tx.payload && tx.payload.startsWith("636970685f6d73673a")
           );
 
           console.log(
-            `API Messages: Found ${messageTxs.length} encrypted message transactions for ${currentAddress}`,
+            `API Messages: Found ${messageTxs.length} encrypted message transactions for ${currentAddress}`
           );
 
           // Process each transaction
@@ -148,14 +148,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             // Skip if we already have this transaction
             if (existingTxIds.has(tx.transaction_id)) {
               console.log(
-                `API Messages: Skipping existing transaction: ${tx.transaction_id}`,
+                `API Messages: Skipping existing transaction: ${tx.transaction_id}`
               );
               continue;
             }
 
             console.log(
               `API Messages: Processing new transaction: ${tx.transaction_id}`,
-              { tx },
+              { tx }
             );
 
             // For each transaction, determine if this is incoming or outgoing
@@ -172,7 +172,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             console.log(`- Recipient address: ${recipientAddress}`);
             console.log(`- Is incoming: ${isIncoming}`);
             console.log(
-              `- Input[0] previous_outpoint_address: ${tx.inputs[0]?.previous_outpoint_address}`,
+              `- Input[0] previous_outpoint_address: ${tx.inputs[0]?.previous_outpoint_address}`
             );
             console.log(`- Determined sender address: ${senderAddress}`);
 
@@ -187,8 +187,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   console.log(
                     `API Messages: Invalid message format, missing prefix: ${tx.payload.substring(
                       0,
-                      20,
-                    )}...`,
+                      20
+                    )}...`
                   );
                   continue;
                 }
@@ -196,7 +196,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 console.log(`API Messages: Full payload: ${tx.payload}`);
                 const messageHex = tx.payload.substring(prefix.length);
                 console.log(
-                  `API Messages: Message hex after prefix: ${messageHex}`,
+                  `API Messages: Message hex after prefix: ${messageHex}`
                 );
 
                 const handshakePrefix = "313a68616e647368616b653a"; // "1:handshake:"
@@ -237,8 +237,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 console.log(
                   `- Encrypted content (first 40 chars): ${encryptedContent?.substring(
                     0,
-                    40,
-                  )}...`,
+                    40
+                  )}...`
                 );
 
                 if (!encryptedContent) {
@@ -247,7 +247,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 }
 
                 console.log(
-                  `API Messages: Using wallet derivation type: ${walletStore.unlockedWallet.derivationType}`,
+                  `API Messages: Using wallet derivation type: ${walletStore.unlockedWallet.derivationType}`
                 );
 
                 // Try multiple private keys
@@ -260,15 +260,15 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
                   try {
                     console.log(
-                      `API Messages: Trying receive key at index ${i}`,
+                      `API Messages: Trying receive key at index ${i}`
                     );
                     const privateKey = privateKeyGenerator.receiveKey(i);
                     const privateKeyHex = privateKey.toString();
                     console.log(
                       `API Messages: Using receive key ${privateKeyHex.substring(
                         0,
-                        8,
-                      )}...`,
+                        8
+                      )}...`
                     );
 
                     // Use CipherHelper for robust decryption
@@ -276,7 +276,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     const result = await CipherHelper.tryDecrypt(
                       encryptedContent,
                       privateKeyHex,
-                      messageId,
+                      messageId
                     );
 
                     if (result) {
@@ -287,8 +287,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       console.log(
                         `API Messages: Successfully decrypted with receive key at index ${i} (${privateKeyHex.substring(
                           0,
-                          8,
-                        )}...)`,
+                          8
+                        )}...)`
                       );
 
                       // If this is a handshake message and sender is still unknown, try to extract from payload
@@ -298,7 +298,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       ) {
                         try {
                           const handshakeMatch = result.match(
-                            /ciph_msg:1:handshake:(.+)/,
+                            /ciph_msg:1:handshake:(.+)/
                           );
                           if (handshakeMatch) {
                             const handshakeData = JSON.parse(handshakeMatch[1]);
@@ -309,7 +309,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                             ) {
                               // In a handshake response, the recipientAddress field contains the original initiator's address
                               console.log(
-                                `API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`,
+                                `API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`
                               );
                               senderAddress = handshakeData.recipientAddress;
                             } else if (!handshakeData.isResponse) {
@@ -317,11 +317,11 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                               const changeOutput = tx.outputs.find(
                                 (output) =>
                                   output.script_public_key_address !==
-                                  currentAddress,
+                                  currentAddress
                               );
                               if (changeOutput) {
                                 console.log(
-                                  `API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`,
+                                  `API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`
                                 );
                                 senderAddress =
                                   changeOutput.script_public_key_address ||
@@ -331,7 +331,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                           }
                         } catch (e) {
                           console.log(
-                            `API Messages: Could not extract sender from handshake payload: ${e}`,
+                            `API Messages: Could not extract sender from handshake payload: ${e}`
                           );
                         }
                       }
@@ -350,7 +350,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                       messagingStore.storeMessage(
                         message,
-                        walletStore.address?.toString() || "",
+                        walletStore.address?.toString() || ""
                       );
                       break;
                     }
@@ -358,7 +358,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     console.log(
                       `API Messages: Failed to decrypt with receive key at index ${i}: ${
                         unknownErrorToErrorLike(error).message
-                      }`,
+                      }`
                     );
                   }
                 }
@@ -368,15 +368,15 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
                     try {
                       console.log(
-                        `API Messages: Trying change key at index ${i}`,
+                        `API Messages: Trying change key at index ${i}`
                       );
                       const privateKey = privateKeyGenerator.changeKey(i);
                       const privateKeyHex = privateKey.toString();
                       console.log(
                         `API Messages: Using change key ${privateKeyHex.substring(
                           0,
-                          8,
-                        )}...`,
+                          8
+                        )}...`
                       );
 
                       // Use CipherHelper for robust decryption
@@ -384,7 +384,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       const result = await CipherHelper.tryDecrypt(
                         encryptedContent,
                         privateKeyHex,
-                        messageId,
+                        messageId
                       );
 
                       if (result) {
@@ -395,8 +395,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         console.log(
                           `API Messages: Successfully decrypted with change key at index ${i} (${privateKeyHex.substring(
                             0,
-                            8,
-                          )}...)`,
+                            8
+                          )}...)`
                         );
 
                         // If this is a handshake message and sender is still unknown, try to extract from payload
@@ -406,11 +406,11 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         ) {
                           try {
                             const handshakeMatch = result.match(
-                              /ciph_msg:1:handshake:(.+)/,
+                              /ciph_msg:1:handshake:(.+)/
                             );
                             if (handshakeMatch) {
                               const handshakeData = JSON.parse(
-                                handshakeMatch[1],
+                                handshakeMatch[1]
                               );
                               // For handshake responses, look for the original recipient address
                               if (
@@ -419,7 +419,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                               ) {
                                 // In a handshake response, the recipientAddress field contains the original initiator's address
                                 console.log(
-                                  `API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`,
+                                  `API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`
                                 );
                                 senderAddress = handshakeData.recipientAddress;
                               } else if (!handshakeData.isResponse) {
@@ -427,11 +427,11 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                                 const changeOutput = tx.outputs.find(
                                   (output) =>
                                     output.script_public_key_address !==
-                                    currentAddress,
+                                    currentAddress
                                 );
                                 if (changeOutput) {
                                   console.log(
-                                    `API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`,
+                                    `API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`
                                   );
                                   senderAddress =
                                     changeOutput.script_public_key_address ||
@@ -441,7 +441,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                             }
                           } catch (e) {
                             console.log(
-                              `API Messages: Could not extract sender from handshake payload: ${e}`,
+                              `API Messages: Could not extract sender from handshake payload: ${e}`
                             );
                           }
                         }
@@ -460,7 +460,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                         messagingStore.storeMessage(
                           message,
-                          walletStore.address?.toString() || "",
+                          walletStore.address?.toString() || ""
                         );
                         break;
                       }
@@ -468,7 +468,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       console.log(
                         `API Messages: Failed to decrypt with change key at index ${i}: ${
                           unknownErrorToErrorLike(error).message
-                        }`,
+                        }`
                       );
                     }
                   }
@@ -480,26 +480,26 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   walletStore.unlockedWallet.derivationType === "standard"
                 ) {
                   console.log(
-                    `API Messages: Trying legacy derivation keys as fallback...`,
+                    `API Messages: Trying legacy derivation keys as fallback...`
                   );
 
                   // Create a temporary legacy key generator
                   const seed = decryptXChaCha20Poly1305(
                     walletStore.unlockedWallet.encryptedXPrv,
-                    walletStore.unlockedWallet.password,
+                    walletStore.unlockedWallet.password
                   );
                   const xprv = new XPrv(seed);
                   const legacyKeyGenerator = new PrivateKeyGenerator(
                     xprv,
                     false,
-                    BigInt(1),
+                    BigInt(1)
                   ); // Legacy uses account index 1
 
                   // Try legacy receive keys
                   for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
                     try {
                       console.log(
-                        `API Messages: Trying legacy receive key at index ${i}`,
+                        `API Messages: Trying legacy receive key at index ${i}`
                       );
                       const privateKey = legacyKeyGenerator.receiveKey(i);
                       const privateKeyHex = privateKey.toString();
@@ -508,7 +508,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       const result = await CipherHelper.tryDecrypt(
                         encryptedContent,
                         privateKeyHex,
-                        messageId,
+                        messageId
                       );
 
                       if (result) {
@@ -517,7 +517,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         successfulKeyType = "legacy_receive";
                         successfulKeyIndex = i;
                         console.log(
-                          `API Messages: Successfully decrypted with legacy receive key at index ${i}`,
+                          `API Messages: Successfully decrypted with legacy receive key at index ${i}`
                         );
 
                         // Extract sender from handshake payload if needed
@@ -527,25 +527,25 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         ) {
                           try {
                             const handshakeMatch = result.match(
-                              /ciph_msg:1:handshake:(.+)/,
+                              /ciph_msg:1:handshake:(.+)/
                             );
                             if (handshakeMatch) {
                               const handshakeData = JSON.parse(
-                                handshakeMatch[1],
+                                handshakeMatch[1]
                               );
                               if (
                                 handshakeData.isResponse &&
                                 handshakeData.recipientAddress
                               ) {
                                 console.log(
-                                  `API Messages: Extracted sender from legacy handshake response: ${handshakeData.recipientAddress}`,
+                                  `API Messages: Extracted sender from legacy handshake response: ${handshakeData.recipientAddress}`
                                 );
                                 senderAddress = handshakeData.recipientAddress;
                               }
                             }
                           } catch (e) {
                             console.log(
-                              `API Messages: Could not extract sender from legacy handshake payload: ${e}`,
+                              `API Messages: Could not extract sender from legacy handshake payload: ${e}`
                             );
                           }
                         }
@@ -564,7 +564,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                         messagingStore.storeMessage(
                           message,
-                          walletStore.address?.toString() || "",
+                          walletStore.address?.toString() || ""
                         );
                         break;
                       }
@@ -572,7 +572,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       console.log(
                         `API Messages: Failed to decrypt with legacy receive key at index ${i}: ${
                           unknownErrorToErrorLike(error).message
-                        }`,
+                        }`
                       );
                     }
                   }
@@ -586,15 +586,15 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       walletStore.unlockedWallet.derivationType === "standard"
                         ? " and legacy keys"
                         : ""
-                    }`,
+                    }`
                   );
                   decryptedContent = "[Could not decrypt message]";
                 } else {
                   console.log(
-                    `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex}`,
+                    `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex}`
                   );
                   console.log(
-                    `API Messages: Decrypted content: ${decryptedContent}`,
+                    `API Messages: Decrypted content: ${decryptedContent}`
                   );
                 }
               } catch (error) {
@@ -613,7 +613,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             ) {
               // Check if the message contains any of our monitored aliases
               const containsMonitoredAlias = Array.from(
-                aliasToConversation.keys(),
+                aliasToConversation.keys()
               ).some((alias) => decryptedContent.includes(alias));
 
               // Store the message if it contains our alias or involves our current address
@@ -637,7 +637,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
               }
             }
           }
-        }),
+        })
       );
 
       // Update UI with all messages
@@ -659,7 +659,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         disabled={loading}
         className={clsx(
           "flex items-center justify-center gap-2 px-4 py-2 rounded-md w-full cursor-pointer",
-          { "cursor-not-allowed": loading },
+          { "cursor-not-allowed": loading }
         )}
         title={
           error ? `Error: ${error}` : "Fetch latest messages from blockchain"

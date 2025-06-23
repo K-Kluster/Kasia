@@ -18,10 +18,10 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   onClose,
 }) => {
   const isAccountServiceRunning = useWalletStore(
-    (s) => s.isAccountServiceRunning,
+    (s) => s.isAccountServiceRunning
   );
   const unlockedWalletName = useWalletStore(
-    (state) => state.unlockedWallet?.name,
+    (state) => state.unlockedWallet?.name
   );
   const walletBalance = useWalletStore((s) => s.balance);
 

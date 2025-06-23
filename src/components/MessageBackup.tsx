@@ -15,7 +15,7 @@ export const MessageBackup: React.FC = () => {
     try {
       const blob = await messageStore.exportMessages(
         walletStore.unlockedWallet,
-        walletStore.unlockedWallet.password,
+        walletStore.unlockedWallet.password
       );
 
       const url = URL.createObjectURL(blob);
@@ -58,20 +58,20 @@ export const MessageBackup: React.FC = () => {
         await messageStore.importMessages(
           file,
           walletStore.unlockedWallet,
-          walletStore.unlockedWallet.password,
+          walletStore.unlockedWallet.password
         );
         alert("Messages imported successfully!");
       } catch (error: unknown) {
         console.error("Error importing messages:", error);
         alert(
-          error instanceof Error ? error.message : "Failed to import messages",
+          error instanceof Error ? error.message : "Failed to import messages"
         );
       }
 
       // Clear the input
       event.target.value = "";
     },
-    [messageStore, walletStore.unlockedWallet],
+    [messageStore, walletStore.unlockedWallet]
   );
 
   return (

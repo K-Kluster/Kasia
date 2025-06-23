@@ -75,7 +75,7 @@ export const ContactCard: FC<{
       if (contact.lastMessage?.payload?.includes("handshake")) {
         try {
           const handshakeMatch = contact.lastMessage.payload.match(
-            /ciph_msg:1:handshake:(.+)/,
+            /ciph_msg:1:handshake:(.+)/
           );
           if (handshakeMatch) {
             const handshakeData = JSON.parse(handshakeMatch[1]);
@@ -129,7 +129,7 @@ export const ContactCard: FC<{
         {
           "border-[var(--accent-blue)]": isSelected,
           "border-transparent": !isSelected,
-        },
+        }
       )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
     >

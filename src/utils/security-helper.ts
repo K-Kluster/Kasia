@@ -34,7 +34,7 @@ export class SecurityHelper {
     // Check max attempts
     if (attempts >= this.MAX_ATTEMPTS) {
       CipherHelper.error(
-        `Max decryption attempts reached for message ${messageId}`,
+        `Max decryption attempts reached for message ${messageId}`
       );
       return false;
     }

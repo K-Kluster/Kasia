@@ -59,7 +59,7 @@ export const NewChatForm: React.FC = () => {
     // Check balance
     if (!balance?.mature || balance.mature < amountSompi) {
       setError(
-        `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`,
+        `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`
       );
       return false;
     }

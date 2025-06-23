@@ -54,7 +54,7 @@ export const WalletWithdrawal: FC = () => {
       setAmountInputError(null);
       return;
     },
-    [balance],
+    [balance]
   );
 
   const handleMaxClick = useCallback(() => {
@@ -94,8 +94,8 @@ export const WalletWithdrawal: FC = () => {
       if (amount > matureSompiBalance) {
         throw new Error(
           `Insufficient balance. Available: ${sompiToKaspaString(
-            matureSompiBalance,
-          )} KAS`,
+            matureSompiBalance
+          )} KAS`
         );
       }
 
@@ -104,7 +104,7 @@ export const WalletWithdrawal: FC = () => {
       setWithdrawAmount("");
     } catch (error) {
       setWithdrawError(
-        error instanceof Error ? error.message : "Failed to send transaction",
+        error instanceof Error ? error.message : "Failed to send transaction"
       );
     } finally {
       setIsSending(false);

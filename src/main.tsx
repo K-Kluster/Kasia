@@ -8,6 +8,6 @@ export const loadApplication = async () => {
   createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <App />
-    </BrowserRouter>,
+    </BrowserRouter>
   );
 };

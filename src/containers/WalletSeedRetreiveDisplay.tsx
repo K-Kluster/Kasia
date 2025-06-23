@@ -39,7 +39,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
       setBlurTimeout(
         setTimeout(() => {
           setIsBlurred(true);
-        }, 5000),
+        }, 5000)
       );
     }
   };
@@ -61,7 +61,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
 
       const storedWallets: StoredWallet[] = JSON.parse(walletsString);
       const foundStoredWallet = storedWallets.find(
-        (w) => w.id === selectedWalletId,
+        (w) => w.id === selectedWalletId
       );
       if (!foundStoredWallet) {
         setError("Wallet not found");
@@ -71,7 +71,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
       // Decrypt the seed phrase
       const phrase = decryptXChaCha20Poly1305(
         foundStoredWallet.encryptedPhrase,
-        password,
+        password
       );
       setSeedPhrase(phrase);
       setShowSeedPhrase(true);
@@ -116,7 +116,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
           <div
             className={clsx(
               "bg-black/30 border border-white/10 text-white px-4 py-3 rounded-md mb-4 font-mono word-break break-all",
-              { "filter blur-sm": isBlurred },
+              { "filter blur-sm": isBlurred }
             )}
           >
             {seedPhrase}

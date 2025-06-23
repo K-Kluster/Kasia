@@ -75,7 +75,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
           // First try to find by conversation ID
           let foundConversation = conversations.find(
-            (c) => c.conversationId === handshakePayload.conversationId,
+            (c) => c.conversationId === handshakePayload.conversationId
           );
 
           // If not found by ID, try to find by address
@@ -83,7 +83,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             foundConversation = conversations.find(
               (c) =>
                 c.kaspaAddress === senderAddress ||
-                c.kaspaAddress === recipientAddress,
+                c.kaspaAddress === recipientAddress
             );
           }
 
@@ -126,7 +126,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       if (conversation.status === "pending" && !conversation.initiatedByMe) {
         console.log(
           "Rendering handshake response for conversation:",
-          conversation,
+          conversation
         );
         return <HandshakeResponse conversation={conversation} />;
       }
@@ -268,7 +268,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           // Get the private key generator
           const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
             walletStore.unlockedWallet,
-            walletStore.unlockedWallet.password,
+            walletStore.unlockedWallet.password
           );
 
           let decrypted: string | null = null;
@@ -279,7 +279,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             decrypted = await CipherHelper.tryDecrypt(
               encryptedHex,
               privateKey.toString(),
-              transactionId || `${senderAddress}-${timestamp}`,
+              transactionId || `${senderAddress}-${timestamp}`
             );
           } catch (receiveErr) {
             // Try with change key as fallback
@@ -288,11 +288,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
               decrypted = await CipherHelper.tryDecrypt(
                 encryptedHex,
                 changeKey.toString(),
-                transactionId || `${senderAddress}-${timestamp}`,
+                transactionId || `${senderAddress}-${timestamp}`
               );
             } catch (changeErr) {
               throw new Error(
-                "Failed to decrypt with both receive and change keys",
+                "Failed to decrypt with both receive and change keys"
               );
             }
           }
@@ -312,7 +312,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         console.error("Error decrypting message:", error);
         if (mounted.current) {
           setDecryptionError(
-            error instanceof Error ? error.message : "Unknown error",
+            error instanceof Error ? error.message : "Unknown error"
           );
         }
       } finally {

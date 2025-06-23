@@ -25,7 +25,7 @@ export class WalletStorage {
 
   static getPrivateKeyGenerator(
     wallet: UnlockedWallet,
-    password: string,
+    password: string
   ): PrivateKeyGenerator {
     try {
       // First decrypt the mnemonic phrase
@@ -36,7 +36,7 @@ export class WalletStorage {
       return new PrivateKeyGenerator(
         xprv,
         false,
-        BigInt(wallet.derivationType === "standard" ? 0 : 1),
+        BigInt(wallet.derivationType === "standard" ? 0 : 1)
       );
     } catch (error) {
       console.error("Error getting private key generator:", error);
@@ -93,7 +93,7 @@ export class WalletStorage {
           return new Uint8Array(
             hexString
               .match(/.{1,2}/g)
-              ?.map((byte: string) => parseInt(byte, 16)) || [],
+              ?.map((byte: string) => parseInt(byte, 16)) || []
           );
         }
       }
@@ -124,7 +124,7 @@ export class WalletStorage {
 
   async getDecrypted(
     walletId: string,
-    password: string,
+    password: string
   ): Promise<UnlockedWallet> {
     const walletsString = localStorage.getItem(this._storageKey);
     if (!walletsString) throw new Error("No wallets found");
@@ -139,7 +139,7 @@ export class WalletStorage {
     try {
       // First decrypt the mnemonic phrase
       const mnemonic = new Mnemonic(
-        decryptXChaCha20Poly1305(wallet.encryptedPhrase, password),
+        decryptXChaCha20Poly1305(wallet.encryptedPhrase, password)
       );
 
       // Generate the seed and extended private key
@@ -154,7 +154,7 @@ export class WalletStorage {
       const publicKeyGenerator = await PublicKeyGenerator.fromMasterXPrv(
         extendedKey,
         false,
-        BigInt(derivationType === "standard" ? 0 : 1),
+        BigInt(derivationType === "standard" ? 0 : 1)
       );
 
       // Create the unlocked wallet with the encrypted seed
@@ -177,7 +177,7 @@ export class WalletStorage {
     name: string,
     mnemonic: Mnemonic,
     password: string,
-    derivationType: WalletDerivationType = "standard",
+    derivationType: WalletDerivationType = "standard"
   ): string {
     const walletsString = localStorage.getItem(this._storageKey);
     if (!walletsString) throw new Error("Storage not initialized");
@@ -221,7 +221,7 @@ export class WalletStorage {
   async migrateLegacyWallet(
     walletId: string,
     password: string,
-    newName?: string,
+    newName?: string
   ): Promise<string> {
     const walletsString = localStorage.getItem(this._storageKey);
     if (!walletsString) throw new Error("No wallets found");
@@ -241,7 +241,7 @@ export class WalletStorage {
       // Decrypt the existing mnemonic
       const mnemonicPhrase = decryptXChaCha20Poly1305(
         wallet.encryptedPhrase,
-        password,
+        password
       );
       const mnemonic = new Mnemonic(mnemonicPhrase);
 

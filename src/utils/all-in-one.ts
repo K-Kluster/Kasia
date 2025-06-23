@@ -32,13 +32,13 @@ export function decodePayload(hex: string) {
 // Helper function to fetch transaction details
 export async function fetchTransactionDetails(
   txId: string,
-  networkId: NetworkType = "testnet-10",
+  networkId: NetworkType = "testnet-10"
 ) {
   const baseUrl = getApiEndpoint(networkId);
   try {
     // First get the transaction to get its accepting block hash and blue score
     const txResponse = await fetch(
-      `${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=full`,
+      `${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=full`
     );
     if (!txResponse.ok) {
       console.log(`Transaction ${txId} not found`);
@@ -53,11 +53,11 @@ export async function fetchTransactionDetails(
 
     // Get the block details using the blue score
     const blockResponse = await fetch(
-      `${baseUrl}/blocks-from-bluescore?blueScore=${txData.accepting_block_blue_score}&includeTransactions=true`,
+      `${baseUrl}/blocks-from-bluescore?blueScore=${txData.accepting_block_blue_score}&includeTransactions=true`
     );
     if (!blockResponse.ok) {
       console.log(
-        `Block with blue score ${txData.accepting_block_blue_score} not found`,
+        `Block with blue score ${txData.accepting_block_blue_score} not found`
       );
       return null;
     }
@@ -65,7 +65,7 @@ export async function fetchTransactionDetails(
     const blockData = await blockResponse.json();
     if (!blockData[0]?.header?.daaScore) {
       console.log(
-        `No DAA score found for block ${txData.accepting_block_hash}`,
+        `No DAA score found for block ${txData.accepting_block_hash}`
       );
       return null;
     }
@@ -88,13 +88,13 @@ export async function fetchTransactionDetails(
 export async function fetchKasplexData(daaScore: string) {
   try {
     const kasplexResponse = await fetch(
-      `https://tn10api.kasplex.org/v1/archive/vspc/${daaScore}`,
+      `https://tn10api.kasplex.org/v1/archive/vspc/${daaScore}`
     );
 
     // Handle 403 Forbidden response gracefully
     if (kasplexResponse.status === 403) {
       console.log(
-        `Block with DAA score ${daaScore} is not yet available on kasplex.org. Waiting for block to be processed...`,
+        `Block with DAA score ${daaScore} is not yet available on kasplex.org. Waiting for block to be processed...`
       );
       return null;
     }
@@ -102,7 +102,7 @@ export async function fetchKasplexData(daaScore: string) {
     // Handle other error responses
     if (!kasplexResponse.ok) {
       console.warn(
-        `Error fetching from kasplex.org: ${kasplexResponse.status} ${kasplexResponse.statusText}`,
+        `Error fetching from kasplex.org: ${kasplexResponse.status} ${kasplexResponse.statusText}`
       );
       return null;
     }
@@ -141,7 +141,7 @@ export async function fetchAddressTransactions(address: string) {
     for (const baseUrl of apiEndpoints) {
       try {
         const response = await fetch(
-          `${baseUrl}/addresses/${cleanAddress}/utxos`,
+          `${baseUrl}/addresses/${cleanAddress}/utxos`
         );
         if (response.ok) {
           utxoData = await response.json();
@@ -171,7 +171,7 @@ export async function fetchAddressTransactions(address: string) {
           if (utxo.outpoint && utxo.outpoint.transactionId) {
             txIds.add(utxo.outpoint.transactionId);
           }
-        },
+        }
       );
     }
 
@@ -181,7 +181,7 @@ export async function fetchAddressTransactions(address: string) {
         Array.from(txIds).map(async (txId: string) => {
           try {
             const response = await fetch(
-              `${successfulEndpoint}/transactions/${txId}`,
+              `${successfulEndpoint}/transactions/${txId}`
             );
             if (!response.ok) {
               console.warn(`Failed to fetch transaction ${txId}`);
@@ -192,7 +192,7 @@ export async function fetchAddressTransactions(address: string) {
             console.warn(`Error fetching transaction ${txId}:`, error);
             return null;
           }
-        }),
+        })
       ).then((txs) => txs.filter((tx) => tx !== null)),
     };
 
@@ -206,7 +206,7 @@ export async function fetchAddressTransactions(address: string) {
 // Add this helper function at the top level
 function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) =>
-    typeof value === "bigint" ? value.toString() : value,
+    typeof value === "bigint" ? value.toString() : value
   );
 }
 
@@ -268,7 +268,7 @@ export class KaspaClient {
 
     if (this.retryCount >= this.options.maxRetries) {
       throw new Error(
-        `Failed to connect after ${this.options.maxRetries} attempts`,
+        `Failed to connect after ${this.options.maxRetries} attempts`
       );
     }
 
@@ -276,7 +276,7 @@ export class KaspaClient {
       console.log(
         `Initializing connection for network: "${
           this.networkId
-        }" (type: ${typeof this.networkId})`,
+        }" (type: ${typeof this.networkId})`
       );
 
       // Always try resolver first for all networks
@@ -312,24 +312,24 @@ export class KaspaClient {
         }
       } catch (error) {
         console.log(
-          `Resolver connection failed: ${unknownErrorToErrorLike(error)}`,
+          `Resolver connection failed: ${unknownErrorToErrorLike(error)}`
         );
       }
 
       throw new Error(
-        `Failed to connect to ${this.rpc?.url} on network ${this.networkId}`,
+        `Failed to connect to ${this.rpc?.url} on network ${this.networkId}`
       );
     } catch (error) {
       console.log(
         `Connection attempt failed: ${unknownErrorToErrorLike(error)}`,
-        "error",
+        "error"
       );
       this.retryCount++;
 
       if (this.retryCount < this.options.maxRetries) {
         console.log(`Retrying in ${this.options.retryDelay}ms...`);
         await new Promise((resolve) =>
-          setTimeout(resolve, this.options.retryDelay),
+          setTimeout(resolve, this.options.retryDelay)
         );
         return this.connect();
       }
@@ -349,7 +349,7 @@ export class KaspaClient {
 
   async subscribeToUtxoChanges(
     addresses: string[],
-    callback: (notification: IUtxosChanged) => unknown,
+    callback: (notification: IUtxosChanged) => unknown
   ) {
     const maxRetries = 3;
     let retryCount = 0;
@@ -369,10 +369,10 @@ export class KaspaClient {
         if (this.utxoNotificationCallback) {
           this.rpc.removeEventListener(
             "utxos-changed",
-            this.utxoNotificationCallback,
+            this.utxoNotificationCallback
           );
           this.rpc.unsubscribeUtxosChanged(
-            this.utxoNotificationSubscribeAddresses,
+            this.utxoNotificationSubscribeAddresses
           );
           console.log("Removed existing UTXO change listener");
         }
@@ -384,19 +384,19 @@ export class KaspaClient {
         const wrappedWithFilter = (notification: IUtxosChanged) => {
           const transactionIds = notification.data.added?.map(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (utxo: any) => utxo?.outpoint?.transactionId,
+            (utxo: any) => utxo?.outpoint?.transactionId
           );
 
           const notEmittedTxIds = transactionIds.filter(
             (txId: string) =>
               this.historyOfEmittedTxIdUtxoChanges.findIndex(
-                (item) => item === txId,
-              ) === -1,
+                (item) => item === txId
+              ) === -1
           );
 
           if (notEmittedTxIds.length > 0) {
             console.log(
-              `Emitting UTXO change notification for txids: ${notEmittedTxIds}`,
+              `Emitting UTXO change notification for txids: ${notEmittedTxIds}`
             );
             this.historyOfEmittedTxIdUtxoChanges.push(...notEmittedTxIds);
 
@@ -409,10 +409,10 @@ export class KaspaClient {
 
         this.rpc.addEventListener(
           "utxos-changed",
-          this.utxoNotificationCallback,
+          this.utxoNotificationCallback
         );
         await this.rpc.subscribeUtxosChanged(
-          this.utxoNotificationSubscribeAddresses,
+          this.utxoNotificationSubscribeAddresses
         );
 
         console.log("Successfully subscribed to UTXO changes");
@@ -421,17 +421,17 @@ export class KaspaClient {
         if (retryCount < maxRetries) {
           console.log(
             `Retry ${retryCount}/${maxRetries} for UTXO subscription after error: ${unknownErrorToErrorLike(
-              error,
-            )}`,
+              error
+            )}`
           );
           await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
           return attemptSubscribe();
         }
         console.log(
           `Error subscribing to UTXO changes: ${unknownErrorToErrorLike(
-            error,
+            error
           )}`,
-          "error",
+          "error"
         );
         throw error;
       }
@@ -459,7 +459,7 @@ export class KaspaClient {
         if (this.blockNotificationCallback) {
           this.rpc.removeEventListener(
             "block-added",
-            this.blockNotificationCallback,
+            this.blockNotificationCallback
           );
           await this.rpc.unsubscribeBlockAdded();
           console.log("Removed existing block notification listener");
@@ -482,7 +482,7 @@ export class KaspaClient {
           } catch (error) {
             console.log(
               `Error in block notification callback: ${error}`,
-              "error",
+              "error"
             );
           }
         };
@@ -495,12 +495,12 @@ export class KaspaClient {
       } catch (error) {
         console.log(
           `Error subscribing to block-added events: ${error}`,
-          "error",
+          "error"
         );
         if (retryCount < maxRetries) {
           retryCount++;
           console.log(
-            `Retrying subscription (attempt ${retryCount} of ${maxRetries})...`,
+            `Retrying subscription (attempt ${retryCount} of ${maxRetries})...`
           );
           await attemptSubscribe();
         } else {

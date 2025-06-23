@@ -65,7 +65,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
             onClick={() => setShowAddressModal(true)}
             className={clsx(
               "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
-              { "opacity-50 pointer-events-none": !address },
+              { "opacity-50 pointer-events-none": !address }
             )}
           >
             <UserIcon className="h-5 w-5 text-white" />
