@@ -93,14 +93,15 @@ export const OneLiner: FC = () => {
         messagesClientStarted ||
         !isWalletReady ||
         !networkStore.isConnected ||
-        !walletStore.unlockedWallet
+        !walletStore.unlockedWallet ||
+        !networkStore.kaspaClient
       )
         return;
       try {
         // Start the wallet and get the receive address
         const { receiveAddress } = await walletStore.start(
-        networkStore.kaspaClient
-      );
+          networkStore.kaspaClient
+        );
         const receiveAddressStr = receiveAddress.toString();
 
         // Initialize conversation manager
@@ -138,9 +139,10 @@ export const OneLiner: FC = () => {
     };
     startMessaging();
   }, [
-    networkStore.kaspaClient,
-    networkStore.isConnected,
     isWalletReady,
+    networkStore.isConnected,
+    networkStore.kaspaClient, 
+    walletStore.unlockedWallet,
     messageStore,
   ]); 
 
@@ -162,15 +164,20 @@ export const OneLiner: FC = () => {
   const handleCloseWallet = () => {
 
     walletStore.lock();
-    setMessageClientStarted(false);
     setIsWalletReady(false);
     messageStore.setIsLoaded(false);
     messageStore.setOpenedRecipient(null);
     messageStore.setIsCreatingNewChat(false);
     setIsSettingsOpen(false);
     setIsWalletInfoOpen(false);
-    setMessageClientStarted(false);
   };
+
+  // if we disconnect or something including or other than a graceful close, still kill the messaging client
+  useEffect(() => {
+    if (!isWalletReady || !walletStore.unlockedWallet) {
+      setMessageClientStarted(false);
+    }
+  }, [isWalletReady, walletStore.unlockedWallet]);
 
   return (
     <div className="container">
