@@ -98,7 +98,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
     rpcClient: null,
     isAccountServiceRunning: false,
     accountService: null,
-    selectedNetwork: "mainnet",
+    selectedNetwork: import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet",
 
     loadWallets: () => {
       const wallets = _walletStorage.getWalletList();

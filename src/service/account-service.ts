@@ -1157,15 +1157,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             payload: tx.payload,
           };
 
-          this.processedMessageIds.add(txId);
-          if (this.processedMessageIds.size > this.MAX_PROCESSED_MESSAGES) {
-            const oldestId = this.processedMessageIds.values().next().value;
-
-            if (oldestId) {
-              this.processedMessageIds.delete(oldestId);
-            }
-          }
-
           if (this.receiveAddress) {
             const messagingStore = useMessagingStore.getState();
             if (messagingStore) {
@@ -1396,6 +1387,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         if (!txId || this.processedMessageIds.has(txId)) continue;
 
         if (this.isMessageTransaction(tx)) {
+          // mark the txId as processed to avoid duplicate processing
+          this.processedMessageIds.add(txId);
+          if (this.processedMessageIds.size > this.MAX_PROCESSED_MESSAGES) {
+            const oldestId = this.processedMessageIds.values().next().value;
+
+            if (oldestId) {
+              this.processedMessageIds.delete(oldestId);
+            }
+          }
+
           try {
             // Process message transaction silently
             await this.processMessageTransaction(tx, blockHash, blockTime);
