@@ -493,10 +493,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   setIsCreatingNewChat: (isCreatingNewChat) => {
     set({ isCreatingNewChat });
-
-    if (isCreatingNewChat) {
-      set({ openedRecipient: null, messagesOnOpenedRecipient: [] });
-    }
   },
   exportMessages: async (wallet, password) => {
     try {

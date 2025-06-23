@@ -87,11 +87,7 @@ export const MessageSection: FC = () => {
               }
             }}
           >
-            {messageStore.isCreatingNewChat ? (
-              <div className="no-messages">
-                Enter a recipient address to start a new conversation.
-              </div>
-            ) : messageStore.messagesOnOpenedRecipient.length ? (
+            {messageStore.messagesOnOpenedRecipient.length ? (
               messageStore.messagesOnOpenedRecipient.map((msg) => (
                 <MessageDisplay
                   isOutgoing={
