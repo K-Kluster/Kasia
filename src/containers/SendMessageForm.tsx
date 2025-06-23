@@ -7,6 +7,7 @@ import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
 import { toast } from "../utils/toast";
+import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
 
 type SendMessageFormProps = unknown;
 
@@ -334,14 +335,17 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="file-upload-button"
+          className="w-5 h-5 m-1 flex items-center justify-center cursor-pointer text-gray-300 hover:text-gray-200"
           title="Upload file (images up to 100KB, other files up to 10KB)"
           disabled={isUploading}
         >
-          📎
+          <PaperClipIcon className="w-full h-full" />
         </button>
-        <button onClick={onSendClicked} id="sendButton" className="send-button">
-          Send
+        <button
+          onClick={onSendClicked}
+          className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
+        >
+          <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
       {isEstimating && <div className="fee-estimate">Estimating fee...</div>}
