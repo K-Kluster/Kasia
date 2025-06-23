@@ -6,6 +6,7 @@ import { Input } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
+import { toast } from "../utils/toast";
 
 type SendMessageFormProps = unknown;
 
@@ -81,17 +82,17 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   const onSendClicked = useCallback(async () => {
     if (!walletStore.address) {
-      alert("Shouldn't occurs, no selected address");
+      toast.error("Unexpected error: No selected address.");
       return;
     }
 
     if (!walletStore.unlockedWallet) {
-      alert("Shouldn't occurs, no unlocked wallet");
+      toast.error("Wallet is locked. Please unlock your wallet first.");
       return;
     }
 
     if (!message) {
-      alert("Please enter a message");
+      toast.error("Please enter a message.");
       return;
     }
     if (!openedRecipient) {
@@ -208,7 +209,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       messageStore.setOpenedRecipient(openedRecipient);
     } catch (error) {
       console.error("Error sending message:", error);
-      alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
+      toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
   }, [messageStore, walletStore, message, openedRecipient, feeEstimate]);
 
@@ -245,7 +246,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     // Also need to leave room for other transaction data
     const maxSize = 10 * 1024; // 10KB max for any file type to ensure it fits in transaction payload
     if (file.size > maxSize) {
-      alert(
+      toast.error(
         `File too large. Please keep files under ${
           maxSize / 1024
         }KB to ensure it fits in a Kaspa transaction.`
@@ -293,7 +294,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       }
     } catch (error) {
       console.error("Error reading file:", error);
-      alert(
+      toast.error(
         "Failed to read file: " +
           (error instanceof Error ? error.message : "Unknown error")
       );
