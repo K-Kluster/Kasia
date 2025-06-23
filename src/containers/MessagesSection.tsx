@@ -4,6 +4,7 @@ import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
+import { toast } from "../utils/toast";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { KaspaAddress } from "../components/KaspaAddress";
 
