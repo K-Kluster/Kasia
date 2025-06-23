@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
 import "./WalletGuard.css";
@@ -42,6 +42,12 @@ export const WalletGuard = ({
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const usePasswordRef = useCallback((node: HTMLInputElement | null) => {
+    passwordRef.current = node;
+
+    node?.focus();
+  }, []);
 
   const {
     wallets,
@@ -481,7 +487,11 @@ export const WalletGuard = ({
         <div className="form-group">
           <label>Password</label>
           <input
-            ref={passwordRef}
+            data-1p-ignore
+            data-lpignore="true"
+            data-protonpass-ignore="true"
+            autoComplete="off"
+            ref={usePasswordRef}
             type="password"
             placeholder="Enter your password"
             className={error ? "error" : ""}

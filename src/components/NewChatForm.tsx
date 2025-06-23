@@ -206,6 +206,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       // Initiate handshake with custom amount
       await messageStore.initiateHandshake(recipientAddress, amountSompi);
 
+      messageStore.setOpenedRecipient(recipientAddress);
+
       // Close the form
       onClose();
     } catch (error) {
