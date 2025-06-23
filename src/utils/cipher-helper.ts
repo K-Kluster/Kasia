@@ -30,7 +30,7 @@ export class CipherHelper {
   static error(...args: any[]): void {
     if (
       args[0]?.includes(
-        "Failed to decrypt with both receive and change keys"
+        "Failed to decrypt with both receive and change keys",
       ) ||
       args[0]?.includes("Cipher module not initialized properly") ||
       args[0]?.includes("Invalid input")
@@ -74,19 +74,19 @@ export class CipherHelper {
   static async tryDecrypt(
     encryptedHex: string,
     privateKeyHex: string,
-    messageId: string
+    messageId: string,
   ): Promise<string> {
     // Validate inputs
     if (!encryptedHex || !privateKeyHex) {
       throw new Error(
-        "Invalid input: encrypted message and private key are required"
+        "Invalid input: encrypted message and private key are required",
       );
     }
 
     // Check rate limiting and attempt tracking
     if (!SecurityHelper.canAttemptDecryption(messageId)) {
       throw new Error(
-        "Decryption attempts rate limited or maximum attempts reached"
+        "Decryption attempts rate limited or maximum attempts reached",
       );
     }
 
@@ -147,13 +147,13 @@ export class CipherHelper {
     try {
       // Convert private key to bytes
       const privateKeyBytes = new Uint8Array(
-        privateKeyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
+        privateKeyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)),
       );
       const encryptedMessage = new EncryptedMessage(encryptedHex);
 
       const decrypted = await decrypt_with_secret_key(
         encryptedMessage,
-        privateKeyBytes
+        privateKeyBytes,
       );
       CipherHelper.log("Byte-based decryption successful");
 

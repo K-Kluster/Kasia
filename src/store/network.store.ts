@@ -51,7 +51,7 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
 
       if (!isDifferentNetwork && !isDifferentUrl && g().isConnected) {
         console.warn(
-          "Trying to connect KaspaClient while it is already connected."
+          "Trying to connect KaspaClient while it is already connected.",
         );
         return;
       }
@@ -80,7 +80,7 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
         if (kaspaClient.nodeUrl) {
           localStorage.setItem(
             `kasia_node_url_${kaspaClient.networkId}`,
-            kaspaClient.nodeUrl ?? ""
+            kaspaClient.nodeUrl ?? "",
           );
         } else {
           localStorage.removeItem(`kasia_node_url_${kaspaClient.networkId}`);

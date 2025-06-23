@@ -31,7 +31,7 @@ export const HandshakeResponse: React.FC<{
     } catch (error) {
       console.error("Error responding to handshake:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to send response"
+        error instanceof Error ? error.message : "Failed to send response",
       );
     } finally {
       setIsResponding(false);

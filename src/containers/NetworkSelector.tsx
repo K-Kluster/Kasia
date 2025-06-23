@@ -20,7 +20,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
     }
 
     return getDisplayableNetworkFromNetworkString(
-      selectedNetwork as NetworkType
+      selectedNetwork as NetworkType,
     );
   }, [selectedNetwork, isConnected]);
 

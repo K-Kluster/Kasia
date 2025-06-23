@@ -27,7 +27,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         node.focus();
       }
     },
-    []
+    [],
   );
 
   // Handle clicking outside to close
@@ -37,7 +37,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   // Handle escape key to close
@@ -75,12 +75,12 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
         const encodedAddress = encodeURIComponent(address);
         const response = await fetch(
-          `${baseUrl}/addresses/${encodedAddress}/balance`
+          `${baseUrl}/addresses/${encodedAddress}/balance`,
         );
 
         if (!response.ok) {
           setRecipientWarning(
-            "Could not verify recipient balance. They may not be able to respond if they have no KAS."
+            "Could not verify recipient balance. They may not be able to respond if they have no KAS.",
           );
           return;
         }
@@ -90,7 +90,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
         if (balance === BigInt(0)) {
           setRecipientWarning(
-            "⚠️ Warning: Recipient has zero KAS balance and will not be able to respond to your handshake. Consider sending a higher amount."
+            "⚠️ Warning: Recipient has zero KAS balance and will not be able to respond to your handshake. Consider sending a higher amount.",
           );
         } else {
           setRecipientWarning(null);
@@ -98,13 +98,13 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       } catch (error) {
         console.warn("Could not check recipient balance:", error);
         setRecipientWarning(
-          "Could not verify recipient balance. They may not be able to respond if they have no KAS."
+          "Could not verify recipient balance. They may not be able to respond if they have no KAS.",
         );
       } finally {
         setIsCheckingRecipient(false);
       }
     },
-    [walletStore.accountService]
+    [walletStore.accountService],
   );
 
   // Debounced recipient balance check
@@ -143,7 +143,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       !recipientAddress.startsWith("kaspatest:")
     ) {
       setError(
-        "Invalid Kaspa address format. Must start with 'kaspa:' or 'kaspatest:'"
+        "Invalid Kaspa address format. Must start with 'kaspa:' or 'kaspatest:'",
       );
       return false;
     }
@@ -151,7 +151,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     // Check if we already have an active conversation
     const existingConversations = messageStore.getActiveConversations();
     const existingConv = existingConversations.find(
-      (conv) => conv.kaspaAddress === recipientAddress
+      (conv) => conv.kaspaAddress === recipientAddress,
     );
     if (existingConv) {
       setError("You already have an active conversation with this address");
@@ -177,7 +177,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       setError(
         `Insufficient balance. Need ${handshakeAmount} KAS, have ${
           balance?.matureDisplay || "0"
-        } KAS`
+        } KAS`,
       );
       return false;
     }
@@ -211,7 +211,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     } catch (error) {
       console.error("Failed to create new chat:", error);
       setError(
-        error instanceof Error ? error.message : "Failed to create new chat"
+        error instanceof Error ? error.message : "Failed to create new chat",
       );
     } finally {
       setIsLoading(false);

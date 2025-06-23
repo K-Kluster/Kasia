@@ -56,7 +56,7 @@ interface MessagingState {
   importMessages: (
     file: File,
     wallet: UnlockedWallet,
-    password: string
+    password: string,
   ) => Promise<void>;
 
   openedRecipient: string | null;
@@ -70,14 +70,14 @@ interface MessagingState {
   initializeConversationManager: (address: string) => void;
   initiateHandshake: (
     recipientAddress: string,
-    customAmount?: bigint
+    customAmount?: bigint,
   ) => Promise<{
     payload: string;
     conversation: Conversation;
   }>;
   processHandshake: (
     senderAddress: string,
-    payload: string
+    payload: string,
   ) => Promise<{
     isNewHandshake: boolean;
     requiresResponse: boolean;
@@ -105,7 +105,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   addContacts: (contacts) => {
     const fullContacts = [...g().contacts, ...contacts];
     fullContacts.sort(
-      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp,
     );
     set({ contacts: [...g().contacts, ...contacts] });
   },
@@ -129,7 +129,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Update existing contact if found
         const existingContactIndex = state.contacts.findIndex(
-          (c) => c.address === otherParty
+          (c) => c.address === otherParty,
         );
 
         if (existingContactIndex !== -1) {
@@ -141,13 +141,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
               ...existingContact,
               lastMessage: message,
               messages: [...existingContact.messages, message].sort(
-                (a, b) => a.timestamp - b.timestamp
+                (a, b) => a.timestamp - b.timestamp,
               ),
             };
 
             // Sort contacts by most recent message timestamp
             const sortedContacts = updatedContacts.sort(
-              (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+              (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp,
             );
 
             set({ contacts: sortedContacts });
@@ -161,14 +161,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   flushWalletHistory: (address: string) => {
     // 1. Clear wallet messages from localStorage
     const messagesOnWallet = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}",
     );
 
     delete messagesOnWallet[address];
 
     localStorage.setItem(
       "kaspa_messages_by_wallet",
-      JSON.stringify(messagesOnWallet)
+      JSON.stringify(messagesOnWallet),
     );
 
     // 2. Clear nickname mappings for this wallet
@@ -200,7 +200,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   loadMessages: (address): Message[] => {
     const messages: Record<string, Message[]> = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}",
     );
 
     const contacts = new Map();
@@ -274,7 +274,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     // Sort messages within each contact by timestamp
     contacts.forEach((contact) => {
       contact.messages.sort(
-        (a: Message, b: Message) => a.timestamp - b.timestamp
+        (a: Message, b: Message) => a.timestamp - b.timestamp,
       );
     });
 
@@ -293,7 +293,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     set({
       contacts: sortedContacts,
       messages: (messages[address] || []).sort(
-        (a: Message, b: Message) => a.timestamp - b.timestamp
+        (a: Message, b: Message) => a.timestamp - b.timestamp,
       ),
     });
 
@@ -364,7 +364,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const conv = manager.getConversationByAddress(
         message.senderAddress === walletAddress
           ? message.recipientAddress
-          : message.senderAddress
+          : message.senderAddress,
       );
       if (conv) {
         manager.updateLastActivity(conv.conversationId);
@@ -372,7 +372,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     const messagesMap = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}",
     );
     if (!messagesMap[walletAddress]) {
       messagesMap[walletAddress] = [];
@@ -380,7 +380,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Check if we already have a message with this transaction ID
     const existingMessageIndex = messagesMap[walletAddress].findIndex(
-      (m: Message) => m.transactionId === message.transactionId
+      (m: Message) => m.transactionId === message.transactionId,
     );
 
     if (existingMessageIndex !== -1) {
@@ -424,7 +424,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     localStorage.setItem(
       "kaspa_messages_by_wallet",
-      JSON.stringify(messagesMap)
+      JSON.stringify(messagesMap),
     );
 
     // Update contacts and conversations
@@ -436,7 +436,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Update or create contact
     const existingContactIndex = state.contacts.findIndex(
-      (c) => c.address === otherParty
+      (c) => c.address === otherParty,
     );
     if (existingContactIndex !== -1) {
       // Update existing contact
@@ -460,7 +460,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Sort contacts by most recent message
     const sortedContacts = [...g().contacts].sort(
-      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp,
     );
     set({ contacts: sortedContacts });
   },
@@ -503,7 +503,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Starting message export process...");
 
       const messagesMap = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+        localStorage.getItem("kaspa_messages_by_wallet") || "{}",
       );
 
       // Create backup object with metadata
@@ -521,7 +521,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
-        password
+        password,
       );
 
       console.log("Getting receive key...");
@@ -545,7 +545,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       try {
         const encryptedData = await encrypt_message(
           receiveAddress.toString(),
-          backupStr
+          backupStr,
         );
 
         // Create a Blob with the encrypted data wrapped in JSON
@@ -593,7 +593,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Getting private key for decryption...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
-        password
+        password,
       );
       const privateKey = privateKeyGenerator.receiveKey(0);
 
@@ -609,7 +609,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Decrypting backup data...");
       const decryptedStr = await decrypt_with_secret_key(
         encryptedMessage,
-        privateKeyBytes
+        privateKeyBytes,
       );
 
       console.log("Parsing decrypted data...");
@@ -627,7 +627,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Merging with existing messages...");
       // Merge with existing messages
       const existingMessages = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+        localStorage.getItem("kaspa_messages_by_wallet") || "{}",
       );
 
       const mergedMessages = {
@@ -638,7 +638,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       // Save merged messages
       localStorage.setItem(
         "kaspa_messages_by_wallet",
-        JSON.stringify(mergedMessages)
+        JSON.stringify(mergedMessages),
       );
 
       // Get network type and current address first
@@ -666,7 +666,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Type guard to validate conversation objects
         const isValidConversation = (
-          conv: Conversation
+          conv: Conversation,
         ): conv is Conversation => {
           return (
             typeof conv === "object" &&
@@ -708,7 +708,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       console.log("Import completed successfully");
       console.log(
-        "Set flag to fetch API messages on next wallet service start"
+        "Set flag to fetch API messages on next wallet service start",
       );
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
@@ -747,7 +747,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           : message.senderAddress;
 
       const existingContact = state.contacts.find(
-        (c) => c.address === otherParty
+        (c) => c.address === otherParty,
       );
       if (!existingContact) {
         state.addContacts([
@@ -800,7 +800,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   initiateHandshake: async (
     recipientAddress: string,
-    customAmount?: bigint
+    customAmount?: bigint,
   ) => {
     const manager = g().conversationManager;
     if (!manager) {
@@ -824,7 +824,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         payload,
         new Address(recipientAddress),
         walletStore.unlockedWallet.password,
-        customAmount // Pass custom amount to sendMessage
+        customAmount, // Pass custom amount to sendMessage
       );
 
       console.log("Handshake message sent, transaction ID:", txId);
@@ -888,7 +888,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         !recipientAddress.startsWith("kaspatest:")
       ) {
         throw new Error(
-          "Invalid address format: must start with kaspa: or kaspatest:"
+          "Invalid address format: must start with kaspa: or kaspatest:",
         );
       }
 
@@ -914,7 +914,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       // Format the message with the correct prefix and type
       const messageContent = `ciph_msg:1:handshake:${JSON.stringify(
-        handshakeResponse
+        handshakeResponse,
       )}`;
 
       try {
@@ -926,7 +926,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         const txId = await walletStore.sendMessage(
           messageContent,
           kaspaAddress,
-          walletStore.unlockedWallet.password
+          walletStore.unlockedWallet.password,
         );
 
         // Update the conversation in the manager
@@ -950,7 +950,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
                   status: "active",
                   lastActivity: Date.now(),
                 }
-              : h
+              : h,
           ),
         }));
 

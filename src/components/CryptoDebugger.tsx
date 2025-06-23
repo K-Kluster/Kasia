@@ -6,7 +6,7 @@ import { WalletStorage } from "../utils/wallet-storage";
 export const CryptoDebugger: FC = () => {
   const walletStore = useWalletStore();
   const [testMessage, setTestMessage] = useState(
-    "Hello, this is a test message."
+    "Hello, this is a test message.",
   );
   const [encryptedHex, setEncryptedHex] = useState("");
   const [decryptedMessage, setDecryptedMessage] = useState("");
@@ -38,7 +38,7 @@ export const CryptoDebugger: FC = () => {
       addLog("Encrypting message...");
       const encrypted = await encrypt_message(
         walletStore.address.toString(),
-        testMessage
+        testMessage,
       );
 
       const hex = encrypted.to_hex();
@@ -72,7 +72,7 @@ export const CryptoDebugger: FC = () => {
       // Get private key using WalletStorage
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         walletStore.unlockedWallet,
-        walletStore.unlockedWallet.password
+        walletStore.unlockedWallet.password,
       );
 
       const privateKey = privateKeyGenerator.receiveKey(0);

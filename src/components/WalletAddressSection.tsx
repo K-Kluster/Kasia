@@ -132,7 +132,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
             {
               "opacity-100": copyNotification,
               "opacity-0": !copyNotification,
-            }
+            },
           )}
         >
           {copyNotification}

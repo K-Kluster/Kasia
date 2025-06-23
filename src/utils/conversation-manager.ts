@@ -18,7 +18,7 @@ export class ConversationManager {
 
   constructor(
     private currentAddress: string,
-    private events?: Partial<ConversationEvents>
+    private events?: Partial<ConversationEvents>,
   ) {
     this.loadConversations();
   }
@@ -56,13 +56,13 @@ export class ConversationManager {
             this.conversations.set(conv.conversationId, conv);
             this.addressToConversation.set(
               conv.kaspaAddress,
-              conv.conversationId
+              conv.conversationId,
             );
             this.aliasToConversation.set(conv.myAlias, conv.conversationId);
             if (conv.theirAlias) {
               this.aliasToConversation.set(
                 conv.theirAlias,
-                conv.conversationId
+                conv.conversationId,
               );
             }
           }
@@ -93,7 +93,7 @@ export class ConversationManager {
         const conv = this.conversations.get(existingConvId);
         if (conv && conv.status === "active") {
           throw new Error(
-            "Active conversation already exists with this address"
+            "Active conversation already exists with this address",
           );
         }
         // Keep the first alias - reuse existing pending conversation
@@ -153,7 +153,7 @@ export class ConversationManager {
 
   public async processHandshake(
     senderAddress: string,
-    payloadString: string
+    payloadString: string,
   ): Promise<{
     isNewHandshake: boolean;
     requiresResponse: boolean;
@@ -206,16 +206,16 @@ export class ConversationManager {
             payload.conversationId !== existingConv.conversationId
           ) {
             console.log(
-              "Detected new handshake from existing contact - they may have cleared their cache"
+              "Detected new handshake from existing contact - they may have cleared their cache",
             );
             console.log(
               "Existing conversation ID:",
-              existingConv.conversationId
+              existingConv.conversationId,
             );
             console.log("New conversation ID:", payload.conversationId);
             console.log(
               "Updating conversation with their new alias:",
-              payload.alias
+              payload.alias,
             );
             console.log("Our alias remains:", existingConv.myAlias);
 
@@ -254,11 +254,11 @@ export class ConversationManager {
       // If this is a response but we didn't find a matching conversation, create a new one
       if (payload.isResponse) {
         console.log(
-          "Handshake response received but no pending conversation found. Creating new conversation."
+          "Handshake response received but no pending conversation found. Creating new conversation.",
         );
         console.log(
           "Available conversations:",
-          Array.from(this.conversations.keys())
+          Array.from(this.conversations.keys()),
         );
         console.log("Looking for conversation ID:", payload.conversationId);
         console.log("Looking for sender address:", senderAddress);
@@ -352,13 +352,13 @@ export class ConversationManager {
 
   public getActiveConversations(): Conversation[] {
     return Array.from(this.conversations.values()).filter(
-      (conv) => conv.status === "active"
+      (conv) => conv.status === "active",
     );
   }
 
   public getPendingConversations(): PendingConversation[] {
     return Array.from(this.conversations.values()).filter(
-      (conv) => conv.status === "pending"
+      (conv) => conv.status === "pending",
     );
   }
 
@@ -411,16 +411,16 @@ export class ConversationManager {
     // Update mappings
     this.addressToConversation.set(
       conversation.kaspaAddress,
-      conversation.conversationId
+      conversation.conversationId,
     );
     this.aliasToConversation.set(
       conversation.myAlias,
-      conversation.conversationId
+      conversation.conversationId,
     );
     if (conversation.theirAlias) {
       this.aliasToConversation.set(
         conversation.theirAlias,
-        conversation.conversationId
+        conversation.conversationId,
       );
     }
 
@@ -449,7 +449,7 @@ export class ConversationManager {
 
   private createNewConversation(
     recipientAddress: string,
-    initiatedByMe: boolean
+    initiatedByMe: boolean,
   ): Conversation {
     const conversation: Conversation = {
       conversationId: uuidv4(),
@@ -499,7 +499,7 @@ export class ConversationManager {
 
   private async processNewHandshake(
     payload: HandshakePayload,
-    senderAddress: string
+    senderAddress: string,
   ): Promise<{
     isNewHandshake: true;
     requiresResponse: true;
@@ -560,16 +560,16 @@ export class ConversationManager {
     this.conversations.set(conversation.conversationId, conversation);
     this.addressToConversation.set(
       conversation.kaspaAddress,
-      conversation.conversationId
+      conversation.conversationId,
     );
     this.aliasToConversation.set(
       conversation.myAlias,
-      conversation.conversationId
+      conversation.conversationId,
     );
     if (conversation.theirAlias) {
       this.aliasToConversation.set(
         conversation.theirAlias,
-        conversation.conversationId
+        conversation.conversationId,
       );
     }
     this.saveToStorage();
@@ -612,7 +612,7 @@ export class ConversationManager {
 
     // Check if conversation already exists
     const existingConversation = this.conversations.get(
-      conversation.conversationId
+      conversation.conversationId,
     );
     if (existingConversation) {
       // Update existing conversation
@@ -629,16 +629,16 @@ export class ConversationManager {
     // Update mappings
     this.addressToConversation.set(
       conversation.kaspaAddress,
-      conversation.conversationId
+      conversation.conversationId,
     );
     this.aliasToConversation.set(
       conversation.myAlias,
-      conversation.conversationId
+      conversation.conversationId,
     );
     if (conversation.theirAlias) {
       this.aliasToConversation.set(
         conversation.theirAlias,
-        conversation.conversationId
+        conversation.conversationId,
       );
     }
 
