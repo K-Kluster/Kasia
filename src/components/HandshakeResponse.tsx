@@ -1,22 +1,22 @@
-import React, { useState } from "react"
-import { useMessagingStore } from "../store/messaging.store"
-import "../styles/HandshakeResponse.css"
+import React, { useState } from "react";
+import { useMessagingStore } from "../store/messaging.store";
+import "../styles/HandshakeResponse.css";
 import {
   PendingConversation,
   RejectedConversation,
-} from "src/types/messaging.types"
+} from "src/types/messaging.types";
 
 export const HandshakeResponse: React.FC<{
-  conversation: PendingConversation | RejectedConversation
+  conversation: PendingConversation | RejectedConversation;
 }> = ({ conversation }) => {
-  const messagingStore = useMessagingStore()
-  const [isResponding, setIsResponding] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const messagingStore = useMessagingStore();
+  const [isResponding, setIsResponding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleRespond = async () => {
     try {
-      setIsResponding(true)
-      setError(null)
+      setIsResponding(true);
+      setError(null);
       await messagingStore.respondToHandshake({
         conversationId: conversation.conversationId,
         myAlias: conversation.myAlias,
@@ -27,16 +27,16 @@ export const HandshakeResponse: React.FC<{
         createdAt: conversation.createdAt,
         lastActivity: conversation.lastActivity,
         initiatedByMe: conversation.initiatedByMe,
-      })
+      });
     } catch (error) {
-      console.error("Error responding to handshake:", error)
+      console.error("Error responding to handshake:", error);
       setError(
         error instanceof Error ? error.message : "Failed to send response"
-      )
+      );
     } finally {
-      setIsResponding(false)
+      setIsResponding(false);
     }
-  }
+  };
 
   return (
     <div className="handshake-response">
@@ -56,5 +56,5 @@ export const HandshakeResponse: React.FC<{
         </button>
       )}
     </div>
-  )
-}
+  );
+};

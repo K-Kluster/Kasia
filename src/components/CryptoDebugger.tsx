@@ -1,106 +1,106 @@
-import { FC, useState } from "react"
-import { useWalletStore } from "../store/wallet.store"
-import { encrypt_message, decrypt_message, EncryptedMessage } from "cipher"
-import { WalletStorage } from "../utils/wallet-storage"
+import { FC, useState } from "react";
+import { useWalletStore } from "../store/wallet.store";
+import { encrypt_message, decrypt_message, EncryptedMessage } from "cipher";
+import { WalletStorage } from "../utils/wallet-storage";
 
 export const CryptoDebugger: FC = () => {
-  const walletStore = useWalletStore()
+  const walletStore = useWalletStore();
   const [testMessage, setTestMessage] = useState(
     "Hello, this is a test message."
-  )
-  const [encryptedHex, setEncryptedHex] = useState("")
-  const [decryptedMessage, setDecryptedMessage] = useState("")
-  const [error, setError] = useState("")
-  const [log, setLog] = useState<string[]>([])
+  );
+  const [encryptedHex, setEncryptedHex] = useState("");
+  const [decryptedMessage, setDecryptedMessage] = useState("");
+  const [error, setError] = useState("");
+  const [log, setLog] = useState<string[]>([]);
 
   const addLog = (message: string) => {
     setLog((prev) => [
       ...prev,
       `${new Date().toISOString().substring(11, 19)}: ${message}`,
-    ])
-  }
+    ]);
+  };
 
   const handleTestEncryption = async () => {
     if (!walletStore.address) {
-      setError("No wallet address available")
-      return
+      setError("No wallet address available");
+      return;
     }
 
-    setError("")
-    setEncryptedHex("")
-    setDecryptedMessage("")
-    setLog([])
+    setError("");
+    setEncryptedHex("");
+    setDecryptedMessage("");
+    setLog([]);
 
     try {
-      addLog(`Using address: ${walletStore.address.toString()}`)
+      addLog(`Using address: ${walletStore.address.toString()}`);
 
       // Encrypt the message
-      addLog("Encrypting message...")
+      addLog("Encrypting message...");
       const encrypted = await encrypt_message(
         walletStore.address.toString(),
         testMessage
-      )
+      );
 
-      const hex = encrypted.to_hex()
-      setEncryptedHex(hex)
-      addLog(`Message encrypted successfully: ${hex.substring(0, 20)}...`)
+      const hex = encrypted.to_hex();
+      setEncryptedHex(hex);
+      addLog(`Message encrypted successfully: ${hex.substring(0, 20)}...`);
 
-      return hex
+      return hex;
     } catch (err: any) {
-      const errorMsg = `Encryption error: ${err.message || err}`
-      setError(errorMsg)
-      addLog(errorMsg)
-      return null
+      const errorMsg = `Encryption error: ${err.message || err}`;
+      setError(errorMsg);
+      addLog(errorMsg);
+      return null;
     }
-  }
+  };
 
   const handleTestDecryption = async (hexToDecrypt?: string) => {
     if (!walletStore.unlockedWallet) {
-      setError("No unlocked wallet available")
-      return
+      setError("No unlocked wallet available");
+      return;
     }
 
-    const hexToUse = hexToDecrypt || encryptedHex
+    const hexToUse = hexToDecrypt || encryptedHex;
     if (!hexToUse) {
-      setError("No encrypted message to decrypt")
-      return
+      setError("No encrypted message to decrypt");
+      return;
     }
 
     try {
-      addLog("Preparing to decrypt message...")
+      addLog("Preparing to decrypt message...");
 
       // Get private key using WalletStorage
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         walletStore.unlockedWallet,
         walletStore.unlockedWallet.password
-      )
+      );
 
-      const privateKey = privateKeyGenerator.receiveKey(0)
-      addLog("Retrieved private key for decryption")
+      const privateKey = privateKeyGenerator.receiveKey(0);
+      addLog("Retrieved private key for decryption");
 
       // Create encrypted message object from hex
-      const encryptedMessage = new EncryptedMessage(hexToUse)
-      addLog("Created EncryptedMessage object from hex")
+      const encryptedMessage = new EncryptedMessage(hexToUse);
+      addLog("Created EncryptedMessage object from hex");
 
       // Decrypt
-      addLog("Attempting decryption...")
-      const decrypted = await decrypt_message(encryptedMessage, privateKey)
+      addLog("Attempting decryption...");
+      const decrypted = await decrypt_message(encryptedMessage, privateKey);
 
-      setDecryptedMessage(decrypted)
-      addLog(`Decryption successful: "${decrypted}"`)
+      setDecryptedMessage(decrypted);
+      addLog(`Decryption successful: "${decrypted}"`);
     } catch (err: any) {
-      const errorMsg = `Decryption error: ${err.message || err}`
-      setError(errorMsg)
-      addLog(errorMsg)
+      const errorMsg = `Decryption error: ${err.message || err}`;
+      setError(errorMsg);
+      addLog(errorMsg);
     }
-  }
+  };
 
   const handleTestFullCycle = async () => {
-    const encryptedHex = await handleTestEncryption()
+    const encryptedHex = await handleTestEncryption();
     if (encryptedHex) {
-      await handleTestDecryption(encryptedHex)
+      await handleTestDecryption(encryptedHex);
     }
-  }
+  };
 
   return (
     <div
@@ -336,5 +336,5 @@ export const CryptoDebugger: FC = () => {
         </pre>
       </div>
     </div>
-  )
-}
+  );
+};

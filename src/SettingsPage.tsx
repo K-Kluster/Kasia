@@ -1,67 +1,67 @@
-import { useCallback, useEffect, useState } from "react"
-import { NetworkSelector } from "./containers/NetworkSelector"
-import { useNetworkStore } from "./store/network.store"
-import { NetworkType } from "./types/all"
-import clsx from "clsx"
-import { Link } from "react-router"
-import { ArrowLeftIcon } from "@heroicons/react/24/solid"
+import { useCallback, useEffect, useState } from "react";
+import { NetworkSelector } from "./containers/NetworkSelector";
+import { useNetworkStore } from "./store/network.store";
+import { NetworkType } from "./types/all";
+import clsx from "clsx";
+import { Link } from "react-router";
+import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 
 export const SettingsPage: React.FC = () => {
-  const networkStore = useNetworkStore()
-  const selectedNetwork = useNetworkStore((state) => state.network)
-  const isConnected = useNetworkStore((state) => state.isConnected)
-  const isConnecting = useNetworkStore((state) => state.isConnecting)
-  const connect = useNetworkStore((state) => state.connect)
+  const networkStore = useNetworkStore();
+  const selectedNetwork = useNetworkStore((state) => state.network);
+  const isConnected = useNetworkStore((state) => state.isConnected);
+  const isConnecting = useNetworkStore((state) => state.isConnecting);
+  const connect = useNetworkStore((state) => state.connect);
 
-  const connectionError = useNetworkStore((s) => s.connectionError)
-  const [connectionSuccess, setConnectionSuccess] = useState(false)
+  const connectionError = useNetworkStore((s) => s.connectionError);
+  const [connectionSuccess, setConnectionSuccess] = useState(false);
 
   const [nodeUrl, setNodeUrl] = useState(
     networkStore.nodeUrl ??
       localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
       ""
-  )
+  );
 
   // Network connection effect
   useEffect(() => {
     // Skip if no network selected or connection attempt in progress
     if (isConnected) {
-      return
+      return;
     }
 
-    connect()
+    connect();
     // this is on purpose, we only want to run this once upon component mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   const onNetworkChange = useCallback(
     (network: NetworkType) => {
-      setConnectionSuccess(false)
+      setConnectionSuccess(false);
 
-      networkStore.setNetwork(network)
+      networkStore.setNetwork(network);
 
-      const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`)
+      const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`);
 
-      setNodeUrl(savedNetwork ?? "")
+      setNodeUrl(savedNetwork ?? "");
 
-      connect()
+      connect();
     },
     [connect, networkStore]
-  )
+  );
 
   const handleSaveNodeUrl = useCallback(async () => {
-    setConnectionSuccess(false)
+    setConnectionSuccess(false);
 
     if (isConnecting) {
-      return
+      return;
     }
 
-    networkStore.setNodeUrl(nodeUrl === "" ? undefined : nodeUrl)
+    networkStore.setNodeUrl(nodeUrl === "" ? undefined : nodeUrl);
 
-    const isSuccess = await connect()
+    const isSuccess = await connect();
 
-    setConnectionSuccess(isSuccess)
-  }, [connect, isConnecting, networkStore, nodeUrl])
+    setConnectionSuccess(isSuccess);
+  }, [connect, isConnecting, networkStore, nodeUrl]);
 
   return (
     <div className="container">
@@ -131,5 +131,5 @@ export const SettingsPage: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

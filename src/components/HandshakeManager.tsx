@@ -1,18 +1,18 @@
-import React from "react"
-import { useMessagingStore } from "../store/messaging.store"
-import "./HandshakeManager.css"
-import { HandshakeState, PendingConversation } from "../types/messaging.types"
+import React from "react";
+import { useMessagingStore } from "../store/messaging.store";
+import "./HandshakeManager.css";
+import { HandshakeState, PendingConversation } from "../types/messaging.types";
 
 const HandshakeManager: React.FC = () => {
-  const messagingStore = useMessagingStore()
-  const pendingConversations = messagingStore.getPendingConversations()
+  const messagingStore = useMessagingStore();
+  const pendingConversations = messagingStore.getPendingConversations();
 
   const handleAcceptHandshake = async (
     pendingConversation: PendingConversation
   ) => {
     try {
       if (!pendingConversation.kaspaAddress) {
-        throw new Error("Invalid conversation: missing kaspaAddress")
+        throw new Error("Invalid conversation: missing kaspaAddress");
       }
 
       // Convert Conversation to HandshakeState
@@ -26,16 +26,16 @@ const HandshakeManager: React.FC = () => {
         createdAt: pendingConversation.createdAt,
         lastActivity: pendingConversation.lastActivity,
         initiatedByMe: pendingConversation.initiatedByMe,
-      }
+      };
 
-      await messagingStore.respondToHandshake(handshakeState)
+      await messagingStore.respondToHandshake(handshakeState);
     } catch (error) {
-      console.error("Error accepting handshake:", error)
+      console.error("Error accepting handshake:", error);
     }
-  }
+  };
 
   if (pendingConversations.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -66,7 +66,7 @@ const HandshakeManager: React.FC = () => {
         ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default HandshakeManager
+export default HandshakeManager;

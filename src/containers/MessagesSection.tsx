@@ -1,33 +1,33 @@
-import { FC, useCallback, useMemo } from "react"
-import { FetchApiMessages } from "../components/FetchApiMessages"
-import { MessageDisplay } from "../components/MessageDisplay"
-import { SendMessageForm } from "./SendMessageForm"
-import { useMessagingStore } from "../store/messaging.store"
-import { useWalletStore } from "../store/wallet.store"
-import { TrashIcon } from "@heroicons/react/24/outline"
+import { FC, useCallback, useMemo } from "react";
+import { FetchApiMessages } from "../components/FetchApiMessages";
+import { MessageDisplay } from "../components/MessageDisplay";
+import { SendMessageForm } from "./SendMessageForm";
+import { useMessagingStore } from "../store/messaging.store";
+import { useWalletStore } from "../store/wallet.store";
+import { TrashIcon } from "@heroicons/react/24/outline";
 
 export const MessageSection: FC = () => {
-  const messageStore = useMessagingStore()
-  const walletStore = useWalletStore()
+  const messageStore = useMessagingStore();
+  const walletStore = useWalletStore();
 
-  const contacts = useMessagingStore((s) => s.contacts)
-  const openedRecipient = useMessagingStore((s) => s.openedRecipient)
+  const contacts = useMessagingStore((s) => s.contacts);
+  const openedRecipient = useMessagingStore((s) => s.openedRecipient);
 
   const boxState = useMemo<"new" | "filtered" | "unfiltered">(() => {
     if (!contacts.length) {
-      return "new"
+      return "new";
     }
 
     if (!openedRecipient) {
-      return "unfiltered"
+      return "unfiltered";
     }
 
-    return "filtered"
-  }, [contacts, openedRecipient])
+    return "filtered";
+  }, [contacts, openedRecipient]);
 
   const onClearHistory = useCallback(() => {
     if (!walletStore.address) {
-      return
+      return;
     }
 
     if (
@@ -35,9 +35,9 @@ export const MessageSection: FC = () => {
         "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
       )
     ) {
-      messageStore.flushWalletHistory(walletStore.address.toString())
+      messageStore.flushWalletHistory(walletStore.address.toString());
     }
-  }, [walletStore.address, messageStore])
+  }, [walletStore.address, messageStore]);
 
   return (
     <div className="messages-section">
@@ -83,7 +83,7 @@ export const MessageSection: FC = () => {
             ref={(el) => {
               // Auto-scroll to bottom when new messages arrive
               if (el) {
-                el.scrollTop = el.scrollHeight
+                el.scrollTop = el.scrollHeight;
               }
             }}
           >
@@ -111,5 +111,5 @@ export const MessageSection: FC = () => {
         </>
       )}
     </div>
-  )
-}
+  );
+};

@@ -1,56 +1,56 @@
-import React, { useState, useCallback, useEffect } from "react"
-import { useMessagingStore } from "../store/messaging.store"
-import { useWalletStore } from "../store/wallet.store"
-import { kaspaToSompi } from "kaspa-wasm"
-import styles from "./NewChatForm.module.css"
+import React, { useState, useCallback, useEffect } from "react";
+import { useMessagingStore } from "../store/messaging.store";
+import { useWalletStore } from "../store/wallet.store";
+import { kaspaToSompi } from "kaspa-wasm";
+import styles from "./NewChatForm.module.css";
 
 interface NewChatFormProps {
-  onClose: () => void
+  onClose: () => void;
 }
 
 export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
-  const [recipientAddress, setRecipientAddress] = useState("")
-  const [handshakeAmount, setHandshakeAmount] = useState("0.2")
-  const [error, setError] = useState<string | null>(null)
-  const [recipientWarning, setRecipientWarning] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showConfirmation, setShowConfirmation] = useState(false)
-  const [isCheckingRecipient, setIsCheckingRecipient] = useState(false)
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [handshakeAmount, setHandshakeAmount] = useState("0.2");
+  const [error, setError] = useState<string | null>(null);
+  const [recipientWarning, setRecipientWarning] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
 
-  const messageStore = useMessagingStore()
-  const walletStore = useWalletStore()
-  const balance = useWalletStore((state) => state.balance)
+  const messageStore = useMessagingStore();
+  const walletStore = useWalletStore();
+  const balance = useWalletStore((state) => state.balance);
 
   const useRecipientAddressRef = useCallback(
     (node: HTMLInputElement | null) => {
       if (node) {
-        node.focus()
+        node.focus();
       }
     },
     []
-  )
+  );
 
   // Handle clicking outside to close
   const handleOverlayClick = useCallback(
     (e: React.MouseEvent) => {
       if (e.target === e.currentTarget) {
-        onClose()
+        onClose();
       }
     },
     [onClose]
-  )
+  );
 
   // Handle escape key to close
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onClose()
+        onClose();
       }
-    }
+    };
 
-    document.addEventListener("keydown", handleEscape)
-    return () => document.removeEventListener("keydown", handleEscape)
-  }, [onClose])
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
 
   const checkRecipientBalance = useCallback(
     async (address: string) => {
@@ -58,83 +58,83 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         !address ||
         (!address.startsWith("kaspa:") && !address.startsWith("kaspatest:"))
       ) {
-        setRecipientWarning(null)
-        return
+        setRecipientWarning(null);
+        return;
       }
 
-      setIsCheckingRecipient(true)
-      setRecipientWarning(null)
+      setIsCheckingRecipient(true);
+      setRecipientWarning(null);
 
       try {
         // Use the Kaspa API to check recipient balance
-        const networkId = walletStore.accountService?.networkId || "mainnet"
+        const networkId = walletStore.accountService?.networkId || "mainnet";
         const baseUrl =
           networkId === "mainnet"
             ? "https://api.kaspa.org"
-            : "https://api-tn10.kaspa.org"
+            : "https://api-tn10.kaspa.org";
 
-        const encodedAddress = encodeURIComponent(address)
+        const encodedAddress = encodeURIComponent(address);
         const response = await fetch(
           `${baseUrl}/addresses/${encodedAddress}/balance`
-        )
+        );
 
         if (!response.ok) {
           setRecipientWarning(
             "Could not verify recipient balance. They may not be able to respond if they have no KAS."
-          )
-          return
+          );
+          return;
         }
 
-        const balanceData = await response.json()
-        const balance = BigInt(balanceData.balance || 0)
+        const balanceData = await response.json();
+        const balance = BigInt(balanceData.balance || 0);
 
         if (balance === BigInt(0)) {
           setRecipientWarning(
             "⚠️ Warning: Recipient has zero KAS balance and will not be able to respond to your handshake. Consider sending a higher amount."
-          )
+          );
         } else {
-          setRecipientWarning(null)
+          setRecipientWarning(null);
         }
       } catch (error) {
-        console.warn("Could not check recipient balance:", error)
+        console.warn("Could not check recipient balance:", error);
         setRecipientWarning(
           "Could not verify recipient balance. They may not be able to respond if they have no KAS."
-        )
+        );
       } finally {
-        setIsCheckingRecipient(false)
+        setIsCheckingRecipient(false);
       }
     },
     [walletStore.accountService]
-  )
+  );
 
   // Debounced recipient balance check
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (recipientAddress) {
-        checkRecipientBalance(recipientAddress)
+        checkRecipientBalance(recipientAddress);
       }
-    }, 1000) // Wait 1 second after user stops typing
+    }, 1000); // Wait 1 second after user stops typing
 
-    return () => clearTimeout(timeoutId)
-  }, [recipientAddress, checkRecipientBalance])
+    return () => clearTimeout(timeoutId);
+  }, [recipientAddress, checkRecipientBalance]);
 
   const handleAmountChange = useCallback((value: string) => {
     // Allow decimal numbers
     if (/^\d*\.?\d*$/.test(value)) {
-      setHandshakeAmount(value)
+      setHandshakeAmount(value);
     }
-  }, [])
+  }, []);
 
   const handleQuickAmount = useCallback((amount: string) => {
-    setHandshakeAmount(amount)
-  }, [])
+    setHandshakeAmount(amount);
+  }, []);
 
   const validateAndPrepareHandshake = useCallback(() => {
-    setError(null)
+    setError(null);
 
     if (!walletStore.unlockedWallet?.password) {
-      setError("Please unlock your wallet first")
-      return false
+      setError("Please unlock your wallet first");
+      return false;
     }
 
     // Validate address format
@@ -144,32 +144,32 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     ) {
       setError(
         "Invalid Kaspa address format. Must start with 'kaspa:' or 'kaspatest:'"
-      )
-      return false
+      );
+      return false;
     }
 
     // Check if we already have an active conversation
-    const existingConversations = messageStore.getActiveConversations()
+    const existingConversations = messageStore.getActiveConversations();
     const existingConv = existingConversations.find(
       (conv) => conv.kaspaAddress === recipientAddress
-    )
+    );
     if (existingConv) {
-      setError("You already have an active conversation with this address")
-      return false
+      setError("You already have an active conversation with this address");
+      return false;
     }
 
     // Validate amount
-    const amountSompi = kaspaToSompi(handshakeAmount)
+    const amountSompi = kaspaToSompi(handshakeAmount);
     if (!amountSompi) {
-      setError("Invalid handshake amount")
-      return false
+      setError("Invalid handshake amount");
+      return false;
     }
 
     // Check minimum amount
-    const minAmount = kaspaToSompi("0.2")
+    const minAmount = kaspaToSompi("0.2");
     if (amountSompi < minAmount!) {
-      setError("Handshake amount must be at least 0.2 KAS")
-      return false
+      setError("Handshake amount must be at least 0.2 KAS");
+      return false;
     }
 
     // Check balance
@@ -178,45 +178,45 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         `Insufficient balance. Need ${handshakeAmount} KAS, have ${
           balance?.matureDisplay || "0"
         } KAS`
-      )
-      return false
+      );
+      return false;
     }
 
-    return true
-  }, [recipientAddress, handshakeAmount, balance, messageStore, walletStore])
+    return true;
+  }, [recipientAddress, handshakeAmount, balance, messageStore, walletStore]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateAndPrepareHandshake()) {
-      return
+      return;
     }
 
-    setShowConfirmation(true)
-  }
+    setShowConfirmation(true);
+  };
 
   const confirmHandshake = async () => {
-    setError(null)
-    setIsLoading(true)
-    setShowConfirmation(false)
+    setError(null);
+    setIsLoading(true);
+    setShowConfirmation(false);
 
     try {
-      const amountSompi = kaspaToSompi(handshakeAmount)
+      const amountSompi = kaspaToSompi(handshakeAmount);
 
       // Initiate handshake with custom amount
-      await messageStore.initiateHandshake(recipientAddress, amountSompi)
+      await messageStore.initiateHandshake(recipientAddress, amountSompi);
 
       // Close the form
-      onClose()
+      onClose();
     } catch (error) {
-      console.error("Failed to create new chat:", error)
+      console.error("Failed to create new chat:", error);
       setError(
         error instanceof Error ? error.message : "Failed to create new chat"
-      )
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (showConfirmation) {
     return (
@@ -272,7 +272,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -386,5 +386,5 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         </form>
       </div>
     </div>
-  )
-}
+  );
+};

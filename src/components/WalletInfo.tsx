@@ -1,15 +1,15 @@
-import { FC, useMemo } from "react"
-import { useWalletStore } from "../store/wallet.store"
-import { WalletAddressSection } from "./WalletAddressSection"
-import { ArrowPathIcon } from "@heroicons/react/24/outline"
+import { FC, useMemo } from "react";
+import { useWalletStore } from "../store/wallet.store";
+import { WalletAddressSection } from "./WalletAddressSection";
+import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
 type WalletInfoProps = {
-  state: "connected" | "loading"
-  address?: string
-  isWalletReady?: boolean
-  open: boolean
-  onClose: () => void
-}
+  state: "connected" | "loading";
+  address?: string;
+  isWalletReady?: boolean;
+  open: boolean;
+  onClose: () => void;
+};
 export const WalletInfo: FC<WalletInfoProps> = ({
   state,
   address,
@@ -19,15 +19,15 @@ export const WalletInfo: FC<WalletInfoProps> = ({
 }) => {
   const isAccountServiceRunning = useWalletStore(
     (s) => s.isAccountServiceRunning
-  )
+  );
   const unlockedWalletName = useWalletStore(
     (state) => state.unlockedWallet?.name
-  )
-  const walletBalance = useWalletStore((s) => s.balance)
+  );
+  const walletBalance = useWalletStore((s) => s.balance);
 
   const walletInfoNode = useMemo(() => {
-    const isInitializing = !isAccountServiceRunning
-    const currentBalance = walletBalance
+    const isInitializing = !isAccountServiceRunning;
+    const currentBalance = walletBalance;
 
     return (
       <>
@@ -104,16 +104,16 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           )}
         </div>
       </>
-    )
-  }, [isAccountServiceRunning, walletBalance, address])
+    );
+  }, [isAccountServiceRunning, walletBalance, address]);
 
   const loadingWalletNode = (
     <div className="flex justify-center items-center">
       <ArrowPathIcon className="w-12 h-12 animate-spin text-gray-300" />
     </div>
-  )
+  );
 
-  if (!isWalletReady || !open) return null
+  if (!isWalletReady || !open) return null;
 
   return (
     <div
@@ -130,5 +130,5 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         <div>{state === "connected" ? walletInfoNode : loadingWalletNode}</div>
       </div>
     </div>
-  )
-}
+  );
+};

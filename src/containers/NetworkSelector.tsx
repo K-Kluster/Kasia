@@ -1,13 +1,13 @@
-import { FC, useMemo, useEffect, useRef } from "react"
-import { NetworkType } from "../types/all"
-import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react"
-import { getDisplayableNetworkFromNetworkString } from "../utils/network-display"
+import { FC, useMemo, useEffect, useRef } from "react";
+import { NetworkType } from "../types/all";
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
+import { getDisplayableNetworkFromNetworkString } from "../utils/network-display";
 
 type NetworkSelectorProps = {
-  onNetworkChange: (network: NetworkType) => void
-  selectedNetwork: NetworkType | null
-  isConnected?: boolean
-}
+  onNetworkChange: (network: NetworkType) => void;
+  selectedNetwork: NetworkType | null;
+  isConnected?: boolean;
+};
 
 export const NetworkSelector: FC<NetworkSelectorProps> = ({
   onNetworkChange,
@@ -16,13 +16,13 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
 }) => {
   const networkDisplay = useMemo(() => {
     if (!isConnected) {
-      return "Connecting..."
+      return "Connecting...";
     }
 
     return getDisplayableNetworkFromNetworkString(
       selectedNetwork as NetworkType
-    )
-  }, [selectedNetwork, isConnected])
+    );
+  }, [selectedNetwork, isConnected]);
 
   const allowedNetworks = useMemo<
     { id: NetworkType; displayableString: string }[]
@@ -32,8 +32,8 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
       .map((s: string) => ({
         id: s,
         displayableString: getDisplayableNetworkFromNetworkString(s),
-      }))
-  }, [])
+      }));
+  }, []);
 
   return (
     <Menu>
@@ -60,5 +60,5 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
         ))}
       </MenuItems>
     </Menu>
-  )
-}
+  );
+};

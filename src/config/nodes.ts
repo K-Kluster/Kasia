@@ -1,15 +1,15 @@
-import { NetworkType } from "../types/all"
+import { NetworkType } from "../types/all";
 
 export type NodeConfig = {
-  url: string
-  description: string
-  useWebSocket?: boolean
-}
+  url: string;
+  description: string;
+  useWebSocket?: boolean;
+};
 
 export type NetworkConfig = {
-  nodes: NodeConfig[]
-  apiEndpoint: string
-}
+  nodes: NodeConfig[];
+  apiEndpoint: string;
+};
 
 export const networkConfigs: Record<NetworkType, NetworkConfig> = {
   mainnet: {
@@ -75,15 +75,15 @@ export const networkConfigs: Record<NetworkType, NetworkConfig> = {
     ],
     apiEndpoint: "https://api-dev.kaspa.org",
   },
-}
+};
 
 export const getNodesForNetwork = (network: NetworkType): NodeConfig[] => {
-  return networkConfigs[network]?.nodes || []
-}
+  return networkConfigs[network]?.nodes || [];
+};
 
 export const getApiEndpoint = (network: NetworkType): string => {
   return (
     networkConfigs[network]?.apiEndpoint ||
     networkConfigs["testnet-10"].apiEndpoint
-  )
-}
+  );
+};

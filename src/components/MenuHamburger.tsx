@@ -1,5 +1,5 @@
-import { FC, useState, useEffect } from "react"
-import { FeeBuckets } from "./FeeBuckets"
+import { FC, useState, useEffect } from "react";
+import { FeeBuckets } from "./FeeBuckets";
 import {
   InformationCircleIcon,
   ArrowLongLeftIcon,
@@ -8,21 +8,21 @@ import {
   ChevronDownIcon,
   UserIcon,
   ArrowPathIcon,
-} from "@heroicons/react/24/solid"
-import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay"
-import { WalletWithdrawal } from "../containers/WalletWithdrawal"
-import { MessageBackup } from "./MessageBackup"
-import { WalletAddressSection } from "./WalletAddressSection"
-import clsx from "clsx"
+} from "@heroicons/react/24/solid";
+import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDisplay";
+import { WalletWithdrawal } from "../containers/WalletWithdrawal";
+import { MessageBackup } from "./MessageBackup";
+import { WalletAddressSection } from "./WalletAddressSection";
+import clsx from "clsx";
 
 type WalletSettingsProps = {
-  open: boolean
-  address: string | undefined
-  onCloseMenu: () => void
-  onOpenWalletInfo: () => void
-  onCloseWallet: () => void
-  messageStoreLoaded: boolean
-}
+  open: boolean;
+  address: string | undefined;
+  onCloseMenu: () => void;
+  onOpenWalletInfo: () => void;
+  onCloseWallet: () => void;
+  messageStoreLoaded: boolean;
+};
 
 const MenuHamburger: FC<WalletSettingsProps> = ({
   open,
@@ -32,26 +32,26 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
   onCloseWallet,
   messageStoreLoaded,
 }) => {
-  const [actionsMenuOpen, setActionsMenuOpen] = useState(false)
-  const [showSeedRetrieveModal, setShowSeedRetrieveModal] = useState(false)
-  const [showWalletWithdrawal, setShowWalletWithdrawal] = useState(false)
-  const [showMessageModal, setShowMessageModal] = useState(false)
-  const [showAddressModal, setShowAddressModal] = useState(false)
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const [showSeedRetrieveModal, setShowSeedRetrieveModal] = useState(false);
+  const [showWalletWithdrawal, setShowWalletWithdrawal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
 
   useEffect(() => {
     if (!open) {
-      setActionsMenuOpen(false)
-      setShowWalletWithdrawal(false)
-      setShowSeedRetrieveModal(false)
-      setShowMessageModal(false)
+      setActionsMenuOpen(false);
+      setShowWalletWithdrawal(false);
+      setShowSeedRetrieveModal(false);
+      setShowMessageModal(false);
     }
-  }, [open])
+  }, [open]);
 
-  if (!open) return null
+  if (!open) return null;
 
   const handleExportClick = () => {
-    setShowMessageModal(true)
-  }
+    setShowMessageModal(true);
+  };
 
   return (
     <>
@@ -79,8 +79,8 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
           {/* Show Wallet Info Item */}
           <li
             onClick={() => {
-              onOpenWalletInfo()
-              onCloseMenu()
+              onOpenWalletInfo();
+              onCloseMenu();
             }}
             className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
           >
@@ -111,8 +111,8 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               {/* Show Fund Withdraw Item */}
               <li
                 onClick={() => {
-                  setShowWalletWithdrawal(true)
-                  setActionsMenuOpen(false)
+                  setShowWalletWithdrawal(true);
+                  setActionsMenuOpen(false);
                 }}
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
@@ -121,8 +121,8 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               {/* Show Seed extract Item */}
               <li
                 onClick={() => {
-                  setShowSeedRetrieveModal(true)
-                  setActionsMenuOpen(false)
+                  setShowSeedRetrieveModal(true);
+                  setActionsMenuOpen(false);
                 }}
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
@@ -240,7 +240,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
         </div>
       )}
     </>
-  )
-}
+  );
+};
 
-export default MenuHamburger
+export default MenuHamburger;

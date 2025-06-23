@@ -1,180 +1,180 @@
-import { FC, useCallback, useEffect, useState, useRef } from "react"
-import { unknownErrorToErrorLike } from "./utils/errors"
-import { Contact, NetworkType } from "./types/all"
-import { useMessagingStore } from "./store/messaging.store"
-import { ContactCard } from "./components/ContactCard"
-import { WalletInfo } from "./components/WalletInfo"
-import { ErrorCard } from "./components/ErrorCard"
-import { useWalletStore } from "./store/wallet.store"
-import { WalletGuard } from "./containers/WalletGuard"
-import { NewChatForm } from "./components/NewChatForm"
-import clsx from "clsx"
-import { MessageSection } from "./containers/MessagesSection"
-import { FetchApiMessages } from "./components/FetchApiMessages"
-import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid"
-import MenuHamburger from "./components/MenuHamburger"
-import { FeeBuckets } from "./components/FeeBuckets"
-import { useNetworkStore } from "./store/network.store"
+import { FC, useCallback, useEffect, useState, useRef } from "react";
+import { unknownErrorToErrorLike } from "./utils/errors";
+import { Contact, NetworkType } from "./types/all";
+import { useMessagingStore } from "./store/messaging.store";
+import { ContactCard } from "./components/ContactCard";
+import { WalletInfo } from "./components/WalletInfo";
+import { ErrorCard } from "./components/ErrorCard";
+import { useWalletStore } from "./store/wallet.store";
+import { WalletGuard } from "./containers/WalletGuard";
+import { NewChatForm } from "./components/NewChatForm";
+import clsx from "clsx";
+import { MessageSection } from "./containers/MessagesSection";
+import { FetchApiMessages } from "./components/FetchApiMessages";
+import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
+import MenuHamburger from "./components/MenuHamburger";
+import { FeeBuckets } from "./components/FeeBuckets";
+import { useNetworkStore } from "./store/network.store";
 
 export const OneLiner: FC = () => {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isWalletReady, setIsWalletReady] = useState(false)
-  const [messageStoreLoading, setMessageStoreLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isWalletReady, setIsWalletReady] = useState(false);
+  const [messageStoreLoading, setMessageStoreLoading] = useState(false);
 
-  const networkStore = useNetworkStore()
-  const isConnected = useNetworkStore((state) => state.isConnected)
-  const connect = useNetworkStore((state) => state.connect)
+  const networkStore = useNetworkStore();
+  const isConnected = useNetworkStore((state) => state.isConnected);
+  const connect = useNetworkStore((state) => state.connect);
   // handle network error
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const messageStore = useMessagingStore()
-  const walletStore = useWalletStore()
+  const messageStore = useMessagingStore();
+  const walletStore = useWalletStore();
 
   // Network connection effect
   useEffect(() => {
     // Skip if no network selected or connection attempt in progress
     if (isConnected) {
-      return
+      return;
     }
 
-    connect()
+    connect();
     // this is on purpose, we only want to run this once upon component mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   const onNetworkChange = useCallback(
     (network: NetworkType) => {
-      networkStore.setNetwork(network)
+      networkStore.setNetwork(network);
 
       // Trigger reconnection when network changes
-      connect()
+      connect();
     },
     [connect, networkStore]
-  )
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsSettingsOpen(false)
+        setIsSettingsOpen(false);
       }
-    }
+    };
 
-    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const onWalletUnlocked = useCallback(() => {
-    setIsWalletReady(true)
-  }, [])
+    setIsWalletReady(true);
+  }, []);
 
   const onNewChatClicked = useCallback(async () => {
     try {
       if (!walletStore.unlockedWallet?.password) {
-        setErrorMessage("Please unlock your wallet first")
-        return
+        setErrorMessage("Please unlock your wallet first");
+        return;
       }
 
-      messageStore.setIsCreatingNewChat(true)
+      messageStore.setIsCreatingNewChat(true);
     } catch (error) {
-      console.error("Failed to start new chat:", error)
+      console.error("Failed to start new chat:", error);
       setErrorMessage(
         `Failed to start new chat: ${unknownErrorToErrorLike(error)}`
-      )
+      );
     }
-  }, [walletStore.unlockedWallet, messageStore])
+  }, [walletStore.unlockedWallet, messageStore]);
 
   const onStartMessagingProcessClicked = useCallback(async () => {
     try {
       // Clear any previous error messages
-      setErrorMessage(null)
+      setErrorMessage(null);
       if (!networkStore.kaspaClient || !networkStore.isConnected) {
         setErrorMessage(
           "Please choose a network and connect to the Kaspa Network first"
-        )
-        return
+        );
+        return;
       }
 
       if (!walletStore.unlockedWallet) {
-        setErrorMessage("Please unlock your wallet first")
-        return
+        setErrorMessage("Please unlock your wallet first");
+        return;
       }
 
-      setMessageStoreLoading(true)
+      setMessageStoreLoading(true);
 
       const { receiveAddress } = await walletStore.start(
         networkStore.kaspaClient
-      )
-      const receiveAddressStr = receiveAddress.toString()
+      );
+      const receiveAddressStr = receiveAddress.toString();
 
       // Initialize conversation manager
-      messageStore.initializeConversationManager(receiveAddressStr)
+      messageStore.initializeConversationManager(receiveAddressStr);
 
       // Load existing messages
-      messageStore.loadMessages(receiveAddressStr)
-      messageStore.setIsLoaded(true)
+      messageStore.loadMessages(receiveAddressStr);
+      messageStore.setIsLoaded(true);
 
       // Check if we should trigger API message fetching for imported wallets
-      const shouldFetchApi = localStorage.getItem("kasia_fetch_api_on_start")
+      const shouldFetchApi = localStorage.getItem("kasia_fetch_api_on_start");
       if (shouldFetchApi === "true") {
-        console.log("Triggering API message fetch for imported wallet...")
+        console.log("Triggering API message fetch for imported wallet...");
         // Set a flag to trigger API fetching after a short delay
         setTimeout(() => {
           const event = new CustomEvent("kasia-trigger-api-fetch", {
             detail: { address: receiveAddressStr },
-          })
-          window.dispatchEvent(event)
-        }, 1000)
+          });
+          window.dispatchEvent(event);
+        }, 1000);
 
         // Clear the flag after use
-        localStorage.removeItem("kasia_fetch_api_on_start")
+        localStorage.removeItem("kasia_fetch_api_on_start");
       }
 
       // Clear error message on success
-      setErrorMessage(null)
+      setErrorMessage(null);
     } catch (error) {
-      console.error("Failed to start messaging process:", error)
+      console.error("Failed to start messaging process:", error);
       setErrorMessage(
         `Failed to start messaging: ${unknownErrorToErrorLike(error)}`
-      )
+      );
     } finally {
-      setMessageStoreLoading(false)
+      setMessageStoreLoading(false);
     }
   }, [
     networkStore.kaspaClient,
     networkStore.isConnected,
     walletStore,
     messageStore,
-  ])
+  ]);
 
   const onContactClicked = useCallback(
     (contact: Contact) => {
       if (!walletStore.address) {
-        console.error("No wallet address")
-        return
+        console.error("No wallet address");
+        return;
       }
 
-      messageStore.setIsCreatingNewChat(false)
-      messageStore.setOpenedRecipient(contact.address)
+      messageStore.setIsCreatingNewChat(false);
+      messageStore.setOpenedRecipient(contact.address);
     },
     [messageStore, walletStore.address]
-  )
+  );
 
-  const toggleSettings = () => setIsSettingsOpen((v) => !v)
+  const toggleSettings = () => setIsSettingsOpen((v) => !v);
 
   const handleCloseWallet = () => {
-    walletStore.lock()
-    setIsWalletReady(false)
-    messageStore.setIsLoaded(false)
-    messageStore.setOpenedRecipient(null)
-    messageStore.setIsCreatingNewChat(false)
-    setIsSettingsOpen(false)
-    setIsWalletInfoOpen(false)
-  }
+    walletStore.lock();
+    setIsWalletReady(false);
+    messageStore.setIsLoaded(false);
+    messageStore.setOpenedRecipient(null);
+    messageStore.setIsCreatingNewChat(false);
+    setIsSettingsOpen(false);
+    setIsWalletInfoOpen(false);
+  };
 
   return (
     <div className="container">
@@ -204,8 +204,8 @@ export const OneLiner: FC = () => {
                 address={walletStore.address?.toString()}
                 onCloseMenu={() => setIsSettingsOpen(false)}
                 onOpenWalletInfo={() => {
-                  setIsWalletInfoOpen(true)
-                  setIsSettingsOpen(false)
+                  setIsWalletInfoOpen(true);
+                  setIsSettingsOpen(false);
                 }}
                 onCloseWallet={handleCloseWallet}
                 messageStoreLoaded={messageStore.isLoaded}
@@ -309,5 +309,5 @@ export const OneLiner: FC = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

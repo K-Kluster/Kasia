@@ -1,7 +1,7 @@
-import React from "react"
-import { OneLiner } from "./OneLiner"
-import { Routes, Route } from "react-router-dom"
-import { SettingsPage } from "./SettingsPage"
+import React from "react";
+import { OneLiner } from "./OneLiner";
+import { Routes, Route } from "react-router-dom";
+import { SettingsPage } from "./SettingsPage";
 
 const App: React.FC = () => {
   return (
@@ -23,7 +23,7 @@ const App: React.FC = () => {
         }
       />
     </Routes>
-  )
-}
+  );
+};
 
-export default App
+export default App;

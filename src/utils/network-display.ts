@@ -5,12 +5,12 @@ export enum KasiaNetwork {
 
 export const getDisplayableNetworkFromNetworkString = (network: string) => {
   if (network === KasiaNetwork.MAINNET) {
-    return "Mainnet"
+    return "Mainnet";
   }
 
   if (network === KasiaNetwork.TESTNET_10) {
-    return "Testnet"
+    return "Testnet";
   }
 
-  return "Unknown"
-}
+  return "Unknown";
+};

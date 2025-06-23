@@ -1,115 +1,115 @@
-import { ChangeEvent, FC, useCallback, useState } from "react"
-import { createWithdrawTransaction } from "../service/account-service"
-import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm"
-import { useWalletStore } from "../store/wallet.store"
+import { ChangeEvent, FC, useCallback, useState } from "react";
+import { createWithdrawTransaction } from "../service/account-service";
+import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
+import { useWalletStore } from "../store/wallet.store";
 
-const maxDustAmount = kaspaToSompi("0.19")!
+const maxDustAmount = kaspaToSompi("0.19")!;
 
 export const WalletWithdrawal: FC = () => {
-  const [withdrawAddress, setWithdrawAddress] = useState("")
-  const [withdrawAmount, setWithdrawAmount] = useState("")
-  const [withdrawError, setWithdrawError] = useState("")
-  const [isSending, setIsSending] = useState(false)
+  const [withdrawAddress, setWithdrawAddress] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawError, setWithdrawError] = useState("");
+  const [isSending, setIsSending] = useState(false);
 
-  const [amountInputError, setAmountInputError] = useState<string | null>(null)
+  const [amountInputError, setAmountInputError] = useState<string | null>(null);
 
-  const balance = useWalletStore((store) => store.balance)
+  const balance = useWalletStore((store) => store.balance);
   const inputAmountUpdated = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
       if (/^-?\d*\.?\d*$/.test(event.target.value) === false) {
-        return
+        return;
       }
 
       // update input value
-      setWithdrawAmount(event.target.value)
+      setWithdrawAmount(event.target.value);
 
-      const unValidatedAmountAsSompi = kaspaToSompi(event.target.value)
+      const unValidatedAmountAsSompi = kaspaToSompi(event.target.value);
 
       if (unValidatedAmountAsSompi === undefined) {
-        setAmountInputError("Invalid amount.")
+        setAmountInputError("Invalid amount.");
       }
 
-      const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0)
-      const matureBalanceAmount = balance?.mature ?? BigInt(0)
+      const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0);
+      const matureBalanceAmount = balance?.mature ?? BigInt(0);
 
       // if value is empty, clear any errors
       if (validatedAmountAsSompi === BigInt(0)) {
-        setAmountInputError(null)
-        return
+        setAmountInputError(null);
+        return;
       }
 
       // Check if amount exceeds balance first
       if (validatedAmountAsSompi > matureBalanceAmount) {
-        setAmountInputError("Amount exceeds available balance.")
-        return
+        setAmountInputError("Amount exceeds available balance.");
+        return;
       }
 
       // Check if amount is too small
       if (validatedAmountAsSompi < maxDustAmount) {
-        setAmountInputError("Amount must be greater than 0.19 KAS.")
-        return
+        setAmountInputError("Amount must be greater than 0.19 KAS.");
+        return;
       }
 
       // Amount is valid
-      setAmountInputError(null)
-      return
+      setAmountInputError(null);
+      return;
     },
     [balance]
-  )
+  );
 
   const handleMaxClick = useCallback(() => {
-    const matureBalance = balance?.mature ?? BigInt(0)
-    const maxAmount = sompiToKaspaString(matureBalance)
-    setWithdrawAmount(maxAmount)
+    const matureBalance = balance?.mature ?? BigInt(0);
+    const maxAmount = sompiToKaspaString(matureBalance);
+    setWithdrawAmount(maxAmount);
     // Clear any existing errors since max amount is always valid
-    setAmountInputError(null)
-  }, [balance])
+    setAmountInputError(null);
+  }, [balance]);
 
   const handleWithdraw = useCallback(async () => {
     if (amountInputError !== null) {
-      return
+      return;
     }
 
     try {
-      setWithdrawError("")
-      setIsSending(true)
+      setWithdrawError("");
+      setIsSending(true);
 
       if (!withdrawAddress || !withdrawAmount) {
-        throw new Error("Please enter both address and amount")
+        throw new Error("Please enter both address and amount");
       }
 
-      const amount = kaspaToSompi(withdrawAmount)
+      const amount = kaspaToSompi(withdrawAmount);
       if (amount === undefined) {
-        throw new Error("Please enter a valid amount")
+        throw new Error("Please enter a valid amount");
       }
 
       // Use mature balance directly since it's already in KAS
-      const matureSompiBalance = balance?.mature || BigInt(0)
+      const matureSompiBalance = balance?.mature || BigInt(0);
       console.log("Balance check:", {
         amount,
         matureSompiBalance,
         storeBalance: balance,
-      })
+      });
 
       if (amount > matureSompiBalance) {
         throw new Error(
           `Insufficient balance. Available: ${sompiToKaspaString(
             matureSompiBalance
           )} KAS`
-        )
+        );
       }
 
-      await createWithdrawTransaction(withdrawAddress, amount)
-      setWithdrawAddress("")
-      setWithdrawAmount("")
+      await createWithdrawTransaction(withdrawAddress, amount);
+      setWithdrawAddress("");
+      setWithdrawAmount("");
     } catch (error) {
       setWithdrawError(
         error instanceof Error ? error.message : "Failed to send transaction"
-      )
+      );
     } finally {
-      setIsSending(false)
+      setIsSending(false);
     }
-  }, [withdrawAddress, withdrawAmount, amountInputError, balance])
+  }, [withdrawAddress, withdrawAmount, amountInputError, balance]);
 
   return (
     <>
@@ -163,5 +163,5 @@ export const WalletWithdrawal: FC = () => {
         )}
       </div>
     </>
-  )
-}
+  );
+};

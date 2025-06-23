@@ -1,109 +1,109 @@
-import React, { useState, useCallback } from "react"
-import { useMessagingStore } from "../store/messaging.store"
-import { useWalletStore } from "../store/wallet.store"
-import { Address, kaspaToSompi, sompiToKaspaString } from "kaspa-wasm"
-import { Conversation } from "src/types/messaging.types"
+import React, { useState, useCallback } from "react";
+import { useMessagingStore } from "../store/messaging.store";
+import { useWalletStore } from "../store/wallet.store";
+import { Address, kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
+import { Conversation } from "src/types/messaging.types";
 
 export const NewChatForm: React.FC = () => {
-  const [recipientAddress, setRecipientAddress] = useState("")
-  const [handshakeAmount, setHandshakeAmount] = useState("0.2")
-  const [showAdvanced, setShowAdvanced] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [recipientAddress, setRecipientAddress] = useState("");
+  const [handshakeAmount, setHandshakeAmount] = useState("0.2");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
-  const messagingStore = useMessagingStore()
-  const balance = useWalletStore((state) => state.balance)
+  const messagingStore = useMessagingStore();
+  const balance = useWalletStore((state) => state.balance);
 
   // Get pending handshakes
-  const pendingHandshakes = messagingStore.getPendingConversations()
+  const pendingHandshakes = messagingStore.getPendingConversations();
 
   const handleAmountChange = useCallback((value: string) => {
     // Allow decimal numbers
     if (/^\d*\.?\d*$/.test(value)) {
-      setHandshakeAmount(value)
+      setHandshakeAmount(value);
     }
-  }, [])
+  }, []);
 
   const handleMaxClick = useCallback(() => {
     if (balance?.mature) {
-      const maxAmount = sompiToKaspaString(balance.mature)
-      setHandshakeAmount(maxAmount)
+      const maxAmount = sompiToKaspaString(balance.mature);
+      setHandshakeAmount(maxAmount);
     }
-  }, [balance])
+  }, [balance]);
 
   const validateAndPrepareHandshake = useCallback(() => {
-    setError(null)
+    setError(null);
 
     try {
       // Validate address
-      new Address(recipientAddress)
+      new Address(recipientAddress);
     } catch {
-      setError("Invalid Kaspa address format")
-      return false
+      setError("Invalid Kaspa address format");
+      return false;
     }
 
     // Validate amount
-    const amountSompi = kaspaToSompi(handshakeAmount)
+    const amountSompi = kaspaToSompi(handshakeAmount);
     if (!amountSompi) {
-      setError("Invalid handshake amount")
-      return false
+      setError("Invalid handshake amount");
+      return false;
     }
 
     // Check minimum amount
-    const minAmount = kaspaToSompi("0.2")
+    const minAmount = kaspaToSompi("0.2");
     if (amountSompi < minAmount!) {
-      setError("Handshake amount must be at least 0.2 KAS")
-      return false
+      setError("Handshake amount must be at least 0.2 KAS");
+      return false;
     }
 
     // Check balance
     if (!balance?.mature || balance.mature < amountSompi) {
       setError(
         `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`
-      )
-      return false
+      );
+      return false;
     }
 
-    return true
-  }, [recipientAddress, handshakeAmount, balance])
+    return true;
+  }, [recipientAddress, handshakeAmount, balance]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!validateAndPrepareHandshake()) {
-      return
+      return;
     }
 
-    setShowConfirmation(true)
-  }
+    setShowConfirmation(true);
+  };
 
   const confirmHandshake = async () => {
     try {
-      setError(null)
-      setShowConfirmation(false)
+      setError(null);
+      setShowConfirmation(false);
 
-      const amountSompi = kaspaToSompi(handshakeAmount)
+      const amountSompi = kaspaToSompi(handshakeAmount);
 
       // Initiate handshake with custom amount
-      await messagingStore.initiateHandshake(recipientAddress, amountSompi)
+      await messagingStore.initiateHandshake(recipientAddress, amountSompi);
 
       // Clear form
-      setRecipientAddress("")
-      setHandshakeAmount("0.2")
-      setShowAdvanced(false)
+      setRecipientAddress("");
+      setHandshakeAmount("0.2");
+      setShowAdvanced(false);
     } catch (err) {
-      setError((err as Error).message)
+      setError((err as Error).message);
     }
-  }
+  };
 
   const handleRespondToHandshake = async (handshake: Conversation) => {
     try {
-      setError(null)
-      await messagingStore.respondToHandshake(handshake)
+      setError(null);
+      await messagingStore.respondToHandshake(handshake);
     } catch (err) {
-      setError((err as Error).message)
+      setError((err as Error).message);
     }
-  }
+  };
 
   return (
     <div className="new-chat-container">
@@ -431,5 +431,5 @@ export const NewChatForm: React.FC = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

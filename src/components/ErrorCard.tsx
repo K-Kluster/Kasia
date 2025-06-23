@@ -1,8 +1,8 @@
-import { FC } from "react"
+import { FC } from "react";
 
 export const ErrorCard: FC<{
-  error?: string | null
-  onDismiss?: () => void
+  error?: string | null;
+  onDismiss?: () => void;
 }> = ({ error, onDismiss }) => {
   return error ? (
     <div
@@ -32,5 +32,5 @@ export const ErrorCard: FC<{
         </button>
       )}
     </div>
-  ) : null
-}
+  ) : null;
+};
