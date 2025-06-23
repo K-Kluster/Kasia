@@ -1,10 +1,10 @@
-import { FC, useCallback, useMemo } from 'react'
-import { FetchApiMessages } from '../components/FetchApiMessages'
-import { MessageDisplay } from '../components/MessageDisplay'
-import { SendMessageForm } from './SendMessageForm'
-import { useMessagingStore } from '../store/messaging.store'
-import { useWalletStore } from '../store/wallet.store'
-import { TrashIcon } from '@heroicons/react/24/outline'
+import { FC, useCallback, useMemo } from "react"
+import { FetchApiMessages } from "../components/FetchApiMessages"
+import { MessageDisplay } from "../components/MessageDisplay"
+import { SendMessageForm } from "./SendMessageForm"
+import { useMessagingStore } from "../store/messaging.store"
+import { useWalletStore } from "../store/wallet.store"
+import { TrashIcon } from "@heroicons/react/24/outline"
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore()
@@ -13,16 +13,16 @@ export const MessageSection: FC = () => {
   const contacts = useMessagingStore((s) => s.contacts)
   const openedRecipient = useMessagingStore((s) => s.openedRecipient)
 
-  const boxState = useMemo<'new' | 'filtered' | 'unfiltered'>(() => {
+  const boxState = useMemo<"new" | "filtered" | "unfiltered">(() => {
     if (!contacts.length) {
-      return 'new'
+      return "new"
     }
 
     if (!openedRecipient) {
-      return 'unfiltered'
+      return "unfiltered"
     }
 
-    return 'filtered'
+    return "filtered"
   }, [contacts, openedRecipient])
 
   const onClearHistory = useCallback(() => {
@@ -32,7 +32,7 @@ export const MessageSection: FC = () => {
 
     if (
       confirm(
-        'Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone.'
+        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
       )
     ) {
       messageStore.flushWalletHistory(walletStore.address.toString())
@@ -41,7 +41,7 @@ export const MessageSection: FC = () => {
 
   return (
     <div className="messages-section">
-      {boxState === 'new' ? (
+      {boxState === "new" ? (
         // ONBOARDING
         <>
           <div className="messages-header"></div>
@@ -53,7 +53,7 @@ export const MessageSection: FC = () => {
             </div>
           </div>
         </>
-      ) : boxState === 'unfiltered' ? (
+      ) : boxState === "unfiltered" ? (
         // NOT SELECTED ANY CONTACT
         <>
           <div className="messages-header"></div>
@@ -66,7 +66,7 @@ export const MessageSection: FC = () => {
       ) : (
         // SELECTED A CONTACT
         <>
-          {' '}
+          {" "}
           <div className="messages-header">
             <h3 className="text-base font-semibold">Messages</h3>
             <div className="header-actions">

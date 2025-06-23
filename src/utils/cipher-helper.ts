@@ -5,8 +5,8 @@ import {
   debug_can_decrypt,
   EncryptedMessage,
   PrivateKey,
-} from 'cipher'
-import { SecurityHelper } from './security-helper'
+} from "cipher"
+import { SecurityHelper } from "./security-helper"
 
 /**
  * Helper functions for working with cipher encryption/decryption
@@ -30,10 +30,10 @@ export class CipherHelper {
   static error(...args: any[]): void {
     if (
       args[0]?.includes(
-        'Failed to decrypt with both receive and change keys'
+        "Failed to decrypt with both receive and change keys"
       ) ||
-      args[0]?.includes('Cipher module not initialized properly') ||
-      args[0]?.includes('Invalid input')
+      args[0]?.includes("Cipher module not initialized properly") ||
+      args[0]?.includes("Invalid input")
     ) {
       console.error(...args)
     } else if (CipherHelper.DEBUG) {
@@ -49,15 +49,15 @@ export class CipherHelper {
     try {
       // Check if cipher module is available and properly initialized
       if (
-        typeof EncryptedMessage !== 'function' ||
-        typeof PrivateKey !== 'function'
+        typeof EncryptedMessage !== "function" ||
+        typeof PrivateKey !== "function"
       ) {
-        CipherHelper.error('Cipher WASM module not properly initialized')
+        CipherHelper.error("Cipher WASM module not properly initialized")
         return false
       }
       return true
     } catch (err) {
-      CipherHelper.error('Error checking WASM initialization:', err)
+      CipherHelper.error("Error checking WASM initialization:", err)
       return false
     }
   }
@@ -79,19 +79,19 @@ export class CipherHelper {
     // Validate inputs
     if (!encryptedHex || !privateKeyHex) {
       throw new Error(
-        'Invalid input: encrypted message and private key are required'
+        "Invalid input: encrypted message and private key are required"
       )
     }
 
     // Check rate limiting and attempt tracking
     if (!SecurityHelper.canAttemptDecryption(messageId)) {
       throw new Error(
-        'Decryption attempts rate limited or maximum attempts reached'
+        "Decryption attempts rate limited or maximum attempts reached"
       )
     }
 
     if (!CipherHelper.ensureWasmInitialized()) {
-      throw new Error('Cipher module not initialized properly')
+      throw new Error("Cipher module not initialized properly")
     }
 
     // Record this attempt
@@ -100,13 +100,13 @@ export class CipherHelper {
     // First check if this private key can decrypt the message - but don't fail if it returns false
     try {
       const canDecrypt = await debug_can_decrypt(encryptedHex, privateKeyHex)
-      CipherHelper.log('Debug can decrypt check:', canDecrypt)
+      CipherHelper.log("Debug can decrypt check:", canDecrypt)
 
       // NOTE: We're not failing early here anymore, as the debug_can_decrypt might
       // give false negatives in some cases
     } catch (err) {
       // Don't fail if debug check fails, continue with decryption attempts
-      CipherHelper.log('Debug check failed:', err)
+      CipherHelper.log("Debug check failed:", err)
     }
 
     // Try different approaches
@@ -118,11 +118,11 @@ export class CipherHelper {
       const encryptedMessage = new EncryptedMessage(encryptedHex)
 
       const decrypted = await decrypt_message(encryptedMessage, privateKey)
-      CipherHelper.log('Standard decryption successful')
+      CipherHelper.log("Standard decryption successful")
       return decrypted
     } catch (err) {
       errors.push(err as Error)
-      CipherHelper.log('Standard decryption attempt failed')
+      CipherHelper.log("Standard decryption attempt failed")
     }
 
     // Method 2: Try different message parsing
@@ -136,11 +136,11 @@ export class CipherHelper {
       const privateKey = new PrivateKey(privateKeyHex)
 
       const decrypted = await decrypt_message(encryptedMessage, privateKey)
-      CipherHelper.log('Component-based decryption successful')
+      CipherHelper.log("Component-based decryption successful")
       return decrypted
     } catch (err) {
       errors.push(err as Error)
-      CipherHelper.log('Component-based decryption attempt failed')
+      CipherHelper.log("Component-based decryption attempt failed")
     }
 
     // Method 3: Convert private key to bytes and try the secret key approach
@@ -155,7 +155,7 @@ export class CipherHelper {
         encryptedMessage,
         privateKeyBytes
       )
-      CipherHelper.log('Byte-based decryption successful')
+      CipherHelper.log("Byte-based decryption successful")
 
       // Schedule clearing of private key bytes from memory
       SecurityHelper.clearSensitiveData(privateKeyBytes)
@@ -163,7 +163,7 @@ export class CipherHelper {
       return decrypted
     } catch (err) {
       errors.push(err as Error)
-      CipherHelper.log('Byte-based decryption attempt failed')
+      CipherHelper.log("Byte-based decryption attempt failed")
     }
 
     // Log decryption stats only in debug mode
@@ -175,7 +175,7 @@ export class CipherHelper {
     // Detailed error to help diagnose issues
     const errorDetails = errors
       .map((err, i) => `Method ${i + 1}: ${err.message || err}`)
-      .join('; ')
+      .join("; ")
     throw new Error(`All decryption methods failed: ${errorDetails}`)
   }
 
@@ -191,7 +191,7 @@ export class CipherHelper {
     ciphertext: string
   } {
     if (!encryptedHex || encryptedHex.length < 24) {
-      throw new Error('Invalid message format: too short or empty')
+      throw new Error("Invalid message format: too short or empty")
     }
 
     const nonce = encryptedHex.substring(0, 24)
@@ -199,11 +199,11 @@ export class CipherHelper {
     // Check if the key starts with 02 or 03 (compressed SEC1 format)
     const keyStart = encryptedHex.substring(24, 26)
     let epkEnd
-    if (keyStart === '02' || keyStart === '03') {
+    if (keyStart === "02" || keyStart === "03") {
       // It's a compressed key, should be 33 bytes (66 hex chars)
       epkEnd = Math.min(24 + 66, encryptedHex.length)
       if (CipherHelper.DEBUG) {
-        console.log('Detected compressed SEC1 format public key')
+        console.log("Detected compressed SEC1 format public key")
       }
     } else {
       // Use standard 32 bytes (64 hex chars) as fallback
@@ -227,10 +227,10 @@ export class CipherHelper {
    * @returns The hex string without prefix
    */
   static stripPrefix(payload: string): string {
-    const prefix = 'ciph_msg:'
-      .split('')
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-      .join('')
+    const prefix = "ciph_msg:"
+      .split("")
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("")
 
     if (payload.toLowerCase().startsWith(prefix)) {
       return payload.substring(prefix.length)

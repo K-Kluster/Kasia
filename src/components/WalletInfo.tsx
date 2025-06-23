@@ -1,10 +1,10 @@
-import { FC, useMemo } from 'react'
-import { useWalletStore } from '../store/wallet.store'
-import { WalletAddressSection } from './WalletAddressSection'
-import { ArrowPathIcon } from '@heroicons/react/24/outline'
+import { FC, useMemo } from "react"
+import { useWalletStore } from "../store/wallet.store"
+import { WalletAddressSection } from "./WalletAddressSection"
+import { ArrowPathIcon } from "@heroicons/react/24/outline"
 
 type WalletInfoProps = {
-  state: 'connected' | 'loading'
+  state: "connected" | "loading"
   address?: string
   isWalletReady?: boolean
   open: boolean
@@ -47,25 +47,25 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           ) : (
             <ul className="balance-list">
               <li>
-                <strong>Total:</strong>{' '}
+                <strong>Total:</strong>{" "}
                 <span className="amount">
                   {currentBalance?.matureDisplay} KAS
                 </span>
               </li>
               <li>
-                <strong>Confirmed:</strong>{' '}
+                <strong>Confirmed:</strong>{" "}
                 <span className="amount">
                   {currentBalance?.matureDisplay} KAS
                 </span>
               </li>
               <li>
-                <strong>Unconfirmed:</strong>{' '}
+                <strong>Unconfirmed:</strong>{" "}
                 <span className="amount">
                   {currentBalance?.pendingDisplay} KAS
                 </span>
               </li>
               <li>
-                <strong>Outgoing:</strong>{' '}
+                <strong>Outgoing:</strong>{" "}
                 <span className="amount">
                   {currentBalance?.outgoingDisplay} KAS
                 </span>
@@ -81,23 +81,23 @@ export const WalletInfo: FC<WalletInfoProps> = ({
           ) : (
             <ul className="balance-list">
               <li>
-                <strong>Mature UTXOs:</strong>{' '}
+                <strong>Mature UTXOs:</strong>{" "}
                 <span className="utxo-count">
-                  {currentBalance?.matureUtxoCount ?? '-'}
+                  {currentBalance?.matureUtxoCount ?? "-"}
                 </span>
               </li>
               <li>
-                <strong>Pending UTXOs:</strong>{' '}
+                <strong>Pending UTXOs:</strong>{" "}
                 <span className="utxo-count">
-                  {currentBalance?.pendingUtxoCount ?? '-'}
+                  {currentBalance?.pendingUtxoCount ?? "-"}
                 </span>
               </li>
               <li>
-                <strong>Status:</strong>{' '}
+                <strong>Status:</strong>{" "}
                 <span className="status">
                   {!currentBalance?.matureUtxoCount
-                    ? 'Initializing...'
-                    : 'Ready'}
+                    ? "Initializing..."
+                    : "Ready"}
                 </span>
               </li>
             </ul>
@@ -127,7 +127,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
         <button className="close-button" onClick={onClose}>
           ×
         </button>
-        <div>{state === 'connected' ? walletInfoNode : loadingWalletNode}</div>
+        <div>{state === "connected" ? walletInfoNode : loadingWalletNode}</div>
       </div>
     </div>
   )

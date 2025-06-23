@@ -1,21 +1,21 @@
-import { create } from 'zustand'
-import { Contact, Message } from '../types/all'
+import { create } from "zustand"
+import { Contact, Message } from "../types/all"
 import {
   encrypt_message,
   decrypt_with_secret_key,
   EncryptedMessage,
-} from 'cipher'
-import { WalletStorage } from '../utils/wallet-storage'
-import { Address, NetworkType } from 'kaspa-wasm'
-import { ConversationManager } from '../utils/conversation-manager'
-import { useWalletStore } from './wallet.store'
+} from "cipher"
+import { WalletStorage } from "../utils/wallet-storage"
+import { Address, NetworkType } from "kaspa-wasm"
+import { ConversationManager } from "../utils/conversation-manager"
+import { useWalletStore } from "./wallet.store"
 import {
   ActiveConversation,
   Conversation,
   ConversationEvents,
   PendingConversation,
-} from 'src/types/messaging.types'
-import { UnlockedWallet } from 'src/types/wallet.type'
+} from "src/types/messaging.types"
+import { UnlockedWallet } from "src/types/wallet.type"
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -23,7 +23,7 @@ interface HandshakeState {
   myAlias: string
   theirAlias: string | null
   kaspaAddress: string
-  status: 'pending' | 'active' | 'rejected'
+  status: "pending" | "active" | "rejected"
   createdAt: number
   lastActivity: number
   initiatedByMe: boolean
@@ -31,9 +31,9 @@ interface HandshakeState {
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
-  if (address.startsWith('kaspatest:')) {
+  if (address.startsWith("kaspatest:")) {
     return NetworkType.Mainnet
-  } else if (address.startsWith('kaspadev:')) {
+  } else if (address.startsWith("kaspadev:")) {
     return NetworkType.Devnet
   }
   return NetworkType.Mainnet
@@ -161,13 +161,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   flushWalletHistory: (address: string) => {
     // 1. Clear wallet messages from localStorage
     const messagesOnWallet = JSON.parse(
-      localStorage.getItem('kaspa_messages_by_wallet') || '{}'
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
     )
 
     delete messagesOnWallet[address]
 
     localStorage.setItem(
-      'kaspa_messages_by_wallet',
+      "kaspa_messages_by_wallet",
       JSON.stringify(messagesOnWallet)
     )
 
@@ -196,11 +196,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       g().initializeConversationManager(address)
     }
 
-    console.log('Complete history clear completed - all data wiped')
+    console.log("Complete history clear completed - all data wiped")
   },
   loadMessages: (address): Message[] => {
     const messages: Record<string, Message[]> = JSON.parse(
-      localStorage.getItem('kaspa_messages_by_wallet') || '{}'
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
     )
 
     const contacts = new Map()
@@ -216,8 +216,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const isSender = msg.senderAddress === address
       const isRecipient = msg.recipientAddress === address
       const isHandshakeMessage =
-        msg.content?.includes(':handshake:') ||
-        msg.payload?.includes(':handshake:')
+        msg.content?.includes(":handshake:") ||
+        msg.payload?.includes(":handshake:")
 
       // Skip messages that don't involve us
       if (!isSender && !isRecipient) {
@@ -280,7 +280,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Load saved nicknames
     const storageKey = `contact_nicknames_${address}`
-    const savedNicknames = JSON.parse(localStorage.getItem(storageKey) || '{}')
+    const savedNicknames = JSON.parse(localStorage.getItem(storageKey) || "{}")
 
     // Update state with sorted contacts and messages
     const sortedContacts = [...contacts.values()]
@@ -307,13 +307,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Check if this is a handshake message
     if (
-      message.content.startsWith('ciph_msg:') &&
-      message.content.includes(':handshake:')
+      message.content.startsWith("ciph_msg:") &&
+      message.content.includes(":handshake:")
     ) {
       try {
         // Parse the handshake payload
-        const parts = message.content.split(':')
-        const jsonPart = parts.slice(3).join(':')
+        const parts = message.content.split(":")
+        const jsonPart = parts.slice(3).join(":")
         const handshakePayload = JSON.parse(jsonPart)
 
         // Skip handshake processing if it's a self-message
@@ -321,15 +321,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           message.senderAddress === walletAddress &&
           message.recipientAddress === walletAddress
         ) {
-          console.log('Skipping self-handshake message')
+          console.log("Skipping self-handshake message")
           return
         }
 
         // Move handshake message from content to payload
         message.payload = message.content
         message.content = handshakePayload.isResponse
-          ? 'Handshake response received'
-          : 'Handshake message received'
+          ? "Handshake response received"
+          : "Handshake message received"
 
         // Process handshake if we're the recipient or if this is a response to our handshake
         if (
@@ -338,7 +338,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           (handshakePayload.isResponse &&
             message.senderAddress === handshakePayload.recipientAddress)
         ) {
-          console.log('Processing handshake message:', {
+          console.log("Processing handshake message:", {
             senderAddress: message.senderAddress,
             recipientAddress: message.recipientAddress,
             isResponse: handshakePayload.isResponse,
@@ -347,15 +347,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           g()
             .processHandshake(message.senderAddress, message.payload)
             .catch((error) => {
-              if (error.message === 'Cannot create conversation with self') {
-                console.log('Skipping self-conversation handshake')
+              if (error.message === "Cannot create conversation with self") {
+                console.log("Skipping self-conversation handshake")
                 return
               }
-              console.error('Error processing handshake:', error)
+              console.error("Error processing handshake:", error)
             })
         }
       } catch (error) {
-        console.error('Error processing handshake message:', error)
+        console.error("Error processing handshake message:", error)
       }
     }
 
@@ -372,7 +372,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     const messagesMap = JSON.parse(
-      localStorage.getItem('kaspa_messages_by_wallet') || '{}'
+      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
     )
     if (!messagesMap[walletAddress]) {
       messagesMap[walletAddress] = []
@@ -405,7 +405,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       if (!message.fileData && message.content) {
         try {
           const parsedContent = JSON.parse(message.content)
-          if (parsedContent.type === 'file') {
+          if (parsedContent.type === "file") {
             message.fileData = {
               type: parsedContent.type,
               name: parsedContent.name,
@@ -423,7 +423,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     localStorage.setItem(
-      'kaspa_messages_by_wallet',
+      "kaspa_messages_by_wallet",
       JSON.stringify(messagesMap)
     )
 
@@ -500,17 +500,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   exportMessages: async (wallet, password) => {
     try {
-      console.log('Starting message export process...')
+      console.log("Starting message export process...")
 
       const messagesMap = JSON.parse(
-        localStorage.getItem('kaspa_messages_by_wallet') || '{}'
+        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
       )
 
       // Create backup object with metadata
       const backup = {
-        version: '1.0',
+        version: "1.0",
         timestamp: Date.now(),
-        type: 'kaspa-messages-backup',
+        type: "kaspa-messages-backup",
         data: messagesMap,
         conversations: {
           active: g().conversationManager?.getActiveConversations() || [],
@@ -518,13 +518,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         },
       }
 
-      console.log('Getting private key generator...')
+      console.log("Getting private key generator...")
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
         password
       )
 
-      console.log('Getting receive key...')
+      console.log("Getting receive key...")
       const receiveKey = privateKeyGenerator.receiveKey(0)
 
       // Get the current network type from the first message's address
@@ -533,15 +533,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       if (addresses.length > 0) {
         networkType = getNetworkTypeFromAddress(addresses[0])
       }
-      console.log('Using network type:', networkType)
+      console.log("Using network type:", networkType)
 
       const receiveAddress = receiveKey.toAddress(networkType)
-      console.log('Using receive address:', receiveAddress.toString())
+      console.log("Using receive address:", receiveAddress.toString())
 
-      console.log('Converting backup to string...')
+      console.log("Converting backup to string...")
       const backupStr = JSON.stringify(backup)
 
-      console.log('Encrypting backup data...')
+      console.log("Encrypting backup data...")
       try {
         const encryptedData = await encrypt_message(
           receiveAddress.toString(),
@@ -550,47 +550,47 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Create a Blob with the encrypted data wrapped in JSON
         const backupFile = {
-          type: 'kaspa-messages-backup',
+          type: "kaspa-messages-backup",
           data: encryptedData.to_hex(),
         }
 
         const blob = new Blob([JSON.stringify(backupFile)], {
-          type: 'application/json',
+          type: "application/json",
         })
 
         return blob
       } catch (error: unknown) {
-        console.error('Detailed export error:', error)
+        console.error("Detailed export error:", error)
         const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error'
+          error instanceof Error ? error.message : "Unknown error"
         throw new Error(`Failed to create backup: ${errorMessage}`)
       }
     } catch (error: unknown) {
-      console.error('Error exporting messages:', error)
+      console.error("Error exporting messages:", error)
       const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : "Unknown error"
       throw new Error(`Failed to create backup: ${errorMessage}`)
     }
   },
   importMessages: async (file, wallet, password) => {
     try {
-      console.log('Starting import process...')
+      console.log("Starting import process...")
 
       // Read and parse file content
       const fileContent = await file.text()
-      console.log('Parsing backup file...')
+      console.log("Parsing backup file...")
       const backupFile = JSON.parse(fileContent)
 
       // Validate backup file format
       if (
         !backupFile.type ||
-        backupFile.type !== 'kaspa-messages-backup' ||
+        backupFile.type !== "kaspa-messages-backup" ||
         !backupFile.data
       ) {
-        throw new Error('Invalid backup file format')
+        throw new Error("Invalid backup file format")
       }
 
-      console.log('Getting private key for decryption...')
+      console.log("Getting private key for decryption...")
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
         password
@@ -600,19 +600,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       // Get private key bytes
       const privateKeyBytes = WalletStorage.getPrivateKeyBytes(privateKey)
       if (!privateKeyBytes) {
-        throw new Error('Failed to get private key bytes')
+        throw new Error("Failed to get private key bytes")
       }
 
-      console.log('Creating EncryptedMessage from hex...')
+      console.log("Creating EncryptedMessage from hex...")
       const encryptedMessage = new EncryptedMessage(backupFile.data)
 
-      console.log('Decrypting backup data...')
+      console.log("Decrypting backup data...")
       const decryptedStr = await decrypt_with_secret_key(
         encryptedMessage,
         privateKeyBytes
       )
 
-      console.log('Parsing decrypted data...')
+      console.log("Parsing decrypted data...")
       const decryptedData = JSON.parse(decryptedStr)
 
       // Validate decrypted data structure
@@ -621,13 +621,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         !decryptedData.type ||
         !decryptedData.data
       ) {
-        throw new Error('Invalid backup data structure')
+        throw new Error("Invalid backup data structure")
       }
 
-      console.log('Merging with existing messages...')
+      console.log("Merging with existing messages...")
       // Merge with existing messages
       const existingMessages = JSON.parse(
-        localStorage.getItem('kaspa_messages_by_wallet') || '{}'
+        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
       )
 
       const mergedMessages = {
@@ -637,7 +637,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       // Save merged messages
       localStorage.setItem(
-        'kaspa_messages_by_wallet',
+        "kaspa_messages_by_wallet",
         JSON.stringify(mergedMessages)
       )
 
@@ -647,16 +647,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       if (addresses.length > 0) {
         networkType = getNetworkTypeFromAddress(addresses[0])
       }
-      console.log('Using network type:', networkType)
+      console.log("Using network type:", networkType)
 
       // Get the current address from the private key using detected network type
       const receiveAddress = privateKey.toAddress(networkType)
       const currentAddress = receiveAddress.toString()
-      console.log('Using receive address:', currentAddress)
+      console.log("Using receive address:", currentAddress)
 
       // Restore conversations if they exist in the backup
       if (decryptedData.conversations) {
-        console.log('Restoring conversations...')
+        console.log("Restoring conversations...")
         const { active = [], pending = [] } = decryptedData.conversations
 
         // Initialize conversation manager if needed
@@ -669,15 +669,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           conv: Conversation
         ): conv is Conversation => {
           return (
-            typeof conv === 'object' &&
-            typeof conv.conversationId === 'string' &&
-            typeof conv.myAlias === 'string' &&
-            (conv.theirAlias === null || typeof conv.theirAlias === 'string') &&
-            typeof conv.kaspaAddress === 'string' &&
-            ['pending', 'active', 'rejected'].includes(conv.status) &&
-            typeof conv.createdAt === 'number' &&
-            typeof conv.lastActivity === 'number' &&
-            typeof conv.initiatedByMe === 'boolean'
+            typeof conv === "object" &&
+            typeof conv.conversationId === "string" &&
+            typeof conv.myAlias === "string" &&
+            (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
+            typeof conv.kaspaAddress === "string" &&
+            ["pending", "active", "rejected"].includes(conv.status) &&
+            typeof conv.createdAt === "number" &&
+            typeof conv.lastActivity === "number" &&
+            typeof conv.initiatedByMe === "boolean"
           )
         }
 
@@ -686,7 +686,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           if (isValidConversation(conv)) {
             g().conversationManager?.restoreConversation(conv)
           } else {
-            console.error('Invalid conversation object in backup:', conv)
+            console.error("Invalid conversation object in backup:", conv)
           }
         })
 
@@ -695,7 +695,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           if (isValidConversation(conv)) {
             g().conversationManager?.restoreConversation(conv)
           } else {
-            console.error('Invalid conversation object in backup:', conv)
+            console.error("Invalid conversation object in backup:", conv)
           }
         })
       }
@@ -704,16 +704,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       g().loadMessages(currentAddress)
 
       // Set flag to trigger API fetching after next account service start
-      localStorage.setItem('kasia_fetch_api_on_start', 'true')
+      localStorage.setItem("kasia_fetch_api_on_start", "true")
 
-      console.log('Import completed successfully')
-      console.log('Set flag to fetch API messages on next wallet service start')
+      console.log("Import completed successfully")
+      console.log("Set flag to fetch API messages on next wallet service start")
     } catch (error: unknown) {
-      console.error('Error importing messages:', error)
+      console.error("Error importing messages:", error)
       if (error instanceof Error) {
         throw new Error(`Failed to import messages: ${error.message}`)
       }
-      throw new Error('Failed to import messages: Unknown error')
+      throw new Error("Failed to import messages: Unknown error")
     }
   },
   connectAccountService: (accountService) => {
@@ -721,7 +721,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     ;(window as any).messagingStore = g()
 
     // Listen for new messages from the account service
-    accountService.on('messageReceived', (message: Message) => {
+    accountService.on("messageReceived", (message: Message) => {
       const state = g()
 
       // Store the message
@@ -762,21 +762,21 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   initializeConversationManager: (address: string) => {
     const events: Partial<ConversationEvents> = {
       onHandshakeInitiated: (conversation) => {
-        console.log('Handshake initiated:', conversation)
+        console.log("Handshake initiated:", conversation)
         // You might want to update UI or state here
       },
       onHandshakeCompleted: (conversation) => {
-        console.log('Handshake completed:', conversation)
+        console.log("Handshake completed:", conversation)
         // Update contacts list
         const contact: Contact = {
           address: conversation.kaspaAddress,
           lastMessage: {
-            content: 'Handshake completed',
+            content: "Handshake completed",
             timestamp: conversation.lastActivity,
             senderAddress: address,
             recipientAddress: conversation.kaspaAddress,
-            transactionId: '',
-            payload: '',
+            transactionId: "",
+            payload: "",
             amount: 0,
           },
           messages: [],
@@ -784,11 +784,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         g().addContacts([contact])
       },
       onHandshakeExpired: (conversation) => {
-        console.log('Handshake expired:', conversation)
+        console.log("Handshake expired:", conversation)
         // You might want to update UI or state here
       },
       onError: (error) => {
-        console.error('Conversation error:', error)
+        console.error("Conversation error:", error)
         // You might want to show error in UI
       },
     }
@@ -802,13 +802,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   ) => {
     const manager = g().conversationManager
     if (!manager) {
-      throw new Error('Conversation manager not initialized')
+      throw new Error("Conversation manager not initialized")
     }
 
     // Get the wallet store for sending the message
     const walletStore = useWalletStore.getState()
     if (!walletStore.unlockedWallet || !walletStore.address) {
-      throw new Error('Wallet not unlocked')
+      throw new Error("Wallet not unlocked")
     }
 
     // Create the handshake payload
@@ -816,7 +816,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       await manager.initiateHandshake(recipientAddress)
 
     // Send the handshake message
-    console.log('Sending handshake message to:', recipientAddress)
+    console.log("Sending handshake message to:", recipientAddress)
     try {
       const txId = await walletStore.sendMessage(
         payload,
@@ -825,7 +825,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         customAmount // Pass custom amount to sendMessage
       )
 
-      console.log('Handshake message sent, transaction ID:', txId)
+      console.log("Handshake message sent, transaction ID:", txId)
 
       // Create a message object for the handshake
       const message: Message = {
@@ -833,7 +833,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipientAddress,
         timestamp: Date.now(),
-        content: 'Handshake initiated',
+        content: "Handshake initiated",
         amount: Number(customAmount || 20000000n) / 100000000, // Convert bigint to KAS number
         payload: payload,
       }
@@ -844,14 +844,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       return { payload, conversation }
     } catch (error) {
-      console.error('Error sending handshake message:', error)
+      console.error("Error sending handshake message:", error)
       throw error
     }
   },
   processHandshake: async (senderAddress: string, payload: string) => {
     const manager = g().conversationManager
     if (!manager) {
-      throw new Error('Conversation manager not initialized')
+      throw new Error("Conversation manager not initialized")
     }
     return await manager.processHandshake(senderAddress, payload)
   },
@@ -867,34 +867,34 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   respondToHandshake: async (handshake: HandshakeState) => {
     try {
       if (!handshake || !handshake.kaspaAddress) {
-        throw new Error('Invalid handshake data: missing kaspaAddress')
+        throw new Error("Invalid handshake data: missing kaspaAddress")
       }
 
       const manager = g().conversationManager
       if (!manager) {
-        throw new Error('Conversation manager not initialized')
+        throw new Error("Conversation manager not initialized")
       }
 
-      console.log('Sending handshake response to:', handshake.kaspaAddress)
+      console.log("Sending handshake response to:", handshake.kaspaAddress)
 
       // Use the address exactly as provided - do not modify it
       const recipientAddress = handshake.kaspaAddress
 
       // Ensure we have the correct prefix
       if (
-        !recipientAddress.startsWith('kaspa:') &&
-        !recipientAddress.startsWith('kaspatest:')
+        !recipientAddress.startsWith("kaspa:") &&
+        !recipientAddress.startsWith("kaspatest:")
       ) {
         throw new Error(
-          'Invalid address format: must start with kaspa: or kaspatest:'
+          "Invalid address format: must start with kaspa: or kaspatest:"
         )
       }
 
-      console.log('Using recipient address:', recipientAddress)
+      console.log("Using recipient address:", recipientAddress)
 
       // Create handshake response
       const handshakeResponse = {
-        type: 'handshake',
+        type: "handshake",
         alias: handshake.myAlias,
         timestamp: Date.now(),
         conversationId: handshake.conversationId,
@@ -907,7 +907,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       // Get wallet info
       const walletStore = useWalletStore.getState()
       if (!walletStore.unlockedWallet?.password || !walletStore.address) {
-        throw new Error('Wallet not unlocked')
+        throw new Error("Wallet not unlocked")
       }
 
       // Format the message with the correct prefix and type
@@ -918,7 +918,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       try {
         // Create a valid Kaspa address - use the address exactly as is
         const kaspaAddress = new Address(recipientAddress)
-        console.log('Valid Kaspa address created:', kaspaAddress.toString())
+        console.log("Valid Kaspa address created:", kaspaAddress.toString())
 
         // Send the handshake response
         const txId = await walletStore.sendMessage(
@@ -930,11 +930,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         // Update the conversation in the manager
         const conversation = manager.getConversationByAddress(recipientAddress)
         if (conversation) {
-          conversation.status = 'active'
+          conversation.status = "active"
           conversation.lastActivity = Date.now()
           manager.updateConversation({
             ...conversation,
-            status: 'active',
+            status: "active",
           })
         }
 
@@ -945,7 +945,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
             h.conversationId === handshake.conversationId
               ? {
                   ...h,
-                  status: 'active',
+                  status: "active",
                   lastActivity: Date.now(),
                 }
               : h
@@ -958,7 +958,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           senderAddress: walletStore.address.toString(),
           recipientAddress: recipientAddress,
           timestamp: Date.now(),
-          content: 'Handshake response sent',
+          content: "Handshake response sent",
           amount: 0.2, // Default 0.2 KAS for handshake responses
           payload: messageContent,
         }
@@ -969,13 +969,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         return txId
       } catch (error: unknown) {
-        console.error('Error creating Kaspa address:', error)
+        console.error("Error creating Kaspa address:", error)
         const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error'
+          error instanceof Error ? error.message : "Unknown error"
         throw new Error(`Invalid Kaspa address format: ${errorMessage}`)
       }
     } catch (error: unknown) {
-      console.error('Error sending handshake response:', error)
+      console.error("Error sending handshake response:", error)
       throw error
     }
   },
@@ -997,7 +997,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const walletStore = useWalletStore.getState()
       if (walletStore.address) {
         const storageKey = `contact_nicknames_${walletStore.address.toString()}`
-        const nicknames = JSON.parse(localStorage.getItem(storageKey) || '{}')
+        const nicknames = JSON.parse(localStorage.getItem(storageKey) || "{}")
         if (nickname.trim()) {
           nicknames[address] = nickname.trim()
         } else {
@@ -1009,6 +1009,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
 
   removeContactNickname: (address: string) => {
-    g().setContactNickname(address, '')
+    g().setContactNickname(address, "")
   },
 }))

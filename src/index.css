@@ -1,6 +1,6 @@
 /* @import  "./variables.css"; */
 
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @theme {
   --primary-bg: #0f172a;
@@ -32,10 +32,10 @@ input {
 
 body {
   font-family:
-    'Inter',
+    "Inter",
     -apple-system,
     BlinkMacSystemFont,
-    'Segoe UI',
+    "Segoe UI",
     Roboto,
     sans-serif;
   max-width: 1200px;
@@ -136,12 +136,12 @@ h1 {
 }
 
 .connection-status::before {
-  content: '●';
+  content: "●";
   color: var(--accent-green);
 }
 
 .mono {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
   background-color: #f8f9fa;
   padding: 2px 4px;
   border-radius: 3px;
@@ -427,7 +427,7 @@ h1 {
 }
 
 .message::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: 0;
   width: 20px;
@@ -526,7 +526,7 @@ h1 {
 }
 
 .message-id::after {
-  content: 'Click to view full ID';
+  content: "Click to view full ID";
   position: absolute;
   bottom: 100%;
   left: 50%;
@@ -871,7 +871,7 @@ h1 {
   overflow: hidden;
 }
 
-.import-button input[type='file'] {
+.import-button input[type="file"] {
   position: absolute;
   top: 0;
   left: 0;

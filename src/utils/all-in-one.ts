@@ -4,27 +4,27 @@ import {
   Encoding,
   IUtxosChanged,
   IBlockAdded,
-} from 'kaspa-wasm'
-import { unknownErrorToErrorLike } from './errors'
-import { getNodesForNetwork, getApiEndpoint } from '../config/nodes'
-import { NetworkType } from '../types/all'
+} from "kaspa-wasm"
+import { unknownErrorToErrorLike } from "./errors"
+import { getNodesForNetwork, getApiEndpoint } from "../config/nodes"
+import { NetworkType } from "../types/all"
 
 // Helper function to decode payload to text
 export function decodePayload(hex: string) {
   try {
-    if (!hex) return 'No payload'
+    if (!hex) return "No payload"
     // Convert hex to text
     const text = hex
       .match(/.{1,2}/g)
       ?.map((byte) => String.fromCharCode(parseInt(byte, 16)))
-      .join('')
+      .join("")
     // Check if the text is printable ASCII
-    if (/^[\x20-\x7E]*$/.test(text ?? 'N/A')) {
+    if (/^[\x20-\x7E]*$/.test(text ?? "N/A")) {
       return text
     }
     return `Hex: ${hex}`
   } catch (e) {
-    console.error('Error decoding payload:', e)
+    console.error("Error decoding payload:", e)
     return `Hex: ${hex}`
   }
 }
@@ -32,7 +32,7 @@ export function decodePayload(hex: string) {
 // Helper function to fetch transaction details
 export async function fetchTransactionDetails(
   txId: string,
-  networkId: NetworkType = 'testnet-10'
+  networkId: NetworkType = "testnet-10"
 ) {
   const baseUrl = getApiEndpoint(networkId)
   try {
@@ -107,7 +107,7 @@ export async function fetchKasplexData(daaScore: string) {
 
     const kasplexData = await kasplexResponse.json()
     if (
-      kasplexData.message === 'successful' &&
+      kasplexData.message === "successful" &&
       kasplexData.result &&
       kasplexData.result[0].txList
     ) {
@@ -124,13 +124,13 @@ export async function fetchKasplexData(daaScore: string) {
 export async function fetchAddressTransactions(address: string) {
   try {
     // Remove the kaspa: or kaspatest: prefix and extract just the address part
-    const cleanAddress = address.replace(/^(kaspa:|kaspatest:)/, '')
+    const cleanAddress = address.replace(/^(kaspa:|kaspatest:)/, "")
 
     // First get all UTXOs
     const apiEndpoints = [
-      'https://api-tn10.kaspa.org',
-      'https://api.kaspa.org',
-      'https://api-testnet.kaspa.org',
+      "https://api-tn10.kaspa.org",
+      "https://api.kaspa.org",
+      "https://api-testnet.kaspa.org",
     ]
 
     let utxoData = null
@@ -153,7 +153,7 @@ export async function fetchAddressTransactions(address: string) {
     }
 
     if (!utxoData || !successfulEndpoint) {
-      throw new Error('Failed to fetch UTXOs from all endpoints')
+      throw new Error("Failed to fetch UTXOs from all endpoints")
     }
 
     // Get all transaction IDs from UTXOs
@@ -196,7 +196,7 @@ export async function fetchAddressTransactions(address: string) {
 
     return transactions
   } catch (error) {
-    console.error('Error fetching address transactions:', error)
+    console.error("Error fetching address transactions:", error)
     return { transactions: [] }
   }
 }
@@ -204,7 +204,7 @@ export async function fetchAddressTransactions(address: string) {
 // Add this helper function at the top level
 function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) =>
-    typeof value === 'bigint' ? value.toString() : value
+    typeof value === "bigint" ? value.toString() : value
   )
 }
 
@@ -242,7 +242,7 @@ export class KaspaClient {
     }
 
     this.rpc = null
-    this.networkId = args?.networkId || 'testnet-10'
+    this.networkId = args?.networkId || "testnet-10"
     this.nodeUrl = args?.nodeUrl
     this.connected = false
     this.retryCount = 0
@@ -261,7 +261,7 @@ export class KaspaClient {
   // Connect to a node using the resolver or custom node list
   async connect(): Promise<unknown> {
     if (!this.networkId) {
-      throw new Error('Network ID must be set before connecting')
+      throw new Error("Network ID must be set before connecting")
     }
 
     if (this.retryCount >= this.options.maxRetries) {
@@ -279,7 +279,7 @@ export class KaspaClient {
 
       // Always try resolver first for all networks
       try {
-        console.log('Using resolver to find an available node')
+        console.log("Using resolver to find an available node")
         this.rpc = new RpcClient({
           resolver: new Resolver(),
           networkId: this.networkId,
@@ -287,7 +287,7 @@ export class KaspaClient {
           url: this.nodeUrl,
         })
 
-        console.log('Resolver created, attempting connection...')
+        console.log("Resolver created, attempting connection...")
         await Promise.race([
           this.rpc.connect({
             blockAsyncConnect: true,
@@ -295,8 +295,8 @@ export class KaspaClient {
             timeoutDuration: 10000,
           }),
           new Promise((_, reject) => {
-            console.log('Setting resolver connection timeout for 20s')
-            setTimeout(() => reject(new Error('Connection timeout')), 20000)
+            console.log("Setting resolver connection timeout for 20s")
+            setTimeout(() => reject(new Error("Connection timeout")), 20000)
           }),
         ])
 
@@ -306,7 +306,7 @@ export class KaspaClient {
           console.log(`Connected via resolver to ${this.rpc.url}`)
           return this
         } else {
-          throw new Error('Connection lost after initial establishment')
+          throw new Error("Connection lost after initial establishment")
         }
       } catch (error) {
         console.log(
@@ -320,7 +320,7 @@ export class KaspaClient {
     } catch (error) {
       console.log(
         `Connection attempt failed: ${unknownErrorToErrorLike(error)}`,
-        'error'
+        "error"
       )
       this.retryCount++
 
@@ -341,7 +341,7 @@ export class KaspaClient {
     if (this.rpc && this.connected) {
       await this.rpc.disconnect()
       this.connected = false
-      console.log('Disconnected from node')
+      console.log("Disconnected from node")
     }
   }
 
@@ -355,24 +355,24 @@ export class KaspaClient {
     const attemptSubscribe = async (): Promise<void> => {
       try {
         if (!this.rpc) {
-          throw new Error('RPC client not initialized')
+          throw new Error("RPC client not initialized")
         }
 
         // Check connection and attempt reconnect if needed
         if (!this.rpc.isConnected) {
-          console.log('Not connected, attempting to reconnect...')
+          console.log("Not connected, attempting to reconnect...")
           await this.connect()
         }
 
         if (this.utxoNotificationCallback) {
           this.rpc.removeEventListener(
-            'utxos-changed',
+            "utxos-changed",
             this.utxoNotificationCallback
           )
           this.rpc.unsubscribeUtxosChanged(
             this.utxoNotificationSubscribeAddresses
           )
-          console.log('Removed existing UTXO change listener')
+          console.log("Removed existing UTXO change listener")
         }
 
         console.log(`Subscribing to UTXO changes for addresses: ${addresses}`)
@@ -406,14 +406,14 @@ export class KaspaClient {
         this.utxoNotificationSubscribeAddresses = addresses
 
         this.rpc.addEventListener(
-          'utxos-changed',
+          "utxos-changed",
           this.utxoNotificationCallback
         )
         await this.rpc.subscribeUtxosChanged(
           this.utxoNotificationSubscribeAddresses
         )
 
-        console.log('Successfully subscribed to UTXO changes')
+        console.log("Successfully subscribed to UTXO changes")
       } catch (error) {
         retryCount++
         if (retryCount < maxRetries) {
@@ -429,7 +429,7 @@ export class KaspaClient {
           `Error subscribing to UTXO changes: ${unknownErrorToErrorLike(
             error
           )}`,
-          'error'
+          "error"
         )
         throw error
       }
@@ -445,22 +445,22 @@ export class KaspaClient {
     const attemptSubscribe = async (): Promise<void> => {
       try {
         if (!this.rpc) {
-          throw new Error('RPC client not initialized')
+          throw new Error("RPC client not initialized")
         }
 
         // Check connection and attempt reconnect if needed
         if (!this.rpc.isConnected) {
-          console.log('Not connected, attempting to reconnect...')
+          console.log("Not connected, attempting to reconnect...")
           await this.connect()
         }
 
         if (this.blockNotificationCallback) {
           this.rpc.removeEventListener(
-            'block-added',
+            "block-added",
             this.blockNotificationCallback
           )
           await this.rpc.unsubscribeBlockAdded()
-          console.log('Removed existing block notification listener')
+          console.log("Removed existing block notification listener")
         }
 
         // Create a wrapped callback that handles BigInt serialization
@@ -480,7 +480,7 @@ export class KaspaClient {
           } catch (error) {
             console.log(
               `Error in block notification callback: ${error}`,
-              'error'
+              "error"
             )
           }
         }
@@ -488,12 +488,12 @@ export class KaspaClient {
         // Subscribe to block-added events
         this.blockNotificationCallback = wrappedCallback
         await this.rpc.subscribeBlockAdded()
-        this.rpc.addEventListener('block-added', wrappedCallback)
-        console.log('Successfully subscribed to block-added events')
+        this.rpc.addEventListener("block-added", wrappedCallback)
+        console.log("Successfully subscribed to block-added events")
       } catch (error) {
         console.log(
           `Error subscribing to block-added events: ${error}`,
-          'error'
+          "error"
         )
         if (retryCount < maxRetries) {
           retryCount++

@@ -1,4 +1,4 @@
-import { CipherHelper } from './cipher-helper'
+import { CipherHelper } from "./cipher-helper"
 
 /**
  * Security helper class for managing sensitive operations
@@ -59,7 +59,7 @@ export class SecurityHelper {
     setTimeout(() => {
       if (privateKeyBytes) {
         privateKeyBytes.fill(0) // Overwrite with zeros
-        CipherHelper.log('Cleared sensitive private key data from memory')
+        CipherHelper.log("Cleared sensitive private key data from memory")
       }
     }, this.MEMORY_CLEAR_DELAY_MS)
   }

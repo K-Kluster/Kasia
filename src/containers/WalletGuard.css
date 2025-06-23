@@ -165,7 +165,7 @@
 }
 
 .error::before {
-  content: '⚠️';
+  content: "⚠️";
   margin-right: 8px;
 }
 
@@ -287,7 +287,7 @@
   width: 100%;
 }
 
-.show-phrase-toggle input[type='checkbox'] {
+.show-phrase-toggle input[type="checkbox"] {
   width: 18px;
   height: 18px;
   cursor: pointer;
@@ -422,7 +422,7 @@
   background-color: rgba(59, 130, 246, 0.05);
 }
 
-.radio-option input[type='radio'] {
+.radio-option input[type="radio"] {
   width: auto;
   margin: 0;
   accent-color: var(--accent-blue);
@@ -440,7 +440,7 @@
   margin-top: 0.25rem;
 }
 
-.radio-option input[type='radio']:checked + span {
+.radio-option input[type="radio"]:checked + span {
   color: var(--accent-blue);
 }
 

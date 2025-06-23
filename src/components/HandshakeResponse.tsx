@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
-import { useMessagingStore } from '../store/messaging.store'
-import '../styles/HandshakeResponse.css'
+import React, { useState } from "react"
+import { useMessagingStore } from "../store/messaging.store"
+import "../styles/HandshakeResponse.css"
 import {
   PendingConversation,
   RejectedConversation,
-} from 'src/types/messaging.types'
+} from "src/types/messaging.types"
 
 export const HandshakeResponse: React.FC<{
   conversation: PendingConversation | RejectedConversation
@@ -23,15 +23,15 @@ export const HandshakeResponse: React.FC<{
         theirAlias: conversation.theirAlias,
         kaspaAddress: conversation.kaspaAddress,
         status:
-          conversation.status === 'rejected' ? 'pending' : conversation.status,
+          conversation.status === "rejected" ? "pending" : conversation.status,
         createdAt: conversation.createdAt,
         lastActivity: conversation.lastActivity,
         initiatedByMe: conversation.initiatedByMe,
       })
     } catch (error) {
-      console.error('Error responding to handshake:', error)
+      console.error("Error responding to handshake:", error)
       setError(
-        error instanceof Error ? error.message : 'Failed to send response'
+        error instanceof Error ? error.message : "Failed to send response"
       )
     } finally {
       setIsResponding(false)
@@ -46,13 +46,13 @@ export const HandshakeResponse: React.FC<{
         <p>Status: {conversation.status}</p>
         {error && <p className="error">{error}</p>}
       </div>
-      {!conversation.initiatedByMe && conversation.status === 'pending' && (
+      {!conversation.initiatedByMe && conversation.status === "pending" && (
         <button
           onClick={handleRespond}
           className="respond-button"
           disabled={isResponding}
         >
-          {isResponding ? 'Sending Response...' : 'Accept & Send Response'}
+          {isResponding ? "Sending Response..." : "Accept & Send Response"}
         </button>
       )}
     </div>

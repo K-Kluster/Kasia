@@ -1,9 +1,9 @@
-import { create } from 'zustand'
-import { NetworkType } from '../types/all'
-import { KaspaClient } from '../utils/all-in-one'
-import { unknownErrorToErrorLike } from '../utils/errors'
-import { useWalletStore } from './wallet.store'
-import { unstable_batchedUpdates } from 'react-dom'
+import { create } from "zustand"
+import { NetworkType } from "../types/all"
+import { KaspaClient } from "../utils/all-in-one"
+import { unknownErrorToErrorLike } from "../utils/errors"
+import { useWalletStore } from "./wallet.store"
+import { unstable_batchedUpdates } from "react-dom"
 
 interface NetworkState {
   isConnected: boolean
@@ -29,7 +29,7 @@ interface NetworkState {
 }
 
 export const useNetworkStore = create<NetworkState>((set, g) => {
-  const initialNetwork = import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? 'mainnet'
+  const initialNetwork = import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet"
   const initialNodeUrl =
     localStorage.getItem(`kasia_node_url_${initialNetwork}`) ?? undefined
   return {
@@ -50,7 +50,7 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
 
       if (!isDifferentNetwork && !isDifferentUrl && g().isConnected) {
         console.warn(
-          'Trying to connect KaspaClient while it is already connected.'
+          "Trying to connect KaspaClient while it is already connected."
         )
         return
       }
@@ -79,7 +79,7 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
         if (kaspaClient.nodeUrl) {
           localStorage.setItem(
             `kasia_node_url_${kaspaClient.networkId}`,
-            kaspaClient.nodeUrl ?? ''
+            kaspaClient.nodeUrl ?? ""
           )
         } else {
           localStorage.removeItem(`kasia_node_url_${kaspaClient.networkId}`)
@@ -103,10 +103,10 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
         })
       }
 
-      console.error('Max retries reached. Could not connect to KaspaClient.')
+      console.error("Max retries reached. Could not connect to KaspaClient.")
       set({
         connectionError:
-          'Max retries reached. Could not connect to KaspaClient.',
+          "Max retries reached. Could not connect to KaspaClient.",
       })
 
       return false

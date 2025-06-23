@@ -1,5 +1,5 @@
-import { formatKasAmount } from './format'
-import { Transaction } from '../types/all'
+import { formatKasAmount } from "./format"
+import { Transaction } from "../types/all"
 
 // Helper function to calculate minimum required amount based on message length
 export function amountFromMessage(message: string) {
@@ -29,7 +29,7 @@ export function amountFromMessage(message: string) {
     const finalAmount = Math.ceil(totalAmount * 1.1)
 
     // Log the calculation details
-    console.log('Fee calculation:', {
+    console.log("Fee calculation:", {
       messageLength: messageBytes,
       messageMass,
       baseMass,
@@ -44,11 +44,11 @@ export function amountFromMessage(message: string) {
 
     return finalAmount
   } catch (error) {
-    console.error('Error in fee calculation:', error)
+    console.error("Error in fee calculation:", error)
     // Fallback to minimum output value plus fees
     const fallbackAmount = MIN_OUTPUT_VALUE + MIN_RELAY_FEE
     const finalAmount = Math.ceil(fallbackAmount * 1.1)
-    console.log('Using fallback amount:', finalAmount, 'sompi')
+    console.log("Using fallback amount:", finalAmount, "sompi")
     return finalAmount
   }
 }

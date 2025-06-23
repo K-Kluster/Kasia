@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
-import { NetworkSelector } from './containers/NetworkSelector'
-import { useNetworkStore } from './store/network.store'
-import { NetworkType } from './types/all'
-import clsx from 'clsx'
-import { Link } from 'react-router'
-import { ArrowLeftIcon } from '@heroicons/react/24/solid'
+import { useCallback, useEffect, useState } from "react"
+import { NetworkSelector } from "./containers/NetworkSelector"
+import { useNetworkStore } from "./store/network.store"
+import { NetworkType } from "./types/all"
+import clsx from "clsx"
+import { Link } from "react-router"
+import { ArrowLeftIcon } from "@heroicons/react/24/solid"
 
 export const SettingsPage: React.FC = () => {
   const networkStore = useNetworkStore()
@@ -18,8 +18,8 @@ export const SettingsPage: React.FC = () => {
 
   const [nodeUrl, setNodeUrl] = useState(
     networkStore.nodeUrl ??
-      localStorage.getItem('`kasia_node_url_${initialNetwork}`') ??
-      ''
+      localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
+      ""
   )
 
   // Network connection effect
@@ -42,7 +42,7 @@ export const SettingsPage: React.FC = () => {
 
       const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`)
 
-      setNodeUrl(savedNetwork ?? '')
+      setNodeUrl(savedNetwork ?? "")
 
       connect()
     },
@@ -56,7 +56,7 @@ export const SettingsPage: React.FC = () => {
       return
     }
 
-    networkStore.setNodeUrl(nodeUrl === '' ? undefined : nodeUrl)
+    networkStore.setNodeUrl(nodeUrl === "" ? undefined : nodeUrl)
 
     const isSuccess = await connect()
 
@@ -104,8 +104,8 @@ export const SettingsPage: React.FC = () => {
               <button
                 onClick={handleSaveNodeUrl}
                 className={clsx(
-                  'bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer',
-                  isConnecting && 'opacity-50 cursor-not-allowed'
+                  "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
+                  isConnecting && "opacity-50 cursor-not-allowed"
                 )}
               >
                 Save

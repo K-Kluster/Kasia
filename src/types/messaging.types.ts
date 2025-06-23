@@ -4,7 +4,7 @@ export interface HandshakeState {
   theirAlias: string | null
   senderAddress: string
   kaspaAddress: string
-  status: 'pending' | 'active' | 'rejected'
+  status: "pending" | "active" | "rejected"
   createdAt: number
   lastActivity: number
   initiatedByMe: boolean
@@ -22,15 +22,15 @@ export type BaseConversation = {
 }
 
 export type ActiveConversation = BaseConversation & {
-  status: 'active'
+  status: "active"
 }
 
 export type RejectedConversation = BaseConversation & {
-  status: 'rejected'
+  status: "rejected"
 }
 
 export type PendingConversation = BaseConversation & {
-  status: 'pending'
+  status: "pending"
 }
 
 export type Conversation =
@@ -39,7 +39,7 @@ export type Conversation =
   | PendingConversation
 
 export interface HandshakePayload {
-  type: 'handshake'
+  type: "handshake"
   alias: string
   theirAlias?: string // Used in response to confirm both aliases
   timestamp: number

@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react'
-import { useWalletStore } from '../store/wallet.store'
-import { useMessagingStore } from '../store/messaging.store'
+import React, { useCallback } from "react"
+import { useWalletStore } from "../store/wallet.store"
+import { useMessagingStore } from "../store/messaging.store"
 
 export const MessageBackup: React.FC = () => {
   const walletStore = useWalletStore()
@@ -8,7 +8,7 @@ export const MessageBackup: React.FC = () => {
 
   const onExportMessages = useCallback(async () => {
     if (!walletStore.unlockedWallet?.password) {
-      alert('Please unlock your wallet first')
+      alert("Please unlock your wallet first")
       return
     }
 
@@ -19,28 +19,28 @@ export const MessageBackup: React.FC = () => {
       )
 
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
+      const a = document.createElement("a")
       const now = new Date()
       a.href = url
       // Build file name with prefix, short date and short time - YYMMDD-HHMM - ty gippity for this
       a.download = `kasia-message-backup-${now
         .getFullYear()
         .toString()
-        .slice(2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now
+        .slice(2)}${(now.getMonth() + 1).toString().padStart(2, "0")}${now
         .getDate()
         .toString()
-        .padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now
+        .padStart(2, "0")}-${now.getHours().toString().padStart(2, "0")}${now
         .getMinutes()
         .toString()
-        .padStart(2, '0')}.json`
+        .padStart(2, "0")}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      alert('Messages exported successfully!')
+      alert("Messages exported successfully!")
     } catch (error) {
-      console.error('Error exporting messages:', error)
-      alert('Failed to export messages')
+      console.error("Error exporting messages:", error)
+      alert("Failed to export messages")
     }
   }, [messageStore, walletStore.unlockedWallet])
 
@@ -50,7 +50,7 @@ export const MessageBackup: React.FC = () => {
       if (!file) return
 
       if (!walletStore.unlockedWallet?.password) {
-        alert('Please unlock your wallet first')
+        alert("Please unlock your wallet first")
         return
       }
 
@@ -60,16 +60,16 @@ export const MessageBackup: React.FC = () => {
           walletStore.unlockedWallet,
           walletStore.unlockedWallet.password
         )
-        alert('Messages imported successfully!')
+        alert("Messages imported successfully!")
       } catch (error: unknown) {
-        console.error('Error importing messages:', error)
+        console.error("Error importing messages:", error)
         alert(
-          error instanceof Error ? error.message : 'Failed to import messages'
+          error instanceof Error ? error.message : "Failed to import messages"
         )
       }
 
       // Clear the input
-      event.target.value = ''
+      event.target.value = ""
     },
     [messageStore, walletStore.unlockedWallet]
   )

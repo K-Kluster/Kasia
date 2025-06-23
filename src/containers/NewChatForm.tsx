@@ -1,12 +1,12 @@
-import React, { useState, useCallback } from 'react'
-import { useMessagingStore } from '../store/messaging.store'
-import { useWalletStore } from '../store/wallet.store'
-import { Address, kaspaToSompi, sompiToKaspaString } from 'kaspa-wasm'
-import { Conversation } from 'src/types/messaging.types'
+import React, { useState, useCallback } from "react"
+import { useMessagingStore } from "../store/messaging.store"
+import { useWalletStore } from "../store/wallet.store"
+import { Address, kaspaToSompi, sompiToKaspaString } from "kaspa-wasm"
+import { Conversation } from "src/types/messaging.types"
 
 export const NewChatForm: React.FC = () => {
-  const [recipientAddress, setRecipientAddress] = useState('')
-  const [handshakeAmount, setHandshakeAmount] = useState('0.2')
+  const [recipientAddress, setRecipientAddress] = useState("")
+  const [handshakeAmount, setHandshakeAmount] = useState("0.2")
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showConfirmation, setShowConfirmation] = useState(false)
@@ -38,28 +38,28 @@ export const NewChatForm: React.FC = () => {
       // Validate address
       new Address(recipientAddress)
     } catch {
-      setError('Invalid Kaspa address format')
+      setError("Invalid Kaspa address format")
       return false
     }
 
     // Validate amount
     const amountSompi = kaspaToSompi(handshakeAmount)
     if (!amountSompi) {
-      setError('Invalid handshake amount')
+      setError("Invalid handshake amount")
       return false
     }
 
     // Check minimum amount
-    const minAmount = kaspaToSompi('0.2')
+    const minAmount = kaspaToSompi("0.2")
     if (amountSompi < minAmount!) {
-      setError('Handshake amount must be at least 0.2 KAS')
+      setError("Handshake amount must be at least 0.2 KAS")
       return false
     }
 
     // Check balance
     if (!balance?.mature || balance.mature < amountSompi) {
       setError(
-        `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || '0'} KAS`
+        `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`
       )
       return false
     }
@@ -88,8 +88,8 @@ export const NewChatForm: React.FC = () => {
       await messagingStore.initiateHandshake(recipientAddress, amountSompi)
 
       // Clear form
-      setRecipientAddress('')
-      setHandshakeAmount('0.2')
+      setRecipientAddress("")
+      setHandshakeAmount("0.2")
       setShowAdvanced(false)
     } catch (err) {
       setError((err as Error).message)
@@ -338,7 +338,7 @@ export const NewChatForm: React.FC = () => {
           onClick={() => setShowAdvanced(!showAdvanced)}
           className="advanced-toggle"
         >
-          {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+          {showAdvanced ? "Hide Advanced Options" : "Show Advanced Options"}
         </button>
 
         {showAdvanced && (
@@ -385,7 +385,7 @@ export const NewChatForm: React.FC = () => {
             <br />
             <strong>Amount:</strong> {handshakeAmount} KAS
             <br />
-            <strong>Your Balance:</strong> {balance?.matureDisplay || '0'} KAS
+            <strong>Your Balance:</strong> {balance?.matureDisplay || "0"} KAS
             <br />
             <br />
             {parseFloat(handshakeAmount) > 0.2 && (

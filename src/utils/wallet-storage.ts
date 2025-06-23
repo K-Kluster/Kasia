@@ -5,16 +5,16 @@ import {
   PrivateKeyGenerator,
   PublicKeyGenerator,
   XPrv,
-} from 'kaspa-wasm'
-import { v4 as uuidv4 } from 'uuid'
+} from "kaspa-wasm"
+import { v4 as uuidv4 } from "uuid"
 import {
   StoredWallet,
   UnlockedWallet,
   WalletDerivationType,
-} from 'src/types/wallet.type'
+} from "src/types/wallet.type"
 
 export class WalletStorage {
-  private _storageKey: string = 'wallets'
+  private _storageKey: string = "wallets"
 
   constructor() {
     // Initialize wallets array if it doesn't exist
@@ -36,11 +36,11 @@ export class WalletStorage {
       return new PrivateKeyGenerator(
         xprv,
         false,
-        BigInt(wallet.derivationType === 'standard' ? 0 : 1)
+        BigInt(wallet.derivationType === "standard" ? 0 : 1)
       )
     } catch (error) {
-      console.error('Error getting private key generator:', error)
-      throw new Error('Invalid password')
+      console.error("Error getting private key generator:", error)
+      throw new Error("Invalid password")
     }
   }
 
@@ -53,41 +53,41 @@ export class WalletStorage {
    */
   static getPrivateKeyBytes(privateKey: unknown): Uint8Array | null {
     try {
-      if (!(typeof privateKey === 'object') || privateKey === null) {
+      if (!(typeof privateKey === "object") || privateKey === null) {
         return null
       }
       // Try method 1: secret_bytes (used by k256 library)
       if (
-        'secret_bytes' in privateKey &&
-        typeof privateKey.secret_bytes === 'function'
+        "secret_bytes" in privateKey &&
+        typeof privateKey.secret_bytes === "function"
       ) {
         return privateKey.secret_bytes()
       }
 
       // Try method 2: to_bytes (common in some wallet implementations)
       if (
-        'to_bytes' in privateKey &&
-        typeof privateKey.to_bytes === 'function'
+        "to_bytes" in privateKey &&
+        typeof privateKey.to_bytes === "function"
       ) {
         return privateKey.to_bytes()
       }
 
       // Try method 3: bytes (seen in some implementations)
-      if ('bytes' in privateKey && typeof privateKey.bytes === 'function') {
+      if ("bytes" in privateKey && typeof privateKey.bytes === "function") {
         return privateKey.bytes()
       }
 
       // Try method 4: serialized bytes
       if (
-        'serialize' in privateKey &&
-        typeof privateKey.serialize === 'function'
+        "serialize" in privateKey &&
+        typeof privateKey.serialize === "function"
       ) {
         return privateKey.serialize()
       }
 
       // If all else fails but we have a toString method that gives hex,
       // try to convert it to bytes
-      if (typeof privateKey.toString === 'function') {
+      if (typeof privateKey.toString === "function") {
         const hexString = privateKey.toString()
         if (hexString && hexString.match(/^[0-9a-fA-F]+$/)) {
           return new Uint8Array(
@@ -100,7 +100,7 @@ export class WalletStorage {
 
       return null
     } catch (error) {
-      console.error('Error getting private key bytes:', error)
+      console.error("Error getting private key bytes:", error)
       return null
     }
   }
@@ -118,7 +118,7 @@ export class WalletStorage {
       id,
       name,
       createdAt,
-      derivationType: derivationType || 'legacy', // Default to legacy for existing wallets
+      derivationType: derivationType || "legacy", // Default to legacy for existing wallets
     }))
   }
 
@@ -127,13 +127,13 @@ export class WalletStorage {
     password: string
   ): Promise<UnlockedWallet> {
     const walletsString = localStorage.getItem(this._storageKey)
-    if (!walletsString) throw new Error('No wallets found')
+    if (!walletsString) throw new Error("No wallets found")
 
     const wallets = JSON.parse(walletsString) as StoredWallet[]
     const wallet = wallets.find((w) => w.id === walletId)
 
     if (!wallet) {
-      throw new Error('Wallet not found')
+      throw new Error("Wallet not found")
     }
 
     try {
@@ -148,13 +148,13 @@ export class WalletStorage {
 
       // Determine derivation type (default to legacy for existing wallets)
       const derivationType: WalletDerivationType =
-        wallet.derivationType || 'legacy'
+        wallet.derivationType || "legacy"
 
       // Get the public key generator - use original working approach
       const publicKeyGenerator = await PublicKeyGenerator.fromMasterXPrv(
         extendedKey,
         false,
-        BigInt(derivationType === 'standard' ? 0 : 1)
+        BigInt(derivationType === "standard" ? 0 : 1)
       )
 
       // Create the unlocked wallet with the encrypted seed
@@ -168,8 +168,8 @@ export class WalletStorage {
         derivationType,
       }
     } catch (error) {
-      console.error('Error decrypting wallet:', error)
-      throw new Error('Invalid password')
+      console.error("Error decrypting wallet:", error)
+      throw new Error("Invalid password")
     }
   }
 
@@ -177,10 +177,10 @@ export class WalletStorage {
     name: string,
     mnemonic: Mnemonic,
     password: string,
-    derivationType: WalletDerivationType = 'standard'
+    derivationType: WalletDerivationType = "standard"
   ): string {
     const walletsString = localStorage.getItem(this._storageKey)
-    if (!walletsString) throw new Error('Storage not initialized')
+    if (!walletsString) throw new Error("Storage not initialized")
 
     const wallets = JSON.parse(walletsString) as StoredWallet[]
 
@@ -189,7 +189,7 @@ export class WalletStorage {
       name,
       encryptedPhrase: encryptXChaCha20Poly1305(mnemonic.phrase, password),
       createdAt: new Date().toISOString(),
-      accounts: [{ name: 'Account 1' }],
+      accounts: [{ name: "Account 1" }],
       derivationType, // New wallets default to standard
     }
 
@@ -224,17 +224,17 @@ export class WalletStorage {
     newName?: string
   ): Promise<string> {
     const walletsString = localStorage.getItem(this._storageKey)
-    if (!walletsString) throw new Error('No wallets found')
+    if (!walletsString) throw new Error("No wallets found")
 
     const wallets = JSON.parse(walletsString) as StoredWallet[]
     const wallet = wallets.find((w) => w.id === walletId)
 
     if (!wallet) {
-      throw new Error('Wallet not found')
+      throw new Error("Wallet not found")
     }
 
-    if (wallet.derivationType === 'standard') {
-      throw new Error('Wallet is already using standard derivation')
+    if (wallet.derivationType === "standard") {
+      throw new Error("Wallet is already using standard derivation")
     }
 
     try {
@@ -247,10 +247,10 @@ export class WalletStorage {
 
       // Create new wallet with standard derivation
       const migrationName = newName || `${wallet.name} (Standard)`
-      return this.create(migrationName, mnemonic, password, 'standard')
+      return this.create(migrationName, mnemonic, password, "standard")
     } catch (error) {
-      console.error('Error migrating wallet:', error)
-      throw new Error('Failed to migrate wallet')
+      console.error("Error migrating wallet:", error)
+      throw new Error("Failed to migrate wallet")
     }
   }
 }

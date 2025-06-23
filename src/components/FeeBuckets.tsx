@@ -1,6 +1,6 @@
-import { FC, useEffect, useState } from 'react'
-import { formatKasAmount } from '../utils/format'
-import { useWalletStore } from '../store/wallet.store'
+import { FC, useEffect, useState } from "react"
+import { formatKasAmount } from "../utils/format"
+import { useWalletStore } from "../store/wallet.store"
 
 interface FeeBucketsProps {
   inline?: boolean
@@ -33,13 +33,13 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
 
         // Get fee estimates from RPC client
         const result = await rpcClient.rpc.getFeeEstimate()
-        console.log('Fee estimates raw response:', result)
+        console.log("Fee estimates raw response:", result)
 
         // Store the entire response for debugging
         setFeeEstimate(result)
       } catch (err) {
-        console.error('Failed to fetch fee estimates:', err)
-        setError('Failed to fetch fee estimates')
+        console.error("Failed to fetch fee estimates:", err)
+        setError("Failed to fetch fee estimates")
       } finally {
         setLoading(false)
       }
@@ -85,9 +85,9 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
 
   // Helper function to safely format time
   const formatTime = (seconds: any) => {
-    if (seconds === undefined || seconds === null) return 'N/A'
+    if (seconds === undefined || seconds === null) return "N/A"
     const value = Number(seconds)
-    if (isNaN(value)) return 'N/A'
+    if (isNaN(value)) return "N/A"
 
     // Handle different time scales
     if (value < 0.001) {

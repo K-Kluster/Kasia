@@ -1,16 +1,16 @@
-import { FC, useState, useEffect } from 'react'
-import { useWalletStore } from '../store/wallet.store'
-import { useMessagingStore } from '../store/messaging.store'
-import { WalletStorage } from '../utils/wallet-storage'
-import { Transaction } from '../types/all'
-import { getApiEndpoint } from '../config/nodes'
-import './FetchApiMessages.css'
-import { CipherHelper } from '../utils/cipher-helper'
-import { Message } from '../types/all'
-import { decryptXChaCha20Poly1305, XPrv, PrivateKeyGenerator } from 'kaspa-wasm'
-import { unknownErrorToErrorLike } from '../utils/errors'
-import { ArrowPathIcon } from '@heroicons/react/24/solid'
-import clsx from 'clsx'
+import { FC, useState, useEffect } from "react"
+import { useWalletStore } from "../store/wallet.store"
+import { useMessagingStore } from "../store/messaging.store"
+import { WalletStorage } from "../utils/wallet-storage"
+import { Transaction } from "../types/all"
+import { getApiEndpoint } from "../config/nodes"
+import "./FetchApiMessages.css"
+import { CipherHelper } from "../utils/cipher-helper"
+import { Message } from "../types/all"
+import { decryptXChaCha20Poly1305, XPrv, PrivateKeyGenerator } from "kaspa-wasm"
+import { unknownErrorToErrorLike } from "../utils/errors"
+import { ArrowPathIcon } from "@heroicons/react/24/solid"
+import clsx from "clsx"
 
 type FetchApiMessagesProps = {
   address: string
@@ -33,27 +33,27 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
     const handleTriggerApiFetch = (event: CustomEvent) => {
       const { address: eventAddress } = event.detail
       console.log(
-        'Received kasia-trigger-api-fetch event for address:',
+        "Received kasia-trigger-api-fetch event for address:",
         eventAddress
       )
 
       // Only trigger if this component matches the address
       if (eventAddress === address && walletStore.unlockedWallet) {
-        console.log('Triggering API fetch due to localStorage flag')
+        console.log("Triggering API fetch due to localStorage flag")
         fetchAndProcessMessages()
       }
     }
 
     // Listen for the custom event
     window.addEventListener(
-      'kasia-trigger-api-fetch',
+      "kasia-trigger-api-fetch",
       handleTriggerApiFetch as EventListener
     )
 
     // Cleanup
     return () => {
       window.removeEventListener(
-        'kasia-trigger-api-fetch',
+        "kasia-trigger-api-fetch",
         handleTriggerApiFetch as EventListener
       )
     }
@@ -102,11 +102,11 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       await Promise.allSettled(
         [...uniqueAddresses].map(async (currentAddress) => {
           // Ensure the address is properly formatted for the API
-          const formattedAddress = currentAddress.includes(':')
+          const formattedAddress = currentAddress.includes(":")
             ? encodeURIComponent(currentAddress)
             : encodeURIComponent(
                 `${
-                  networkId === 'mainnet' ? 'kaspa:' : 'kaspatest:'
+                  networkId === "mainnet" ? "kaspa:" : "kaspatest:"
                 }${currentAddress}`
               )
 
@@ -132,7 +132,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
           // Process only encrypted message transactions
           const messageTxs = transactions.filter(
-            (tx) => tx.payload && tx.payload.startsWith('636970685f6d73673a')
+            (tx) => tx.payload && tx.payload.startsWith("636970685f6d73673a")
           )
 
           console.log(
@@ -157,10 +157,10 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             // For each transaction, determine if this is incoming or outgoing
             // Use the original logic to preserve existing functionality
             const recipientAddress =
-              tx.outputs[0]?.script_public_key_address || 'Unknown'
+              tx.outputs[0]?.script_public_key_address || "Unknown"
             const isIncoming = recipientAddress === currentAddress
             let senderAddress = isIncoming
-              ? tx.inputs[0]?.previous_outpoint_address || 'Unknown'
+              ? tx.inputs[0]?.previous_outpoint_address || "Unknown"
               : currentAddress
 
             console.log(`API Messages: Transaction ${tx.transaction_id}:`)
@@ -173,12 +173,12 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             console.log(`- Determined sender address: ${senderAddress}`)
 
             // Try to decrypt the message
-            let decryptedContent = ''
+            let decryptedContent = ""
 
             if (walletStore.unlockedWallet) {
               try {
                 // Extract the encrypted part (remove the "ciph_msg:" prefix)
-                const prefix = '636970685f6d73673a' // hex for "ciph_msg:"
+                const prefix = "636970685f6d73673a" // hex for "ciph_msg:"
                 if (!tx.payload.startsWith(prefix)) {
                   console.log(
                     `API Messages: Invalid message format, missing prefix: ${tx.payload.substring(
@@ -195,16 +195,16 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   `API Messages: Message hex after prefix: ${messageHex}`
                 )
 
-                const handshakePrefix = '313a68616e647368616b653a' // "1:handshake:"
-                const commPrefix = '313a636f6d6d3a' // "1:comm:"
+                const handshakePrefix = "313a68616e647368616b653a" // "1:handshake:"
+                const commPrefix = "313a636f6d6d3a" // "1:comm:"
 
-                let messageType = 'unknown'
+                let messageType = "unknown"
                 let isHandshake = false
                 let targetAlias = null
                 let encryptedContent = messageHex // Default to full message for handshakes
 
                 if (messageHex.startsWith(handshakePrefix)) {
-                  messageType = 'handshake'
+                  messageType = "handshake"
                   isHandshake = true
                   encryptedContent = messageHex
                 } else if (messageHex.startsWith(commPrefix)) {
@@ -213,14 +213,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     const hexArray = hex.match(/.{1,2}/g) || []
                     return hexArray
                       .map((byte) => String.fromCharCode(parseInt(byte, 16)))
-                      .join('')
+                      .join("")
                   }
 
                   const messageStr = hexToString(messageHex)
-                  const parts = messageStr.split(':')
+                  const parts = messageStr.split(":")
 
                   if (parts.length >= 4) {
-                    messageType = 'comm'
+                    messageType = "comm"
                     targetAlias = parts[2]
                     encryptedContent = parts[3]
                   }
@@ -238,7 +238,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 )
 
                 if (!encryptedContent) {
-                  console.log('API Messages: No encrypted content found')
+                  console.log("API Messages: No encrypted content found")
                   continue
                 }
 
@@ -249,7 +249,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 // Try multiple private keys
                 const maxKeys = 1 // Try up to 20 keys for each type
                 let decryptionSuccess = false
-                let successfulKeyType = ''
+                let successfulKeyType = ""
                 let successfulKeyIndex = -1
 
                 // First try with receive keys (standard addresses)
@@ -278,7 +278,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     if (result) {
                       decryptedContent = result
                       decryptionSuccess = true
-                      successfulKeyType = 'receive'
+                      successfulKeyType = "receive"
                       successfulKeyIndex = i
                       console.log(
                         `API Messages: Successfully decrypted with receive key at index ${i} (${privateKeyHex.substring(
@@ -289,8 +289,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                       // If this is a handshake message and sender is still unknown, try to extract from payload
                       if (
-                        senderAddress === 'Unknown' &&
-                        result.includes('handshake')
+                        senderAddress === "Unknown" &&
+                        result.includes("handshake")
                       ) {
                         try {
                           const handshakeMatch = result.match(
@@ -321,7 +321,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                                 )
                                 senderAddress =
                                   changeOutput.script_public_key_address ||
-                                  'Unknown'
+                                  "Unknown"
                               }
                             }
                           }
@@ -346,7 +346,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                       messagingStore.storeMessage(
                         message,
-                        walletStore.address?.toString() || ''
+                        walletStore.address?.toString() || ""
                       )
                       break
                     }
@@ -386,7 +386,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       if (result) {
                         decryptedContent = result
                         decryptionSuccess = true
-                        successfulKeyType = 'change'
+                        successfulKeyType = "change"
                         successfulKeyIndex = i
                         console.log(
                           `API Messages: Successfully decrypted with change key at index ${i} (${privateKeyHex.substring(
@@ -397,8 +397,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                         // If this is a handshake message and sender is still unknown, try to extract from payload
                         if (
-                          senderAddress === 'Unknown' &&
-                          result.includes('handshake')
+                          senderAddress === "Unknown" &&
+                          result.includes("handshake")
                         ) {
                           try {
                             const handshakeMatch = result.match(
@@ -431,7 +431,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                                   )
                                   senderAddress =
                                     changeOutput.script_public_key_address ||
-                                    'Unknown'
+                                    "Unknown"
                                 }
                               }
                             }
@@ -456,7 +456,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                         messagingStore.storeMessage(
                           message,
-                          walletStore.address?.toString() || ''
+                          walletStore.address?.toString() || ""
                         )
                         break
                       }
@@ -473,7 +473,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 // If still not decrypted and we're using standard derivation, try legacy derivation
                 if (
                   !decryptionSuccess &&
-                  walletStore.unlockedWallet.derivationType === 'standard'
+                  walletStore.unlockedWallet.derivationType === "standard"
                 ) {
                   console.log(
                     `API Messages: Trying legacy derivation keys as fallback...`
@@ -510,7 +510,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       if (result) {
                         decryptedContent = result
                         decryptionSuccess = true
-                        successfulKeyType = 'legacy_receive'
+                        successfulKeyType = "legacy_receive"
                         successfulKeyIndex = i
                         console.log(
                           `API Messages: Successfully decrypted with legacy receive key at index ${i}`
@@ -518,8 +518,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                         // Extract sender from handshake payload if needed
                         if (
-                          senderAddress === 'Unknown' &&
-                          result.includes('handshake')
+                          senderAddress === "Unknown" &&
+                          result.includes("handshake")
                         ) {
                           try {
                             const handshakeMatch = result.match(
@@ -560,7 +560,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                         messagingStore.storeMessage(
                           message,
-                          walletStore.address?.toString() || ''
+                          walletStore.address?.toString() || ""
                         )
                         break
                       }
@@ -579,12 +579,12 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     `API Messages: Could not decrypt message for transaction ${
                       tx.transaction_id
                     } after trying ${maxKeys} receive keys and ${maxKeys} change keys${
-                      walletStore.unlockedWallet.derivationType === 'standard'
-                        ? ' and legacy keys'
-                        : ''
+                      walletStore.unlockedWallet.derivationType === "standard"
+                        ? " and legacy keys"
+                        : ""
                     }`
                   )
-                  decryptedContent = '[Could not decrypt message]'
+                  decryptedContent = "[Could not decrypt message]"
                 } else {
                   console.log(
                     `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex}`
@@ -594,8 +594,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   )
                 }
               } catch (error) {
-                console.error('API Messages: Error decrypting message:', error)
-                decryptedContent = '[Decryption error]'
+                console.error("API Messages: Error decrypting message:", error)
+                decryptedContent = "[Decryption error]"
               }
             }
 
@@ -603,9 +603,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             // 1. We can decrypt, and
             // 2. Either contain one of our monitored aliases or are from/to our current address
             if (
-              decryptedContent !== '[Could not decrypt message]' &&
-              decryptedContent !== '[Decryption error]' &&
-              decryptedContent !== '[Wallet locked]'
+              decryptedContent !== "[Could not decrypt message]" &&
+              decryptedContent !== "[Decryption error]" &&
+              decryptedContent !== "[Wallet locked]"
             ) {
               // Check if the message contains any of our monitored aliases
               const containsMonitoredAlias = Array.from(
@@ -639,9 +639,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       // Update UI with all messages
       messagingStore.loadMessages(address)
 
-      console.log('API Messages: Fetch and process completed successfully')
+      console.log("API Messages: Fetch and process completed successfully")
     } catch (err) {
-      console.error('API Messages: Error fetching and processing:', err)
+      console.error("API Messages: Error fetching and processing:", err)
       setError(`Error fetching messages: ${(err as Error).message}`)
     } finally {
       setLoading(false)
@@ -654,11 +654,11 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         onClick={fetchAndProcessMessages}
         disabled={loading}
         className={clsx(
-          'flex items-center justify-center gap-2 px-4 py-2 rounded-md w-full cursor-pointer',
-          { 'cursor-not-allowed': loading }
+          "flex items-center justify-center gap-2 px-4 py-2 rounded-md w-full cursor-pointer",
+          { "cursor-not-allowed": loading }
         )}
         title={
-          error ? `Error: ${error}` : 'Fetch latest messages from blockchain'
+          error ? `Error: ${error}` : "Fetch latest messages from blockchain"
         }
       >
         {loading ? (

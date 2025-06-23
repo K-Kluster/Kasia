@@ -1,7 +1,7 @@
-import React from 'react'
-import { useMessagingStore } from '../store/messaging.store'
-import './HandshakeManager.css'
-import { HandshakeState, PendingConversation } from '../types/messaging.types'
+import React from "react"
+import { useMessagingStore } from "../store/messaging.store"
+import "./HandshakeManager.css"
+import { HandshakeState, PendingConversation } from "../types/messaging.types"
 
 const HandshakeManager: React.FC = () => {
   const messagingStore = useMessagingStore()
@@ -12,13 +12,13 @@ const HandshakeManager: React.FC = () => {
   ) => {
     try {
       if (!pendingConversation.kaspaAddress) {
-        throw new Error('Invalid conversation: missing kaspaAddress')
+        throw new Error("Invalid conversation: missing kaspaAddress")
       }
 
       // Convert Conversation to HandshakeState
       const handshakeState: HandshakeState = {
         conversationId: pendingConversation.conversationId,
-        myAlias: pendingConversation.myAlias || 'Anonymous',
+        myAlias: pendingConversation.myAlias || "Anonymous",
         theirAlias: pendingConversation.theirAlias || null,
         senderAddress: pendingConversation.kaspaAddress,
         kaspaAddress: pendingConversation.kaspaAddress,
@@ -30,7 +30,7 @@ const HandshakeManager: React.FC = () => {
 
       await messagingStore.respondToHandshake(handshakeState)
     } catch (error) {
-      console.error('Error accepting handshake:', error)
+      console.error("Error accepting handshake:", error)
     }
   }
 

@@ -1,20 +1,20 @@
-import { FC, useCallback, useEffect, useState, useRef } from 'react'
-import { unknownErrorToErrorLike } from './utils/errors'
-import { Contact, NetworkType } from './types/all'
-import { useMessagingStore } from './store/messaging.store'
-import { ContactCard } from './components/ContactCard'
-import { WalletInfo } from './components/WalletInfo'
-import { ErrorCard } from './components/ErrorCard'
-import { useWalletStore } from './store/wallet.store'
-import { WalletGuard } from './containers/WalletGuard'
-import { NewChatForm } from './components/NewChatForm'
-import clsx from 'clsx'
-import { MessageSection } from './containers/MessagesSection'
-import { FetchApiMessages } from './components/FetchApiMessages'
-import { PlusIcon, Bars3Icon } from '@heroicons/react/24/solid'
-import MenuHamburger from './components/MenuHamburger'
-import { FeeBuckets } from './components/FeeBuckets'
-import { useNetworkStore } from './store/network.store'
+import { FC, useCallback, useEffect, useState, useRef } from "react"
+import { unknownErrorToErrorLike } from "./utils/errors"
+import { Contact, NetworkType } from "./types/all"
+import { useMessagingStore } from "./store/messaging.store"
+import { ContactCard } from "./components/ContactCard"
+import { WalletInfo } from "./components/WalletInfo"
+import { ErrorCard } from "./components/ErrorCard"
+import { useWalletStore } from "./store/wallet.store"
+import { WalletGuard } from "./containers/WalletGuard"
+import { NewChatForm } from "./components/NewChatForm"
+import clsx from "clsx"
+import { MessageSection } from "./containers/MessagesSection"
+import { FetchApiMessages } from "./components/FetchApiMessages"
+import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid"
+import MenuHamburger from "./components/MenuHamburger"
+import { FeeBuckets } from "./components/FeeBuckets"
+import { useNetworkStore } from "./store/network.store"
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -62,9 +62,9 @@ export const OneLiner: FC = () => {
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener("mousedown", handleClickOutside)
     }
   }, [])
 
@@ -75,13 +75,13 @@ export const OneLiner: FC = () => {
   const onNewChatClicked = useCallback(async () => {
     try {
       if (!walletStore.unlockedWallet?.password) {
-        setErrorMessage('Please unlock your wallet first')
+        setErrorMessage("Please unlock your wallet first")
         return
       }
 
       messageStore.setIsCreatingNewChat(true)
     } catch (error) {
-      console.error('Failed to start new chat:', error)
+      console.error("Failed to start new chat:", error)
       setErrorMessage(
         `Failed to start new chat: ${unknownErrorToErrorLike(error)}`
       )
@@ -94,13 +94,13 @@ export const OneLiner: FC = () => {
       setErrorMessage(null)
       if (!networkStore.kaspaClient || !networkStore.isConnected) {
         setErrorMessage(
-          'Please choose a network and connect to the Kaspa Network first'
+          "Please choose a network and connect to the Kaspa Network first"
         )
         return
       }
 
       if (!walletStore.unlockedWallet) {
-        setErrorMessage('Please unlock your wallet first')
+        setErrorMessage("Please unlock your wallet first")
         return
       }
 
@@ -119,25 +119,25 @@ export const OneLiner: FC = () => {
       messageStore.setIsLoaded(true)
 
       // Check if we should trigger API message fetching for imported wallets
-      const shouldFetchApi = localStorage.getItem('kasia_fetch_api_on_start')
-      if (shouldFetchApi === 'true') {
-        console.log('Triggering API message fetch for imported wallet...')
+      const shouldFetchApi = localStorage.getItem("kasia_fetch_api_on_start")
+      if (shouldFetchApi === "true") {
+        console.log("Triggering API message fetch for imported wallet...")
         // Set a flag to trigger API fetching after a short delay
         setTimeout(() => {
-          const event = new CustomEvent('kasia-trigger-api-fetch', {
+          const event = new CustomEvent("kasia-trigger-api-fetch", {
             detail: { address: receiveAddressStr },
           })
           window.dispatchEvent(event)
         }, 1000)
 
         // Clear the flag after use
-        localStorage.removeItem('kasia_fetch_api_on_start')
+        localStorage.removeItem("kasia_fetch_api_on_start")
       }
 
       // Clear error message on success
       setErrorMessage(null)
     } catch (error) {
-      console.error('Failed to start messaging process:', error)
+      console.error("Failed to start messaging process:", error)
       setErrorMessage(
         `Failed to start messaging: ${unknownErrorToErrorLike(error)}`
       )
@@ -154,7 +154,7 @@ export const OneLiner: FC = () => {
   const onContactClicked = useCallback(
     (contact: Contact) => {
       if (!walletStore.address) {
-        console.error('No wallet address')
+        console.error("No wallet address")
         return
       }
 
@@ -212,7 +212,7 @@ export const OneLiner: FC = () => {
               />
             ) : (
               <WalletInfo
-                state={walletStore.address ? 'connected' : 'loading'}
+                state={walletStore.address ? "connected" : "loading"}
                 address={walletStore.address?.toString()}
                 isWalletReady={isWalletReady}
                 open={isWalletInfoOpen}
@@ -231,16 +231,16 @@ export const OneLiner: FC = () => {
                 <div className="text-sm">
                   <button
                     className={clsx(
-                      'bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white font-bold py-2 px-4 rounded cursor-pointer',
+                      "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white font-bold py-2 px-4 rounded cursor-pointer",
                       {
-                        'opacity-50 cursor-not-allowed': messageStoreLoading,
+                        "opacity-50 cursor-not-allowed": messageStoreLoading,
                       }
                     )}
                     onClick={onStartMessagingProcessClicked}
                   >
                     {messageStoreLoading
-                      ? 'Loading...'
-                      : 'Start Wallet Service'}
+                      ? "Loading..."
+                      : "Start Wallet Service"}
                   </button>
                 </div>
               )}
@@ -287,7 +287,7 @@ export const OneLiner: FC = () => {
           <MessageSection />
           {/* Add invisible FetchApiMessages component to listen for localStorage trigger events */}
           {walletStore.address && (
-            <div style={{ display: 'none' }}>
+            <div style={{ display: "none" }}>
               <FetchApiMessages address={walletStore.address.toString()} />
             </div>
           )}

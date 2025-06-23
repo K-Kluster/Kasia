@@ -1,7 +1,7 @@
-import { FC, useMemo, useEffect, useRef } from 'react'
-import { NetworkType } from '../types/all'
-import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/react'
-import { getDisplayableNetworkFromNetworkString } from '../utils/network-display'
+import { FC, useMemo, useEffect, useRef } from "react"
+import { NetworkType } from "../types/all"
+import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react"
+import { getDisplayableNetworkFromNetworkString } from "../utils/network-display"
 
 type NetworkSelectorProps = {
   onNetworkChange: (network: NetworkType) => void
@@ -16,7 +16,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
 }) => {
   const networkDisplay = useMemo(() => {
     if (!isConnected) {
-      return 'Connecting...'
+      return "Connecting..."
     }
 
     return getDisplayableNetworkFromNetworkString(
@@ -27,8 +27,8 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   const allowedNetworks = useMemo<
     { id: NetworkType; displayableString: string }[]
   >(() => {
-    return (import.meta.env.VITE_ALLOWED_KASPA_NETWORKS ?? 'mainnet')
-      .split(',')
+    return (import.meta.env.VITE_ALLOWED_KASPA_NETWORKS ?? "mainnet")
+      .split(",")
       .map((s: string) => ({
         id: s,
         displayableString: getDisplayableNetworkFromNetworkString(s),
@@ -40,7 +40,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
       <MenuButton className="network-badge">
         <span
           className={`connection-dot ${
-            isConnected ? 'connected' : 'disconnected'
+            isConnected ? "connected" : "disconnected"
           }`}
         />
         {networkDisplay}
@@ -51,7 +51,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
             <div
               onClick={() => onNetworkChange(allowedNetwork.id)}
               className={`${
-                selectedNetwork === allowedNetwork.id ? 'active' : ''
+                selectedNetwork === allowedNetwork.id ? "active" : ""
               } network-option`}
             >
               {allowedNetwork.displayableString}

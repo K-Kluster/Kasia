@@ -1,11 +1,11 @@
-import { FC, useCallback, useEffect, useRef, useState } from 'react'
-import { useMessagingStore } from '../store/messaging.store'
-import { Message } from '../types/all'
-import { unknownErrorToErrorLike } from '../utils/errors'
-import { Input } from '@headlessui/react'
-import { useWalletStore } from '../store/wallet.store'
-import { Address } from 'kaspa-wasm'
-import { formatKasAmount } from '../utils/format'
+import { FC, useCallback, useEffect, useRef, useState } from "react"
+import { useMessagingStore } from "../store/messaging.store"
+import { Message } from "../types/all"
+import { unknownErrorToErrorLike } from "../utils/errors"
+import { Input } from "@headlessui/react"
+import { useWalletStore } from "../store/wallet.store"
+import { Address } from "kaspa-wasm"
+import { formatKasAmount } from "../utils/format"
 
 type SendMessageFormProps = unknown
 
@@ -14,8 +14,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const walletStore = useWalletStore()
   const [feeEstimate, setFeeEstimate] = useState<number | null>(null)
   const [isEstimating, setIsEstimating] = useState(false)
-  const [recipient, setRecipient] = useState('')
-  const [message, setMessage] = useState('')
+  const [recipient, setRecipient] = useState("")
+  const [message, setMessage] = useState("")
   const [isUploading, setIsUploading] = useState(false)
 
   const messageStore = useMessagingStore()
@@ -25,7 +25,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    console.log('Opened recipient:', openedRecipient)
+    console.log("Opened recipient:", openedRecipient)
 
     if (openedRecipient && recipientInputRef.current) {
       recipientInputRef.current.value = openedRecipient
@@ -36,27 +36,27 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   useEffect(() => {
     if (recipientInputRef.current && messageInputRef.current) {
-      recipientInputRef.current.value = ''
-      messageInputRef.current.value = ''
-      setRecipient('')
-      setMessage('')
+      recipientInputRef.current.value = ""
+      messageInputRef.current.value = ""
+      setRecipient("")
+      setMessage("")
       recipientInputRef.current.focus()
     }
   }, [])
 
   const estimateFee = useCallback(async () => {
     if (!walletStore.unlockedWallet) {
-      console.log('Cannot estimate fee: missing wallet')
+      console.log("Cannot estimate fee: missing wallet")
       return
     }
 
     if (!message || !recipient) {
-      console.log('Cannot estimate fee: missing message or recipient')
+      console.log("Cannot estimate fee: missing message or recipient")
       return
     }
 
     try {
-      console.log('Estimating fee for message:', {
+      console.log("Estimating fee for message:", {
         length: message.length,
         recipient,
       })
@@ -67,11 +67,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         new Address(recipient)
       )
 
-      console.log('Fee estimate received:', estimate)
+      console.log("Fee estimate received:", estimate)
       setFeeEstimate(Number(estimate.fees) / 100_000_000)
       setIsEstimating(false)
     } catch (error) {
-      console.error('Error estimating fee:', error)
+      console.error("Error estimating fee:", error)
       setIsEstimating(false)
       setFeeEstimate(null)
     }
@@ -81,7 +81,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   useEffect(() => {
     const delayEstimation = setTimeout(() => {
       if (recipient && message) {
-        console.log('Triggering fee estimation after delay')
+        console.log("Triggering fee estimation after delay")
         estimateFee()
       }
     }, 500)
@@ -101,17 +101,17 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     }
 
     if (!message) {
-      alert('Please enter a message')
+      alert("Please enter a message")
       return
     }
     if (!recipient) {
-      alert('Please enter a recipient address')
+      alert("Please enter a recipient address")
       return
     }
 
     try {
       console.log(
-        'Sending transaction from primary address:',
+        "Sending transaction from primary address:",
         walletStore.address.toString()
       )
 
@@ -135,10 +135,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Check if this is a file message
       try {
         const parsedContent = JSON.parse(message)
-        if (parsedContent.type === 'file') {
+        if (parsedContent.type === "file") {
           // Store the complete file data for local storage
           fileDataForStorage = {
-            type: 'file',
+            type: "file",
             name: parsedContent.name,
             size: parsedContent.size || 0,
             mimeType: parsedContent.mimeType,
@@ -147,7 +147,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
           // For the actual message, we only send the essential file info
           messageToSend = JSON.stringify({
-            type: 'file',
+            type: "file",
             name: parsedContent.name,
             mimeType: parsedContent.mimeType,
             content: parsedContent.content,
@@ -161,13 +161,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // If we have an active conversation, use the context-aware sending
       if (existingConversation && existingConversation.theirAlias) {
-        console.log('Sending message with conversation context:', {
+        console.log("Sending message with conversation context:", {
           recipient,
           theirAlias: existingConversation.theirAlias,
         })
 
         if (!walletStore.accountService) {
-          throw new Error('Account service not initialized')
+          throw new Error("Account service not initialized")
         }
 
         // Use the account service directly for context-aware sending
@@ -179,7 +179,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         })
       } else {
         // If no active conversation or no alias, use regular sending
-        console.log('No active conversation found, sending regular message')
+        console.log("No active conversation found, sending regular message")
         txId = await walletStore.sendMessage(
           messageToSend,
           new Address(recipient),
@@ -187,7 +187,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         )
       }
 
-      console.log('Message sent! Transaction response:', txId)
+      console.log("Message sent! Transaction response:", txId)
 
       // Create the message object for storage
       const newMessageData: Message = {
@@ -200,7 +200,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           : message, // Store the complete file data in content
         amount: 20000000, // 0.2 KAS in sompi
         fee: feeEstimate || undefined, // Include the fee estimate if available
-        payload: '', // No need to store encrypted payload for sent messages
+        payload: "", // No need to store encrypted payload for sent messages
         fileData: fileDataForStorage, // Also store it in fileData for immediate display
       }
 
@@ -210,21 +210,21 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       messageStore.addMessages([newMessageData])
 
       // Only reset the message input, keep the recipient
-      if (messageInputRef.current) messageInputRef.current.value = ''
-      setMessage('')
+      if (messageInputRef.current) messageInputRef.current.value = ""
+      setMessage("")
       setFeeEstimate(null)
 
       // Keep the conversation open with the same recipient
       messageStore.setOpenedRecipient(recipient)
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error("Error sending message:", error)
       alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`)
     }
   }, [messageStore, walletStore, message, recipient, feeEstimate])
 
   const onMessageInputKeyPressed = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
+      if (e.key === "Enter") {
         onSendClicked()
       }
     },
@@ -234,12 +234,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   useEffect(() => {
     const messageInput = messageInputRef.current
     if (messageInput) {
-      messageInput.addEventListener('keypress', onMessageInputKeyPressed)
+      messageInput.addEventListener("keypress", onMessageInputKeyPressed)
     }
 
     return () => {
       if (messageInput) {
-        messageInput.removeEventListener('keypress', onMessageInputKeyPressed)
+        messageInput.removeEventListener("keypress", onMessageInputKeyPressed)
       }
     }
   }, [messageInputRef, onMessageInputKeyPressed])
@@ -270,10 +270,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       const base64Content = await new Promise<string>((resolve, reject) => {
         reader.onload = (e) => {
           const result = e.target?.result
-          if (typeof result === 'string') {
+          if (typeof result === "string") {
             resolve(result)
           } else {
-            reject(new Error('Failed to read file as base64'))
+            reject(new Error("Failed to read file as base64"))
           }
         }
         reader.onerror = (e) => reject(e)
@@ -282,7 +282,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Format the message with file metadata
       const fileMessage = JSON.stringify({
-        type: 'file',
+        type: "file",
         name: file.name,
         size: file.size,
         mimeType: file.type,
@@ -302,15 +302,15 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         messageInputRef.current.value = `[File: ${file.name}]`
       }
     } catch (error) {
-      console.error('Error reading file:', error)
+      console.error("Error reading file:", error)
       alert(
-        'Failed to read file: ' +
-          (error instanceof Error ? error.message : 'Unknown error')
+        "Failed to read file: " +
+          (error instanceof Error ? error.message : "Unknown error")
       )
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) {
-        fileInputRef.current.value = ''
+        fileInputRef.current.value = ""
       }
     }
   }
@@ -321,7 +321,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         ref={recipientInputRef}
         type="text"
         id="recipientAddress"
-        placeholder={'Conversation with:'}
+        placeholder={"Conversation with:"}
         className="recipient-input"
         value={recipient}
         readOnly={true}
@@ -347,7 +347,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         <input
           type="file"
           ref={fileInputRef}
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
           onChange={handleFileUpload}
           accept="image/*,.txt,.json,.md"
         />

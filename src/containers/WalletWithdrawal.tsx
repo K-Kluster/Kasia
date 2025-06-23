@@ -1,14 +1,14 @@
-import { ChangeEvent, FC, useCallback, useState } from 'react'
-import { createWithdrawTransaction } from '../service/account-service'
-import { kaspaToSompi, sompiToKaspaString } from 'kaspa-wasm'
-import { useWalletStore } from '../store/wallet.store'
+import { ChangeEvent, FC, useCallback, useState } from "react"
+import { createWithdrawTransaction } from "../service/account-service"
+import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm"
+import { useWalletStore } from "../store/wallet.store"
 
-const maxDustAmount = kaspaToSompi('0.19')!
+const maxDustAmount = kaspaToSompi("0.19")!
 
 export const WalletWithdrawal: FC = () => {
-  const [withdrawAddress, setWithdrawAddress] = useState('')
-  const [withdrawAmount, setWithdrawAmount] = useState('')
-  const [withdrawError, setWithdrawError] = useState('')
+  const [withdrawAddress, setWithdrawAddress] = useState("")
+  const [withdrawAmount, setWithdrawAmount] = useState("")
+  const [withdrawError, setWithdrawError] = useState("")
   const [isSending, setIsSending] = useState(false)
 
   const [amountInputError, setAmountInputError] = useState<string | null>(null)
@@ -26,7 +26,7 @@ export const WalletWithdrawal: FC = () => {
       const unValidatedAmountAsSompi = kaspaToSompi(event.target.value)
 
       if (unValidatedAmountAsSompi === undefined) {
-        setAmountInputError('Invalid amount.')
+        setAmountInputError("Invalid amount.")
       }
 
       const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0)
@@ -40,13 +40,13 @@ export const WalletWithdrawal: FC = () => {
 
       // Check if amount exceeds balance first
       if (validatedAmountAsSompi > matureBalanceAmount) {
-        setAmountInputError('Amount exceeds available balance.')
+        setAmountInputError("Amount exceeds available balance.")
         return
       }
 
       // Check if amount is too small
       if (validatedAmountAsSompi < maxDustAmount) {
-        setAmountInputError('Amount must be greater than 0.19 KAS.')
+        setAmountInputError("Amount must be greater than 0.19 KAS.")
         return
       }
 
@@ -71,21 +71,21 @@ export const WalletWithdrawal: FC = () => {
     }
 
     try {
-      setWithdrawError('')
+      setWithdrawError("")
       setIsSending(true)
 
       if (!withdrawAddress || !withdrawAmount) {
-        throw new Error('Please enter both address and amount')
+        throw new Error("Please enter both address and amount")
       }
 
       const amount = kaspaToSompi(withdrawAmount)
       if (amount === undefined) {
-        throw new Error('Please enter a valid amount')
+        throw new Error("Please enter a valid amount")
       }
 
       // Use mature balance directly since it's already in KAS
       const matureSompiBalance = balance?.mature || BigInt(0)
-      console.log('Balance check:', {
+      console.log("Balance check:", {
         amount,
         matureSompiBalance,
         storeBalance: balance,
@@ -100,11 +100,11 @@ export const WalletWithdrawal: FC = () => {
       }
 
       await createWithdrawTransaction(withdrawAddress, amount)
-      setWithdrawAddress('')
-      setWithdrawAmount('')
+      setWithdrawAddress("")
+      setWithdrawAmount("")
     } catch (error) {
       setWithdrawError(
-        error instanceof Error ? error.message : 'Failed to send transaction'
+        error instanceof Error ? error.message : "Failed to send transaction"
       )
     } finally {
       setIsSending(false)
@@ -144,10 +144,10 @@ export const WalletWithdrawal: FC = () => {
             onClick={handleWithdraw}
             disabled={isSending || amountInputError !== null}
             className={`px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer transition-opacity duration-200 ${
-              isSending || amountInputError ? 'opacity-70' : 'opacity-100'
+              isSending || amountInputError ? "opacity-70" : "opacity-100"
             }`}
           >
-            {isSending ? 'Sending...' : 'Send'}
+            {isSending ? "Sending..." : "Send"}
           </button>
         </div>
         {withdrawError && (

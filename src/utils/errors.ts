@@ -3,14 +3,14 @@ export const unknownErrorToErrorLike = (error: unknown) => {
     return error
   }
 
-  if (typeof error === 'object' && error !== null && 'toString' in error) {
+  if (typeof error === "object" && error !== null && "toString" in error) {
     return new Error(error.toString())
   }
 
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return new Error(error)
   }
 
   console.error(error)
-  return new Error('unknown error')
+  return new Error("unknown error")
 }

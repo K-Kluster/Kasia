@@ -1,13 +1,13 @@
-import { FC, useMemo, useState } from 'react'
-import { Contact } from '../types/all'
-import { decodePayload } from '../utils/all-in-one'
-import { useMessagingStore } from '../store/messaging.store'
+import { FC, useMemo, useState } from "react"
+import { Contact } from "../types/all"
+import { decodePayload } from "../utils/all-in-one"
+import { useMessagingStore } from "../store/messaging.store"
 import {
   PencilIcon,
   CheckCircleIcon,
   XCircleIcon,
-} from '@heroicons/react/24/solid'
-import clsx from 'clsx'
+} from "@heroicons/react/24/solid"
+import clsx from "clsx"
 
 export const ContactCard: FC<{
   contact: Contact
@@ -15,32 +15,32 @@ export const ContactCard: FC<{
   isSelected?: boolean
 }> = ({ contact, onClick, isSelected }) => {
   const [isEditingNickname, setIsEditingNickname] = useState(false)
-  const [tempNickname, setTempNickname] = useState(contact.nickname || '')
+  const [tempNickname, setTempNickname] = useState(contact.nickname || "")
   const messagingStore = useMessagingStore()
 
   const preview = useMemo(() => {
-    if (!contact?.lastMessage) return ''
+    if (!contact?.lastMessage) return ""
 
     const message = contact.lastMessage
     // Handle different message types
     if (message.content) {
       // If it's a handshake message
       if (
-        message.content.includes('Handshake completed') ||
-        message.content.includes('handshake')
+        message.content.includes("Handshake completed") ||
+        message.content.includes("handshake")
       ) {
-        return 'Handshake completed'
+        return "Handshake completed"
       }
 
       // If it's a file message
-      if (message.content.startsWith('[File:')) {
+      if (message.content.startsWith("[File:")) {
         return message.content
       }
 
       // For regular messages, try to decode if it's encrypted
-      if (message.content.startsWith('ciph_msg:')) {
+      if (message.content.startsWith("ciph_msg:")) {
         const decoded = decodePayload(message.content)
-        return decoded || 'Encrypted message'
+        return decoded || "Encrypted message"
       }
 
       // Plain text content
@@ -49,30 +49,30 @@ export const ContactCard: FC<{
 
     // Fallback to payload if no content
     if (message.payload) {
-      if (message.payload.includes('handshake')) {
-        return 'Handshake message'
+      if (message.payload.includes("handshake")) {
+        return "Handshake message"
       }
 
       const decoded = decodePayload(message.payload)
-      return decoded || 'Encrypted message'
+      return decoded || "Encrypted message"
     }
 
-    return 'No message content'
+    return "No message content"
   }, [contact?.lastMessage])
 
   const timestamp = useMemo(() => {
-    if (!contact?.lastMessage?.timestamp) return ''
+    if (!contact?.lastMessage?.timestamp) return ""
     return new Date(contact.lastMessage.timestamp).toLocaleString()
   }, [contact?.lastMessage?.timestamp])
 
   const shortAddress = useMemo(() => {
-    if (!contact?.address) return 'Unknown'
+    if (!contact?.address) return "Unknown"
     const addr = contact.address
 
     // If address is "Unknown", try to extract a better name from the message content
-    if (addr === 'Unknown') {
+    if (addr === "Unknown") {
       // Try to extract alias from handshake messages
-      if (contact.lastMessage?.payload?.includes('handshake')) {
+      if (contact.lastMessage?.payload?.includes("handshake")) {
         try {
           const handshakeMatch = contact.lastMessage.payload.match(
             /ciph_msg:1:handshake:(.+)/
@@ -87,11 +87,11 @@ export const ContactCard: FC<{
           // Ignore parsing errors
         }
       }
-      return 'Unknown Contact'
+      return "Unknown Contact"
     }
 
     // For valid Kaspa addresses, show truncated version
-    if (addr.startsWith('kaspa:') || addr.startsWith('kaspatest:')) {
+    if (addr.startsWith("kaspa:") || addr.startsWith("kaspatest:")) {
       return `${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}`
     }
 
@@ -113,7 +113,7 @@ export const ContactCard: FC<{
   }
 
   const handleNicknameCancel = () => {
-    setTempNickname(contact.nickname || '')
+    setTempNickname(contact.nickname || "")
     setIsEditingNickname(false)
   }
 
@@ -125,10 +125,10 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        'p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2 bg-[var(--secondary-bg)] border',
+        "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2 bg-[var(--secondary-bg)] border",
         {
-          'border-[var(--accent-blue)]': isSelected,
-          'border-transparent': !isSelected,
+          "border-[var(--accent-blue)]": isSelected,
+          "border-transparent": !isSelected,
         }
       )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
@@ -141,8 +141,8 @@ export const ContactCard: FC<{
               value={tempNickname}
               onChange={(e) => setTempNickname(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleNicknameSave()
-                if (e.key === 'Escape') handleNicknameCancel()
+                if (e.key === "Enter") handleNicknameSave()
+                if (e.key === "Escape") handleNicknameCancel()
               }}
               autoFocus
               placeholder="Enter nickname..."
@@ -167,7 +167,7 @@ export const ContactCard: FC<{
           <div className="flex items-center gap-1 w-full justify-between">
             <span
               className={`break-all truncate max-w-full ${
-                contact.nickname?.trim() ? 'cursor-help' : 'cursor-default'
+                contact.nickname?.trim() ? "cursor-help" : "cursor-default"
               }`}
               title={
                 contact.nickname?.trim()

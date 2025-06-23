@@ -1,17 +1,17 @@
 // src/components/AddressSection.tsx
-import React, { FC, useState, useEffect, useCallback } from 'react'
-import { toDataURL } from 'qrcode'
-import { DocumentDuplicateIcon, QrCodeIcon } from '@heroicons/react/24/outline'
-import clsx from 'clsx'
+import React, { FC, useState, useEffect, useCallback } from "react"
+import { toDataURL } from "qrcode"
+import { DocumentDuplicateIcon, QrCodeIcon } from "@heroicons/react/24/outline"
+import clsx from "clsx"
 
 type AddressSectionProps = {
   address?: string
 }
 
 export const WalletAddressSection: FC<AddressSectionProps> = ({
-  address = '',
+  address = "",
 }) => {
-  const [copyNotification, setCopyNotification] = useState('')
+  const [copyNotification, setCopyNotification] = useState("")
   const [showQRCode, setShowQRCode] = useState(false)
   const [qrCodeURL, setQRCodeURL] = useState<string | null>(null)
 
@@ -20,56 +20,56 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
     toDataURL(address, (err, uri) => {
       if (!err) {
         setQRCodeURL(uri)
-        console.log('QR code generated successfully')
+        console.log("QR code generated successfully")
       }
     })
   }, [address])
 
   const handleCopyAddress = useCallback(async () => {
     if (!address) {
-      setCopyNotification('No address available')
-      console.log('No address to copy')
-      setTimeout(() => setCopyNotification(''), 3000)
+      setCopyNotification("No address available")
+      console.log("No address to copy")
+      setTimeout(() => setCopyNotification(""), 3000)
       return
     }
 
     if (navigator.clipboard && window.isSecureContext) {
       try {
-        console.log('Using modern clipboard API')
+        console.log("Using modern clipboard API")
         await navigator.clipboard.writeText(address)
-        setCopyNotification('Address copied to clipboard')
-        console.log('Address copied using modern clipboard API')
-        setTimeout(() => setCopyNotification(''), 3000)
+        setCopyNotification("Address copied to clipboard")
+        console.log("Address copied using modern clipboard API")
+        setTimeout(() => setCopyNotification(""), 3000)
         return
       } catch (error) {
-        console.log('Modern clipboard API failed:', error)
+        console.log("Modern clipboard API failed:", error)
       }
     }
 
-    console.log('Using fallback copy method')
+    console.log("Using fallback copy method")
     try {
-      const textarea = document.createElement('textarea')
+      const textarea = document.createElement("textarea")
       textarea.value = address
-      textarea.setAttribute('readonly', '')
-      textarea.style.position = 'absolute'
-      textarea.style.left = '-9999px'
+      textarea.setAttribute("readonly", "")
+      textarea.style.position = "absolute"
+      textarea.style.left = "-9999px"
       document.body.appendChild(textarea)
       textarea.select()
-      document.execCommand('copy')
+      document.execCommand("copy")
       document.body.removeChild(textarea)
-      setCopyNotification('Address copied to clipboard')
-      console.log('Fallback copy successful')
+      setCopyNotification("Address copied to clipboard")
+      console.log("Fallback copy successful")
     } catch {
-      setCopyNotification('Copy failed')
-      console.log('Fallback copy failed')
+      setCopyNotification("Copy failed")
+      console.log("Fallback copy failed")
     } finally {
-      setTimeout(() => setCopyNotification(''), 3000)
+      setTimeout(() => setCopyNotification(""), 3000)
     }
   }, [address])
 
   const toggleQRCode = useCallback(() => {
     setShowQRCode((prev) => !prev)
-    console.log('QR code visibility toggled')
+    console.log("QR code visibility toggled")
   }, [])
 
   if (!address) return null
@@ -85,11 +85,11 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
             <span
               className="cursor-pointer px-3 py-6 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full h-10 flex items-center"
               onClick={() => {
-                console.log('Address text selected')
+                console.log("Address text selected")
                 // Select the text when clicked
                 const selection = window.getSelection()
                 const range = document.createRange()
-                const addressElement = document.getElementById('wallet-address')
+                const addressElement = document.getElementById("wallet-address")
                 if (addressElement && selection) {
                   range.selectNodeContents(addressElement)
                   selection.removeAllRanges()
@@ -106,7 +106,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               onClick={async (e) => {
                 e.preventDefault()
                 e.stopPropagation()
-                console.log('Copy button clicked')
+                console.log("Copy button clicked")
                 handleCopyAddress()
               }}
               title="Copy address to clipboard"
@@ -127,10 +127,10 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
         </div>
         <div
           className={clsx(
-            'select-none absolute top-full left-0 bg-green-600 text-white px-3 py-2 rounded text-sm z-[1000] whitespace-nowrap transition-opacity duration-300',
+            "select-none absolute top-full left-0 bg-green-600 text-white px-3 py-2 rounded text-sm z-[1000] whitespace-nowrap transition-opacity duration-300",
             {
-              'opacity-100': copyNotification,
-              'opacity-0': !copyNotification,
+              "opacity-100": copyNotification,
+              "opacity-0": !copyNotification,
             }
           )}
         >
@@ -144,10 +144,10 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
                 src={qrCodeURL}
                 alt="QR Code for wallet address"
                 className="bg-white p-2 rounded-lg max-w-[200px] h-auto"
-                onLoad={() => console.log('QR code image loaded successfully')}
+                onLoad={() => console.log("QR code image loaded successfully")}
                 onError={(e) => {
-                  console.error('QR code image failed to load:', e)
-                  console.log('Failed URL:', qrCodeURL)
+                  console.error("QR code image failed to load:", e)
+                  console.log("Failed URL:", qrCodeURL)
                 }}
               />
               <p className="text-white/70 text-center text-sm">

@@ -1,11 +1,11 @@
-import { useMessagingStore } from '../store/messaging.store'
+import { useMessagingStore } from "../store/messaging.store"
 
 export function inspectConversations() {
   const messagingStore = useMessagingStore.getState()
   const activeConversations = messagingStore.getActiveConversations()
   const pendingConversations = messagingStore.getPendingConversations()
 
-  console.log('=== ACTIVE CONVERSATIONS ===')
+  console.log("=== ACTIVE CONVERSATIONS ===")
   activeConversations.forEach((conv) => {
     console.log({
       status: conv.status,
@@ -19,7 +19,7 @@ export function inspectConversations() {
     })
   })
 
-  console.log('\n=== PENDING CONVERSATIONS ===')
+  console.log("\n=== PENDING CONVERSATIONS ===")
   pendingConversations.forEach((conv) => {
     console.log({
       status: conv.status,

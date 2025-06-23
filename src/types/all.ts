@@ -20,11 +20,11 @@ export type Contact = {
   address: string
   lastMessage: Message
   messages: Message[]
-  status?: 'active' | 'pending' | 'rejected'
+  status?: "active" | "pending" | "rejected"
   nickname?: string
 }
 
-export type NetworkType = 'mainnet' | 'testnet-10' | 'testnet-11' | 'devnet'
+export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet"
 
 export interface BlockAddedData {
   type: string

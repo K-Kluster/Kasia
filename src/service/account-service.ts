@@ -12,16 +12,16 @@ import {
   sompiToKaspaString,
   FeeSource,
   GeneratorSummary,
-} from 'kaspa-wasm'
-import { KaspaClient } from '../utils/all-in-one'
-import { WalletStorage } from '../utils/wallet-storage'
-import EventEmitter from 'eventemitter3'
-import { encrypt_message } from 'cipher'
-import { CipherHelper } from '../utils/cipher-helper'
-import { useMessagingStore } from '../store/messaging.store'
-import { useWalletStore } from '../store/wallet.store'
-import { UnlockedWallet } from 'src/types/wallet.type'
-import { TransactionId } from 'src/types/transactions'
+} from "kaspa-wasm"
+import { KaspaClient } from "../utils/all-in-one"
+import { WalletStorage } from "../utils/wallet-storage"
+import EventEmitter from "eventemitter3"
+import { encrypt_message } from "cipher"
+import { CipherHelper } from "../utils/cipher-helper"
+import { useMessagingStore } from "../store/messaging.store"
+import { useWalletStore } from "../store/wallet.store"
+import { UnlockedWallet } from "src/types/wallet.type"
+import { TransactionId } from "src/types/transactions"
 
 // Message related types
 type DecodedMessage = {
@@ -93,7 +93,7 @@ type CreateWithdrawTransactionArgs = {
 // Add this helper function at the top level
 function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) =>
-    typeof value === 'bigint' ? value.toString() : value
+    typeof value === "bigint" ? value.toString() : value
   )
 }
 
@@ -120,7 +120,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private processedMessageIds: Set<string> = new Set()
   private monitoredConversations: Set<string> = new Set() // Store monitored aliases
   private monitoredAddresses: Map<string, string> = new Map() // Store address -> alias mappings
-  private readonly MESSAGE_PREFIX_HEX = '636970685f6d73673a' // "ciph_msg:" in hex
+  private readonly MESSAGE_PREFIX_HEX = "636970685f6d73673a" // "ciph_msg:" in hex
   private readonly MAX_PROCESSED_MESSAGES = 1000 // Prevent unlimited growth
 
   // Add password field
@@ -136,7 +136,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     super()
 
     if (!rpcClient.rpc) {
-      throw new Error('RPC client is not initialized')
+      throw new Error("RPC client is not initialized")
     }
 
     this.networkId = rpcClient.networkId
@@ -156,16 +156,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   // Add method to set password
   public setPassword(password: string) {
     if (!password) {
-      throw new Error('Password cannot be empty')
+      throw new Error("Password cannot be empty")
     }
-    console.log('Setting password in AccountService')
+    console.log("Setting password in AccountService")
     this.password = password
   }
 
   // Add method to check if password is set
   private ensurePasswordSet() {
     if (!this.password) {
-      throw new Error('Password not set - cannot perform operation')
+      throw new Error("Password not set - cannot perform operation")
     }
   }
 
@@ -180,7 +180,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     )
     const pendingUtxos = this.context.getPending()
 
-    console.log('Balance update:', {
+    console.log("Balance update:", {
       matureUtxoCount: matureUtxos.length,
       pendingUtxoCount: pendingUtxos.length,
       mature: balance.mature.toString(),
@@ -188,7 +188,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       outgoing: balance.outgoing.toString(),
     })
 
-    this.emit('balance', {
+    this.emit("balance", {
       mature: balance.mature,
       pending: balance.pending,
       outgoing: balance.outgoing,
@@ -207,9 +207,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const baseUrl =
-          this.networkId === 'mainnet'
-            ? 'https://api.kaspa.org'
-            : 'https://api-tn10.kaspa.org'
+          this.networkId === "mainnet"
+            ? "https://api.kaspa.org"
+            : "https://api-tn10.kaspa.org"
         const response = await fetch(
           `${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=no`
         )
@@ -260,14 +260,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     if (!this.receiveAddress) return
 
     try {
-      console.log('Fetching historical messages...')
+      console.log("Fetching historical messages...")
       const address = this.receiveAddress.toString()
 
       // Use the network-appropriate API endpoint
       const baseUrl =
-        this.networkId === 'mainnet'
-          ? 'https://api.kaspa.org'
-          : 'https://api-tn10.kaspa.org'
+        this.networkId === "mainnet"
+          ? "https://api.kaspa.org"
+          : "https://api-tn10.kaspa.org"
       const encodedAddress = encodeURIComponent(address)
       const response = await fetch(
         `${baseUrl}/addresses/${encodedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`
@@ -298,9 +298,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       }
 
-      console.log('Historical message fetch complete')
+      console.log("Historical message fetch complete")
     } catch (error) {
-      console.error('Error fetching historical messages:', error)
+      console.error("Error fetching historical messages:", error)
     }
   }
 
@@ -314,20 +314,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       this.receiveAddress = this.ensureAddressPrefix(initialReceiveAddress)
 
       console.log(
-        'Using primary address for all operations:',
+        "Using primary address for all operations:",
         this.receiveAddress.toString()
       )
 
       // Initialize UTXO processor first
-      console.log('Starting UTXO processor...')
+      console.log("Starting UTXO processor...")
       await this.processor.start()
 
       // Set up event listeners before doing anything else
-      console.log('Setting up event listeners...')
+      console.log("Setting up event listeners...")
 
       // Set up balance change listener
-      this.processor.addEventListener('balance', async () => {
-        console.log('Balance event received')
+      this.processor.addEventListener("balance", async () => {
+        console.log("Balance event received")
         this._emitBalanceUpdate()
       })
 
@@ -335,15 +335,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const addressesToTrack = [this.receiveAddress!]
 
       // Now track addresses in UTXO processor
-      console.log('Starting address tracking for primary address...')
+      console.log("Starting address tracking for primary address...")
       await this.context.trackAddresses(addressesToTrack)
 
       // Set up block subscription with optimized message handling
-      console.log('Setting up block subscription...')
+      console.log("Setting up block subscription...")
       await this.rpcClient.subscribeToBlockAdded(
         this.processBlockEvent.bind(this)
       )
-      console.log('Successfully subscribed to block events')
+      console.log("Successfully subscribed to block events")
 
       // Fetch historical messages after setup is complete
       await this.fetchHistoricalMessages()
@@ -353,23 +353,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       this.isStarted = true
     } catch (error) {
-      console.error('Failed to start account service:', error)
+      console.error("Failed to start account service:", error)
       throw error
     }
   }
 
   async stop() {
-    console.log('Stopping UTXO subscription and processor...')
+    console.log("Stopping UTXO subscription and processor...")
     try {
       // Stop the UTXO processor
       await this.processor.stop()
 
       // Clean up our local state
       this.isStarted = false
-      console.log('Successfully cleaned up UTXO subscription and processor')
+      console.log("Successfully cleaned up UTXO subscription and processor")
     } catch (error) {
       console.error(
-        'Failed to clean up UTXO subscription and processor:',
+        "Failed to clean up UTXO subscription and processor:",
         error
       )
     }
@@ -380,29 +380,29 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     password: string
   ): Promise<TransactionId> {
     if (!this.isStarted || !this.rpcClient.rpc) {
-      throw new Error('Account service is not started')
+      throw new Error("Account service is not started")
     }
 
     if (!this.receiveAddress) {
-      throw new Error('Receive address not initialized')
+      throw new Error("Receive address not initialized")
     }
 
     if (!transaction.address) {
-      throw new Error('Transaction address is required')
+      throw new Error("Transaction address is required")
     }
 
     if (!transaction.amount) {
-      throw new Error('Transaction amount is required')
+      throw new Error("Transaction amount is required")
     }
 
-    console.log('=== CREATING TRANSACTION ===')
+    console.log("=== CREATING TRANSACTION ===")
     const primaryAddress = this.receiveAddress
     console.log(
-      'Creating transaction from primary address:',
+      "Creating transaction from primary address:",
       primaryAddress.toString()
     )
     console.log(
-      'Change will go back to primary address:',
+      "Change will go back to primary address:",
       primaryAddress.toString()
     )
     console.log(`Destination: ${transaction.address.toString()}`)
@@ -419,27 +419,27 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     )
 
     if (!privateKeyGenerator) {
-      throw new Error('Failed to generate private key')
+      throw new Error("Failed to generate private key")
     }
 
     if (!this.context) {
-      throw new Error('UTXO context not initialized')
+      throw new Error("UTXO context not initialized")
     }
 
     try {
       // Use our optimized generator creation method
       const generator = this._getGeneratorForTransaction(transaction)
 
-      console.log('Generating transaction...')
+      console.log("Generating transaction...")
       const pendingTransaction: PendingTransaction | null =
         await generator.next()
 
       if (!pendingTransaction) {
-        throw new Error('Failed to generate transaction')
+        throw new Error("Failed to generate transaction")
       }
 
       if ((await generator.next()) !== null) {
-        throw new Error('Unexpected multiple transaction generation')
+        throw new Error("Unexpected multiple transaction generation")
       }
 
       // Log the addresses that need signing
@@ -453,27 +453,27 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Always use receive key for all addresses since we only use primary address
       const privateKeys = pendingTransaction.addresses().map(() => {
-        console.log('Using primary address key for signing')
+        console.log("Using primary address key for signing")
         const key = privateKeyGenerator.receiveKey(0)
         if (!key) {
-          throw new Error('Failed to generate private key for signing')
+          throw new Error("Failed to generate private key for signing")
         }
         return key
       })
 
       // Sign the transaction
-      console.log('Signing transaction...')
+      console.log("Signing transaction...")
       pendingTransaction.sign(privateKeys)
 
       // Submit the transaction
-      console.log('Submitting transaction to network...')
+      console.log("Submitting transaction to network...")
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc)
       console.log(`Transaction submitted with ID: ${txId}`)
-      console.log('========================')
+      console.log("========================")
 
       return txId
     } catch (error) {
-      console.error('Error creating transaction:', error)
+      console.error("Error creating transaction:", error)
       throw error
     }
   }
@@ -483,29 +483,29 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     password: string
   ) {
     if (!this.isStarted || !this.rpcClient.rpc) {
-      throw new Error('Account service is not started')
+      throw new Error("Account service is not started")
     }
 
     if (!this.receiveAddress) {
-      throw new Error('Receive address not initialized')
+      throw new Error("Receive address not initialized")
     }
 
     if (!withdrawTransaction.address) {
-      throw new Error('Transaction address is required')
+      throw new Error("Transaction address is required")
     }
 
     if (!withdrawTransaction.amount) {
-      throw new Error('Transaction amount is required')
+      throw new Error("Transaction amount is required")
     }
 
-    console.log('=== CREATING WITHDRAW TRANSACTION ===')
+    console.log("=== CREATING WITHDRAW TRANSACTION ===")
     const primaryAddress = this.receiveAddress
     console.log(
-      'Creating withdraw transaction from primary address:',
+      "Creating withdraw transaction from primary address:",
       primaryAddress.toString()
     )
     console.log(
-      'Change will go back to primary address:',
+      "Change will go back to primary address:",
       primaryAddress.toString()
     )
     console.log(`Destination: ${withdrawTransaction.address.toString()}`)
@@ -520,11 +520,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     )
 
     if (!privateKeyGenerator) {
-      throw new Error('Failed to generate private key')
+      throw new Error("Failed to generate private key")
     }
 
     if (!this.context) {
-      throw new Error('UTXO context not initialized')
+      throw new Error("UTXO context not initialized")
     }
 
     try {
@@ -532,16 +532,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const generator =
         this._getGeneratorForWithdrawTransaction(withdrawTransaction)
 
-      console.log('Generating transaction...')
+      console.log("Generating transaction...")
       const pendingTransaction: PendingTransaction | null =
         await generator.next()
 
       if (!pendingTransaction) {
-        throw new Error('Failed to generate transaction')
+        throw new Error("Failed to generate transaction")
       }
 
       if ((await generator.next()) !== null) {
-        throw new Error('Unexpected multiple transaction generation')
+        throw new Error("Unexpected multiple transaction generation")
       }
 
       // Log the addresses that need signing
@@ -555,20 +555,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Always use receive key for all addresses since we only use primary address
       const privateKeys = pendingTransaction.addresses().map(() => {
-        console.log('Using primary address key for signing')
+        console.log("Using primary address key for signing")
         const key = privateKeyGenerator.receiveKey(0)
         if (!key) {
-          throw new Error('Failed to generate private key for signing')
+          throw new Error("Failed to generate private key for signing")
         }
         return key
       })
 
       // Sign the transaction
-      console.log('Signing transaction...')
+      console.log("Signing transaction...")
       pendingTransaction.sign(privateKeys)
 
       // Submit the transaction
-      console.log('Submitting transaction to network...')
+      console.log("Submitting transaction to network...")
 
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc)
 
@@ -578,18 +578,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       await this.context.trackAddresses([this.receiveAddress!])
 
       console.log(`Transaction submitted with ID: ${txId}`)
-      console.log('========================')
+      console.log("========================")
 
       return txId
     } catch (error) {
-      console.error('Error creating transaction:', error)
+      console.error("Error creating transaction:", error)
       throw error
     }
   }
 
   public async estimateTransaction(transaction: CreateTransactionArgs) {
     if (!this.isStarted) {
-      throw new Error('Account service is not started')
+      throw new Error("Account service is not started")
     }
 
     return this._getGeneratorForTransaction(transaction).estimate()
@@ -614,22 +614,22 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         // Check if we have conversations
         if (this.conversations && this.conversations.length > 0) {
           this.conversationsLoaded = true
-          console.log('Conversations loaded:', this.conversations.length)
+          console.log("Conversations loaded:", this.conversations.length)
           break
         }
 
         retries++
-        console.log('Waiting for conversations... attempt', retries)
+        console.log("Waiting for conversations... attempt", retries)
       }
 
       // If we still don't have conversations, log a warning but continue
       if (!this.conversationsLoaded) {
-        console.warn('Could not load conversations after maximum retries')
+        console.warn("Could not load conversations after maximum retries")
         // Set loaded to true anyway to prevent further retries
         this.conversationsLoaded = true
       }
     } catch (error) {
-      console.error('Error loading conversations:', error)
+      console.error("Error loading conversations:", error)
       // Set loaded to true to prevent further retries
       this.conversationsLoaded = true
     }
@@ -640,23 +640,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   ): Promise<TransactionId> {
     this.ensurePasswordSet()
     // Use custom amount if provided, otherwise default to 0.2 KAS
-    const defaultAmount = kaspaToSompi('0.2')
+    const defaultAmount = kaspaToSompi("0.2")
     const messageAmount = sendMessage.amount || defaultAmount
 
     if (!messageAmount) {
-      throw new Error('Message amount missing')
+      throw new Error("Message amount missing")
     }
 
     if (!sendMessage.toAddress) {
-      throw new Error('Destination address is required')
+      throw new Error("Destination address is required")
     }
 
     if (!sendMessage.message) {
-      throw new Error('Message is required')
+      throw new Error("Message is required")
     }
 
     if (!sendMessage.password) {
-      throw new Error('Password is required')
+      throw new Error("Password is required")
     }
 
     const destinationAddress = this.ensureAddressPrefix(sendMessage.toAddress)
@@ -668,30 +668,30 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     let payload
     if (isPreEncrypted) {
       // Message is already encrypted, just add the prefix
-      const prefix = 'ciph_msg:'
-        .split('')
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-        .join('')
+      const prefix = "ciph_msg:"
+        .split("")
+        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join("")
       payload = prefix + sendMessage.message
     } else {
-      console.log('ENCRYPT MESSAGE', sendMessage.message)
+      console.log("ENCRYPT MESSAGE", sendMessage.message)
       // Message needs to be encrypted
       const encryptedMessage = encrypt_message(
         addressString,
         sendMessage.message
       )
       if (!encryptedMessage) {
-        throw new Error('Failed to encrypt message')
+        throw new Error("Failed to encrypt message")
       }
-      const prefix = 'ciph_msg:'
-        .split('')
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-        .join('')
+      const prefix = "ciph_msg:"
+        .split("")
+        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+        .join("")
       payload = prefix + encryptedMessage.to_hex()
     }
 
     if (!payload) {
-      throw new Error('Failed to create message payload')
+      throw new Error("Failed to create message payload")
     }
 
     try {
@@ -706,7 +706,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       return txId
     } catch (error) {
-      console.error('Error sending message:', error)
+      console.error("Error sending message:", error)
       throw error
     }
   }
@@ -715,11 +715,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     sendMessage: EstimateSendMessageFeesArgs
   ): Promise<GeneratorSummary> {
     if (!sendMessage.toAddress) {
-      throw new Error('Destination address is required')
+      throw new Error("Destination address is required")
     }
 
     if (!sendMessage.message) {
-      throw new Error('Message is required')
+      throw new Error("Message is required")
     }
 
     const destinationAddress = this.ensureAddressPrefix(sendMessage.toAddress)
@@ -729,21 +729,21 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const encryptedMessage = encrypt_message(addressString, sendMessage.message)
 
     if (!encryptedMessage) {
-      throw new Error('Failed to encrypt message')
+      throw new Error("Failed to encrypt message")
     }
 
-    const prefix = 'ciph_msg'
-    const version = '1'
-    const messageType = 'comm'
+    const prefix = "ciph_msg"
+    const version = "1"
+    const messageType = "comm"
     const payload = `${prefix}:${version}:${messageType}:b4e3da89391b:${encryptedMessage.to_hex()}`
 
     const payloadHex = payload
-      .split('')
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-      .join('')
+      .split("")
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("")
 
     if (!payload) {
-      throw new Error('Failed to create message payload')
+      throw new Error("Failed to create message payload")
     }
 
     try {
@@ -755,7 +755,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       return summary
     } catch (error) {
-      console.error('Error estimating transaction fees:', error)
+      console.error("Error estimating transaction fees:", error)
       throw error
     }
   }
@@ -767,11 +767,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private adjustForSEC1Format(encryptedHex: string): string {
     // Check if the key starts with 02 or 03 (compressed SEC1 format)
     const keyStart = encryptedHex.substring(24, 26)
-    if (keyStart !== '02' && keyStart !== '03') {
+    if (keyStart !== "02" && keyStart !== "03") {
       return encryptedHex // Not a SEC1 key, return unchanged
     }
 
-    console.log('Detected SEC1 compressed key format in pre-encrypted message')
+    console.log("Detected SEC1 compressed key format in pre-encrypted message")
 
     // Extract components
     const nonce = encryptedHex.substring(0, 24)
@@ -783,11 +783,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     // The public key should be exactly 32 bytes (64 hex chars)
     // If it's shorter, pad it with zeros at the end
-    const paddedPublicKey = publicKeyWithoutPrefix.padEnd(64, '0')
+    const paddedPublicKey = publicKeyWithoutPrefix.padEnd(64, "0")
 
     // Create new hex with padded public key
     const modifiedHex = nonce + paddedPublicKey + ciphertext
-    console.log('Adjusted hex for SEC1 format compatibility')
+    console.log("Adjusted hex for SEC1 format compatibility")
 
     return modifiedHex
   }
@@ -801,31 +801,31 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     preEncryptedHex: string,
     password: string
   ) {
-    const minimumAmount = kaspaToSompi('0.2')
+    const minimumAmount = kaspaToSompi("0.2")
 
     if (!minimumAmount) {
-      throw new Error('Minimum amount missing')
+      throw new Error("Minimum amount missing")
     }
 
     // Ensure the destination address has the proper prefix
     const destinationAddress = this.ensureAddressPrefix(toAddress)
     console.log(
-      'Sending pre-encrypted message to:',
+      "Sending pre-encrypted message to:",
       destinationAddress.toString()
     )
-    console.log('Pre-encrypted message:', preEncryptedHex)
+    console.log("Pre-encrypted message:", preEncryptedHex)
 
     // Ensure the pre-encrypted message is compatible with the Rust code
     const adjustedHex = this.adjustForSEC1Format(preEncryptedHex)
 
-    const prefix = 'ciph_msg:'
-      .split('')
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-      .join('')
+    const prefix = "ciph_msg:"
+      .split("")
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("")
 
     // Use the provided pre-encrypted hex directly
     const payload = prefix + adjustedHex
-    console.log('Final transaction payload:', payload)
+    console.log("Final transaction payload:", payload)
 
     return this.createTransaction(
       {
@@ -839,7 +839,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
   public getMatureUtxos() {
     if (!this.isStarted) {
-      throw new Error('Account service is not started')
+      throw new Error("Account service is not started")
     }
 
     return this.context.getMatureRange(0, this.context.matureLength)
@@ -852,17 +852,17 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const addressString = address.toString()
 
     // If address already has a prefix, return it unchanged
-    if (addressString.includes(':')) {
+    if (addressString.includes(":")) {
       return address
     }
 
     // Add appropriate prefix based on network
     let prefixedAddressString = addressString
-    if (this.networkId === 'testnet-10' || this.networkId === 'testnet-11') {
+    if (this.networkId === "testnet-10" || this.networkId === "testnet-11") {
       prefixedAddressString = `kaspatest:${addressString}`
-    } else if (this.networkId === 'mainnet') {
+    } else if (this.networkId === "mainnet") {
       prefixedAddressString = `kaspa:${addressString}`
-    } else if (this.networkId === 'devnet') {
+    } else if (this.networkId === "devnet") {
       prefixedAddressString = `kaspadev:${addressString}`
     }
 
@@ -872,7 +872,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
   private _getGeneratorForTransaction(transaction: CreateTransactionArgs) {
     if (!this.isStarted) {
-      throw new Error('Account service is not started')
+      throw new Error("Account service is not started")
     }
 
     // Ensure both addresses have the correct prefixes
@@ -880,8 +880,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const primaryAddress = this.ensureAddressPrefix(this.receiveAddress!)
 
     // Log both addresses for debugging
-    console.log('Using destination address:', destinationAddress.toString())
-    console.log('Using primary address for change:', primaryAddress.toString())
+    console.log("Using destination address:", destinationAddress.toString())
+    console.log("Using primary address for change:", primaryAddress.toString())
 
     // Check if this is a direct self-message (sending to our own receive address)
     const isDirectSelfMessage =
@@ -905,7 +905,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       hasActiveConversation = conversations.some(
         (conv) => conv.address === destinationAddress.toString()
       )
-      console.log('Active conversation check:', {
+      console.log("Active conversation check:", {
         destinationAddress: destinationAddress.toString(),
         hasActiveConversation,
         conversations: conversations,
@@ -915,7 +915,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     // Only treat as self-message if it's a message transaction AND either direct self-message or has active conversation
     const isSelfMessage =
       isMessageTransaction && (isDirectSelfMessage || hasActiveConversation)
-    console.log('Transaction type:', {
+    console.log("Transaction type:", {
       isDirectSelfMessage,
       hasActiveConversation,
       isMessageTransaction,
@@ -942,10 +942,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     transaction: CreateWithdrawTransactionArgs
   ) {
     if (!this.isStarted) {
-      throw new Error('Account service is not started')
+      throw new Error("Account service is not started")
     }
 
-    console.log('Using destination address:', transaction.address.toString())
+    console.log("Using destination address:", transaction.address.toString())
 
     const isFullBalance = transaction.amount === this.context.balance?.mature
 
@@ -983,7 +983,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const prevTxId = input.previousOutpoint?.transactionId
         const prevOutputIndex = input.previousOutpoint?.index
 
-        if (prevTxId && typeof prevOutputIndex === 'number') {
+        if (prevTxId && typeof prevOutputIndex === "number") {
           try {
             const prevTx = await this._fetchTransactionDetails(prevTxId)
             if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
@@ -991,7 +991,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               senderAddress = output.verboseData?.scriptPublicKeyAddress
             }
           } catch (error) {
-            console.error('Error getting sender address:', error)
+            console.error("Error getting sender address:", error)
           }
         }
       }
@@ -1019,21 +1019,21 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length)
-      const handshakePrefix = '313a68616e647368616b653a'
-      const commPrefix = '313a636f6d6d3a'
+      const handshakePrefix = "313a68616e647368616b653a"
+      const commPrefix = "313a636f6d6d3a"
 
-      let messageType = 'unknown'
+      let messageType = "unknown"
       let isHandshake = false
       let targetAlias = null
       let encryptedHex = messageHex
 
       if (messageHex.startsWith(handshakePrefix)) {
-        messageType = 'handshake'
+        messageType = "handshake"
         isHandshake = true
         encryptedHex = messageHex
       } else if (messageHex.startsWith(commPrefix)) {
         const hexToString = (hex: string) => {
-          let str = ''
+          let str = ""
           for (let i = 0; i < hex.length; i += 2) {
             str += String.fromCharCode(parseInt(hex.substr(i, 2), 16))
           }
@@ -1041,10 +1041,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
 
         const messageStr = hexToString(messageHex)
-        const parts = messageStr.split(':')
+        const parts = messageStr.split(":")
 
         if (parts.length >= 4) {
-          messageType = 'comm'
+          messageType = "comm"
           targetAlias = parts[2]
           encryptedHex = parts[3]
         }
@@ -1054,7 +1054,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         (senderAddress && this.monitoredAddresses.has(senderAddress)) ||
         (recipientAddress && this.monitoredAddresses.has(recipientAddress))
       const isCommForUs =
-        messageType === 'comm' &&
+        messageType === "comm" &&
         targetAlias &&
         this.monitoredConversations.has(targetAlias)
 
@@ -1064,14 +1064,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           this.password!
         )
 
-        let decryptedContent = ''
+        let decryptedContent = ""
         let decryptionSuccess = false
 
         try {
           const privateKey = privateKeyGenerator.receiveKey(0)
           const txId = tx.verboseData?.transactionId
           if (!txId) {
-            throw new Error('Transaction ID is missing')
+            throw new Error("Transaction ID is missing")
           }
           const result = await CipherHelper.tryDecrypt(
             encryptedHex,
@@ -1082,7 +1082,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           decryptionSuccess = true
 
           if (decryptedContent.includes('"type":"handshake"')) {
-            messageType = 'handshake'
+            messageType = "handshake"
             isHandshake = true
             try {
               const handshakeData = JSON.parse(decryptedContent)
@@ -1090,11 +1090,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
                 await this.updateMonitoredConversations()
               }
             } catch (error) {
-              console.error('Error parsing handshake data:', error)
+              console.error("Error parsing handshake data:", error)
             }
           }
         } catch (error) {
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === "development") {
             console.debug(`Failed to decrypt with receive key:`, error)
           }
         }
@@ -1104,7 +1104,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             const privateKey = privateKeyGenerator.changeKey(0)
             const txId = tx.verboseData?.transactionId
             if (!txId) {
-              throw new Error('Transaction ID is missing')
+              throw new Error("Transaction ID is missing")
             }
             const result = await CipherHelper.tryDecrypt(
               encryptedHex,
@@ -1115,7 +1115,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             decryptionSuccess = true
 
             if (decryptedContent.includes('"type":"handshake"')) {
-              messageType = 'handshake'
+              messageType = "handshake"
               isHandshake = true
               try {
                 const handshakeData = JSON.parse(decryptedContent)
@@ -1123,11 +1123,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
                   await this.updateMonitoredConversations()
                 }
               } catch (error) {
-                console.error('Error parsing handshake data:', error)
+                console.error("Error parsing handshake data:", error)
               }
             }
           } catch (error) {
-            if (process.env.NODE_ENV === 'development') {
+            if (process.env.NODE_ENV === "development") {
               console.debug(`Failed to decrypt with change key:`, error)
             }
           }
@@ -1139,12 +1139,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         ) {
           const txId = tx.verboseData?.transactionId
           if (!txId) {
-            throw new Error('Transaction ID is missing')
+            throw new Error("Transaction ID is missing")
           }
           const message: DecodedMessage = {
             transactionId: txId,
-            senderAddress: senderAddress || 'Unknown',
-            recipientAddress: recipientAddress || 'Unknown',
+            senderAddress: senderAddress || "Unknown",
+            recipientAddress: recipientAddress || "Unknown",
             timestamp: blockTime,
             content: decryptedContent,
             amount: Number(tx.outputs[0].value) / 100000000,
@@ -1164,10 +1164,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             await this.updateMonitoredConversations()
           }
 
-          this.emit('messageReceived', message)
+          this.emit("messageReceived", message)
         }
       } catch (error) {
-        console.error('Error processing message:', error)
+        console.error("Error processing message:", error)
       }
     } catch (error) {
       console.error(
@@ -1209,7 +1209,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     if (tx.outputs) {
       for (const output of tx.outputs) {
         const value =
-          typeof output.value === 'bigint'
+          typeof output.value === "bigint"
             ? output.value
             : BigInt(output.value || 0)
         const address = getOutputAddress(output)
@@ -1235,7 +1235,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
   private stringifyWithBigInt(obj: any): string {
     return JSON.stringify(obj, (_, value) =>
-      typeof value === 'bigint' ? value.toString() : value
+      typeof value === "bigint" ? value.toString() : value
     )
   }
 
@@ -1244,36 +1244,36 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     // Ensure we have our receive address
     if (!this.receiveAddress) {
-      throw new Error('Receive address not initialized')
+      throw new Error("Receive address not initialized")
     }
 
-    const minimumAmount = kaspaToSompi('0.2')
+    const minimumAmount = kaspaToSompi("0.2")
 
     if (!minimumAmount) {
-      throw new Error('Minimum amount missing')
+      throw new Error("Minimum amount missing")
     }
 
     if (!sendMessage.toAddress) {
-      throw new Error('Destination address is required')
+      throw new Error("Destination address is required")
     }
 
     if (!sendMessage.message) {
-      throw new Error('Message is required')
+      throw new Error("Message is required")
     }
 
     if (!sendMessage.password) {
-      throw new Error('Password is required')
+      throw new Error("Password is required")
     }
 
     if (!sendMessage.theirAlias) {
-      throw new Error('Conversation alias is required')
+      throw new Error("Conversation alias is required")
     }
 
     // Get the conversation manager from the messaging store
     const messagingStore = useMessagingStore.getState()
     const conversationManager = messagingStore.conversationManager
     if (!conversationManager) {
-      throw new Error('Conversation manager not initialized')
+      throw new Error("Conversation manager not initialized")
     }
 
     // For self-messages, we still want to encrypt using the conversation partner's address
@@ -1281,10 +1281,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       sendMessage.theirAlias
     )
     if (!conversation) {
-      throw new Error('Could not find conversation for the given alias')
+      throw new Error("Could not find conversation for the given alias")
     }
 
-    console.log('Encryption details:', {
+    console.log("Encryption details:", {
       conversationPartnerAddress: conversation.kaspaAddress,
       ourAddress: this.receiveAddress?.toString(),
       theirAlias: sendMessage.theirAlias,
@@ -1298,22 +1298,22 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       sendMessage.message
     )
     if (!encryptedMessage) {
-      throw new Error('Failed to encrypt message')
+      throw new Error("Failed to encrypt message")
     }
 
     // Create the payload with conversation context
-    const prefix = 'ciph_msg'
-    const version = '1' // Use the current protocol version
-    const messageType = 'comm' // Use comm type for conversation messages
+    const prefix = "ciph_msg"
+    const version = "1" // Use the current protocol version
+    const messageType = "comm" // Use comm type for conversation messages
     const payload = `${prefix}:${version}:${messageType}:${
       sendMessage.theirAlias
     }:${encryptedMessage.to_hex()}`
 
     // Convert the payload to hex
     const payloadHex = payload
-      .split('')
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-      .join('')
+      .split("")
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("")
 
     try {
       // Always send to our own address for self-send messages
@@ -1331,14 +1331,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       return txId
     } catch (error) {
-      console.error('Error sending message with context:', error)
+      console.error("Error sending message with context:", error)
       throw error
     }
   }
 
   private async updateMonitoredConversations() {
     try {
-      const { useMessagingStore } = await import('../store/messaging.store')
+      const { useMessagingStore } = await import("../store/messaging.store")
       const messagingStore = useMessagingStore.getState()
       const conversationManager = messagingStore?.conversationManager
 
@@ -1355,7 +1355,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         this.monitoredAddresses.set(conv.address, conv.alias)
       })
     } catch (error) {
-      console.error('Error updating monitored conversations:', error)
+      console.error("Error updating monitored conversations:", error)
     }
   }
 
@@ -1395,14 +1395,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             // Process message transaction silently
             await this.processMessageTransaction(tx, blockHash, blockTime)
           } catch (error) {
-            if (process.env.NODE_ENV === 'development') {
-              console.debug('Error processing message transaction:', error)
+            if (process.env.NODE_ENV === "development") {
+              console.debug("Error processing message transaction:", error)
             }
           }
         }
       }
     } catch (error) {
-      console.error('Error processing block event:', error)
+      console.error("Error processing block event:", error)
     }
   }
 }
@@ -1412,7 +1412,7 @@ export const createWithdrawTransaction = async (
   amountSompi: bigint
 ): Promise<void> => {
   try {
-    console.log('Sending withdraw transaction:', {
+    console.log("Sending withdraw transaction:", {
       toAddress,
       amountSompi,
     })
@@ -1422,11 +1422,11 @@ export const createWithdrawTransaction = async (
     const password = walletStore.unlockedWallet?.password
 
     if (!accountService) {
-      throw new Error('Account service not initialized')
+      throw new Error("Account service not initialized")
     }
 
     if (!password) {
-      throw new Error('Wallet is locked. Please unlock your wallet first.')
+      throw new Error("Wallet is locked. Please unlock your wallet first.")
     }
 
     // Create and send a native transaction (no payload)
@@ -1438,13 +1438,13 @@ export const createWithdrawTransaction = async (
       password
     )
 
-    console.log('Withdraw transaction sent successfully')
+    console.log("Withdraw transaction sent successfully")
   } catch (error) {
-    console.error('Send withdraw transaction error:', error)
+    console.error("Send withdraw transaction error:", error)
     throw new Error(
       error instanceof Error
         ? error.message
-        : 'Failed to send withdraw transaction'
+        : "Failed to send withdraw transaction"
     )
   }
 }

@@ -1,5 +1,5 @@
-import React, { useState, ClipboardEvent, ChangeEvent, useEffect } from 'react'
-import clsx from 'clsx'
+import React, { useState, ClipboardEvent, ChangeEvent, useEffect } from "react"
+import clsx from "clsx"
 
 interface MnemonicEntryProps {
   seedPhraseLength: number
@@ -14,37 +14,37 @@ export const MnemonicEntry = ({
 
   // If the user changes the seed phrase length, reset the input fields
   useEffect(() => {
-    if (mnemonicRef.current) mnemonicRef.current.value = ''
+    if (mnemonicRef.current) mnemonicRef.current.value = ""
     document
-      .querySelectorAll<HTMLInputElement>('.mnemonic-input-grid input')
-      .forEach((i) => (i.value = ''))
+      .querySelectorAll<HTMLInputElement>(".mnemonic-input-grid input")
+      .forEach((i) => (i.value = ""))
     setFocusedIndex(null)
   }, [seedPhraseLength])
 
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>, idx: number) => {
     if (idx !== 0) return
     e.preventDefault()
-    const pastedText = e.clipboardData.getData('text')
+    const pastedText = e.clipboardData.getData("text")
     const words = pastedText.trim().split(/\s+/).slice(0, seedPhraseLength)
 
     const inputs = Array.from(
-      (e.target as HTMLInputElement).parentElement?.querySelectorAll('input') ??
+      (e.target as HTMLInputElement).parentElement?.querySelectorAll("input") ??
         []
     ) as HTMLInputElement[]
 
     words.forEach((word, i) => {
       if (inputs[i]) inputs[i].value = word
     })
-    if (mnemonicRef.current) mnemonicRef.current.value = words.join(' ')
+    if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ")
   }
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputEl = e.target as HTMLInputElement
-    const allInputs = inputEl.parentElement?.querySelectorAll('input') ?? []
+    const allInputs = inputEl.parentElement?.querySelectorAll("input") ?? []
     const words = Array.from(allInputs).map(
       (inp) => (inp as HTMLInputElement).value
     )
-    if (mnemonicRef.current) mnemonicRef.current.value = words.join(' ')
+    if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ")
   }
 
   return (
@@ -58,14 +58,14 @@ export const MnemonicEntry = ({
           return (
             <input
               key={i}
-              type={visible ? 'text' : 'password'}
+              type={visible ? "text" : "password"}
               placeholder={`Word ${i + 1}`}
               className={clsx(
-                'w-full p-2 rounded',
-                'bg-[var(--primary-bg)] border border-[var(--border-color)]',
-                'text-[var(--text-primary)]',
-                'focus:outline-none focus:border-[var(--accent-blue)]',
-                'placeholder:text-sm'
+                "w-full p-2 rounded",
+                "bg-[var(--primary-bg)] border border-[var(--border-color)]",
+                "text-[var(--text-primary)]",
+                "focus:outline-none focus:border-[var(--accent-blue)]",
+                "placeholder:text-sm"
               )}
               onFocus={() => setFocusedIndex(i)}
               onBlur={() => setFocusedIndex(null)}

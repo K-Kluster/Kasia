@@ -1,5 +1,5 @@
-import { KaspaClient } from 'src/utils/all-in-one'
-import { PublicKeyGenerator } from 'wasm/kaspa'
+import { KaspaClient } from "src/utils/all-in-one"
+import { PublicKeyGenerator } from "wasm/kaspa"
 
 export type Wallet = {
   id: string
@@ -8,7 +8,7 @@ export type Wallet = {
   derivationType?: WalletDerivationType
 }
 
-export type WalletDerivationType = 'legacy' | 'standard'
+export type WalletDerivationType = "legacy" | "standard"
 
 export type UnlockedWallet = {
   id: string

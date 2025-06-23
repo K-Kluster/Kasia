@@ -1,17 +1,17 @@
-import { FC, useState, useEffect, useRef } from 'react'
-import { Message as MessageType } from '../types/all'
-import { decodePayload } from '../utils/all-in-one'
-import { formatKasAmount } from '../utils/format'
+import { FC, useState, useEffect, useRef } from "react"
+import { Message as MessageType } from "../types/all"
+import { decodePayload } from "../utils/all-in-one"
+import { formatKasAmount } from "../utils/format"
 import {
   decrypt_message,
   decrypt_message_with_bytes,
   decrypt_with_secret_key,
-} from 'cipher'
-import { useWalletStore } from '../store/wallet.store'
-import { WalletStorage } from '../utils/wallet-storage'
-import { CipherHelper } from '../utils/cipher-helper'
-import { useMessagingStore } from '../store/messaging.store'
-import { HandshakeResponse } from './HandshakeResponse'
+} from "cipher"
+import { useWalletStore } from "../store/wallet.store"
+import { WalletStorage } from "../utils/wallet-storage"
+import { CipherHelper } from "../utils/cipher-helper"
+import { useMessagingStore } from "../store/messaging.store"
+import { HandshakeResponse } from "./HandshakeResponse"
 
 type MessageDisplayProps = {
   message: MessageType
@@ -41,28 +41,28 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Check if this is a handshake message
   const isHandshake =
-    (payload?.startsWith('ciph_msg:') && payload?.includes(':handshake:')) ||
-    (content?.startsWith('ciph_msg:') && content?.includes(':handshake:'))
+    (payload?.startsWith("ciph_msg:") && payload?.includes(":handshake:")) ||
+    (content?.startsWith("ciph_msg:") && content?.includes(":handshake:"))
 
   // Get conversation if it's a handshake
   const conversation = isHandshake
     ? (() => {
         try {
           // Parse the handshake payload using the same method as ConversationManager
-          const handshakeMessage = payload?.startsWith('ciph_msg:')
+          const handshakeMessage = payload?.startsWith("ciph_msg:")
             ? payload
             : content
-          const parts = handshakeMessage.split(':')
+          const parts = handshakeMessage.split(":")
           if (
             parts.length < 4 ||
-            parts[0] !== 'ciph_msg' ||
-            parts[2] !== 'handshake'
+            parts[0] !== "ciph_msg" ||
+            parts[2] !== "handshake"
           ) {
-            console.error('Invalid handshake payload format')
+            console.error("Invalid handshake payload format")
             return null
           }
 
-          const jsonPart = parts.slice(3).join(':') // Handle colons in JSON
+          const jsonPart = parts.slice(3).join(":") // Handle colons in JSON
           const handshakePayload = JSON.parse(jsonPart)
 
           // Get all conversations
@@ -87,10 +87,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             )
           }
 
-          console.log('Found conversation:', foundConversation)
+          console.log("Found conversation:", foundConversation)
           return foundConversation
         } catch (error) {
-          console.error('Error parsing handshake payload:', error)
+          console.error("Error parsing handshake payload:", error)
           return null
         }
       })()
@@ -98,7 +98,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Get the correct explorer URL based on network
   const getExplorerUrl = (txId: string) => {
-    return walletStore.selectedNetwork === 'mainnet'
+    return walletStore.selectedNetwork === "mainnet"
       ? `https://explorer.kaspa.org/txs/${txId}`
       : `https://explorer-tn10.kaspa.org/txs/${txId}`
   }
@@ -123,19 +123,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       // 1. The conversation is pending
       // 2. We didn't initiate it
       // 3. It hasn't been responded to yet
-      if (conversation.status === 'pending' && !conversation.initiatedByMe) {
+      if (conversation.status === "pending" && !conversation.initiatedByMe) {
         console.log(
-          'Rendering handshake response for conversation:',
+          "Rendering handshake response for conversation:",
           conversation
         )
         return <HandshakeResponse conversation={conversation} />
       }
       // For other handshake messages, just show the status text
-      return conversation.status === 'active'
-        ? 'Handshake completed'
+      return conversation.status === "active"
+        ? "Handshake completed"
         : conversation.initiatedByMe
-          ? 'Handshake sent'
-          : 'Handshake received'
+          ? "Handshake sent"
+          : "Handshake received"
     }
 
     // Wait for decryption attempt before showing content
@@ -147,8 +147,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     let messageToRender = (decryptionAttempted && decryptedContent) || content
 
     // Handle file/image messages
-    if (fileData && fileData.type === 'file') {
-      if (fileData.mimeType.startsWith('image/')) {
+    if (fileData && fileData.type === "file") {
+      if (fileData.mimeType.startsWith("image/")) {
         return (
           <img
             src={fileData.content}
@@ -166,7 +166,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           <button
             className="download-button"
             onClick={() => {
-              const link = document.createElement('a')
+              const link = document.createElement("a")
               link.href = fileData.content
               link.download = fileData.name
               link.click()
@@ -181,8 +181,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     // Try to parse as JSON in case it's a file message in content
     try {
       const parsedContent = JSON.parse(messageToRender)
-      if (parsedContent.type === 'file') {
-        if (parsedContent.mimeType.startsWith('image/')) {
+      if (parsedContent.type === "file") {
+        if (parsedContent.mimeType.startsWith("image/")) {
           return (
             <img
               key={`img-${transactionId}`}
@@ -201,7 +201,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             <button
               className="download-button"
               onClick={() => {
-                const link = document.createElement('a')
+                const link = document.createElement("a")
                 link.href = parsedContent.content
                 link.download = parsedContent.name
                 link.click()
@@ -219,8 +219,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     return messageToRender
   }
 
-  const [decryptedContent, setDecryptedContent] = useState<string>('')
-  const [decryptionError, setDecryptionError] = useState<string>('')
+  const [decryptedContent, setDecryptedContent] = useState<string>("")
+  const [decryptionError, setDecryptionError] = useState<string>("")
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false)
   const [decryptionAttempted, setDecryptionAttempted] = useState<boolean>(false)
 
@@ -234,7 +234,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       // If we already have decrypted content from the account service, use that
       if (content) {
         setDecryptedContent(content)
-        setDecryptionError('')
+        setDecryptionError("")
         setDecryptionAttempted(true)
         return
       }
@@ -255,10 +255,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         if (!mounted.current) return
 
         // Check if the payload starts with the cipher prefix
-        const prefix = 'ciph_msg:'
-          .split('')
-          .map((c) => c.charCodeAt(0).toString(16).padStart(2, '0'))
-          .join('')
+        const prefix = "ciph_msg:"
+          .split("")
+          .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+          .join("")
 
         if (payload.startsWith(prefix)) {
           // Extract the encrypted message hex
@@ -291,27 +291,27 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
               )
             } catch (changeErr) {
               throw new Error(
-                'Failed to decrypt with both receive and change keys'
+                "Failed to decrypt with both receive and change keys"
               )
             }
           }
 
           if (mounted.current && decrypted) {
             setDecryptedContent(decrypted)
-            setDecryptionError('')
+            setDecryptionError("")
           }
         } else {
           const decoded = decodePayload(payload)
           if (mounted.current) {
-            setDecryptedContent(decoded || '')
-            setDecryptionError('')
+            setDecryptedContent(decoded || "")
+            setDecryptionError("")
           }
         }
       } catch (error) {
-        console.error('Error decrypting message:', error)
+        console.error("Error decrypting message:", error)
         if (mounted.current) {
           setDecryptionError(
-            error instanceof Error ? error.message : 'Unknown error'
+            error instanceof Error ? error.message : "Unknown error"
           )
         }
       } finally {
@@ -332,7 +332,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   }, [])
 
   return (
-    <div className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+    <div className={`message ${isOutgoing ? "outgoing" : "incoming"}`}>
       <div className="message-header">
         <div className="message-timestamp">
           {new Date(timestamp).toLocaleString()}
