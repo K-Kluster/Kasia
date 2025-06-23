@@ -5,20 +5,20 @@ const indexToUse = levels.indexOf(levelToUse) ?? 0
 
 // Store the original console methods
 const originalConsole = {
-    log: console.log,
-    warn: console.warn,
-    error: console.error,
+  log: console.log,
+  warn: console.warn,
+  error: console.error,
 }
 
 // Overwrite console methods
 console.log = (...args: unknown[]) => {
-    if (indexToUse <= levels.indexOf('info')) originalConsole.log(...args)
+  if (indexToUse <= levels.indexOf('info')) originalConsole.log(...args)
 }
 
 console.warn = (...args: unknown[]) => {
-    if (indexToUse <= levels.indexOf('warn')) originalConsole.warn(...args)
+  if (indexToUse <= levels.indexOf('warn')) originalConsole.warn(...args)
 }
 
 console.error = (...args: unknown[]) => {
-    if (indexToUse <= levels.indexOf('error')) originalConsole.error(...args)
+  if (indexToUse <= levels.indexOf('error')) originalConsole.error(...args)
 }

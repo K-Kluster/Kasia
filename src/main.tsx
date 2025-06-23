@@ -5,9 +5,9 @@ import { BrowserRouter } from 'react-router-dom'
 
 // routes declaration
 export const loadApplication = async () => {
-    createRoot(document.getElementById('root')!).render(
-        <BrowserRouter>
-            <App />
-        </BrowserRouter>
-    )
+  createRoot(document.getElementById('root')!).render(
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  )
 }
