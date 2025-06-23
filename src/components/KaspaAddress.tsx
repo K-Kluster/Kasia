@@ -1,6 +1,6 @@
 import React, { FC, useMemo, useState, useEffect, useRef, Ref } from "react";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
-import { ClipboardIcon } from "@heroicons/react/24/outline";
+import { Square2StackIcon } from "@heroicons/react/24/outline";
 
 interface KaspaAddressProps {
   address: string | { toString: () => string };
@@ -85,7 +85,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           onClick={handleCopy}
           className="focus:outline-none cursor-pointer block mt-auto"
         >
-          <ClipboardIcon className="size-5 text-white hover:opacity-80" />
+          <Square2StackIcon className="size-5 text-white hover:opacity-80" />
         </PopoverButton>
 
         <PopoverPanel
