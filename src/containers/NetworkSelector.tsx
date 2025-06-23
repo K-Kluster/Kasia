@@ -20,7 +20,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
     }
 
     return getDisplayableNetworkFromNetworkString(
-      selectedNetwork as NetworkType
+      selectedNetwork as NetworkType,
     );
   }, [selectedNetwork, isConnected]);
 
@@ -36,29 +36,29 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   }, []);
 
   return (
-      <Menu>
-        <MenuButton className="network-badge">
-          <span
-            className={`connection-dot ${
-              isConnected ? "connected" : "disconnected"
-            }`}
-          />
-          {networkDisplay}
-        </MenuButton>
-        <MenuItems className="network-selector" anchor="bottom">
-          {allowedNetworks.map((allowedNetwork) => (
-            <MenuItem key={allowedNetwork.id}>
-              <div
-                onClick={() => onNetworkChange(allowedNetwork.id)}
-                className={`${
-                  selectedNetwork === allowedNetwork.id ? "active" : ""
-                } network-option`}
-              >
-                {allowedNetwork.displayableString}
-              </div>
-            </MenuItem>
-          ))}
-        </MenuItems>
-      </Menu>
+    <Menu>
+      <MenuButton className="network-badge">
+        <span
+          className={`connection-dot ${
+            isConnected ? "connected" : "disconnected"
+          }`}
+        />
+        {networkDisplay}
+      </MenuButton>
+      <MenuItems className="network-selector" anchor="bottom">
+        {allowedNetworks.map((allowedNetwork) => (
+          <MenuItem key={allowedNetwork.id}>
+            <div
+              onClick={() => onNetworkChange(allowedNetwork.id)}
+              className={`${
+                selectedNetwork === allowedNetwork.id ? "active" : ""
+              } network-option`}
+            >
+              {allowedNetwork.displayableString}
+            </div>
+          </MenuItem>
+        ))}
+      </MenuItems>
+    </Menu>
   );
 };

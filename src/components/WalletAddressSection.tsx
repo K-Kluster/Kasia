@@ -8,7 +8,9 @@ type AddressSectionProps = {
   address?: string;
 };
 
-export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) => {
+export const WalletAddressSection: FC<AddressSectionProps> = ({
+  address = "",
+}) => {
   const [copyNotification, setCopyNotification] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
     console.log("QR code visibility toggled");
   }, []);
 
-  if (!address) return null; 
+  if (!address) return null;
   return (
     <div className="relative">
       <div className="mb-2">
@@ -130,14 +132,13 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
             {
               "opacity-100": copyNotification,
               "opacity-0": !copyNotification,
-            }
+            },
           )}
         >
           {copyNotification}
         </div>
         {showQRCode && address && qrCodeURL && (
-          <div
-            className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300">
+          <div className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300">
             <h4 className="text-white text-center mb-4">QR Code for Address</h4>
             <div className="flex flex-col items-center gap-4">
               <img

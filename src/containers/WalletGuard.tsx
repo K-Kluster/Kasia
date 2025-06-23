@@ -92,7 +92,7 @@ export const WalletGuard = ({
       const wordCount = mnemonic.phrase.split(" ").length;
       if (wordCount !== seedPhraseLength) {
         throw new Error(
-          `Generated mnemonic has ${wordCount} words, expected ${seedPhraseLength}`
+          `Generated mnemonic has ${wordCount} words, expected ${seedPhraseLength}`,
         );
       }
 
@@ -106,7 +106,7 @@ export const WalletGuard = ({
         nameRef.current.value,
         mnemonic,
         passwordRef.current.value,
-        derivationType
+        derivationType,
       );
       setStep({ type: "finalizing", mnemonic });
     } catch (err) {
@@ -137,7 +137,7 @@ export const WalletGuard = ({
         nameRef.current.value,
         mnemonic,
         passwordRef.current.value,
-        derivationType
+        derivationType,
       );
       setStep({ type: "finalizing" });
     } catch (err) {
@@ -186,13 +186,13 @@ export const WalletGuard = ({
       await migrateLegacyWallet(
         step.walletId,
         passwordRef.current.value,
-        nameRef.current.value
+        nameRef.current.value,
       );
       setStep({ type: "home" });
       setError(null);
       // Show success message
       alert(
-        "Wallet migrated successfully! You can now use the new standard wallet."
+        "Wallet migrated successfully! You can now use the new standard wallet.",
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to migrate wallet");
@@ -236,7 +236,9 @@ export const WalletGuard = ({
             isConnected={isConnected}
           />
         </div>
-        <h2 className="text-center my-8 text-[var(--text-primary)] text-[1.5rem] font-semibold">Select Wallet</h2>
+        <h2 className="text-center my-8 text-[var(--text-primary)] text-[1.5rem] font-semibold">
+          Select Wallet
+        </h2>
         <div className="wallet-list">
           {wallets.map((wallet) => (
             <div key={wallet.id} className="wallet-item">
@@ -542,7 +544,7 @@ export const WalletGuard = ({
                 const words = step.mnemonic?.phrase || "";
                 navigator.clipboard.writeText(words).then(() => {
                   const btn = document.querySelector(
-                    ".copy-button"
+                    ".copy-button",
                   ) as HTMLButtonElement;
                   if (btn) {
                     const originalText = btn.textContent;

@@ -18,10 +18,10 @@ export const WalletInfo: FC<WalletInfoProps> = ({
   onClose,
 }) => {
   const isAccountServiceRunning = useWalletStore(
-    (s) => s.isAccountServiceRunning
+    (s) => s.isAccountServiceRunning,
   );
   const unlockedWalletName = useWalletStore(
-    (state) => state.unlockedWallet?.name
+    (state) => state.unlockedWallet?.name,
   );
   const walletBalance = useWalletStore((s) => s.balance);
 
@@ -111,7 +111,7 @@ export const WalletInfo: FC<WalletInfoProps> = ({
     <div className="flex justify-center items-center">
       <ArrowPathIcon className="w-12 h-12 animate-spin text-gray-300" />
     </div>
-  );  
+  );
 
   if (!isWalletReady || !open) return null;
 

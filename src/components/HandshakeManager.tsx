@@ -8,7 +8,7 @@ const HandshakeManager: React.FC = () => {
   const pendingConversations = messagingStore.getPendingConversations();
 
   const handleAcceptHandshake = async (
-    pendingConversation: PendingConversation
+    pendingConversation: PendingConversation,
   ) => {
     try {
       if (!pendingConversation.kaspaAddress) {

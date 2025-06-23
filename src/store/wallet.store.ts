@@ -42,12 +42,12 @@ type WalletState = {
     name: string,
     mnemonic: Mnemonic,
     password: string,
-    derivationType?: WalletDerivationType
+    derivationType?: WalletDerivationType,
   ) => Promise<string>;
   deleteWallet: (walletId: string) => void;
   unlock: (
     walletId: string,
-    password: string
+    password: string,
   ) => Promise<UnlockedWallet | null>;
   lock: () => void;
 
@@ -55,7 +55,7 @@ type WalletState = {
   migrateLegacyWallet: (
     walletId: string,
     password: string,
-    newName?: string
+    newName?: string,
   ) => Promise<string>;
 
   // wallet operations
@@ -65,18 +65,18 @@ type WalletState = {
     message: string,
     toAddress: Address,
     password: string,
-    customAmount?: bigint
+    customAmount?: bigint,
   ) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
     preEncryptedHex: string,
     toAddress: Address,
-    password: string
+    password: string,
   ) => Promise<TransactionId>;
   getMatureUtxos: () => UtxoEntryReference[];
 
   estimateSendMessageFees: (
     message: string,
-    toAddress: Address
+    toAddress: Address,
   ) => Promise<GeneratorSummary>;
 
   // Actions
@@ -113,13 +113,13 @@ export const useWalletStore = create<WalletState>((set, get) => {
       name: string,
       mnemonic: Mnemonic,
       password: string,
-      derivationType?: WalletDerivationType
+      derivationType?: WalletDerivationType,
     ) => {
       const walletId = _walletStorage.create(
         name,
         mnemonic,
         password,
-        derivationType
+        derivationType,
       );
       get().loadWallets();
       return walletId;
@@ -162,7 +162,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
         _accountService.on("transactionReceived", async (txDetails) => {
           if (txDetails.payload?.startsWith("636970685f6d73673a")) {
             const messageOutput = txDetails.outputs.find(
-              (output: { amount: number }) => output.amount === 10000000
+              (output: { amount: number }) => output.amount === 10000000,
             );
             const recipientAddress =
               messageOutput?.script_public_key_address || "Unknown";
@@ -175,7 +175,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
                   script_public_key_address: string;
                 }) =>
                   output.script_public_key_address !== recipientAddress &&
-                  output.amount !== 10000000
+                  output.amount !== 10000000,
               );
               if (changeOutput) {
                 senderAddress = changeOutput.script_public_key_address;
@@ -218,7 +218,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
         if (initialBalance) {
           const matureUtxos = _accountService.context.getMatureRange(
             0,
-            _accountService.context.matureLength
+            _accountService.context.matureLength,
           );
           const pendingUtxos = _accountService.context.getPending();
 
@@ -284,7 +284,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       _accountService.on("transactionReceived", async (txDetails) => {
         if (txDetails.payload?.startsWith("636970685f6d73673a")) {
           const messageOutput = txDetails.outputs.find(
-            (output: { amount: number }) => output.amount === 10000000
+            (output: { amount: number }) => output.amount === 10000000,
           );
           const recipientAddress =
             messageOutput?.script_public_key_address || "Unknown";
@@ -294,7 +294,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
             const changeOutput = txDetails.outputs.find(
               (output: { amount: number; script_public_key_address: string }) =>
                 output.script_public_key_address !== recipientAddress &&
-                output.amount !== 10000000
+                output.amount !== 10000000,
             );
             if (changeOutput) {
               senderAddress = changeOutput.script_public_key_address;
@@ -338,7 +338,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       if (initialBalance) {
         const matureUtxos = _accountService.context.getMatureRange(
           0,
-          _accountService.context.matureLength
+          _accountService.context.matureLength,
         );
         const pendingUtxos = _accountService.context.getPending();
 
@@ -391,7 +391,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       message: string,
       toAddress: Address,
       password: string,
-      customAmount?: bigint
+      customAmount?: bigint,
     ) => {
       const state = get();
       if (!state.unlockedWallet || !state.accountService) {
@@ -408,7 +408,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
           console.log("Sending handshake message to:", toAddress.toString());
           const encryptedMessage = await encrypt_message(
             toAddress.toString(),
-            message
+            message,
           );
           if (!encryptedMessage) {
             throw new Error("Failed to encrypt handshake message");
@@ -424,11 +424,11 @@ export const useWalletStore = create<WalletState>((set, get) => {
         // For regular messages, send to recipient
         console.log(
           "Sending regular message to recipient:",
-          toAddress.toString()
+          toAddress.toString(),
         );
         const encryptedMessage = await encrypt_message(
           toAddress.toString(),
-          message
+          message,
         );
         if (!encryptedMessage) {
           throw new Error("Failed to encrypt message");
@@ -452,7 +452,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       return _accountService.sendPreEncryptedMessage(
         toAddress,
         preEncryptedHex,
-        password
+        password,
       );
     },
 
@@ -483,12 +483,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
     migrateLegacyWallet: async (
       walletId: string,
       password: string,
-      newName?: string
+      newName?: string,
     ) => {
       const newWalletId = await _walletStorage.migrateLegacyWallet(
         walletId,
         password,
-        newName
+        newName,
       );
       get().loadWallets();
       return newWalletId;

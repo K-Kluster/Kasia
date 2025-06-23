@@ -28,8 +28,8 @@ export const MnemonicEntry = ({
     const words = pastedText.trim().split(/\s+/).slice(0, seedPhraseLength);
 
     const inputs = Array.from(
-      (e.target as HTMLInputElement).parentElement
-        ?.querySelectorAll("input") ?? []
+      (e.target as HTMLInputElement).parentElement?.querySelectorAll("input") ??
+        [],
     ) as HTMLInputElement[];
 
     words.forEach((word, i) => {
@@ -40,10 +40,9 @@ export const MnemonicEntry = ({
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputEl = e.target as HTMLInputElement;
-    const allInputs =
-      inputEl.parentElement?.querySelectorAll("input") ?? [];
+    const allInputs = inputEl.parentElement?.querySelectorAll("input") ?? [];
     const words = Array.from(allInputs).map(
-      (inp) => (inp as HTMLInputElement).value
+      (inp) => (inp as HTMLInputElement).value,
     );
     if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ");
   };
@@ -66,7 +65,7 @@ export const MnemonicEntry = ({
                 "bg-[var(--primary-bg)] border border-[var(--border-color)]",
                 "text-[var(--text-primary)]",
                 "focus:outline-none focus:border-[var(--accent-blue)]",
-                "placeholder:text-sm"
+                "placeholder:text-sm",
               )}
               onFocus={() => setFocusedIndex(i)}
               onBlur={() => setFocusedIndex(null)}

@@ -32,7 +32,7 @@ export const MessageSection: FC = () => {
 
     if (
       confirm(
-        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
+        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone.",
       )
     ) {
       messageStore.flushWalletHistory(walletStore.address.toString());
@@ -48,7 +48,8 @@ export const MessageSection: FC = () => {
           <div className="messages-list">
             <div className="no-messages">
               Start by funding your wallet with some Kas (should be a small
-              amount such as 10 Kas) and chat to someone by clicking the add (+) button on the top-left corner
+              amount such as 10 Kas) and chat to someone by clicking the add (+)
+              button on the top-left corner
             </div>
           </div>
         </>
@@ -72,10 +73,7 @@ export const MessageSection: FC = () => {
               {walletStore.address && (
                 <FetchApiMessages address={walletStore.address.toString()} />
               )}
-              <button
-                    className="cursor-pointer p-2"
-                onClick={onClearHistory}
-              >
+              <button className="cursor-pointer p-2" onClick={onClearHistory}>
                 <TrashIcon className="w-6 h-6 text-red-200 hover:scale-110" />
               </button>
             </div>

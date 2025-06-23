@@ -69,7 +69,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setIsEstimating(true);
       const estimate = await walletStore.estimateSendMessageFees(
         message,
-        new Address(recipient)
+        new Address(recipient),
       );
 
       console.log("Fee estimate received:", estimate);
@@ -117,13 +117,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     try {
       console.log(
         "Sending transaction from primary address:",
-        walletStore.address.toString()
+        walletStore.address.toString(),
       );
 
       // Check if we have an active conversation with this recipient
       const activeConversations = messageStore.getActiveConversations();
       const existingConversation = activeConversations.find(
-        (conv) => conv.kaspaAddress === recipient
+        (conv) => conv.kaspaAddress === recipient,
       );
 
       let messageToSend = message;
@@ -188,7 +188,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         txId = await walletStore.sendMessage(
           messageToSend,
           new Address(recipient),
-          walletStore.unlockedWallet.password
+          walletStore.unlockedWallet.password,
         );
       }
 
@@ -234,7 +234,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         onSendClicked();
       }
     },
-    [onSendClicked]
+    [onSendClicked],
   );
 
   useEffect(() => {
@@ -251,7 +251,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   }, [messageInputRef, onMessageInputKeyPressed]);
 
   const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -264,7 +264,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       alert(
         `File too large. Please keep files under ${
           maxSize / 1024
-        }KB to ensure it fits in a Kaspa transaction.`
+        }KB to ensure it fits in a Kaspa transaction.`,
       );
       return;
     }
@@ -298,7 +298,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Verify the total message size will fit in a transaction
       if (fileMessage.length > maxSize) {
         throw new Error(
-          `Encoded file data too large for a Kaspa transaction. Please use a smaller file.`
+          `Encoded file data too large for a Kaspa transaction. Please use a smaller file.`,
         );
       }
 
@@ -311,7 +311,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       console.error("Error reading file:", error);
       alert(
         "Failed to read file: " +
-          (error instanceof Error ? error.message : "Unknown error")
+          (error instanceof Error ? error.message : "Unknown error"),
       );
     } finally {
       setIsUploading(false);
