@@ -2,18 +2,16 @@ import { FC, useCallback, useEffect, useState, useRef } from "react";
 import { unknownErrorToErrorLike } from "./utils/errors";
 import { Contact, NetworkType } from "./types/all";
 import { useMessagingStore } from "./store/messaging.store";
-import { WalletInfo } from "./components/WalletInfo";
 import { ErrorCard } from "./components/ErrorCard";
 import { useWalletStore } from "./store/wallet.store";
 import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
 import { MessageSection } from "./containers/MessagesSection";
 import { FetchApiMessages } from "./components/FetchApiMessages";
-import { Bars3Icon, ArrowPathIcon } from "@heroicons/react/24/solid";
-import MenuHamburger from "./components/MenuHamburger";
-import { FeeBuckets } from "./components/FeeBuckets";
+import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
 import { ContactSection } from "./components/ContactSection";
+import { Header } from "./components/Layout/Header";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -22,7 +20,6 @@ export const OneLiner: FC = () => {
   const networkStore = useNetworkStore();
   const isConnected = useNetworkStore((state) => state.isConnected);
   const connect = useNetworkStore((state) => state.connect);
-  // handle network error
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
@@ -32,18 +29,18 @@ export const OneLiner: FC = () => {
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
 
+  const toggleSettings = () => setIsSettingsOpen((v) => !v);
+
   // Network connection effect
   useEffect(() => {
     // Skip if no network selected or connection attempt in progress
     if (isConnected) {
       return;
     }
-
     connect();
     // this is on purpose, we only want to run this once upon component mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   const onNetworkChange = useCallback(
     (network: NetworkType) => {
       networkStore.setNetwork(network);
@@ -88,7 +85,7 @@ export const OneLiner: FC = () => {
   }, [walletStore.unlockedWallet, messageStore]);
 
   useEffect(() => {
-    const startMessaging = async () => {
+    const startMessageClient = async () => {
       if (
         messagesClientStarted ||
         !isWalletReady ||
@@ -137,12 +134,9 @@ export const OneLiner: FC = () => {
         );
       }
     };
-    startMessaging();
+    startMessageClient();
   }, [
     isWalletReady,
-    networkStore.isConnected,
-    networkStore.kaspaClient, 
-    walletStore.unlockedWallet,
     messageStore,
   ]); 
 
@@ -159,10 +153,7 @@ export const OneLiner: FC = () => {
     [messageStore, walletStore.address]
   );
 
-  const toggleSettings = () => setIsSettingsOpen((v) => !v);
-
   const handleCloseWallet = () => {
-
     walletStore.lock();
     setIsWalletReady(false);
     messageStore.setIsLoaded(false);
@@ -180,53 +171,22 @@ export const OneLiner: FC = () => {
   }, [isWalletReady, walletStore.unlockedWallet]);
 
   return (
-    <div className="container">
-      <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
-        <div className="app-title flex items-center gap-2">
-          <img src="/kasia-logo.png" alt="Kasia Logo" className="app-logo" />
-          <h1 className="text-xl font-bold">Kasia</h1>
-        </div>
-
-        {isWalletReady && (
-          <div ref={menuRef} className="relative flex items-center gap-2">
-            <div className="hidden sm:block">
-              <FeeBuckets inline={true} />
-            </div>
-
-            <button
-              onClick={toggleSettings}
-              className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
-              aria-label="Settings"
-            >
-              <Bars3Icon className="h-6 w-6 text-white" />
-            </button>
-
-            {!isWalletInfoOpen ? (
-              <MenuHamburger
-                open={isSettingsOpen}
-                address={walletStore.address?.toString()}
-                onCloseMenu={() => setIsSettingsOpen(false)}
-                onOpenWalletInfo={() => {
-                  setIsWalletInfoOpen(true);
-                  setIsSettingsOpen(false);
-                }}
-                onCloseWallet={handleCloseWallet}
-                messageStoreLoaded={messageStore.isLoaded}
-              />
-            ) : (
-              <WalletInfo
-                state={walletStore.address ? "connected" : "loading"}
-                address={walletStore.address?.toString()}
-                isWalletReady={isWalletReady}
-                open={isWalletInfoOpen}
-                onClose={() => setIsWalletInfoOpen(false)}
-              />
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="px-8 py-4 bg-[var(--primary-bg)]">
+    <>
+      {/* Top Bar / Header */}
+      <Header
+        isWalletReady={isWalletReady}
+        walletAddress={walletStore.address?.toString()}
+        isSettingsOpen={isSettingsOpen}
+        isWalletInfoOpen={isWalletInfoOpen}
+        menuRef={menuRef}
+        toggleSettings={toggleSettings}
+        onCloseWallet={handleCloseWallet}
+        setIsWalletInfoOpen={setIsWalletInfoOpen}
+        setIsSettingsOpen={setIsSettingsOpen}
+        isMessageStoreLoaded={messageStore.isLoaded}
+      />
+      {/* Main Message Section*/}
+      <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           {!isWalletReady ? (
             <WalletGuard
@@ -257,24 +217,19 @@ export const OneLiner: FC = () => {
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
               <div className="bg-[var(--secondary-bg)]/20 rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[70vh] min-h-[300px] relative">
                 <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col justify-center items-center space-y-4">
-                  <span className="text-xl text-gray-200 font-semibold">
-                    Loading Message Client
+                  <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
+                    Connecting message client...
                   </span>
-                  <ArrowPathIcon className="w-16 h-16 text-gray-400 animate-spin" />
+                  <ArrowPathIcon className="w-14 h-14 text-gray-500 animate-spin" />
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
-      <div>
-        <ErrorCard
-          error={errorMessage}
-          onDismiss={() => setErrorMessage(null)}
-        />
-      </div>
-
-      {/* Add NewChatForm when isCreatingNewChat is true */}
+      {/* Global Error Section*/}
+      <ErrorCard error={errorMessage} onDismiss={() => setErrorMessage(null)} />
+      {/* Start New Conversation Modal */}
       {messageStore.isCreatingNewChat && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
           <NewChatForm
@@ -282,6 +237,6 @@ export const OneLiner: FC = () => {
           />
         </div>
       )}
-    </div>
+    </>
   );
 };
