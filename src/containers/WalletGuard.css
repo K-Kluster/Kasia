@@ -1,20 +1,3 @@
-.wallet-guard {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: var(--secondary-bg);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.wallet-guard h2 {
-  text-align: center;
-  margin: 2rem 0;
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
 .wallet-list {
   display: flex;
   flex-direction: column;
@@ -96,12 +79,6 @@
   cursor: pointer;
   font-size: 1rem;
   transition: background-color 0.2s;
-}
-
-.network-selector-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
 }
 
 .form-group {

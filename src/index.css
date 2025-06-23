@@ -96,11 +96,6 @@ h1 {
   box-shadow: 0 0 4px #ef4444;
 }
 
-.network-selector-container {
-  position: relative;
-  display: inline-block;
-}
-
 .network-selector {
   position: absolute;
   top: calc(100% + 2px);
@@ -293,7 +288,6 @@ h1 {
   display: block;
   margin-top: 20px;
 }
-
 
 .messages-header {
   padding: 16px;
@@ -572,6 +566,15 @@ h1 {
   .message {
     max-width: 85%;
   }
+}
+
+.wallet-guard {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin: 2rem auto;
+  max-width: 600px;
+  padding: 2rem;
 }
 
 .wallet-info-container {

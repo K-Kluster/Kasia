@@ -14,15 +14,17 @@ import { FetchApiMessages } from "./components/FetchApiMessages";
 import { PlusIcon, Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./components/MenuHamburger";
 import { FeeBuckets } from "./components/FeeBuckets";
-import { useKaspaClient } from "./hooks/useKaspaClient";
+import { useNetworkStore } from "./store/network.store";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWalletReady, setIsWalletReady] = useState(false);
   const [messageStoreLoading, setMessageStoreLoading] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkType>(
-    import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet"
-  );
+
+  const networkStore = useNetworkStore();
+  const isConnected = useNetworkStore((state) => state.isConnected);
+  const connect = useNetworkStore((state) => state.connect);
+  // handle network error
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
@@ -31,33 +33,27 @@ export const OneLiner: FC = () => {
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
 
-  const {
-    client: currentClient,
-    status: connectionStatus,
-    isConnected,
-    connect,
-    disconnect,
-  } = useKaspaClient(selectedNetwork, {
-    onConnect: (c) => {
-      walletStore.setSelectedNetwork(c.networkId);
-      walletStore.setRpcClient(c);
-    },
-    onError: (e) => setErrorMessage(`Connection Failed: ${e.message}`),
-  });
-
-  // Auto-clear connection-related errors when connection succeeds
+  // Network connection effect
   useEffect(() => {
-    if (isConnected && connectionStatus.includes("Connected")) {
-      // Clear any connection-related error messages
-      if (
-        errorMessage?.includes("WebSocket") ||
-        errorMessage?.includes("RPC") ||
-        errorMessage?.includes("Failed to start messaging")
-      ) {
-        setErrorMessage(null);
-      }
+    // Skip if no network selected or connection attempt in progress
+    if (isConnected) {
+      return;
     }
-  }, [isConnected, connectionStatus, errorMessage]);
+
+    connect();
+    // this is on purpose, we only want to run this once upon component mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onNetworkChange = useCallback(
+    (network: NetworkType) => {
+      networkStore.setNetwork(network);
+
+      // Trigger reconnection when network changes
+      connect();
+    },
+    [connect, networkStore]
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -71,7 +67,6 @@ export const OneLiner: FC = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  
 
   const onWalletUnlocked = useCallback(() => {
     setIsWalletReady(true);
@@ -97,7 +92,7 @@ export const OneLiner: FC = () => {
     try {
       // Clear any previous error messages
       setErrorMessage(null);
-      if (!currentClient || !currentClient.connected) {
+      if (!networkStore.kaspaClient || !networkStore.isConnected) {
         setErrorMessage(
           "Please choose a network and connect to the Kaspa Network first"
         );
@@ -111,7 +106,9 @@ export const OneLiner: FC = () => {
 
       setMessageStoreLoading(true);
 
-      const { receiveAddress } = await walletStore.start(currentClient);
+      const { receiveAddress } = await walletStore.start(
+        networkStore.kaspaClient
+      );
       const receiveAddressStr = receiveAddress.toString();
 
       // Initialize conversation manager
@@ -147,7 +144,12 @@ export const OneLiner: FC = () => {
     } finally {
       setMessageStoreLoading(false);
     }
-  }, [currentClient, walletStore, messageStore]);
+  }, [
+    networkStore.kaspaClient,
+    networkStore.isConnected,
+    walletStore,
+    messageStore,
+  ]);
 
   const onContactClicked = useCallback(
     (contact: Contact) => {
@@ -161,7 +163,7 @@ export const OneLiner: FC = () => {
     },
     [messageStore, walletStore.address]
   );
-  
+
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
 
   const handleCloseWallet = () => {
@@ -244,9 +246,9 @@ export const OneLiner: FC = () => {
           ) : (
             <WalletGuard
               onSuccess={onWalletUnlocked}
-              selectedNetwork={selectedNetwork}
-              onNetworkChange={setSelectedNetwork}
-              isConnected={isConnected}
+              selectedNetwork={networkStore.network}
+              onNetworkChange={onNetworkChange}
+              isConnected={networkStore.isConnected}
             />
           )}
         </div>
