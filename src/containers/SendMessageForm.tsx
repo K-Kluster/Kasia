@@ -9,7 +9,21 @@ import { formatKasAmount } from "../utils/format";
 import { createWithdrawTransaction } from "../service/account-service";
 import clsx from "clsx";
 import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
-import { BackwardsKIcon } from "../components/icons/BackwardsKIcon";
+
+// Backwards K icon component for Kaspa
+const BackwardsKIcon: FC<{ className?: string }> = ({ className }) => (
+  <svg
+    className={className}
+    fill="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M8 4v16h2v-6.5l1.5-1.5L16 18h2.5l-5-7 4.5-7H15.5L12 8.5V4H8z"
+      transform="scale(-1,1) translate(-24,0)"
+    />
+  </svg>
+);
 import { toast } from "../utils/toast";
 
 type SendMessageFormProps = unknown;
@@ -51,7 +65,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     setShowPayForm(false);
     setPayAmount("");
     setPaymentError(null);
-  }, [recipient, openedRecipient]);
+  }, [openedRecipient]);
 
   const estimateFee = useCallback(async () => {
     if (!walletStore.unlockedWallet) {
@@ -88,13 +102,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   // Payment handling functions
   const handlePayClick = useCallback(() => {
-    if (!recipient) {
+    if (!openedRecipient) {
       alert("Please select a recipient first");
       return;
     }
     setShowPayForm(true);
     setPaymentError(null);
-  }, [recipient]);
+  }, [openedRecipient]);
 
   const handlePayAmountChange = useCallback((value: string) => {
     // Allow decimal numbers
@@ -113,7 +127,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   }, [balance]);
 
   const handleSendPayment = useCallback(async () => {
-    if (!recipient) {
+    if (!openedRecipient) {
       setPaymentError("Please select a recipient first");
       return;
     }
@@ -150,7 +164,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Send the payment using withdraw transaction to the recipient
       // This is a simple transfer without any messages or conversation history
-      await createWithdrawTransaction(recipient, amountSompi);
+      await createWithdrawTransaction(openedRecipient, amountSompi);
 
       // Reset forms on success
       setPayAmount("");
@@ -158,7 +172,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Show success feedback (optional - you can remove this if you don't want any feedback)
       console.log(
-        `Payment of ${payAmount} KAS sent successfully to ${recipient}`
+        `Payment of ${payAmount} KAS sent successfully to ${openedRecipient}`
       );
     } catch (error) {
       console.error("Error sending payment:", error);
@@ -168,7 +182,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     } finally {
       setIsSendingPayment(false);
     }
-  }, [recipient, payAmount, balance]);
+  }, [openedRecipient, payAmount, balance]);
 
   const handleCancelPay = useCallback(() => {
     setShowPayForm(false);
@@ -452,11 +466,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             "px-3 py-2 rounded-lg cursor-pointer font-medium transition-all duration-200 flex items-center h-9",
             "text-white focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
             {
-              "opacity-50 cursor-not-allowed": !recipient || showPayForm,
-              "bg-[#70C7BA] hover:bg-[#5fb5a3]": !(!recipient || showPayForm),
+              "opacity-50 cursor-not-allowed": !openedRecipient || showPayForm,
+              "bg-[#70C7BA] hover:bg-[#5fb5a3]": !(
+                !openedRecipient || showPayForm
+              ),
             }
           )}
-          disabled={!recipient || showPayForm}
+          disabled={!openedRecipient || showPayForm}
           title="Send Kaspa payment to recipient"
         >
           <BackwardsKIcon className="w-4 h-4" />
@@ -533,7 +549,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       )}
 
       {/* Enhanced fee estimate - no more flashing */}
-      {recipient && message && (
+      {openedRecipient && message && (
         <div className="fee-estimate">
           {isEstimating ? (
             <span>
