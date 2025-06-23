@@ -1,113 +1,116 @@
-import React, { useState, useCallback } from "react";
-import { useMessagingStore } from "../store/messaging.store";
-import { useWalletStore } from "../store/wallet.store";
-import { Address, kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
-import { Conversation } from "src/types/messaging.types";
+import React, { useState, useCallback } from 'react'
+import { useMessagingStore } from '../store/messaging.store'
+import { useWalletStore } from '../store/wallet.store'
+import { Address, kaspaToSompi, sompiToKaspaString } from 'kaspa-wasm'
+import { Conversation } from 'src/types/messaging.types'
 
 export const NewChatForm: React.FC = () => {
-  const [recipientAddress, setRecipientAddress] = useState("");
-  const [handshakeAmount, setHandshakeAmount] = useState("0.2");
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+    const [recipientAddress, setRecipientAddress] = useState('')
+    const [handshakeAmount, setHandshakeAmount] = useState('0.2')
+    const [showAdvanced, setShowAdvanced] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [showConfirmation, setShowConfirmation] = useState(false)
 
-  const messagingStore = useMessagingStore();
-  const balance = useWalletStore((state) => state.balance);
+    const messagingStore = useMessagingStore()
+    const balance = useWalletStore((state) => state.balance)
 
-  // Get pending handshakes
-  const pendingHandshakes = messagingStore.getPendingConversations();
+    // Get pending handshakes
+    const pendingHandshakes = messagingStore.getPendingConversations()
 
-  const handleAmountChange = useCallback((value: string) => {
-    // Allow decimal numbers
-    if (/^\d*\.?\d*$/.test(value)) {
-      setHandshakeAmount(value);
+    const handleAmountChange = useCallback((value: string) => {
+        // Allow decimal numbers
+        if (/^\d*\.?\d*$/.test(value)) {
+            setHandshakeAmount(value)
+        }
+    }, [])
+
+    const handleMaxClick = useCallback(() => {
+        if (balance?.mature) {
+            const maxAmount = sompiToKaspaString(balance.mature)
+            setHandshakeAmount(maxAmount)
+        }
+    }, [balance])
+
+    const validateAndPrepareHandshake = useCallback(() => {
+        setError(null)
+
+        try {
+            // Validate address
+            new Address(recipientAddress)
+        } catch {
+            setError('Invalid Kaspa address format')
+            return false
+        }
+
+        // Validate amount
+        const amountSompi = kaspaToSompi(handshakeAmount)
+        if (!amountSompi) {
+            setError('Invalid handshake amount')
+            return false
+        }
+
+        // Check minimum amount
+        const minAmount = kaspaToSompi('0.2')
+        if (amountSompi < minAmount!) {
+            setError('Handshake amount must be at least 0.2 KAS')
+            return false
+        }
+
+        // Check balance
+        if (!balance?.mature || balance.mature < amountSompi) {
+            setError(
+                `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || '0'} KAS`
+            )
+            return false
+        }
+
+        return true
+    }, [recipientAddress, handshakeAmount, balance])
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!validateAndPrepareHandshake()) {
+            return
+        }
+
+        setShowConfirmation(true)
     }
-  }, []);
 
-  const handleMaxClick = useCallback(() => {
-    if (balance?.mature) {
-      const maxAmount = sompiToKaspaString(balance.mature);
-      setHandshakeAmount(maxAmount);
-    }
-  }, [balance]);
+    const confirmHandshake = async () => {
+        try {
+            setError(null)
+            setShowConfirmation(false)
 
-  const validateAndPrepareHandshake = useCallback(() => {
-    setError(null);
+            const amountSompi = kaspaToSompi(handshakeAmount)
 
-    try {
-      // Validate address
-      new Address(recipientAddress);
-    } catch {
-      setError("Invalid Kaspa address format");
-      return false;
-    }
+            // Initiate handshake with custom amount
+            await messagingStore.initiateHandshake(
+                recipientAddress,
+                amountSompi
+            )
 
-    // Validate amount
-    const amountSompi = kaspaToSompi(handshakeAmount);
-    if (!amountSompi) {
-      setError("Invalid handshake amount");
-      return false;
+            // Clear form
+            setRecipientAddress('')
+            setHandshakeAmount('0.2')
+            setShowAdvanced(false)
+        } catch (err) {
+            setError((err as Error).message)
+        }
     }
 
-    // Check minimum amount
-    const minAmount = kaspaToSompi("0.2");
-    if (amountSompi < minAmount!) {
-      setError("Handshake amount must be at least 0.2 KAS");
-      return false;
+    const handleRespondToHandshake = async (handshake: Conversation) => {
+        try {
+            setError(null)
+            await messagingStore.respondToHandshake(handshake)
+        } catch (err) {
+            setError((err as Error).message)
+        }
     }
 
-    // Check balance
-    if (!balance?.mature || balance.mature < amountSompi) {
-      setError(
-        `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`,
-      );
-      return false;
-    }
-
-    return true;
-  }, [recipientAddress, handshakeAmount, balance]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateAndPrepareHandshake()) {
-      return;
-    }
-
-    setShowConfirmation(true);
-  };
-
-  const confirmHandshake = async () => {
-    try {
-      setError(null);
-      setShowConfirmation(false);
-
-      const amountSompi = kaspaToSompi(handshakeAmount);
-
-      // Initiate handshake with custom amount
-      await messagingStore.initiateHandshake(recipientAddress, amountSompi);
-
-      // Clear form
-      setRecipientAddress("");
-      setHandshakeAmount("0.2");
-      setShowAdvanced(false);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
-  const handleRespondToHandshake = async (handshake: Conversation) => {
-    try {
-      setError(null);
-      await messagingStore.respondToHandshake(handshake);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
-
-  return (
-    <div className="new-chat-container">
-      <style>{`
+    return (
+        <div className="new-chat-container">
+            <style>{`
         .new-chat-container {
           max-width: 500px;
           margin: 0 auto;
@@ -321,115 +324,130 @@ export const NewChatForm: React.FC = () => {
         }
       `}</style>
 
-      <form onSubmit={handleSubmit} className="new-chat-form">
-        <div className="form-section">
-          <label>Recipient Address (kaspa: or kaspatest:)</label>
-          <input
-            type="text"
-            value={recipientAddress}
-            onChange={(e) => setRecipientAddress(e.target.value)}
-            placeholder="Enter Kaspa address"
-            className="address-input"
-          />
-        </div>
+            <form onSubmit={handleSubmit} className="new-chat-form">
+                <div className="form-section">
+                    <label>Recipient Address (kaspa: or kaspatest:)</label>
+                    <input
+                        type="text"
+                        value={recipientAddress}
+                        onChange={(e) => setRecipientAddress(e.target.value)}
+                        placeholder="Enter Kaspa address"
+                        className="address-input"
+                    />
+                </div>
 
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          className="advanced-toggle"
-        >
-          {showAdvanced ? "Hide Advanced Options" : "Show Advanced Options"}
-        </button>
-
-        {showAdvanced && (
-          <div className="advanced-section">
-            <div className="form-section">
-              <label>Handshake Amount (KAS)</label>
-              <div className="amount-section">
-                <input
-                  type="text"
-                  value={handshakeAmount}
-                  onChange={(e) => handleAmountChange(e.target.value)}
-                  placeholder="0.2"
-                  className="amount-input"
-                />
                 <button
-                  type="button"
-                  onClick={handleMaxClick}
-                  className="max-button"
+                    type="button"
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    className="advanced-toggle"
                 >
-                  Max
+                    {showAdvanced
+                        ? 'Hide Advanced Options'
+                        : 'Show Advanced Options'}
                 </button>
-              </div>
-              <div className="info-text">
-                Default: 0.2 KAS. Higher amounts help recipients respond even if
-                they have no KAS. This creates a better experience for newcomers
-                to Kaspa messaging.
-              </div>
-            </div>
-          </div>
-        )}
 
-        <button type="submit" className="submit-button">
-          Start New Chat
-        </button>
-      </form>
+                {showAdvanced && (
+                    <div className="advanced-section">
+                        <div className="form-section">
+                            <label>Handshake Amount (KAS)</label>
+                            <div className="amount-section">
+                                <input
+                                    type="text"
+                                    value={handshakeAmount}
+                                    onChange={(e) =>
+                                        handleAmountChange(e.target.value)
+                                    }
+                                    placeholder="0.2"
+                                    className="amount-input"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleMaxClick}
+                                    className="max-button"
+                                >
+                                    Max
+                                </button>
+                            </div>
+                            <div className="info-text">
+                                Default: 0.2 KAS. Higher amounts help recipients
+                                respond even if they have no KAS. This creates a
+                                better experience for newcomers to Kaspa
+                                messaging.
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-      {error && <div className="error-message">{error}</div>}
+                <button type="submit" className="submit-button">
+                    Start New Chat
+                </button>
+            </form>
 
-      {showConfirmation && (
-        <div className="confirmation-dialog">
-          <h4>Confirm Handshake</h4>
-          <div className="confirmation-details">
-            <strong>Recipient:</strong> {recipientAddress}
-            <br />
-            <strong>Amount:</strong> {handshakeAmount} KAS
-            <br />
-            <strong>Your Balance:</strong> {balance?.matureDisplay || "0"} KAS
-            <br />
-            <br />
-            {parseFloat(handshakeAmount) > 0.2 && (
-              <>
-                The extra amount (
-                {(parseFloat(handshakeAmount) - 0.2).toFixed(8)} KAS) helps the
-                recipient respond even if they have no KAS.
-                <br />
-                <br />
-              </>
+            {error && <div className="error-message">{error}</div>}
+
+            {showConfirmation && (
+                <div className="confirmation-dialog">
+                    <h4>Confirm Handshake</h4>
+                    <div className="confirmation-details">
+                        <strong>Recipient:</strong> {recipientAddress}
+                        <br />
+                        <strong>Amount:</strong> {handshakeAmount} KAS
+                        <br />
+                        <strong>Your Balance:</strong>{' '}
+                        {balance?.matureDisplay || '0'} KAS
+                        <br />
+                        <br />
+                        {parseFloat(handshakeAmount) > 0.2 && (
+                            <>
+                                The extra amount (
+                                {(parseFloat(handshakeAmount) - 0.2).toFixed(8)}{' '}
+                                KAS) helps the recipient respond even if they
+                                have no KAS.
+                                <br />
+                                <br />
+                            </>
+                        )}
+                        This will initiate a handshake conversation. Continue?
+                    </div>
+                    <button
+                        onClick={confirmHandshake}
+                        className="confirm-button"
+                    >
+                        Confirm & Send
+                    </button>
+                    <button
+                        onClick={() => setShowConfirmation(false)}
+                        className="cancel-button"
+                    >
+                        Cancel
+                    </button>
+                </div>
             )}
-            This will initiate a handshake conversation. Continue?
-          </div>
-          <button onClick={confirmHandshake} className="confirm-button">
-            Confirm & Send
-          </button>
-          <button
-            onClick={() => setShowConfirmation(false)}
-            className="cancel-button"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
 
-      {/* Pending Handshakes Section */}
-      {pendingHandshakes.length > 0 && (
-        <div className="pending-handshakes">
-          <h3>Pending Handshakes</h3>
-          {pendingHandshakes.map((handshake) => (
-            <div key={handshake.conversationId} className="handshake-item">
-              <span>From: {handshake.kaspaAddress}</span>
-              {!handshake.initiatedByMe && (
-                <button
-                  onClick={() => handleRespondToHandshake(handshake)}
-                  className="respond-button"
-                >
-                  Accept & Respond
-                </button>
-              )}
-            </div>
-          ))}
+            {/* Pending Handshakes Section */}
+            {pendingHandshakes.length > 0 && (
+                <div className="pending-handshakes">
+                    <h3>Pending Handshakes</h3>
+                    {pendingHandshakes.map((handshake) => (
+                        <div
+                            key={handshake.conversationId}
+                            className="handshake-item"
+                        >
+                            <span>From: {handshake.kaspaAddress}</span>
+                            {!handshake.initiatedByMe && (
+                                <button
+                                    onClick={() =>
+                                        handleRespondToHandshake(handshake)
+                                    }
+                                    className="respond-button"
+                                >
+                                    Accept & Respond
+                                </button>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
-};
+    )
+}

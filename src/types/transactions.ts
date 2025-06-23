@@ -1,1 +1,1 @@
-export type TransactionId = string;
+export type TransactionId = string
