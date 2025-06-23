@@ -12,6 +12,18 @@
   --accent-purple: #8b5cf6;
   --accent-green: #10b981;
   --accent-yellow: #f59e0b;
+
+  --animate-fade-in: fade-in 0.5s ease forwards;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 input {
@@ -909,3 +921,4 @@ h1 {
   align-items: center;
   gap: 0.5rem;
 }
+
