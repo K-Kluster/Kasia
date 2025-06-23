@@ -265,3 +265,10 @@
     transform: translateY(0);
   }
 }
+
+.resolved-address {
+  margin-top: 4px;
+  color: #6cf;
+  font-size: 14px;
+  word-break: break-all;
+}
