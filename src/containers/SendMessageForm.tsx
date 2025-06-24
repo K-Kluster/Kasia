@@ -19,6 +19,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
+import { BackwardsKIcon } from "../components/icons/BackwardsKIcon";
 
 type SendMessageFormProps = unknown;
 
@@ -29,6 +30,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const messageStore = useMessagingStore();
 
