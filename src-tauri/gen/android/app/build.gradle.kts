@@ -5,6 +5,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("rust")
+
+    id("com.google.gms.google-services")
 }
 
 val tauriProperties = Properties().apply {
@@ -16,10 +18,10 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 34
-    namespace = "com.kasia.dev"
+    namespace = "kas.kluster.kasia"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.kasia.dev"
+        applicationId = "kas.kluster.kasia"
         minSdk = 24
         targetSdk = 34
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
@@ -80,6 +82,8 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.0")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.15.0"))
 }
 
 apply(from = "tauri.build.gradle.kts")

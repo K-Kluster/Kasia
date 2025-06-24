@@ -1,3 +1,3 @@
-package com.kasia.dev
+package kas.kluster.kasia
 
 class MainActivity : TauriActivity()
