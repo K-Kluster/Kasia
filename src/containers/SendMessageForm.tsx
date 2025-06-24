@@ -113,7 +113,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Check if we have an active conversation with this recipient
       const activeConversations = messageStore.getActiveConversations();
       const existingConversation = activeConversations.find(
-        (conv) => conv.kaspaAddress === recipient
+        (conv) => conv.kaspaAddress === openedRecipient
       );
 
       let messageToSend = message;
@@ -157,7 +157,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // If we have an active conversation, use the context-aware sending
       if (existingConversation && existingConversation.theirAlias) {
         console.log("Sending message with conversation context:", {
-          recipient,
+          openedRecipient,
           theirAlias: existingConversation.theirAlias,
         });
 

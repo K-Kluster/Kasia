@@ -300,31 +300,9 @@
   user-select: none;
 }
 
-.copy-button {
-  opacity: 0.5;
-  pointer-events: none;
-  padding: 10px 20px;
-  background-color: #2a3042;
-  color: white;
-  border: 1px solid #3a4156;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  margin-top: 10px;
-}
-
 .mnemonic-phrase.visible + .copy-button {
   opacity: 1;
   pointer-events: auto;
-}
-
-.copy-button:hover {
-  background-color: #3a4156;
-}
-
-.copy-button:active {
-  transform: translateY(1px);
 }
 
 .mnemonic-word {

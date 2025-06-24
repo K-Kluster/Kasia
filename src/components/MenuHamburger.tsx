@@ -118,16 +118,6 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               >
                 <span className="text-white text-sm">Withdraw Funds</span>
               </li>
-              {/* Show Seed extract Item */}
-              <li
-                onClick={() => {
-                  setShowSeedRetrieveModal(true);
-                  setActionsMenuOpen(false);
-                }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
-              >
-                <span className="text-white text-sm">View Seed Phrase</span>
-              </li>
               {/* Show IO messages Item */}
               {messageStoreLoaded && (
                 <li
@@ -139,6 +129,16 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
                   </span>
                 </li>
               )}
+              {/* Show Seed extract Item */}
+              <li
+                onClick={() => {
+                  setShowSeedRetrieveModal(true);
+                  setActionsMenuOpen(false);
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">View Seed Phrase</span>
+              </li>
             </ul>
           )}
           {/* Show close wallet Item */}
