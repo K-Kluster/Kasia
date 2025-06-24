@@ -2,13 +2,25 @@ import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { Input } from "@headlessui/react";
+import {
+  Input,
+  Popover,
+  PopoverButton,
+  PopoverPanel,
+  Transition,
+} from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
-import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import {
+  PaperClipIcon,
+  PaperAirplaneIcon,
+  PlusIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
+import { BackwardsKIcon } from "../components/icons/BackwardsKIcon";
 
 type SendMessageFormProps = unknown;
 
@@ -19,11 +31,14 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const messageStore = useMessagingStore();
 
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const openFileDialog = () => fileInputRef.current?.click();
 
   useEffect(() => {
     messageInputRef.current?.focus();
@@ -328,6 +343,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           spellCheck="false"
           data-form-type="other"
         />
+
         <input
           type="file"
           ref={fileInputRef}
@@ -335,17 +351,43 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           onChange={handleFileUpload}
           accept="image/*,.txt,.json,.md"
         />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-5 h-5 m-1 flex items-center justify-center cursor-pointer text-gray-300 hover:text-gray-200"
-          title="Upload file (images up to 100KB, other files up to 10KB)"
-          disabled={isUploading}
-        >
-          <PaperClipIcon className="w-full h-full" />
-        </button>
+        <Popover className="relative">
+          {({ close }) => (
+            <>
+              <PopoverButton className="p-2 hover:bg-white/5 rounded">
+                <PlusIcon className="size-5" />
+              </PopoverButton>
+              <Transition
+                enter="transition ease-out duration-100"
+                enterFrom="opacity-0 translate-y-1"
+                enterTo="opacity-100 translate-y-0"
+                leave="transition ease-in duration-75"
+                leaveFrom="opacity-100 translate-y-0"
+                leaveTo="opacity-0 translate-y-1"
+              >
+                <PopoverPanel className="absolute bottom-full mb-2 right-0 flex flex-col gap-2 bg-[var(--secondary-bg)] p-2 rounded shadow-lg">
+                  <button
+                    onClick={() => {
+                      openFileDialog();
+                      close();
+                    }}
+                    className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
+                    disabled={isUploading}
+                  >
+                    <span className="text-base">Attach file</span>
+                    <PaperClipIcon className="size-5" />
+                  </button>
 
-        {openedRecipient && <SendPayment address={openedRecipient} />}
-
+                  {openedRecipient && (
+                    <div className="mx-4"> {/*im sorry*/}
+                      <SendPayment address={openedRecipient} />
+                    </div>
+                  )}
+                </PopoverPanel>
+              </Transition>
+            </>
+          )}
+        </Popover>
         <button
           onClick={onSendClicked}
           className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
