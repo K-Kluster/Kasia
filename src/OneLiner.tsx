@@ -35,6 +35,24 @@ export const OneLiner: FC = () => {
 
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
 
+  // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
+  useEffect(() => {
+    const syncToWidth = () => {
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        if (contactsCollapsed) setContactsCollapsed(false);
+        if (!messageStore.openedRecipient) setMobileView("contacts");
+      } else {
+        setMobileView("contacts");
+      }
+    };
+
+    syncToWidth(); // run once on mount
+    window.addEventListener("resize", syncToWidth);
+    return () => window.removeEventListener("resize", syncToWidth);
+  }, [contactsCollapsed, messageStore.openedRecipient]);
+  
+
   // Network connection effect
   useEffect(() => {
     // Skip if no network selected or connection attempt in progress
