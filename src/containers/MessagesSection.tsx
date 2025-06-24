@@ -41,13 +41,13 @@ export const MessageSection: FC = () => {
   }, [address, messageStore]);
 
   return (
-    <div className="messages-section">
+    <div className="flex flex-col flex-[2] border-l border-[var(--border-color)]">
       {boxState === "new" ? (
         // ONBOARDING
         <>
-          <div className="messages-header"></div>
-          <div className="messages-list">
-            <div className="no-messages">
+          <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]"></div>
+          <div className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]">
+            <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
               Start by funding your wallet with some Kas (should be a small
               amount such as 10 Kas) and chat to someone by clicking the add (+)
               button on the top-left corner
@@ -57,9 +57,9 @@ export const MessageSection: FC = () => {
       ) : boxState === "unfiltered" ? (
         // NOT SELECTED ANY CONTACT
         <>
-          <div className="messages-header"></div>
-          <div className="messages-list">
-            <div className="no-messages">
+          <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]"></div>
+          <div className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]">
+            <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
               Click on a contact to access the conversation
             </div>
           </div>
@@ -67,11 +67,11 @@ export const MessageSection: FC = () => {
       ) : (
         // SELECTED A CONTACT
         <>
-          <div className="messages-header">
+          <div className="p-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]">
             <h3 className="text-base font-semibold">
               <KaspaAddress address={openedRecipient ?? ""} />
             </h3>
-            <div className="header-actions">
+            <div className="flex items-center gap-3">
               {address && <FetchApiMessages address={address.toString()} />}
               <button className="cursor-pointer p-2" onClick={onClearHistory}>
                 <TrashIcon className="w-6 h-6 text-red-200 hover:scale-110" />
@@ -79,7 +79,7 @@ export const MessageSection: FC = () => {
             </div>
           </div>
           <div
-            className="messages-list"
+            className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]"
             ref={(el) => {
               // Auto-scroll to bottom when new messages arrive
               if (el) {
@@ -96,7 +96,7 @@ export const MessageSection: FC = () => {
                 />
               ))
             ) : (
-              <div className="no-messages">
+              <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
                 No messages in this conversation.
               </div>
             )}
