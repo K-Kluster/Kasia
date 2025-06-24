@@ -4,10 +4,11 @@
   "version": "0.1.0",
   "identifier": "com.kasia.dev",
   "build": {
-    "frontendDist": "../build",
+    "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build:staging"
+    "beforeBuildCommand": "npm run build:staging",
+    "removeUnusedCommands": true
   },
   "app": {
     "windows": [
