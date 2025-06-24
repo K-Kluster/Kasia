@@ -7,7 +7,6 @@ import { useWalletStore } from "./store/wallet.store";
 import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
 import { MessageSection } from "./containers/MessagesSection";
-import { FetchApiMessages } from "./components/FetchApiMessages";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
 import { ContactSection } from "./components/ContactSection";
@@ -24,6 +23,11 @@ export const OneLiner: FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
   const [messagesClientStarted, setMessageClientStarted] = useState(false);
+  const [contactsCollapsed, setContactsCollapsed] = useState(false);
+  const [mobileView, setMobileView] = useState<"contacts" | "messages">(
+    "contacts"
+  );
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   const messageStore = useMessagingStore();
@@ -193,15 +197,28 @@ export const OneLiner: FC = () => {
               isConnected={networkStore.isConnected}
             />
           ) : messageStore.isLoaded ? (
-            <div className="bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[85vh] min-h-[300px]">
+            <div
+              className="
+              bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto
+              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[85vh] min-h-[300px]
+              flex
+            "
+            >
               <ContactSection
                 contacts={messageStore.contacts}
                 onNewChatClicked={onNewChatClicked}
                 onContactClicked={onContactClicked}
                 openedRecipient={messageStore.openedRecipient}
                 walletAddress={walletStore.address?.toString()}
+                mobileView={mobileView}
+                contactsCollapsed={contactsCollapsed}
+                setContactsCollapsed={setContactsCollapsed}
+                setMobileView={setMobileView}
               />
-              <MessageSection />
+              <MessageSection
+                mobileView={mobileView}
+                setMobileView={setMobileView}
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center w-full text-xs">
