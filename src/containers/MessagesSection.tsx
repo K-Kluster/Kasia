@@ -1,5 +1,5 @@
 import { FC, useCallback, useMemo } from "react";
-import { ChevronLeftIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
@@ -54,8 +54,8 @@ export const MessageSection: FC<{
           </div>
         </>
       )}
-       {boxState === "unfiltered" && (
-         //NOT SELECTED ANY CONTACT
+      {boxState === "unfiltered" && (
+        //NOT SELECTED ANY CONTACT
         <>
           <div className="p-4 border-b border-[var(--border-color)] bg-[var(--secondary-bg)] h-[60px]" />
           <div className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]">
@@ -79,15 +79,12 @@ export const MessageSection: FC<{
               <ChevronLeftIcon className="size-6" />
             </button>
 
-            <h3 className="text-base font-semibold flex-1 truncate">
+            <h3 className="text-base font-semibold truncate">
               <KaspaAddress address={openedRecipient ?? ""} />
             </h3>
 
             <div className="flex items-center gap-3">
               {address && <FetchApiMessages address={address.toString()} />}
-              <button className="cursor-pointer p-2" onClick={onClearHistory}>
-                <TrashIcon className="w-6 h-6 text-red-200 hover:scale-110" />
-              </button>
             </div>
           </div>
 

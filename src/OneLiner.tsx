@@ -202,7 +202,6 @@ export const OneLiner: FC = () => {
         onCloseWallet={handleCloseWallet}
         setIsWalletInfoOpen={setIsWalletInfoOpen}
         setIsSettingsOpen={setIsSettingsOpen}
-        isMessageStoreLoaded={messageStore.isLoaded}
       />
       {/* Main Message Section*/}
       <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
