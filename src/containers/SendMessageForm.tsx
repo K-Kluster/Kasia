@@ -4,27 +4,11 @@ import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { Input } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
-import { Address, kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
+import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
-import { createWithdrawTransaction } from "../service/account-service";
-import clsx from "clsx";
 import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
-
-// Backwards K icon component for Kaspa
-const BackwardsKIcon: FC<{ className?: string }> = ({ className }) => (
-  <svg
-    className={className}
-    fill="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M8 4v16h2v-6.5l1.5-1.5L16 18h2.5l-5-7 4.5-7H15.5L12 8.5V4H8z"
-      transform="scale(-1,1) translate(-24,0)"
-    />
-  </svg>
-);
 import { toast } from "../utils/toast";
+import { SendPayment } from "./SendPayment";
 
 type SendMessageFormProps = unknown;
 
@@ -36,14 +20,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
-  // Pay functionality state
-  const [showPayForm, setShowPayForm] = useState(false);
-  const [payAmount, setPayAmount] = useState("");
-  const [isSendingPayment, setIsSendingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-
   const messageStore = useMessagingStore();
-  const balance = useWalletStore((s) => s.balance);
 
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -59,13 +36,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setMessage("");
     }
   }, []);
-
-  // Reset pay form when recipient changes
-  useEffect(() => {
-    setShowPayForm(false);
-    setPayAmount("");
-    setPaymentError(null);
-  }, [openedRecipient]);
 
   const estimateFee = useCallback(async () => {
     if (!walletStore.unlockedWallet) {
@@ -100,96 +70,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     }
   }, [walletStore, message, openedRecipient]);
 
-  // Payment handling functions
-  const handlePayClick = useCallback(() => {
-    if (!openedRecipient) {
-      alert("Please select a recipient first");
-      return;
-    }
-    setShowPayForm(true);
-    setPaymentError(null);
-  }, [openedRecipient]);
-
-  const handlePayAmountChange = useCallback((value: string) => {
-    // Allow decimal numbers
-    if (/^\d*\.?\d*$/.test(value)) {
-      setPayAmount(value);
-      setPaymentError(null);
-    }
-  }, []);
-
-  const handleMaxPayClick = useCallback(() => {
-    if (balance?.mature) {
-      const maxAmount = sompiToKaspaString(balance.mature);
-      setPayAmount(maxAmount);
-      setPaymentError(null);
-    }
-  }, [balance]);
-
-  const handleSendPayment = useCallback(async () => {
-    if (!openedRecipient) {
-      setPaymentError("Please select a recipient first");
-      return;
-    }
-
-    if (!payAmount || parseFloat(payAmount) <= 0) {
-      setPaymentError("Please enter a valid amount");
-      return;
-    }
-
-    const amountSompi = kaspaToSompi(payAmount);
-    if (!amountSompi) {
-      setPaymentError("Invalid amount format");
-      return;
-    }
-
-    // Check minimum amount (0.19 KAS dust limit)
-    const minAmount = kaspaToSompi("0.19");
-    if (amountSompi < minAmount!) {
-      setPaymentError("Amount must be greater than 0.19 KAS");
-      return;
-    }
-
-    // Check balance
-    if (!balance?.mature || balance.mature < amountSompi) {
-      setPaymentError(
-        `Insufficient balance. Available: ${balance?.matureDisplay || "0"} KAS`
-      );
-      return;
-    }
-
-    try {
-      setIsSendingPayment(true);
-      setPaymentError(null);
-
-      // Send the payment using withdraw transaction to the recipient
-      // This is a simple transfer without any messages or conversation history
-      await createWithdrawTransaction(openedRecipient, amountSompi);
-
-      // Reset forms on success
-      setPayAmount("");
-      setShowPayForm(false);
-
-      // Show success feedback (optional - you can remove this if you don't want any feedback)
-      console.log(
-        `Payment of ${payAmount} KAS sent successfully to ${openedRecipient}`
-      );
-    } catch (error) {
-      console.error("Error sending payment:", error);
-      setPaymentError(
-        error instanceof Error ? error.message : "Failed to send payment"
-      );
-    } finally {
-      setIsSendingPayment(false);
-    }
-  }, [openedRecipient, payAmount, balance]);
-
-  const handleCancelPay = useCallback(() => {
-    setShowPayForm(false);
-    setPayAmount("");
-    setPaymentError(null);
-  }, []);
-
   // Use effect to trigger fee estimation when message or recipient changes
   useEffect(() => {
     const delayEstimation = setTimeout(() => {
@@ -203,6 +83,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   }, [message, openedRecipient, estimateFee]);
 
   const onSendClicked = useCallback(async () => {
+    const recipient = openedRecipient;
     if (!walletStore.address) {
       toast.error("Unexpected error: No selected address.");
       return;
@@ -218,8 +99,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       return;
     }
 
-    if (!openedRecipient) {
+    if (recipient === null) {
       toast.error("Please enter a recipient address.");
+      return;
     }
 
     try {
@@ -231,7 +113,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Check if we have an active conversation with this recipient
       const activeConversations = messageStore.getActiveConversations();
       const existingConversation = activeConversations.find(
-        (conv) => conv.kaspaAddress === openedRecipient
+        (conv) => conv.kaspaAddress === recipient
       );
 
       let messageToSend = message;
@@ -275,7 +157,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // If we have an active conversation, use the context-aware sending
       if (existingConversation && existingConversation.theirAlias) {
         console.log("Sending message with conversation context:", {
-          openedRecipient,
+          recipient,
           theirAlias: existingConversation.theirAlias,
         });
 
@@ -285,7 +167,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
         // Use the account service directly for context-aware sending
         txId = await walletStore.accountService.sendMessageWithContext({
-          toAddress: new Address(openedRecipient),
+          toAddress: new Address(recipient),
           message: messageToSend,
           password: walletStore.unlockedWallet.password,
           theirAlias: existingConversation.theirAlias,
@@ -295,7 +177,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         console.log("No active conversation found, sending regular message");
         txId = await walletStore.sendMessage(
           messageToSend,
-          new Address(openedRecipient),
+          new Address(recipient),
           walletStore.unlockedWallet.password
         );
       }
@@ -306,7 +188,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       const newMessageData: Message = {
         transactionId: txId,
         senderAddress: walletStore.address.toString(),
-        recipientAddress: openedRecipient,
+        recipientAddress: recipient,
         timestamp: Date.now(),
         content: fileDataForStorage
           ? JSON.stringify(fileDataForStorage)
@@ -319,7 +201,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Store message under both sender and recipient addresses for proper conversation grouping
       messageStore.storeMessage(newMessageData, walletStore.address.toString());
-      messageStore.storeMessage(newMessageData, openedRecipient);
+      messageStore.storeMessage(newMessageData, recipient);
       messageStore.addMessages([newMessageData]);
 
       // Only reset the message input, keep the recipient
@@ -328,7 +210,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setFeeEstimate(null);
 
       // Keep the conversation open with the same recipient
-      messageStore.setOpenedRecipient(openedRecipient);
+      messageStore.setOpenedRecipient(recipient);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
@@ -461,24 +343,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         >
           <PaperClipIcon className="w-full h-full" />
         </button>
-        <button
-          onClick={handlePayClick}
-          className={clsx(
-            "px-3 py-2 rounded-lg cursor-pointer font-medium transition-all duration-200 flex items-center h-9",
-            "text-white focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
-            {
-              "opacity-50 cursor-not-allowed": !openedRecipient || showPayForm,
-              "bg-[#70C7BA] hover:bg-[#5fb5a3]": !(
-                !openedRecipient || showPayForm
-              ),
-            }
-          )}
-          disabled={!openedRecipient || showPayForm}
-          title="Send Kaspa payment to recipient"
-        >
-          <BackwardsKIcon className="w-4 h-4" />
-          Pay
-        </button>
+
+        {openedRecipient && <SendPayment address={openedRecipient} />}
+
         <button
           onClick={onSendClicked}
           className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
@@ -486,68 +353,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
-
-      {/* Pay form */}
-      {showPayForm && (
-        <div className="mt-3 p-4 bg-[var(--secondary-bg)] border border-[var(--border-color)] rounded-lg">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-[var(--text-primary)]">
-              Send Payment
-            </h4>
-            <button
-              onClick={handleCancelPay}
-              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-
-          <div className="flex gap-2 items-start">
-            <div className="flex-1">
-              <div className="relative">
-                <Input
-                  type="text"
-                  value={payAmount}
-                  onChange={(e) => handlePayAmountChange(e.target.value)}
-                  placeholder="Amount (KAS)"
-                  className="w-full px-3 py-2 pr-12 bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-md text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[#70C7BA] focus:border-transparent"
-                />
-                <button
-                  type="button"
-                  onClick={handleMaxPayClick}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#70C7BA] hover:text-[#5fb5a3] font-medium text-xs"
-                >
-                  Max
-                </button>
-              </div>
-              {balance?.matureDisplay && (
-                <div className="text-xs text-[var(--text-secondary)] mt-1">
-                  Available: {balance.matureDisplay} KAS
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={handleSendPayment}
-              disabled={isSendingPayment || !payAmount}
-              className={clsx(
-                "px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 h-10",
-                "bg-[#70C7BA] text-white hover:bg-[#5fb5a3] focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
-                {
-                  "opacity-50 cursor-not-allowed":
-                    isSendingPayment || !payAmount,
-                }
-              )}
-            >
-              {isSendingPayment ? "Sending..." : "Send KAS"}
-            </button>
-          </div>
-
-          {paymentError && (
-            <div className="mt-2 text-sm text-red-500">{paymentError}</div>
-          )}
-        </div>
-      )}
 
       {/* Enhanced fee estimate - no more flashing */}
       {openedRecipient && message && (

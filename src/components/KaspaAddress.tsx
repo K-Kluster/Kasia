@@ -49,14 +49,8 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   };
 
   const handleCopy = () => {
-    console.log("1");
     const asString = typeof address === "string" ? address : address.toString();
-    navigator.clipboard.writeText(asString).then(() => {
-      console.log("2");
-      setTimeout(() => {
-        close();
-      }, 2000);
-    });
+    navigator.clipboard.writeText(asString).then(() => {});
   };
 
   return (
