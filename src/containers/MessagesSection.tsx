@@ -1,16 +1,15 @@
-import { FC, useCallback, useMemo } from "react";
+import { FC, useCallback, useEffect, useMemo } from "react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { toast } from "../utils/toast";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { KaspaAddress } from "../components/KaspaAddress";
 
 export const MessageSection: FC = () => {
   const messageStore = useMessagingStore();
-  const walletStore = useWalletStore();
+  const address = useWalletStore((s) => s.address);
 
   const contacts = useMessagingStore((s) => s.contacts);
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
@@ -28,7 +27,7 @@ export const MessageSection: FC = () => {
   }, [contacts, openedRecipient]);
 
   const onClearHistory = useCallback(() => {
-    if (!walletStore.address) {
+    if (!address) {
       return;
     }
 
@@ -37,9 +36,9 @@ export const MessageSection: FC = () => {
         "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
       )
     ) {
-      messageStore.flushWalletHistory(walletStore.address.toString());
+      messageStore.flushWalletHistory(address.toString());
     }
-  }, [walletStore.address, messageStore]);
+  }, [address, messageStore]);
 
   return (
     <div className="messages-section">
@@ -73,9 +72,7 @@ export const MessageSection: FC = () => {
               <KaspaAddress address={openedRecipient ?? ""} />
             </h3>
             <div className="header-actions">
-              {walletStore.address && (
-                <FetchApiMessages address={walletStore.address.toString()} />
-              )}
+              {address && <FetchApiMessages address={address.toString()} />}
               <button className="cursor-pointer p-2" onClick={onClearHistory}>
                 <TrashIcon className="w-6 h-6 text-red-200 hover:scale-110" />
               </button>
@@ -93,9 +90,7 @@ export const MessageSection: FC = () => {
             {messageStore.messagesOnOpenedRecipient.length ? (
               messageStore.messagesOnOpenedRecipient.map((msg) => (
                 <MessageDisplay
-                  isOutgoing={
-                    msg.senderAddress === walletStore.address?.toString()
-                  }
+                  isOutgoing={msg.senderAddress === address?.toString()}
                   key={msg.transactionId}
                   message={msg}
                 />
