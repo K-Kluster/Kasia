@@ -1,7 +1,7 @@
 import { Popover, PopoverButton, PopoverPanel, Input } from "@headlessui/react";
 import clsx from "clsx";
 import { FC, useCallback, useEffect, useRef, useState } from "react";
-import { BackwardsKIcon } from "../components/icons/BackwardsKIcon";
+import { KasIcon } from "../components/icons/KasCoin";
 import { sompiToKaspaString, kaspaToSompi } from "kaspa-wasm";
 import { createWithdrawTransaction } from "../service/account-service";
 import { useWalletStore } from "../store/wallet.store";
@@ -107,8 +107,11 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
           className="p-2 w-full rounded hover:bg-white/5 flex items-center gap-2"
           title="Send Kaspa payment to recipient"
         >
-          Pay
-          <BackwardsKIcon className="w-4 h-4" />
+          <KasIcon
+            className="w-10 h-10"
+            circleClassName="fill-kas-primary"
+            kClassName="fill-gray-800"
+          />
         </button>
       </PopoverButton>
       <PopoverPanel

@@ -16,11 +16,9 @@ import {
   PaperClipIcon,
   PaperAirplaneIcon,
   PlusIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
-import { BackwardsKIcon } from "../components/icons/BackwardsKIcon";
 
 type SendMessageFormProps = unknown;
 
@@ -31,7 +29,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const messageStore = useMessagingStore();
 
@@ -374,14 +371,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                     className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
                     disabled={isUploading}
                   >
-                    <span className="text-base">Attach file</span>
-                    <PaperClipIcon className="size-5" />
+                    <PaperClipIcon className="size-5 m-2" />
                   </button>
 
                   {openedRecipient && (
-                    <div className="mx-4"> {/*im sorry*/}
                       <SendPayment address={openedRecipient} />
-                    </div>
                   )}
                 </PopoverPanel>
               </Transition>
