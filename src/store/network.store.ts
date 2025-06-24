@@ -53,7 +53,10 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
         console.warn(
           "Trying to connect KaspaClient while it is already connected."
         );
-        return;
+        set({
+          connectionError: "Already connected.",
+        });
+        return false;
       }
 
       if ((isDifferentNetwork || isDifferentUrl) && kaspaClient.connected) {
