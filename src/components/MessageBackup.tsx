@@ -76,9 +76,7 @@ export const MessageBackup: React.FC = () => {
 
   return (
     <div className="space-y-2 max-w-3/4">
-      <h4 className="text-lg font-semibold mb-2">
-        Message Backup
-      </h4>
+      <h4 className="text-lg font-semibold mb-2">Message Backup</h4>
       <button
         onClick={onExportMessages}
         className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 w-full text-center cursor-pointer"
@@ -101,5 +99,4 @@ export const MessageBackup: React.FC = () => {
       />
     </div>
   );
-  
 };

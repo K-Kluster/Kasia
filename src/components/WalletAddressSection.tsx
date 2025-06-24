@@ -8,7 +8,9 @@ type AddressSectionProps = {
   address?: string;
 };
 
-export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) => {
+export const WalletAddressSection: FC<AddressSectionProps> = ({
+  address = "",
+}) => {
   const [copyNotification, setCopyNotification] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
@@ -70,6 +72,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
     console.log("QR code visibility toggled");
   }, []);
 
+  if (!address) return null;
   return (
     <div className="relative">
       <div className="mb-2">
@@ -80,7 +83,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
         >
           <div className="flex">
             <span
-              className="cursor-pointer px-3 py-6 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full h-10 flex items-center"
+              className="cursor-pointer px-3 py-2 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full min-h-10 flex items-center"
               onClick={() => {
                 console.log("Address text selected");
                 // Select the text when clicked
@@ -135,8 +138,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({ address = "" }) 
           {copyNotification}
         </div>
         {showQRCode && address && qrCodeURL && (
-          <div
-            className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300">
+          <div className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300">
             <h4 className="text-white text-center mb-4">QR Code for Address</h4>
             <div className="flex flex-col items-center gap-4">
               <img

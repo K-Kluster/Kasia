@@ -98,7 +98,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
     rpcClient: null,
     isAccountServiceRunning: false,
     accountService: null,
-    selectedNetwork: "mainnet",
+    selectedNetwork: import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet",
 
     loadWallets: () => {
       const wallets = _walletStorage.getWalletList();
@@ -136,6 +136,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
     unlock: async (walletId: string, password: string) => {
       try {
         const wallet = await _walletStorage.getDecrypted(walletId, password);
+
         const currentRpcClient = get().rpcClient;
         if (!currentRpcClient) {
           throw new Error("RPC client not initialized");
@@ -372,7 +373,11 @@ export const useWalletStore = create<WalletState>((set, get) => {
         _accountService = null;
       }
 
-      set({ rpcClient: null, address: null, isAccountServiceRunning: false });
+      set({
+        rpcClient: null,
+        address: null,
+        isAccountServiceRunning: false,
+      });
     },
 
     estimateSendMessageFees: async (message: string, toAddress: Address) => {

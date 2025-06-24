@@ -1,20 +1,3 @@
-.wallet-guard {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: var(--secondary-bg);
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-}
-
-.wallet-guard h2 {
-  text-align: center;
-  margin: 2rem 0;
-  color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-}
-
 .wallet-list {
   display: flex;
   flex-direction: column;
@@ -98,12 +81,6 @@
   transition: background-color 0.2s;
 }
 
-.network-selector-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
 .form-group {
   margin-bottom: 15px;
 }
@@ -165,7 +142,7 @@
 }
 
 .form-actions button:last-child {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 
@@ -317,37 +294,15 @@
 }
 
 .show-phrase-toggle label {
-  color: #4CAF50;
+  color: #4caf50;
   font-size: 14px;
   cursor: pointer;
   user-select: none;
 }
 
-.copy-button {
-  opacity: 0.5;
-  pointer-events: none;
-  padding: 10px 20px;
-  background-color: #2a3042;
-  color: white;
-  border: 1px solid #3a4156;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  margin-top: 10px;
-}
-
 .mnemonic-phrase.visible + .copy-button {
   opacity: 1;
   pointer-events: auto;
-}
-
-.copy-button:hover {
-  background-color: #3a4156;
-}
-
-.copy-button:active {
-  transform: translateY(1px);
 }
 
 .mnemonic-word {
@@ -356,7 +311,7 @@
   padding: 8px;
   background-color: #2a3042;
   border-radius: 4px;
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .word-number {
@@ -492,18 +447,18 @@
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .wallet-actions {
     width: 100%;
     justify-content: flex-end;
   }
-  
+
   .derivation-options,
   .seed-length-options {
     gap: 0.5rem;
   }
-  
+
   .radio-option {
     padding: 0.5rem;
   }
-} 
+}

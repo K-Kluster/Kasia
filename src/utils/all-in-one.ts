@@ -3,19 +3,11 @@ import {
   Resolver,
   Encoding,
   IUtxosChanged,
-  NetworkId,
-  RpcEvent,
-  RpcEventCallback,
-  RpcEventMap,
-  IVirtualChainChanged,
-  IRawBlock,
-  ITransaction,
   IBlockAdded,
 } from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "./errors";
 import { getNodesForNetwork, getApiEndpoint } from "../config/nodes";
 import { NetworkType } from "../types/all";
-import { BlockAddedData } from "../types/all";
 
 // Helper function to decode payload to text
 export function decodePayload(hex: string) {
@@ -218,6 +210,11 @@ function stringifyWithBigInt(obj: any): string {
   );
 }
 
+export interface KaspaClientArgs {
+  networkId?: NetworkType;
+  nodeUrl?: string;
+}
+
 // Create a simple client for API requests
 export class KaspaClient {
   options: {
@@ -228,6 +225,7 @@ export class KaspaClient {
 
   rpc: RpcClient | null;
   networkId: NetworkType;
+  nodeUrl?: string;
   connected: boolean;
   retryCount: number;
 
@@ -238,7 +236,7 @@ export class KaspaClient {
   // Add block notification callback
   blockNotificationCallback?: (event: IBlockAdded) => void;
 
-  constructor(networkId?: NetworkType) {
+  constructor(args?: KaspaClientArgs) {
     this.options = {
       debug: true,
       retryDelay: 2000,
@@ -246,26 +244,19 @@ export class KaspaClient {
     };
 
     this.rpc = null;
-    this.networkId = networkId || "testnet-10";
+    this.networkId = args?.networkId || "testnet-10";
+    this.nodeUrl = args?.nodeUrl;
     this.connected = false;
     this.retryCount = 0;
 
     // Debug log the network ID
-    this.log(`KaspaClient initialized with network ID: ${this.networkId}`);
-  }
-
-  // Log helper function
-  log(message: string, level: "log" | "warn" | "error" = "log") {
-    // Only show errors and warnings
-    if (this.options.debug && (level === "error" || level === "warn")) {
-      console[level](`[KaspaClient] ${message}`);
-    }
+    console.log(`KaspaClient initialized with network ID: ${this.networkId}`);
   }
 
   // Set the network ID
   setNetworkId(networkId: NetworkType) {
     this.networkId = networkId;
-    this.log(`Network ID set to ${networkId}`);
+    console.log(`Network ID set to ${networkId}`);
     return this;
   }
 
@@ -282,137 +273,61 @@ export class KaspaClient {
     }
 
     try {
-      this.log(
+      console.log(
         `Initializing connection for network: "${
           this.networkId
         }" (type: ${typeof this.networkId})`
       );
 
       // Always try resolver first for all networks
-      let resolverError: unknown;
       try {
-        this.log("Using resolver to find an available node");
+        console.log("Using resolver to find an available node");
         this.rpc = new RpcClient({
           resolver: new Resolver(),
           networkId: this.networkId,
           encoding: Encoding.Borsh,
+          url: this.nodeUrl,
         });
 
-        this.log("Resolver created, attempting connection...");
+        console.log("Resolver created, attempting connection...");
         await Promise.race([
-          this.rpc.connect(),
+          this.rpc.connect({
+            blockAsyncConnect: true,
+            retryInterval: 0,
+            timeoutDuration: 10000,
+          }),
           new Promise((_, reject) => {
-            this.log("Setting resolver connection timeout for 20s");
+            console.log("Setting resolver connection timeout for 20s");
             setTimeout(() => reject(new Error("Connection timeout")), 20000);
           }),
         ]);
 
-        this.log("Initial connection successful, waiting for stability...");
-        // Add a small delay after connection to ensure stability
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
         // Verify connection is still active
         if (this.rpc && this.rpc.isConnected) {
           this.connected = true;
-          this.log(`Connected via resolver to ${this.rpc.url}`);
+          console.log(`Connected via resolver to ${this.rpc.url}`);
           return this;
         } else {
           throw new Error("Connection lost after initial establishment");
         }
       } catch (error) {
-        resolverError = error;
-        this.log(
-          `Resolver connection failed: ${unknownErrorToErrorLike(error)}`,
-          "warn"
-        );
-        this.log("Falling back to custom nodes", "warn");
-      }
-
-      // If resolver fails, try custom nodes as fallback
-      const nodes = getNodesForNetwork(this.networkId);
-      if (nodes && nodes.length > 0) {
-        const errors = [];
-        for (const node of nodes) {
-          try {
-            this.log(
-              `Trying to connect to node: ${node.description} (${node.url})`
-            );
-
-            this.rpc = new RpcClient({
-              url: node.url,
-              networkId: this.networkId,
-              encoding: Encoding.Borsh,
-            });
-
-            await Promise.race([
-              this.rpc.connect(),
-              new Promise((_, reject) => {
-                this.log(
-                  `Setting ${node.description} connection timeout for 20s`
-                );
-                setTimeout(
-                  () => reject(new Error("Connection timeout")),
-                  20000
-                );
-              }),
-            ]);
-
-            // Add a small delay after connection to ensure stability
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-
-            // Verify connection is still active
-            if (this.rpc && this.rpc.isConnected) {
-              this.connected = true;
-              this.log(`Connected to ${node.url}`);
-              return this;
-            } else {
-              throw new Error("Connection lost after initial establishment");
-            }
-          } catch (nodeError) {
-            errors.push(
-              `${node.description}: ${unknownErrorToErrorLike(nodeError)}`
-            );
-            this.log(
-              `Connection failed to ${node.url}: ${unknownErrorToErrorLike(
-                nodeError
-              )}`,
-              "warn"
-            );
-
-            // Clean up failed connection
-            if (this.rpc) {
-              try {
-                await this.rpc.disconnect();
-              } catch (disconnectError) {
-                this.log(
-                  `Error during disconnect: ${unknownErrorToErrorLike(
-                    disconnectError
-                  )}`,
-                  "warn"
-                );
-              }
-              this.rpc = null;
-            }
-          }
-        }
-
-        throw new Error(
-          `All connection attempts failed:\nResolver: ${unknownErrorToErrorLike(
-            resolverError
-          )}\nCustom nodes:\n${errors.join("\n")}`
+        console.log(
+          `Resolver connection failed: ${unknownErrorToErrorLike(error)}`
         );
       }
 
-      throw new Error(`No available nodes for network ${this.networkId}`);
+      throw new Error(
+        `Failed to connect to ${this.rpc?.url} on network ${this.networkId}`
+      );
     } catch (error) {
-      this.log(
+      console.log(
         `Connection attempt failed: ${unknownErrorToErrorLike(error)}`,
         "error"
       );
       this.retryCount++;
 
       if (this.retryCount < this.options.maxRetries) {
-        this.log(`Retrying in ${this.options.retryDelay}ms...`);
+        console.log(`Retrying in ${this.options.retryDelay}ms...`);
         await new Promise((resolve) =>
           setTimeout(resolve, this.options.retryDelay)
         );
@@ -428,7 +343,7 @@ export class KaspaClient {
     if (this.rpc && this.connected) {
       await this.rpc.disconnect();
       this.connected = false;
-      this.log("Disconnected from node");
+      console.log("Disconnected from node");
     }
   }
 
@@ -447,7 +362,7 @@ export class KaspaClient {
 
         // Check connection and attempt reconnect if needed
         if (!this.rpc.isConnected) {
-          this.log("Not connected, attempting to reconnect...");
+          console.log("Not connected, attempting to reconnect...");
           await this.connect();
         }
 
@@ -459,10 +374,10 @@ export class KaspaClient {
           this.rpc.unsubscribeUtxosChanged(
             this.utxoNotificationSubscribeAddresses
           );
-          this.log("Removed existing UTXO change listener");
+          console.log("Removed existing UTXO change listener");
         }
 
-        this.log(`Subscribing to UTXO changes for addresses: ${addresses}`);
+        console.log(`Subscribing to UTXO changes for addresses: ${addresses}`);
 
         const boundCallback = callback.bind(this);
 
@@ -480,7 +395,7 @@ export class KaspaClient {
           );
 
           if (notEmittedTxIds.length > 0) {
-            this.log(
+            console.log(
               `Emitting UTXO change notification for txids: ${notEmittedTxIds}`
             );
             this.historyOfEmittedTxIdUtxoChanges.push(...notEmittedTxIds);
@@ -500,11 +415,11 @@ export class KaspaClient {
           this.utxoNotificationSubscribeAddresses
         );
 
-        this.log("Successfully subscribed to UTXO changes");
+        console.log("Successfully subscribed to UTXO changes");
       } catch (error) {
         retryCount++;
         if (retryCount < maxRetries) {
-          this.log(
+          console.log(
             `Retry ${retryCount}/${maxRetries} for UTXO subscription after error: ${unknownErrorToErrorLike(
               error
             )}`
@@ -512,7 +427,7 @@ export class KaspaClient {
           await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
           return attemptSubscribe();
         }
-        this.log(
+        console.log(
           `Error subscribing to UTXO changes: ${unknownErrorToErrorLike(
             error
           )}`,
@@ -537,7 +452,7 @@ export class KaspaClient {
 
         // Check connection and attempt reconnect if needed
         if (!this.rpc.isConnected) {
-          this.log("Not connected, attempting to reconnect...");
+          console.log("Not connected, attempting to reconnect...");
           await this.connect();
         }
 
@@ -547,25 +462,28 @@ export class KaspaClient {
             this.blockNotificationCallback
           );
           await this.rpc.unsubscribeBlockAdded();
-          this.log("Removed existing block notification listener");
+          console.log("Removed existing block notification listener");
         }
 
         // Create a wrapped callback that handles BigInt serialization
         const wrappedCallback = (event: IBlockAdded) => {
           try {
             // Log the event using BigInt-safe stringifier
-            this.log(
-              `Received block-added event: ${stringifyWithBigInt(event)}`
-            );
+            // console.log(
+            //   `Received block-added event: ${stringifyWithBigInt(event)}`
+            // );
 
             // Process transactions if they exist
             const transactions = event?.transactions || [];
-            this.log(`Block contains ${transactions.length} transactions`);
+            // console.log(`Block contains ${transactions.length} transactions`);
 
             // Call the original callback
             callback(event);
           } catch (error) {
-            this.log(`Error in block notification callback: ${error}`, "error");
+            console.log(
+              `Error in block notification callback: ${error}`,
+              "error"
+            );
           }
         };
 
@@ -573,12 +491,15 @@ export class KaspaClient {
         this.blockNotificationCallback = wrappedCallback;
         await this.rpc.subscribeBlockAdded();
         this.rpc.addEventListener("block-added", wrappedCallback);
-        this.log("Successfully subscribed to block-added events");
+        console.log("Successfully subscribed to block-added events");
       } catch (error) {
-        this.log(`Error subscribing to block-added events: ${error}`, "error");
+        console.log(
+          `Error subscribing to block-added events: ${error}`,
+          "error"
+        );
         if (retryCount < maxRetries) {
           retryCount++;
-          this.log(
+          console.log(
             `Retrying subscription (attempt ${retryCount} of ${maxRetries})...`
           );
           await attemptSubscribe();

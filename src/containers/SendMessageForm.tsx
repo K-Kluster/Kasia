@@ -6,48 +6,36 @@ import { Input } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
+import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import { toast } from "../utils/toast";
+import { SendPayment } from "./SendPayment";
 
 type SendMessageFormProps = unknown;
 
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
   const walletStore = useWalletStore();
-  const isCreatingNewChat = useMessagingStore((s) => s.isCreatingNewChat);
   const [feeEstimate, setFeeEstimate] = useState<number | null>(null);
   const [isEstimating, setIsEstimating] = useState(false);
-  const [recipient, setRecipient] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   const messageStore = useMessagingStore();
 
-  const recipientInputRef = useRef<HTMLInputElement | null>(null);
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    console.log("Opened recipient:", openedRecipient);
-
-    if (openedRecipient && recipientInputRef.current) {
-      recipientInputRef.current.value = openedRecipient;
-      setRecipient(openedRecipient);
-      messageInputRef.current?.focus();
-    }
+    messageInputRef.current?.focus();
+    setMessage("");
   }, [openedRecipient]);
 
   useEffect(() => {
-    if (
-      isCreatingNewChat &&
-      recipientInputRef.current &&
-      messageInputRef.current
-    ) {
-      recipientInputRef.current.value = "";
+    if (messageInputRef.current) {
       messageInputRef.current.value = "";
-      setRecipient("");
       setMessage("");
-      recipientInputRef.current.focus();
     }
-  }, [isCreatingNewChat]);
+  }, []);
 
   const estimateFee = useCallback(async () => {
     if (!walletStore.unlockedWallet) {
@@ -55,7 +43,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       return;
     }
 
-    if (!message || !recipient) {
+    if (!message || !openedRecipient) {
       console.log("Cannot estimate fee: missing message or recipient");
       return;
     }
@@ -63,13 +51,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     try {
       console.log("Estimating fee for message:", {
         length: message.length,
-        recipient,
+        openedRecipient,
       });
 
       setIsEstimating(true);
       const estimate = await walletStore.estimateSendMessageFees(
         message,
-        new Address(recipient)
+        new Address(openedRecipient)
       );
 
       console.log("Fee estimate received:", estimate);
@@ -80,37 +68,39 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setIsEstimating(false);
       setFeeEstimate(null);
     }
-  }, [walletStore, message, recipient]);
+  }, [walletStore, message, openedRecipient]);
 
   // Use effect to trigger fee estimation when message or recipient changes
   useEffect(() => {
     const delayEstimation = setTimeout(() => {
-      if (recipient && message) {
+      if (openedRecipient && message) {
         console.log("Triggering fee estimation after delay");
         estimateFee();
       }
     }, 500);
 
     return () => clearTimeout(delayEstimation);
-  }, [message, recipient, estimateFee]);
+  }, [message, openedRecipient, estimateFee]);
 
   const onSendClicked = useCallback(async () => {
+    const recipient = openedRecipient;
     if (!walletStore.address) {
-      alert("Shouldn't occurs, no selected address");
+      toast.error("Unexpected error: No selected address.");
       return;
     }
 
     if (!walletStore.unlockedWallet) {
-      alert("Shouldn't occurs, no unlocked wallet");
+      toast.error("Wallet is locked. Please unlock your wallet first.");
       return;
     }
 
     if (!message) {
-      alert("Please enter a message");
+      toast.error("Please enter a message.");
       return;
     }
-    if (!recipient) {
-      alert("Please enter a recipient address");
+
+    if (recipient === null) {
+      toast.error("Please enter a recipient address.");
       return;
     }
 
@@ -123,7 +113,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Check if we have an active conversation with this recipient
       const activeConversations = messageStore.getActiveConversations();
       const existingConversation = activeConversations.find(
-        (conv) => conv.kaspaAddress === recipient
+        (conv) => conv.kaspaAddress === openedRecipient
       );
 
       let messageToSend = message;
@@ -167,7 +157,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // If we have an active conversation, use the context-aware sending
       if (existingConversation && existingConversation.theirAlias) {
         console.log("Sending message with conversation context:", {
-          recipient,
+          openedRecipient,
           theirAlias: existingConversation.theirAlias,
         });
 
@@ -221,12 +211,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Keep the conversation open with the same recipient
       messageStore.setOpenedRecipient(recipient);
-      messageStore.setIsCreatingNewChat(false);
     } catch (error) {
       console.error("Error sending message:", error);
-      alert(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
+      toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [messageStore, walletStore, message, recipient, feeEstimate]);
+  }, [messageStore, walletStore, message, openedRecipient, feeEstimate]);
 
   const onMessageInputKeyPressed = useCallback(
     (e: KeyboardEvent) => {
@@ -261,7 +250,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     // Also need to leave room for other transaction data
     const maxSize = 10 * 1024; // 10KB max for any file type to ensure it fits in transaction payload
     if (file.size > maxSize) {
-      alert(
+      toast.error(
         `File too large. Please keep files under ${
           maxSize / 1024
         }KB to ensure it fits in a Kaspa transaction.`
@@ -309,7 +298,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       }
     } catch (error) {
       console.error("Error reading file:", error);
-      alert(
+      toast.error(
         "Failed to read file: " +
           (error instanceof Error ? error.message : "Unknown error")
       );
@@ -322,36 +311,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   };
 
   return (
-    <div className="message-input-container">
-      <Input
-        ref={recipientInputRef}
-        type="text"
-        id="recipientAddress"
-        placeholder={
-          isCreatingNewChat ? "Enter recipient address" : "Conversation with:"
-        }
-        className="recipient-input"
-        value={recipient}
-        readOnly={!isCreatingNewChat}
-        style={{
-          cursor: !isCreatingNewChat ? "default" : "text",
-          fontFamily: !isCreatingNewChat
-            ? "Monaco, Menlo, Ubuntu Mono, monospace"
-            : "",
-          fontSize: !isCreatingNewChat ? "12px" : "",
-          color: !isCreatingNewChat ? "#666" : "",
-        }}
-        title={
-          !isCreatingNewChat ? `Conversation with: ${recipient}` : undefined
-        }
-        onChange={(e) => {
-          if (isCreatingNewChat) {
-            const value = e.target.value;
-            setRecipient(value);
-            setFeeEstimate(null);
-          }
-        }}
-      />
+    <div className="message-input-container cursor-text">
       <div className="message-input-wrapper">
         <Input
           ref={messageInputRef}
@@ -363,7 +323,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           onChange={(e) => {
             const value = e.target.value;
             setMessage(value);
-            setFeeEstimate(null);
           }}
           autoComplete="off"
           spellCheck="false"
@@ -378,20 +337,39 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         />
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="file-upload-button"
+          className="w-5 h-5 m-1 flex items-center justify-center cursor-pointer text-gray-300 hover:text-gray-200"
           title="Upload file (images up to 100KB, other files up to 10KB)"
           disabled={isUploading}
         >
-          📎
+          <PaperClipIcon className="w-full h-full" />
         </button>
-        <button onClick={onSendClicked} id="sendButton" className="send-button">
-          Send
+
+        {openedRecipient && <SendPayment address={openedRecipient} />}
+
+        <button
+          onClick={onSendClicked}
+          className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
+        >
+          <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
-      {isEstimating && <div className="fee-estimate">Estimating fee...</div>}
-      {!isEstimating && feeEstimate !== null && (
+
+      {/* Enhanced fee estimate - no more flashing */}
+      {openedRecipient && message && (
         <div className="fee-estimate">
-          Estimated fee: ${formatKasAmount(feeEstimate)} KAS
+          {isEstimating ? (
+            <span>
+              {feeEstimate !== null ? (
+                <>Updating fee estimate... {formatKasAmount(feeEstimate)} KAS</>
+              ) : (
+                <>Estimating fee...</>
+              )}
+            </span>
+          ) : feeEstimate !== null ? (
+            <span>Estimated fee: {formatKasAmount(feeEstimate)} KAS</span>
+          ) : (
+            <span>Calculating fee...</span>
+          )}
         </div>
       )}
     </div>

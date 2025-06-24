@@ -12,6 +12,25 @@
   --accent-purple: #8b5cf6;
   --accent-green: #10b981;
   --accent-yellow: #f59e0b;
+  --color-success: #10b981;
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-kas-primary: #70c7ba;
+  --color-kas-secondary: #49eacb;
+
+  --animate-fade-in: fade-in 0.5s ease forwards;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 input {
@@ -82,11 +101,6 @@ h1 {
 .connection-dot.disconnected {
   background-color: #ef4444;
   box-shadow: 0 0 4px #ef4444;
-}
-
-.network-selector-container {
-  position: relative;
-  display: inline-block;
 }
 
 .network-selector {
@@ -282,7 +296,6 @@ h1 {
   margin-top: 20px;
 }
 
-
 .messages-header {
   padding: 16px;
   border-bottom: 1px solid var(--border-color);
@@ -341,21 +354,6 @@ h1 {
   font-size: 0.9em;
   outline: none;
   flex: 1;
-}
-
-.send-button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  height: 36px;
 }
 
 .messages-section {
@@ -560,6 +558,15 @@ h1 {
   .message {
     max-width: 85%;
   }
+}
+
+.wallet-guard {
+  background-color: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin: 2rem auto;
+  max-width: 600px;
+  padding: 2rem;
 }
 
 .wallet-info-container {
@@ -871,27 +878,6 @@ h1 {
   left: 0;
   opacity: 0;
   cursor: pointer;
-}
-
-.app-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.app-logo {
-  width: 60px;
-  height: 60px;
-  object-fit: contain;
-  margin-right: -1.5rem;
-}
-
-.app-title h1 {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin: 0;
-  margin-left: 1rem;
-  color: var(--text-primary);
 }
 
 .header-right {

@@ -1,6 +1,7 @@
 import initKaspaWasm, { initConsolePanicHook } from "kaspa-wasm";
 import initCipherWasm from "cipher";
-import './utils/debug-commands';  // Import debug commands
+import "./utils/debug-commands"; // Import debug commands
+import "./utils/logging";
 
 // load wasm entry point, and lazy load sub-module so we don't have to worry
 // about ordering of wasm module initialization

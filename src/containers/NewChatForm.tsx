@@ -10,7 +10,7 @@ export const NewChatForm: React.FC = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
-  
+
   const messagingStore = useMessagingStore();
   const balance = useWalletStore((state) => state.balance);
 
@@ -58,7 +58,9 @@ export const NewChatForm: React.FC = () => {
 
     // Check balance
     if (!balance?.mature || balance.mature < amountSompi) {
-      setError(`Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`);
+      setError(
+        `Insufficient balance. Need ${handshakeAmount} KAS, have ${balance?.matureDisplay || "0"} KAS`
+      );
       return false;
     }
 
@@ -67,7 +69,7 @@ export const NewChatForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateAndPrepareHandshake()) {
       return;
     }
@@ -81,7 +83,7 @@ export const NewChatForm: React.FC = () => {
       setShowConfirmation(false);
 
       const amountSompi = kaspaToSompi(handshakeAmount);
-      
+
       // Initiate handshake with custom amount
       await messagingStore.initiateHandshake(recipientAddress, amountSompi);
 
@@ -360,8 +362,9 @@ export const NewChatForm: React.FC = () => {
                 </button>
               </div>
               <div className="info-text">
-                Default: 0.2 KAS. Higher amounts help recipients respond even if they have no KAS.
-                This creates a better experience for newcomers to Kaspa messaging.
+                Default: 0.2 KAS. Higher amounts help recipients respond even if
+                they have no KAS. This creates a better experience for newcomers
+                to Kaspa messaging.
               </div>
             </div>
           </div>
@@ -378,19 +381,31 @@ export const NewChatForm: React.FC = () => {
         <div className="confirmation-dialog">
           <h4>Confirm Handshake</h4>
           <div className="confirmation-details">
-            <strong>Recipient:</strong> {recipientAddress}<br/>
-            <strong>Amount:</strong> {handshakeAmount} KAS<br/>
-            <strong>Your Balance:</strong> {balance?.matureDisplay || "0"} KAS<br/>
-            <br/>
+            <strong>Recipient:</strong> {recipientAddress}
+            <br />
+            <strong>Amount:</strong> {handshakeAmount} KAS
+            <br />
+            <strong>Your Balance:</strong> {balance?.matureDisplay || "0"} KAS
+            <br />
+            <br />
             {parseFloat(handshakeAmount) > 0.2 && (
-              <>The extra amount ({(parseFloat(handshakeAmount) - 0.2).toFixed(8)} KAS) helps the recipient respond even if they have no KAS.<br/><br/></>
+              <>
+                The extra amount (
+                {(parseFloat(handshakeAmount) - 0.2).toFixed(8)} KAS) helps the
+                recipient respond even if they have no KAS.
+                <br />
+                <br />
+              </>
             )}
             This will initiate a handshake conversation. Continue?
           </div>
           <button onClick={confirmHandshake} className="confirm-button">
             Confirm & Send
           </button>
-          <button onClick={() => setShowConfirmation(false)} className="cancel-button">
+          <button
+            onClick={() => setShowConfirmation(false)}
+            className="cancel-button"
+          >
             Cancel
           </button>
         </div>

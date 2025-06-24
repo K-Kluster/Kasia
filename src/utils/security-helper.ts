@@ -1,4 +1,4 @@
-import { CipherHelper } from './cipher-helper';
+import { CipherHelper } from "./cipher-helper";
 
 /**
  * Security helper class for managing sensitive operations
@@ -33,7 +33,9 @@ export class SecurityHelper {
 
     // Check max attempts
     if (attempts >= this.MAX_ATTEMPTS) {
-      CipherHelper.error(`Max decryption attempts reached for message ${messageId}`);
+      CipherHelper.error(
+        `Max decryption attempts reached for message ${messageId}`
+      );
       return false;
     }
 
@@ -57,7 +59,7 @@ export class SecurityHelper {
     setTimeout(() => {
       if (privateKeyBytes) {
         privateKeyBytes.fill(0); // Overwrite with zeros
-        CipherHelper.log('Cleared sensitive private key data from memory');
+        CipherHelper.log("Cleared sensitive private key data from memory");
       }
     }, this.MEMORY_CLEAR_DELAY_MS);
   }
@@ -77,7 +79,7 @@ export class SecurityHelper {
     return {
       attempts,
       remainingAttempts: Math.max(0, this.MAX_ATTEMPTS - attempts),
-      timeUntilReset: Math.max(0, this.ATTEMPT_RESET_MS - (now - lastAttempt))
+      timeUntilReset: Math.max(0, this.ATTEMPT_RESET_MS - (now - lastAttempt)),
     };
   }
-} 
+}
