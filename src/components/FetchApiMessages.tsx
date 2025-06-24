@@ -7,11 +7,6 @@ import { getApiEndpoint } from "../config/nodes";
 import "./FetchApiMessages.css";
 import { CipherHelper } from "../utils/cipher-helper";
 import { Message } from "../types/all";
-import {
-  decryptXChaCha20Poly1305,
-  XPrv,
-  PrivateKeyGenerator,
-} from "kaspa-wasm";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
@@ -24,13 +19,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const walletStore = useWalletStore();
+  const unlockedWallet = useWalletStore((s) => s.unlockedWallet);
   const messagingStore = useMessagingStore();
 
   useEffect(() => {
-    if (address && walletStore.unlockedWallet) {
+    if (address && unlockedWallet) {
       fetchAndProcessMessages();
     }
-  }, [address, walletStore.unlockedWallet]);
+  }, [address, unlockedWallet]);
 
   // Add event listener for triggering API fetch from localStorage
   useEffect(() => {
@@ -61,7 +57,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         handleTriggerApiFetch as EventListener
       );
     };
-  }, [address, walletStore.unlockedWallet]);
+  }, [address, unlockedWallet]);
 
   const fetchAndProcessMessages = async () => {
     setLoading(true);
@@ -482,100 +478,6 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   console.log(
                     `API Messages: Trying legacy derivation keys as fallback...`
                   );
-
-                  // Create a temporary legacy key generator
-                  const seed = decryptXChaCha20Poly1305(
-                    walletStore.unlockedWallet.encryptedXPrv,
-                    walletStore.unlockedWallet.password
-                  );
-                  const xprv = new XPrv(seed);
-                  const legacyKeyGenerator = new PrivateKeyGenerator(
-                    xprv,
-                    false,
-                    BigInt(1)
-                  ); // Legacy uses account index 1
-
-                  // Try legacy receive keys
-                  for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
-                    try {
-                      console.log(
-                        `API Messages: Trying legacy receive key at index ${i}`
-                      );
-                      const privateKey = legacyKeyGenerator.receiveKey(i);
-                      const privateKeyHex = privateKey.toString();
-
-                      const messageId = `${tx.transaction_id}_legacy_receive_${i}`;
-                      const result = await CipherHelper.tryDecrypt(
-                        encryptedContent,
-                        privateKeyHex,
-                        messageId
-                      );
-
-                      if (result) {
-                        decryptedContent = result;
-                        decryptionSuccess = true;
-                        successfulKeyType = "legacy_receive";
-                        successfulKeyIndex = i;
-                        console.log(
-                          `API Messages: Successfully decrypted with legacy receive key at index ${i}`
-                        );
-
-                        // Extract sender from handshake payload if needed
-                        if (
-                          senderAddress === "Unknown" &&
-                          result.includes("handshake")
-                        ) {
-                          try {
-                            const handshakeMatch = result.match(
-                              /ciph_msg:1:handshake:(.+)/
-                            );
-                            if (handshakeMatch) {
-                              const handshakeData = JSON.parse(
-                                handshakeMatch[1]
-                              );
-                              if (
-                                handshakeData.isResponse &&
-                                handshakeData.recipientAddress
-                              ) {
-                                console.log(
-                                  `API Messages: Extracted sender from legacy handshake response: ${handshakeData.recipientAddress}`
-                                );
-                                senderAddress = handshakeData.recipientAddress;
-                              }
-                            }
-                          } catch (e) {
-                            console.log(
-                              `API Messages: Could not extract sender from legacy handshake payload: ${e}`
-                            );
-                          }
-                        }
-
-                        // Create and store the decrypted message
-                        const message: Message = {
-                          senderAddress: senderAddress,
-                          recipientAddress: recipientAddress,
-                          timestamp: tx.block_time || Date.now(),
-                          content: result,
-                          payload: tx.payload,
-                          amount: tx.outputs[0].amount || 0,
-                          fee: 0,
-                          transactionId: tx.transaction_id,
-                        };
-
-                        messagingStore.storeMessage(
-                          message,
-                          walletStore.address?.toString() || ""
-                        );
-                        break;
-                      }
-                    } catch (error) {
-                      console.log(
-                        `API Messages: Failed to decrypt with legacy receive key at index ${i}: ${
-                          unknownErrorToErrorLike(error).message
-                        }`
-                      );
-                    }
-                  }
                 }
 
                 if (!decryptionSuccess) {
@@ -662,7 +564,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
           { "cursor-not-allowed": loading }
         )}
         title={
-          error ? `Error: ${error}` : "Fetch latest messages from blockchain"
+          error ? `Error: ${error}` : "Fetch latest messages from blockDAG"
         }
       >
         {loading ? (

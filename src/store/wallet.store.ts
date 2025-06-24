@@ -136,6 +136,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
     unlock: async (walletId: string, password: string) => {
       try {
         const wallet = await _walletStorage.getDecrypted(walletId, password);
+
         const currentRpcClient = get().rpcClient;
         if (!currentRpcClient) {
           throw new Error("RPC client not initialized");

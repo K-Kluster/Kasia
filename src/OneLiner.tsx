@@ -135,10 +135,7 @@ export const OneLiner: FC = () => {
       }
     };
     startMessageClient();
-  }, [
-    isWalletReady,
-    messageStore,
-  ]); 
+  }, [isWalletReady, messageStore]);
 
   const onContactClicked = useCallback(
     (contact: Contact) => {
@@ -205,12 +202,6 @@ export const OneLiner: FC = () => {
                 walletAddress={walletStore.address?.toString()}
               />
               <MessageSection />
-              {/* Add invisible FetchApiMessages component to listen for localStorage trigger events */}
-              {walletStore.address && (
-                <div style={{ display: "none" }}>
-                  <FetchApiMessages address={walletStore.address.toString()} />
-                </div>
-              )}
             </div>
           ) : (
             <div className="flex flex-col items-center w-full text-xs">
