@@ -1,7 +1,7 @@
 import { Popover, PopoverButton, PopoverPanel, Input } from "@headlessui/react";
 import clsx from "clsx";
 import { FC, useCallback, useEffect, useRef, useState } from "react";
-import { BackwardsKIcon } from "../components/icons/BackwardsKIcon";
+import { KasIcon } from "../components/icons/KasCoin";
 import { sompiToKaspaString, kaspaToSompi } from "kaspa-wasm";
 import { createWithdrawTransaction } from "../service/account-service";
 import { useWalletStore } from "../store/wallet.store";
@@ -104,14 +104,14 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
     <Popover className="relative">
       <PopoverButton>
         <button
-          className={clsx(
-            "px-3 py-2 rounded-lg cursor-pointer font-medium transition-all duration-200 flex items-center h-9",
-            "text-white focus:outline-none focus:ring-2 focus:ring-[#70C7BA] bg-[#70C7BA] hover:bg-[#5fb5a3]"
-          )}
+          className="p-2 w-full rounded hover:bg-white/5 flex items-center gap-2"
           title="Send Kaspa payment to recipient"
         >
-          <BackwardsKIcon className="w-4 h-4" />
-          Pay
+          <KasIcon
+            className="w-10 h-10"
+            circleClassName="fill-kas-primary"
+            kClassName="fill-gray-800"
+          />
         </button>
       </PopoverButton>
       <PopoverPanel
@@ -126,8 +126,8 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
           </h4>
         </div>
 
-        <div className="flex gap-2 items-start">
-          <div className="flex-1">
+        <div className="flex flex-col items-center gap-2 md:flex-row md:items-start">
+          <div className="flex-1 w-full">
             <div className="relative">
               <Input
                 ref={inputRef}
@@ -140,7 +140,7 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
               <button
                 type="button"
                 onClick={handleMaxPayClick}
-                className="absolute cursor-pointer right-2 top-1/2 transform -translate-y-1/2 text-[#70C7BA] hover:opacity-80 font-medium text-xs border border-kas-primary rounded-sm px-1 py-0.5"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#70C7BA] hover:opacity-80 font-medium text-xs border border-kas-primary rounded-sm px-1 py-0.5"
               >
                 Max
               </button>
@@ -156,11 +156,12 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
             onClick={handleSendPayment}
             disabled={isSendingPayment || !payAmount}
             className={clsx(
-              "px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 h-10",
+              "px-4 py-2 w-full md:w-auto rounded-md font-medium text-sm transition-all duration-200 h-10",
               "bg-[#70C7BA] text-white hover:bg-[#5fb5a3] focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
               {
                 "opacity-50 cursor-not-allowed": isSendingPayment || !payAmount,
-              }
+              },
+              "self-center md:self-auto"
             )}
           >
             {isSendingPayment ? "Sending..." : "Send KAS"}

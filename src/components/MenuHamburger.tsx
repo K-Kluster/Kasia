@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useCallback } from "react";
 import { FeeBuckets } from "./FeeBuckets";
 import {
   InformationCircleIcon,
@@ -13,6 +13,7 @@ import { WalletSeedRetreiveDisplay } from "../containers/WalletSeedRetreiveDispl
 import { WalletWithdrawal } from "../containers/WalletWithdrawal";
 import { MessageBackup } from "./MessageBackup";
 import { WalletAddressSection } from "./WalletAddressSection";
+import { useMessagingStore } from "../store/messaging.store";
 import clsx from "clsx";
 
 type WalletSettingsProps = {
@@ -21,7 +22,6 @@ type WalletSettingsProps = {
   onCloseMenu: () => void;
   onOpenWalletInfo: () => void;
   onCloseWallet: () => void;
-  messageStoreLoaded: boolean;
 };
 
 const MenuHamburger: FC<WalletSettingsProps> = ({
@@ -30,7 +30,6 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
   onCloseMenu,
   onOpenWalletInfo,
   onCloseWallet,
-  messageStoreLoaded,
 }) => {
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [showSeedRetrieveModal, setShowSeedRetrieveModal] = useState(false);
@@ -38,6 +37,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
+  const messageStore = useMessagingStore();
   useEffect(() => {
     if (!open) {
       setActionsMenuOpen(false);
@@ -46,6 +46,17 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
       setShowMessageModal(false);
     }
   }, [open]);
+
+  const onClearHistory = useCallback(() => {
+    if (!address) return;
+    if (
+      confirm(
+        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
+      )
+    ) {
+      messageStore.flushWalletHistory(address.toString());
+    }
+  }, [address, messageStore]);
 
   if (!open) return null;
 
@@ -107,7 +118,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
           </li>
 
           {actionsMenuOpen && (
-            <ul className="pl-0 text-sm font-semibold text-left ml-2">
+            <ul className="pl-0 text-sm font-semibold text-center ml-2">
               {/* Show Fund Withdraw Item */}
               <li
                 onClick={() => {
@@ -119,7 +130,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
                 <span className="text-white text-sm">Withdraw Funds</span>
               </li>
               {/* Show IO messages Item */}
-              {messageStoreLoaded && (
+              {messageStore.isLoaded && (
                 <li
                   onClick={handleExportClick}
                   className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
@@ -129,6 +140,15 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
                   </span>
                 </li>
               )}
+              {/* Show Delete All item */}
+              <li
+                onClick={() => {
+                  onClearHistory();
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Delete All Messages</span>
+              </li>
               {/* Show Seed extract Item */}
               <li
                 onClick={() => {

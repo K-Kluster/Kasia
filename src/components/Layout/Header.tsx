@@ -3,6 +3,7 @@ import { Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "../MenuHamburger";
 import { WalletInfo } from "../WalletInfo";
 import { FeeBuckets } from "../FeeBuckets";
+import { useMessagingStore } from "src/store/messaging.store";
 
 type Props = {
   isWalletReady: boolean;
@@ -14,7 +15,6 @@ type Props = {
   onCloseWallet: () => void;
   setIsWalletInfoOpen: (v: boolean) => void;
   setIsSettingsOpen: (v: boolean) => void;
-  isMessageStoreLoaded: boolean;
 };
 
 export const Header: FC<Props> = ({
@@ -27,7 +27,6 @@ export const Header: FC<Props> = ({
   onCloseWallet,
   setIsWalletInfoOpen,
   setIsSettingsOpen,
-  isMessageStoreLoaded,
 }) => {
   return (
     <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
@@ -66,7 +65,6 @@ export const Header: FC<Props> = ({
                 setIsSettingsOpen(false);
               }}
               onCloseWallet={onCloseWallet}
-              messageStoreLoaded={isMessageStoreLoaded}
             />
           ) : (
             <WalletInfo
