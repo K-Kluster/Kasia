@@ -240,8 +240,9 @@ export const OneLiner: FC = () => {
           ) : (
             <div className="flex flex-col items-center w-full text-xs">
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-              <div className="bg-[var(--secondary-bg)]/20 rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[85vh] min-h-[300px] relative">
-                <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col justify-center items-center space-y-4">
+              <div className="relative max-w-[1200px] w-full mx-auto min-w-[320px] h-[85vh] min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
+                <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
+                <div className="relative flex flex-col items-center justify-center h-full space-y-4">
                   <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
                     Connecting message client...
                   </span>
