@@ -1,9 +1,8 @@
 import { FC } from "react";
 import { Bars3Icon } from "@heroicons/react/24/solid";
-import MenuHamburger from "../MenuHamburger";
+import MenuHamburger from "./MenuHamburger";
 import { WalletInfo } from "../WalletInfo";
 import { FeeBuckets } from "../FeeBuckets";
-import { useMessagingStore } from "src/store/messaging.store";
 
 type Props = {
   isWalletReady: boolean;

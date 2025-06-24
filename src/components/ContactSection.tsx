@@ -1,8 +1,14 @@
-import { FC } from "react";
-import { ChevronLeftIcon, PlusIcon } from "@heroicons/react/24/solid";
+import { FC, useState } from "react";
+import {
+  ChevronLeftIcon,
+  PlusIcon,
+  Bars3Icon,
+} from "@heroicons/react/24/solid";
 import clsx from "clsx";
 import { ContactCard } from "./ContactCard";
 import { Contact } from "../types/all";
+import { useIsMobile } from "../utils/useIsMobile";
+import MenuHamburger from "./Layout/MenuHamburger";
 
 interface ContactSectionProps {
   contacts: Contact[];
@@ -14,6 +20,7 @@ interface ContactSectionProps {
   contactsCollapsed: boolean;
   setContactsCollapsed: (v: boolean) => void;
   setMobileView: (v: "contacts" | "messages") => void;
+  onOpenMobileMenu: () => void;
 }
 
 export const ContactSection: FC<ContactSectionProps> = ({
@@ -26,8 +33,10 @@ export const ContactSection: FC<ContactSectionProps> = ({
   contactsCollapsed,
   setContactsCollapsed,
   setMobileView,
+  onOpenMobileMenu,
 }) => {
   const collapsedW = "w-14";
+  const isMobile = useIsMobile();
 
   return (
     <div
@@ -40,19 +49,28 @@ export const ContactSection: FC<ContactSectionProps> = ({
       {/* header */}
       <div className="px-4 py-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]">
         {/* Chevron on desktop - we dont need for mobile */}
-        <button
-          aria-label="toggle contacts pane"
-          className="hidden sm:inline-flex cursor-pointer transition-transform hover:scale-110"
-          onClick={() => {
-            if (window.innerWidth < 640) return;
-            setContactsCollapsed(!contactsCollapsed);
-          }}
-        >
-          <ChevronLeftIcon
-            className={clsx(contactsCollapsed && "rotate-180", "size-6")}
-          />
-        </button>
-
+        {!isMobile ? (
+          <button
+            aria-label="toggle contacts pane"
+            className="hidden sm:inline-flex cursor-pointer transition-transform hover:scale-110"
+            onClick={() => {
+              if (isMobile) return;
+              setContactsCollapsed(!contactsCollapsed);
+            }}
+          >
+            <ChevronLeftIcon
+              className={clsx(contactsCollapsed && "rotate-180", "size-6")}
+            />
+          </button>
+        ) : (
+          <button
+            onClick={onOpenMobileMenu}
+            className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
+            aria-label="Settings"
+          >
+            <Bars3Icon className="h-8 w-8 text-kas-primary animate-pulse" />
+          </button>
+        )}
         {!contactsCollapsed && (
           <>
             <span className="font-bold ml-2 flex-1 truncate">
@@ -81,7 +99,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
               collapsed={contactsCollapsed} // signal to become an avatar
               onClick={() => {
                 onContactClicked(c);
-                if (window.innerWidth < 640) setMobileView("messages");
+                if (isMobile) setMobileView("messages");
               }}
             />
           ))}

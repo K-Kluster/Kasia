@@ -11,6 +11,8 @@ import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
 import { ContactSection } from "./components/ContactSection";
 import { Header } from "./components/Layout/Header";
+import { useIsMobile } from "./utils/useIsMobile";
+import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,11 +36,11 @@ export const OneLiner: FC = () => {
   const walletStore = useWalletStore();
 
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
+  const isMobile = useIsMobile();
 
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
     const syncToWidth = () => {
-      const isMobile = window.innerWidth < 640;
       if (isMobile) {
         if (contactsCollapsed) setContactsCollapsed(false);
         if (!messageStore.openedRecipient) setMobileView("contacts");
@@ -51,7 +53,6 @@ export const OneLiner: FC = () => {
     window.addEventListener("resize", syncToWidth);
     return () => window.removeEventListener("resize", syncToWidth);
   }, [contactsCollapsed, messageStore.openedRecipient]);
-  
 
   // Network connection effect
   useEffect(() => {
@@ -192,17 +193,29 @@ export const OneLiner: FC = () => {
   return (
     <>
       {/* Top Bar / Header */}
-      <Header
-        isWalletReady={isWalletReady}
-        walletAddress={walletStore.address?.toString()}
-        isSettingsOpen={isSettingsOpen}
-        isWalletInfoOpen={isWalletInfoOpen}
-        menuRef={menuRef}
-        toggleSettings={toggleSettings}
-        onCloseWallet={handleCloseWallet}
-        setIsWalletInfoOpen={setIsWalletInfoOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
-      />
+      {!isMobile && (
+        <Header
+          isWalletReady={isWalletReady}
+          walletAddress={walletStore.address?.toString()}
+          isSettingsOpen={isSettingsOpen}
+          isWalletInfoOpen={isWalletInfoOpen}
+          menuRef={menuRef}
+          toggleSettings={toggleSettings}
+          onCloseWallet={handleCloseWallet}
+          setIsWalletInfoOpen={setIsWalletInfoOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+        />
+      )}
+      {isMobile && isSettingsOpen && (
+        <SlideOutMenu
+          open={isSettingsOpen}
+          address={walletStore.address?.toString()}
+          onClose={() => setIsSettingsOpen(false)}
+          onOpenWalletInfo={() => setIsWalletInfoOpen(true)}
+          onCloseWallet={handleCloseWallet}
+        />
+      )}
+
       {/* Main Message Section*/}
       <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
@@ -231,6 +244,7 @@ export const OneLiner: FC = () => {
                 contactsCollapsed={contactsCollapsed}
                 setContactsCollapsed={setContactsCollapsed}
                 setMobileView={setMobileView}
+                onOpenMobileMenu={() => setIsSettingsOpen(true)}
               />
               <MessageSection
                 mobileView={mobileView}
