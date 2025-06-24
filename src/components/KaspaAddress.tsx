@@ -49,14 +49,8 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   };
 
   const handleCopy = () => {
-    console.log("1");
     const asString = typeof address === "string" ? address : address.toString();
-    navigator.clipboard.writeText(asString).then(() => {
-      console.log("2");
-      setTimeout(() => {
-        close();
-      }, 2000);
-    });
+    navigator.clipboard.writeText(asString).then(() => {});
   };
 
   return (
@@ -90,7 +84,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
 
         <PopoverPanel
           transition
-          className="mt-2 absolute rounded shadow-lg bg-bg-primary border-bg-secondary border transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
+          className="z-50 mt-2 absolute rounded shadow-lg bg-bg-primary border-bg-secondary border transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
         >
           <p className="text-sm p-2 text-white">Copied!</p>
         </PopoverPanel>

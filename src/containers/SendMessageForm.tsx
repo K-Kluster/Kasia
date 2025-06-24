@@ -6,8 +6,9 @@ import { Input } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
-import { toast } from "../utils/toast";
 import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import { toast } from "../utils/toast";
+import { SendPayment } from "./SendPayment";
 
 type SendMessageFormProps = unknown;
 
@@ -82,6 +83,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   }, [message, openedRecipient, estimateFee]);
 
   const onSendClicked = useCallback(async () => {
+    const recipient = openedRecipient;
     if (!walletStore.address) {
       toast.error("Unexpected error: No selected address.");
       return;
@@ -96,8 +98,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       toast.error("Please enter a message.");
       return;
     }
-    if (!openedRecipient) {
-      alert("Please enter a recipient address");
+
+    if (recipient === null) {
+      toast.error("Please enter a recipient address.");
       return;
     }
 
@@ -164,7 +167,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
         // Use the account service directly for context-aware sending
         txId = await walletStore.accountService.sendMessageWithContext({
-          toAddress: new Address(openedRecipient),
+          toAddress: new Address(recipient),
           message: messageToSend,
           password: walletStore.unlockedWallet.password,
           theirAlias: existingConversation.theirAlias,
@@ -174,7 +177,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         console.log("No active conversation found, sending regular message");
         txId = await walletStore.sendMessage(
           messageToSend,
-          new Address(openedRecipient),
+          new Address(recipient),
           walletStore.unlockedWallet.password
         );
       }
@@ -185,7 +188,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       const newMessageData: Message = {
         transactionId: txId,
         senderAddress: walletStore.address.toString(),
-        recipientAddress: openedRecipient,
+        recipientAddress: recipient,
         timestamp: Date.now(),
         content: fileDataForStorage
           ? JSON.stringify(fileDataForStorage)
@@ -198,7 +201,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
       // Store message under both sender and recipient addresses for proper conversation grouping
       messageStore.storeMessage(newMessageData, walletStore.address.toString());
-      messageStore.storeMessage(newMessageData, openedRecipient);
+      messageStore.storeMessage(newMessageData, recipient);
       messageStore.addMessages([newMessageData]);
 
       // Only reset the message input, keep the recipient
@@ -207,7 +210,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setFeeEstimate(null);
 
       // Keep the conversation open with the same recipient
-      messageStore.setOpenedRecipient(openedRecipient);
+      messageStore.setOpenedRecipient(recipient);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
@@ -320,7 +323,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           onChange={(e) => {
             const value = e.target.value;
             setMessage(value);
-            setFeeEstimate(null);
           }}
           autoComplete="off"
           spellCheck="false"
@@ -341,6 +343,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         >
           <PaperClipIcon className="w-full h-full" />
         </button>
+
+        {openedRecipient && <SendPayment address={openedRecipient} />}
+
         <button
           onClick={onSendClicked}
           className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
@@ -348,10 +353,23 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
-      {isEstimating && <div className="fee-estimate">Estimating fee...</div>}
-      {!isEstimating && feeEstimate !== null && (
+
+      {/* Enhanced fee estimate - no more flashing */}
+      {openedRecipient && message && (
         <div className="fee-estimate">
-          Estimated fee: ${formatKasAmount(feeEstimate)} KAS
+          {isEstimating ? (
+            <span>
+              {feeEstimate !== null ? (
+                <>Updating fee estimate... {formatKasAmount(feeEstimate)} KAS</>
+              ) : (
+                <>Estimating fee...</>
+              )}
+            </span>
+          ) : feeEstimate !== null ? (
+            <span>Estimated fee: {formatKasAmount(feeEstimate)} KAS</span>
+          ) : (
+            <span>Calculating fee...</span>
+          )}
         </div>
       )}
     </div>

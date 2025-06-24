@@ -810,8 +810,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     // Create the handshake payload
-    const { payload, conversation } =
-      await manager.initiateHandshake(recipientAddress);
+    const { payload, conversation } = await manager.initiateHandshake(
+      recipientAddress
+    );
 
     // Send the handshake message
     console.log("Sending handshake message to:", recipientAddress);
