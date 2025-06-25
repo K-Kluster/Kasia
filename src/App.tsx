@@ -3,10 +3,11 @@ import { OneLiner } from "./OneLiner";
 import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "./components/ToastContainer";
 import { SettingsPage } from "./SettingsPage";
+import { ModalProvider } from "./context/ModalContext";
 
 const App: React.FC = () => {
   return (
-    <>
+    <ModalProvider>
       <ToastContainer />
       <Routes>
         <Route
@@ -26,7 +27,7 @@ const App: React.FC = () => {
           }
         />
       </Routes>
-    </>
+    </ModalProvider>
   );
 };
 

@@ -13,6 +13,13 @@ import { ContactSection } from "./components/ContactSection";
 import { Header } from "./components/Layout/Header";
 import { useIsMobile } from "./utils/useIsMobile";
 import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
+import { useModals} from "./context/ModalContext";
+import { Modal } from "./components/Common/modal";
+import { WalletAddressSection } from "./components/Modals/WalletAddressSection";
+import { WalletWithdrawal } from "./containers/WalletWithdrawal";
+import { WalletSeedRetreiveDisplay } from "./containers/WalletSeedRetreiveDisplay";
+import { MessageBackup } from "./components/MessageBackup";
+import { WalletInfo } from "./components/Modals/WalletInfo";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -37,6 +44,10 @@ export const OneLiner: FC = () => {
 
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
   const isMobile = useIsMobile();
+
+  const { isOpen, closeModal } = useModals();
+  
+
 
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
@@ -211,7 +222,9 @@ export const OneLiner: FC = () => {
           open={isSettingsOpen}
           address={walletStore.address?.toString()}
           onClose={() => setIsSettingsOpen(false)}
+          isWalletInfoOpen={isWalletInfoOpen}
           onOpenWalletInfo={() => setIsWalletInfoOpen(true)}
+          isWalletReady={isWalletReady}
           onCloseWallet={handleCloseWallet}
         />
       )}
@@ -269,6 +282,64 @@ export const OneLiner: FC = () => {
       </div>
       {/* Global Error Section*/}
       <ErrorCard error={errorMessage} onDismiss={() => setErrorMessage(null)} />
+
+      {/* Address Modal (triggered via openModal("address")) */}
+      {isOpen("address") && (
+        <Modal onClose={() => closeModal("address")}>
+          {walletStore.address ? (
+            <WalletAddressSection address={walletStore.address.toString()} />
+          ) : (
+            <div className="flex justify-center py-6">
+              <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* Address Modal */}
+      {isOpen("address") && (
+        <Modal onClose={() => closeModal("address")}>
+          {walletStore.address ? (
+            <WalletAddressSection address={walletStore.address.toString()} />
+          ) : (
+            <div className="flex justify-center py-6">
+              <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* Withdraw Modal */}
+      {isOpen("withdraw") && (
+        <Modal onClose={() => closeModal("withdraw")}>
+          <WalletWithdrawal />
+        </Modal>
+      )}
+
+      {/* Backup Modal */}
+      {isOpen("backup") && (
+        <Modal onClose={() => closeModal("backup")}>
+          <MessageBackup />
+        </Modal>
+      )}
+
+      {/* Seed Modal */}
+      {isOpen("seed") && (
+        <Modal onClose={() => closeModal("seed")}>
+          <WalletSeedRetreiveDisplay />
+        </Modal>
+      )}
+
+      {/* Wallet Info Modal */}
+      {/* Wallet Info Modal */}
+      {isOpen("walletInfo") &&
+         (
+          <Modal onClose={() => closeModal("walletInfo")}>
+            <WalletInfo
+            />
+          </Modal>
+        )}
+
       {/* Start New Conversation Modal */}
       {messageStore.isCreatingNewChat && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">

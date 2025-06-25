@@ -1,5 +1,5 @@
 // src/components/AddressSection.tsx
-import React, { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect, useCallback } from "react";
 import { toDataURL } from "qrcode";
 import { DocumentDuplicateIcon, QrCodeIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
