@@ -5,6 +5,7 @@ import { NetworkType } from "./types/all";
 import clsx from "clsx";
 import { Link } from "react-router";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
+import { useIsMobile } from "./utils/useIsMobile";
 
 export const SettingsPage: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -21,6 +22,8 @@ export const SettingsPage: React.FC = () => {
       localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
       ""
   );
+
+  const isMobile = useIsMobile();
 
   // Network connection effect
   useEffect(() => {
@@ -64,23 +67,25 @@ export const SettingsPage: React.FC = () => {
   }, [connect, isConnecting, networkStore, nodeUrl]);
 
   return (
-    <div className="container">
-      <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
-        <Link to="/">
-          <div className="flex items-center gap-2">
-            <img
-              src="/kasia-logo.png"
-              alt="Kasia Logo"
-              className="w-[60px] h-[60px] object-contain -mr-6"
-            />
-            <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
-              Kasia
+    <div className="app">
+      {!isMobile && (
+        <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
+          <Link to="/">
+            <div className="flex items-center gap-2">
+              <img
+                src="/kasia-logo.png"
+                alt="Kasia Logo"
+                className="w-[60px] h-[60px] object-contain -mr-6"
+              />
+              <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
+                Kasia
+              </div>
             </div>
-          </div>
-        </Link>
-      </div>
+          </Link>
+        </div>
+      )}
 
-      <div className="px-8 py-4 bg-[var(--primary-bg)]">
+      <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           <div className="max-w-[600px] relative mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]">
             <div className="grow flex items-center justify-center mb-1">
@@ -98,13 +103,13 @@ export const SettingsPage: React.FC = () => {
             <label htmlFor="node-url" className="block mb-4">
               Force using a node url for the selected network
             </label>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end gap-6">
               <input
                 type="text"
                 id="node-url"
                 value={nodeUrl}
                 onChange={(e) => setNodeUrl(e.target.value)}
-                className="flex-grow p-2 border border-[var(--border-color)] rounded bg-[var(--input-bg)] text-[var(--text-primary)]"
+                className="w-full flex-grow p-2 border border-[var(--border-color)] rounded bg-[var(--input-bg)] text-[var(--text-primary)]"
                 placeholder="wss://your-own-node-url.com"
               />
               <button
@@ -125,7 +130,7 @@ export const SettingsPage: React.FC = () => {
                 Successfully connected to the node!
               </div>
             )}
-            <div className="flex justify-start mt-16">
+            <div className="flex justify-end mt-16">
               <Link to="/">
                 <button className="leading-8  bg-[var(--primary-bg)] hover:opacity-80 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer">
                   <ArrowLeftIcon className="size-6 font-bold inline-block mr-2" />
