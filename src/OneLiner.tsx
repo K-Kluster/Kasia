@@ -47,8 +47,6 @@ export const OneLiner: FC = () => {
 
   const { isOpen, closeModal } = useModals();
   
-
-
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
     const syncToWidth = () => {
@@ -63,7 +61,7 @@ export const OneLiner: FC = () => {
     syncToWidth(); // run once on mount
     window.addEventListener("resize", syncToWidth);
     return () => window.removeEventListener("resize", syncToWidth);
-  }, [contactsCollapsed, messageStore.openedRecipient]);
+  }, [contactsCollapsed, messageStore.openedRecipient, isMobile]);
 
   // Network connection effect
   useEffect(() => {
