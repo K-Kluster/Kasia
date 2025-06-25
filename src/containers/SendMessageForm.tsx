@@ -406,9 +406,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                     <PaperClipIcon className="size-5 m-2" />
                   </button>
 
-                  {openedRecipient && (
-                      <SendPayment address={openedRecipient} />
-                  )}
+                  {openedRecipient && <SendPayment address={openedRecipient} />}
                 </PopoverPanel>
               </Transition>
             </>
@@ -421,25 +419,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
-
-      {/* Enhanced fee estimate - no more flashing */}
-      {openedRecipient && message && (
-        <div className="fee-estimate">
-          {isEstimating ? (
-            <span>
-              {feeEstimate !== null ? (
-                <>Updating fee estimate... {formatKasAmount(feeEstimate)} KAS</>
-              ) : (
-                <>Estimating fee...</>
-              )}
-            </span>
-          ) : feeEstimate !== null ? (
-            <span>Estimated fee: {formatKasAmount(feeEstimate)} KAS</span>
-          ) : (
-            <span>Calculating fee...</span>
-          )}
-        </div>
-      )}
     </div>
   );
 };
