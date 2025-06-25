@@ -13,7 +13,8 @@ export const ContactCard: FC<{
   contact: Contact;
   onClick?: (contact: Contact) => void;
   isSelected?: boolean;
-}> = ({ contact, onClick, isSelected }) => {
+  collapsed?: boolean; // tiny-avatar mode
+}> = ({ contact, onClick, isSelected, collapsed = false }) => {
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(contact.nickname || "");
   const messagingStore = useMessagingStore();
@@ -122,6 +123,30 @@ export const ContactCard: FC<{
     return null;
   }
 
+  // Collapsed w/ Avatar
+  if (collapsed) {
+    const avatar =
+      contact.nickname?.trim()?.[0]?.toUpperCase() ??
+      contact.address.split(":")[1]?.[0]?.toUpperCase() ??
+      "?";
+
+    return (
+      <div
+        className={clsx(
+          "flex justify-center py-2 cursor-pointer",
+          isSelected && "bg-[var(--accent-blue)]/20"
+        )}
+        title={displayName}
+        onClick={() => onClick?.(contact)}
+      >
+        <div className="w-8 h-8 rounded-full bg-[var(--accent-blue)] text-white flex items-center justify-center text-sm font-semibold">
+          {avatar}
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded (full view)
   return (
     <div
       className={clsx(
