@@ -7,7 +7,6 @@ import { useWalletStore } from "./store/wallet.store";
 import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
 import { MessageSection } from "./containers/MessagesSection";
-import { FetchApiMessages } from "./components/FetchApiMessages";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
 import { ContactSection } from "./components/ContactSection";
@@ -24,12 +23,35 @@ export const OneLiner: FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
   const [messagesClientStarted, setMessageClientStarted] = useState(false);
+  const [contactsCollapsed, setContactsCollapsed] = useState(false);
+  const [mobileView, setMobileView] = useState<"contacts" | "messages">(
+    "contacts"
+  );
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
 
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
+
+  // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
+  useEffect(() => {
+    const syncToWidth = () => {
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        if (contactsCollapsed) setContactsCollapsed(false);
+        if (!messageStore.openedRecipient) setMobileView("contacts");
+      } else {
+        setMobileView("contacts");
+      }
+    };
+
+    syncToWidth(); // run once on mount
+    window.addEventListener("resize", syncToWidth);
+    return () => window.removeEventListener("resize", syncToWidth);
+  }, [contactsCollapsed, messageStore.openedRecipient]);
+  
 
   // Network connection effect
   useEffect(() => {
@@ -180,7 +202,6 @@ export const OneLiner: FC = () => {
         onCloseWallet={handleCloseWallet}
         setIsWalletInfoOpen={setIsWalletInfoOpen}
         setIsSettingsOpen={setIsSettingsOpen}
-        isMessageStoreLoaded={messageStore.isLoaded}
       />
       {/* Main Message Section*/}
       <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
@@ -193,21 +214,35 @@ export const OneLiner: FC = () => {
               isConnected={networkStore.isConnected}
             />
           ) : messageStore.isLoaded ? (
-            <div className="bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[85vh] min-h-[300px]">
+            <div
+              className="
+              bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto
+              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[85vh] min-h-[300px]
+              flex
+            "
+            >
               <ContactSection
                 contacts={messageStore.contacts}
                 onNewChatClicked={onNewChatClicked}
                 onContactClicked={onContactClicked}
                 openedRecipient={messageStore.openedRecipient}
                 walletAddress={walletStore.address?.toString()}
+                mobileView={mobileView}
+                contactsCollapsed={contactsCollapsed}
+                setContactsCollapsed={setContactsCollapsed}
+                setMobileView={setMobileView}
               />
-              <MessageSection />
+              <MessageSection
+                mobileView={mobileView}
+                setMobileView={setMobileView}
+              />
             </div>
           ) : (
             <div className="flex flex-col items-center w-full text-xs">
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-              <div className="bg-[var(--secondary-bg)]/20 rounded-xl shadow-md max-w-[1200px] w-full mx-auto border border-[var(--border-color)] flex overflow-hidden min-w-[320px] h-[85vh] min-h-[300px] relative">
-                <div className="absolute top-0 left-0 right-0 bottom-0 flex flex-col justify-center items-center space-y-4">
+              <div className="relative max-w-[1200px] w-full mx-auto min-w-[320px] h-[85vh] min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
+                <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
+                <div className="relative flex flex-col items-center justify-center h-full space-y-4">
                   <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
                     Connecting message client...
                   </span>
