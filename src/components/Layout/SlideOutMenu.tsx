@@ -60,7 +60,14 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
       <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
 
       {/* Draw type thing */}
-      <aside className="fixed inset-y-0 left-0 z-50 w-full max-w-xs bg-[var(--primary-bg)] shadow-xl overflow-auto">
+      <aside
+        className="
+    fixed inset-y-0 left-0 z-50
+    w-full max-w-xs
+    bg-[var(--primary-bg)] shadow-xl
+    flex flex-col
+  "
+      >
         <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
           <button
             onClick={onClose}
@@ -81,7 +88,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
           </div>
         </header>
 
-        <ul className="divide-y divide-gray-700">
+        <ul className="flex flex-col flex-1 overflow-auto divide-y divide-gray-700">
           <li
             onClick={() => {
               openModal("address");
@@ -110,7 +117,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
             )}
           >
             <InformationCircleIcon className="h-5 w-5 text-white" />
-            <span className="text-white text-sm">
+            <span className="flex-1 text-white text-sm flex items-center">
               Wallet Info
               {!address && (
                 <ArrowPathIcon className="animate-spin h-5 w-5 ml-2 text-gray-500" />
@@ -169,16 +176,19 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               </li>
             </ul>
           )}
-
-          <li
-            onClick={onCloseWallet}
-            className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
-          >
-            <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
-            <span className="text-red-500 text-sm">Close Wallet</span>
-          </li>
           <li className="block sm:hidden px-4 py-3">
             <FeeBuckets inline={false} />
+          </li>
+          <li
+            onClick={onCloseWallet}
+            className="
+               mt-auto
+               flex items-center gap-2
+               px-4 py-3 hover:bg-gray-700 cursor-pointer
+             "
+          >
+            <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
+            <span className="text-red-500 text-base">Close Wallet</span>
           </li>
         </ul>
       </aside>

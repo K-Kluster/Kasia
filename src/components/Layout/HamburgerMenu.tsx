@@ -83,11 +83,20 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               openModal("walletInfo");
               onCloseMenu();
             }}
-            className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
+            className={clsx(
+              "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
+              { "opacity-50 pointer-events-none": !address }
+            )}
           >
             <InformationCircleIcon className="h-5 w-5 text-white" />
-            <span className="text-white text-sm">Wallet Info</span>
+            <span className="text-white text-sm flex items-center">
+              Wallet Info
+              {(address === "" || address === undefined) && (
+                <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
+              )}
+            </span>
           </li>
+
           {/* Show Feebuckets on mobile Item */}
           <li className="block sm:hidden px-4 py-3">
             <FeeBuckets inline={false} />

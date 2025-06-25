@@ -67,9 +67,15 @@ export const SettingsPage: React.FC = () => {
     <div className="container">
       <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
         <Link to="/">
-          <div className="app-title flex items-center gap-2 hover:cursor-pointer">
-            <img src="/kasia-logo.png" alt="Kasia Logo" className="app-logo" />
-            <h1 className="text-xl font-bold">Kasia</h1>
+          <div className="flex items-center gap-2">
+            <img
+              src="/kasia-logo.png"
+              alt="Kasia Logo"
+              className="w-[60px] h-[60px] object-contain -mr-6"
+            />
+            <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
+              Kasia
+            </div>
           </div>
         </Link>
       </div>

@@ -1,6 +1,6 @@
 import { FC } from "react";
 import { Bars3Icon } from "@heroicons/react/24/solid";
-import MenuHamburger from "./MenuHamburger";
+import MenuHamburger from "./HamburgerMenu";
 import { FeeBuckets } from "../FeeBuckets";
 
 type Props = {

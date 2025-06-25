@@ -12,7 +12,7 @@ export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
     onClick={onClose}
   >
     <div
-      className="relative bg-[var(--secondary-bg)] p-6 rounded-lg w-96"
+      className="relative bg-[var(--secondary-bg)] p-6 rounded-lg w-full max-w-md mx-4"
       onClick={(e) => e.stopPropagation()}
     >
       <button
@@ -25,3 +25,4 @@ export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
     </div>
   </div>
 );
+
