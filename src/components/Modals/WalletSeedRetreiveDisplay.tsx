@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from "react";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
-import { useWalletStore } from "../store/wallet.store";
-import { StoredWallet } from "../types/wallet.type";
+import { useWalletStore } from "../../store/wallet.store";
+import { StoredWallet } from "../../types/wallet.type";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 

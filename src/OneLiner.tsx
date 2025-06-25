@@ -16,9 +16,9 @@ import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
 import { useModals} from "./context/ModalContext";
 import { Modal } from "./components/Common/modal";
 import { WalletAddressSection } from "./components/Modals/WalletAddressSection";
-import { WalletWithdrawal } from "./containers/WalletWithdrawal";
-import { WalletSeedRetreiveDisplay } from "./containers/WalletSeedRetreiveDisplay";
-import { MessageBackup } from "./components/MessageBackup";
+import { WalletWithdrawal } from "./components/Modals/WalletWithdrawal";
+import { WalletSeedRetreiveDisplay } from "./components/Modals/WalletSeedRetreiveDisplay";
+import { MessageBackup } from "./components/Modals/MessageBackup";
 import { WalletInfo } from "./components/Modals/WalletInfo";
 
 export const OneLiner: FC = () => {

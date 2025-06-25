@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
-import { useWalletStore } from "../store/wallet.store";
-import { useMessagingStore } from "../store/messaging.store";
+import { useWalletStore } from "../../store/wallet.store";
+import { useMessagingStore } from "../../store/messaging.store";
 
 export const MessageBackup: React.FC = () => {
   const walletStore = useWalletStore();
