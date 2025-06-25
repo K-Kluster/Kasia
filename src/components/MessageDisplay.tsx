@@ -6,6 +6,8 @@ import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
+import "../styles/PaymentMessage.css";
+import { KasIcon } from "./icons/KasCoin";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -35,6 +37,36 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const isHandshake =
     (payload?.startsWith("ciph_msg:") && payload?.includes(":handshake:")) ||
     (content?.startsWith("ciph_msg:") && content?.includes(":handshake:"));
+
+  // Check if this is a payment message by checking the hex payload OR decrypted content
+  const isPayment = (() => {
+    // First check if it's a hex payload starting with ciph_msg prefix
+    if (payload) {
+      const prefix = "636970685f6d73673a"; // hex for "ciph_msg:"
+      if (payload.startsWith(prefix)) {
+        // Extract the message part and check for payment prefix
+        const messageHex = payload.substring(prefix.length);
+        const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
+        if (messageHex.startsWith(paymentPrefix)) {
+          return true;
+        }
+      }
+    }
+
+    // Also check if the content is already decrypted payment JSON
+    if (content) {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.type === "payment") {
+          return true;
+        }
+      } catch (e) {
+        // Not JSON, continue checking
+      }
+    }
+
+    return false;
+  })();
 
   // Get conversation if it's a handshake
   const conversation = isHandshake
@@ -107,6 +139,85 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     return null; // Don't show amount for any messages
   };
 
+  // Render payment message content
+  const renderPaymentMessage = () => {
+    if (isDecrypting) {
+      return <div className="decrypting">Decrypting payment message...</div>;
+    }
+
+    // Priority order: decrypted content, then original content, then fallback
+    let messageToRender = "";
+
+    // If we have decrypted content from the useEffect, use that first
+    if (decryptionAttempted && decryptedContent) {
+      messageToRender = decryptedContent;
+    }
+    // If the content field already contains payment JSON (outgoing messages), use that
+    else if (content) {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.type === "payment") {
+          messageToRender = content;
+        }
+      } catch (e) {
+        // Content is not payment JSON, use it as is
+        messageToRender = content;
+      }
+    }
+
+    try {
+      if (messageToRender) {
+        const paymentPayload = JSON.parse(messageToRender);
+
+        if (paymentPayload.type === "payment") {
+          return (
+            <div className="payment-message">
+              <div className="payment-icon">
+                <KasIcon
+                  className="w-8 h-8"
+                  circleClassName="fill-white"
+                  kClassName="fill-gray-800"
+                />
+              </div>
+              <div className="payment-content">
+                <div className="payment-message-text">
+                  "{paymentPayload.message}"
+                </div>
+                <div className="payment-amount">
+                  {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
+                </div>
+              </div>
+            </div>
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("Could not parse payment message:", error);
+      // If we can't parse it but we know it's a payment message,
+      // show the raw content for debugging
+      console.log("Raw payment content:", messageToRender);
+    }
+
+    // Fallback to showing basic payment info
+    return (
+      <div className="payment-message">
+        <div className="payment-icon">
+          <KasIcon
+            className="w-8 h-8"
+            circleClassName="fill-white"
+            kClassName="fill-gray-800"
+          />
+        </div>
+        <div className="payment-content">
+          <div className="payment-message-text">Payment message</div>
+          <div className="payment-amount">
+            {isOutgoing ? "Sent" : "Received"} payment
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Parse and render message content
   const renderMessageContent = () => {
     // If this is a handshake message and we found the conversation
@@ -128,6 +239,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         : conversation.initiatedByMe
         ? "Handshake sent"
         : "Handshake received";
+    }
+
+    // If this is a payment message, handle it specially
+    if (isPayment) {
+      return renderPaymentMessage();
     }
 
     // Wait for decryption attempt before showing content

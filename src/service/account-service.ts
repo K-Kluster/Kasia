@@ -91,6 +91,13 @@ type CreateWithdrawTransactionArgs = {
   amount: bigint;
 };
 
+type CreatePaymentWithMessageArgs = {
+  address: Address;
+  amount: bigint;
+  payload: string;
+  originalMessage?: string; // Add the original message for outgoing record creation
+};
+
 // Add this helper function at the top level
 function stringifyWithBigInt(obj: any): string {
   return JSON.stringify(obj, (_, value) =>
@@ -478,6 +485,180 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       return txId;
     } catch (error) {
       console.error("Error creating transaction:", error);
+      throw error;
+    }
+  }
+
+  public async createPaymentWithMessage(
+    paymentTransaction: CreatePaymentWithMessageArgs,
+    password: string
+  ): Promise<TransactionId> {
+    if (!this.isStarted || !this.rpcClient.rpc) {
+      throw new Error("Account service is not started");
+    }
+
+    if (!this.receiveAddress) {
+      throw new Error("Receive address not initialized");
+    }
+
+    if (!paymentTransaction.address) {
+      throw new Error("Transaction address is required");
+    }
+
+    if (!paymentTransaction.amount) {
+      throw new Error("Transaction amount is required");
+    }
+
+    console.log("=== CREATING PAYMENT WITH MESSAGE ===");
+    const primaryAddress = this.receiveAddress;
+    console.log(
+      "Creating payment from primary address:",
+      primaryAddress.toString()
+    );
+    console.log(
+      "Change will go back to primary address:",
+      primaryAddress.toString()
+    );
+    console.log(`Destination: ${paymentTransaction.address.toString()}`);
+    console.log(
+      `Amount: ${Number(paymentTransaction.amount) / 100000000} KAS (${
+        paymentTransaction.amount
+      } sompi)`
+    );
+    console.log(
+      `Payload length: ${paymentTransaction.payload.length / 2} bytes`
+    );
+
+    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+      this.unlockedWallet,
+      password
+    );
+
+    if (!privateKeyGenerator) {
+      throw new Error("Failed to generate private key");
+    }
+
+    if (!this.context) {
+      throw new Error("UTXO context not initialized");
+    }
+
+    try {
+      // Use a modified generator that sends to recipient but includes payload
+      const generator =
+        this._getGeneratorForPaymentWithMessage(paymentTransaction);
+
+      console.log("Generating payment transaction...");
+      const pendingTransaction: PendingTransaction | null =
+        await generator.next();
+
+      if (!pendingTransaction) {
+        throw new Error("Failed to generate transaction");
+      }
+
+      if ((await generator.next()) !== null) {
+        throw new Error("Unexpected multiple transaction generation");
+      }
+
+      // Log the addresses that need signing
+      const addressesToSign = pendingTransaction.addresses();
+      console.log(
+        `Transaction requires signing ${addressesToSign.length} addresses:`
+      );
+      addressesToSign.forEach((addr, i) => {
+        console.log(`  Address ${i + 1}: ${addr.toString()}`);
+      });
+
+      // Always use receive key for all addresses since we only use primary address
+      const privateKeys = pendingTransaction.addresses().map(() => {
+        console.log("Using primary address key for signing");
+        const key = privateKeyGenerator.receiveKey(0);
+        if (!key) {
+          throw new Error("Failed to generate private key for signing");
+        }
+        return key;
+      });
+
+      // Sign the transaction
+      console.log("Signing transaction...");
+      pendingTransaction.sign(privateKeys);
+
+      // Submit the transaction
+      console.log("Submitting transaction to network...");
+
+      const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
+
+      console.log(`Payment with message submitted with ID: ${txId}`);
+
+      // Create a message record for the sender to show they sent this payment
+      if (this.receiveAddress) {
+        try {
+          // Parse the payload to extract the payment details
+          const hexToString = (hex: string) => {
+            let str = "";
+            for (let i = 0; i < hex.length; i += 2) {
+              str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+            }
+            return str;
+          };
+
+          // Remove the ciph_msg: prefix and parse the message
+          const prefixLength = "636970685f6d73673a".length; // "ciph_msg:" in hex
+          const messageHex = paymentTransaction.payload.substring(prefixLength);
+          const messageStr = hexToString(messageHex);
+          const parts = messageStr.split(":");
+
+          if (parts.length >= 4 && parts[1] === "payment") {
+            // For outgoing messages, we don't decrypt - we already know the content!
+            // Extract the alias from the payload to get the original message details
+            const theirAlias = parts[2];
+
+            // We need to recreate the payment payload that was originally encrypted
+            // This should match the structure that was passed to createPaymentWithMessage
+            const paymentAmount = Number(paymentTransaction.amount) / 100000000;
+
+            // Create payment content using the original message if available
+            const paymentContent = JSON.stringify({
+              type: "payment",
+              alias: theirAlias,
+              message: paymentTransaction.originalMessage || "Payment sent",
+              amount: paymentAmount,
+              timestamp: Math.floor(Date.now() / 1000),
+              version: 1,
+            });
+
+            // Create outgoing message record - no decryption needed!
+            const outgoingMessage: DecodedMessage = {
+              transactionId: txId,
+              senderAddress: this.receiveAddress.toString(),
+              recipientAddress: paymentTransaction.address.toString(),
+              timestamp: Math.floor(Date.now() / 1000),
+              content: paymentContent,
+              amount: paymentAmount,
+              payload: paymentTransaction.payload,
+            };
+
+            const messagingStore = useMessagingStore.getState();
+            if (messagingStore) {
+              const myAddress = this.receiveAddress.toString();
+              messagingStore.storeMessage(outgoingMessage, myAddress);
+              messagingStore.loadMessages(myAddress);
+            }
+
+            console.log("Created outgoing payment message record for sender");
+          }
+        } catch (error) {
+          console.warn(
+            "Could not create outgoing payment message record:",
+            error
+          );
+        }
+      }
+
+      console.log("========================");
+
+      return txId;
+    } catch (error) {
+      console.error("Error creating payment with message:", error);
       throw error;
     }
   }
@@ -945,6 +1126,28 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
+  private _getGeneratorForPaymentWithMessage(
+    transaction: CreatePaymentWithMessageArgs
+  ) {
+    if (!this.isStarted) {
+      throw new Error("Account service is not started");
+    }
+
+    console.log("Using destination address:", transaction.address.toString());
+
+    return new Generator({
+      changeAddress: this.receiveAddress!,
+      entries: this.context,
+      outputs: [new PaymentOutput(transaction.address, transaction.amount)],
+      networkId: this.networkId,
+      priorityFee: {
+        amount: BigInt(1000), // 0.00001 KAS
+        source: FeeSource.SenderPays,
+      },
+      payload: transaction.payload,
+    });
+  }
+
   private _getGeneratorForWithdrawTransaction(
     transaction: CreateWithdrawTransactionArgs
   ) {
@@ -1042,6 +1245,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
       const handshakePrefix = "313a68616e647368616b653a";
       const commPrefix = "313a636f6d6d3a";
+      const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
 
       let messageType = "unknown";
       let isHandshake = false;
@@ -1069,6 +1273,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           targetAlias = parts[2];
           encryptedHex = parts[3];
         }
+      } else if (messageHex.startsWith(paymentPrefix)) {
+        const hexToString = (hex: string) => {
+          let str = "";
+          for (let i = 0; i < hex.length; i += 2) {
+            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+          }
+          return str;
+        };
+
+        const messageStr = hexToString(messageHex);
+        const parts = messageStr.split(":");
+
+        if (parts.length >= 4) {
+          messageType = "payment";
+          targetAlias = parts[2];
+          encryptedHex = parts[3];
+        }
       }
 
       const isMonitoredAddress =
@@ -1076,6 +1297,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         (recipientAddress && this.monitoredAddresses.has(recipientAddress));
       const isCommForUs =
         messageType === "comm" &&
+        targetAlias &&
+        this.monitoredConversations.has(targetAlias);
+      const isPaymentForUs =
+        messageType === "payment" &&
         targetAlias &&
         this.monitoredConversations.has(targetAlias);
 
@@ -1173,7 +1398,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         if (
           decryptionSuccess &&
-          (isHandshake || isMonitoredAddress || isCommForUs)
+          (isHandshake || isMonitoredAddress || isCommForUs || isPaymentForUs)
         ) {
           const message: DecodedMessage = {
             transactionId: txId,
