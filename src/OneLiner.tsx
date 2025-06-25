@@ -9,7 +9,7 @@ import { NewChatForm } from "./components/NewChatForm";
 import { MessageSection } from "./containers/MessagesSection";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
-import { ContactSection } from "./components/ContactSection";
+import { ContactSection } from "./containers/ContactSection";
 import { Header } from "./components/Layout/Header";
 import { useIsMobile } from "./utils/useIsMobile";
 import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
@@ -331,22 +331,19 @@ export const OneLiner: FC = () => {
       )}
 
       {/* Wallet Info Modal */}
-      {/* Wallet Info Modal */}
-      {isOpen("walletInfo") &&
-         (
-          <Modal onClose={() => closeModal("walletInfo")}>
-            <WalletInfo
-            />
-          </Modal>
-        )}
+      {isOpen("walletInfo") && (
+        <Modal onClose={() => closeModal("walletInfo")}>
+          <WalletInfo />
+        </Modal>
+      )}
 
       {/* Start New Conversation Modal */}
       {messageStore.isCreatingNewChat && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+        <Modal onClose={() => messageStore.setIsCreatingNewChat(false)}>
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
           />
-        </div>
+        </Modal>
       )}
     </>
   );
