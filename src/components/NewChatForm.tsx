@@ -351,15 +351,11 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({
       (!isKaspaAddress && recipientAddress.length > 0);
 
     if (isKnsDomain && resolvedAddress) {
-      // Convert to @username format for display
-      let displayName = recipientAddress;
+      let username = recipientAddress;
       if (recipientAddress.endsWith(".kas")) {
-        displayName = "@" + recipientAddress.slice(0, -4); // Remove .kas and add @
-      } else {
-        displayName = "@" + recipientAddress; // Add @ to username
+        username = recipientAddress.slice(0, -4); // Remove .kas
       }
-
-      recipientDisplay = displayName;
+      recipientDisplay = `@${username} (${username}.kas)`;
     } else {
       recipientDisplay = knsRecipientAddress;
     }
@@ -445,7 +441,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({
             <div className={styles["input-container"]}>
               {!recipientAddress.startsWith("kaspa:") &&
                 !recipientAddress.startsWith("kaspatest:") &&
-                recipientAddress.length > 0 && (
+                recipientAddress.length > 0 &&
+                !recipientAddress.endsWith(".kas") && (
                   <span className={styles["at-prefix"]}>@</span>
                 )}
               <input
@@ -453,7 +450,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({
                 className={`${styles.input} ${
                   !recipientAddress.startsWith("kaspa:") &&
                   !recipientAddress.startsWith("kaspatest:") &&
-                  recipientAddress.length > 0
+                  recipientAddress.length > 0 &&
+                  !recipientAddress.endsWith(".kas")
                     ? styles["username-input"]
                     : ""
                 }`}
@@ -461,7 +459,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({
                 id="recipientAddress"
                 value={recipientAddress}
                 onChange={(e) => setRecipientAddress(e.target.value)}
-                placeholder="kaspa:... or username (kns domain)"
+                placeholder="kaspa:... or username (KNS domain)"
                 disabled={isLoading}
                 required
                 autoComplete="off"
