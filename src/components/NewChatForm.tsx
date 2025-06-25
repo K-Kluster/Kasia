@@ -355,14 +355,14 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-500 hover:bg-gray-600 active:bg-gray-700 border border-gray-500 text-white"
+            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-500 hover:bg-gray-600 active:bg-gray-700 border border-gray-500 text-white cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[#2196f3] hover:bg-[#1976d2] text-white"
+            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[#2196f3] hover:bg-[#1976d2] text-white cursor-pointer"
           >
             {isLoading ? "Initiating..." : "Start Chat"}
           </button>

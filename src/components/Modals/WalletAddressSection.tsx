@@ -108,7 +108,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               }}
               title="Copy address to clipboard"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200"
+              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200 cursor-pointer"
             >
               <DocumentDuplicateIcon className="w-5 h-5" />
             </button>
@@ -116,7 +116,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               onClick={toggleQRCode}
               title="Show QR code"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200"
+              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200 cursor-pointer"
             >
               <QrCodeIcon className="w-5 h-5" />
             </button>
