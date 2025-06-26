@@ -19,15 +19,7 @@ type FrozenBalance = {
   matureDisplay: string;
 };
 
-type BatchProgress = {
-  current: number;
-  total: number;
-  txIds: string[];
-};
-
 // Constants
-const BATCH_SIZE = 60; // Conservative limit to avoid storage mass issues
-const BATCH_DELAY_MS = 2000; // Delay between batches to allow balance stabilization
 const HIGH_UTXO_THRESHOLD = 100; // Threshold for showing high UTXO warning
 
 export const UtxoCompound: FC = () => {
@@ -42,9 +34,6 @@ export const UtxoCompound: FC = () => {
   const [frozenBalance, setFrozenBalance] = useState<FrozenBalance | null>(
     null
   );
-  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(
-    null
-  );
 
   const walletStore = useWalletStore();
   const { accountService, unlockedWallet, balance, address, selectedNetwork } =
@@ -57,7 +46,6 @@ export const UtxoCompound: FC = () => {
       setCompoundResult(pendingResult);
       setPendingResult(null);
       setFrozenBalance(null); // Clear frozen balance to show final result
-      setBatchProgress(null); // Clear batch progress
     }
   }, [balance?.matureUtxoCount, isCompounding, pendingResult]);
 
@@ -74,7 +62,6 @@ export const UtxoCompound: FC = () => {
   const resetAllStates = useCallback(() => {
     setError(null);
     setCompoundResult(null);
-    setBatchProgress(null);
     setFrozenBalance(null);
     setPendingResult(null);
   }, []);
@@ -127,7 +114,6 @@ export const UtxoCompound: FC = () => {
       console.error("UTXO compounding failed:", err);
       setError(getUserFriendlyErrorMessage(err));
       setFrozenBalance(null); // Clear frozen balance on error
-      setBatchProgress(null); // Clear batch progress on error
     } finally {
       setIsCompounding(false);
     }
@@ -247,61 +233,9 @@ export const UtxoCompound: FC = () => {
             <div className="flex items-center justify-center gap-2 text-blue-400">
               <ArrowPathIcon className="w-5 h-5 animate-spin" />
               <span className="text-white font-medium">
-                {batchProgress
-                  ? `Processing batch ${batchProgress.current}/${batchProgress.total}`
-                  : "Processing compound transaction"}
+                Processing compound transaction
               </span>
             </div>
-            {batchProgress && (
-              <div className="mt-2">
-                <div className="w-full bg-gray-700 rounded-full h-2 relative overflow-hidden">
-                  <div
-                    className={clsx(
-                      "bg-blue-500 h-2 rounded-full transition-all duration-300 absolute top-0 left-0",
-                      // Use Tailwind width classes for exact matches
-                      {
-                        "w-full": batchProgress.current === batchProgress.total,
-                        "w-1/2":
-                          batchProgress.total === 2 &&
-                          batchProgress.current === 1,
-                        "w-1/3":
-                          batchProgress.total === 3 &&
-                          batchProgress.current === 1,
-                        "w-2/3":
-                          batchProgress.total === 3 &&
-                          batchProgress.current === 2,
-                        "w-1/4":
-                          batchProgress.total === 4 &&
-                          batchProgress.current === 1,
-                        "w-2/4":
-                          batchProgress.total === 4 &&
-                          batchProgress.current === 2,
-                        "w-3/4":
-                          batchProgress.total === 4 &&
-                          batchProgress.current === 3,
-                        "w-1/5":
-                          batchProgress.total === 5 &&
-                          batchProgress.current === 1,
-                        "w-2/5":
-                          batchProgress.total === 5 &&
-                          batchProgress.current === 2,
-                        "w-3/5":
-                          batchProgress.total === 5 &&
-                          batchProgress.current === 3,
-                        "w-4/5":
-                          batchProgress.total === 5 &&
-                          batchProgress.current === 4,
-                      }
-                    )}
-                  ></div>
-                </div>
-                <p className="text-gray-400 text-sm mt-1">
-                  {batchProgress.current === batchProgress.total
-                    ? "Finalizing compound..."
-                    : `${batchProgress.txIds.length} transactions completed`}
-                </p>
-              </div>
-            )}
           </div>
         )}
       </div>
