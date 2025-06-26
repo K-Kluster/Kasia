@@ -104,6 +104,7 @@ jobs:
 
   build-android-app:
     runs-on: ubuntu-latest
+    # @TODO: uncomment this
     # needs: build-web-app
     steps:
       - uses: actions/checkout@v4
@@ -173,8 +174,14 @@ jobs:
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: "npm"
+
+      # install @tauri-apps/cli@latest
       - name: Install Tauri CLI
-        run: cargo install tauri-cli --version "^2.0.0" --locked
+        run: npm install -g @tauri-apps/cli@latest
 
       - name: Build App
         run: tauri android build -v
