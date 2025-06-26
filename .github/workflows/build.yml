@@ -34,7 +34,8 @@ jobs:
       - name: Upload Cipher Wasm artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cipher-wasm-${{ github.ref_name }}
+          # todo: change to ${{github.ref_name}}
+          name: cipher-wasm-staging
           path: cipher-wasm
           if-no-files-found: error
           retention-days: 90
@@ -49,7 +50,8 @@ jobs:
       - name: Restore Cipher Wasm artifact
         uses: actions/download-artifact@v4
         with:
-          name: cipher-wasm-${{ github.ref_name }}
+          # todo: change to ${{github.ref_name}}
+          name: cipher-wasm-staging
           path: cipher-wasm
           if-no-files-found: error
 # uses: dsaltares/fetch-gh-release-asset@master
