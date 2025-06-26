@@ -375,7 +375,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                   </button>
 
                   {openedRecipient && (
-                      <SendPayment address={openedRecipient} />
+                    <SendPayment
+                      address={openedRecipient}
+                      onPaymentSent={close}
+                    />
                   )}
                 </PopoverPanel>
               </Transition>

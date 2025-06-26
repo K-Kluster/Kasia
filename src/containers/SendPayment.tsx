@@ -8,7 +8,10 @@ import { useMessagingStore } from "../store/messaging.store";
 import { encrypt_message } from "cipher";
 import { Address } from "kaspa-wasm";
 
-export const SendPayment: FC<{ address: string }> = ({ address }) => {
+export const SendPayment: FC<{
+  address: string;
+  onPaymentSent?: () => void;
+}> = ({ address, onPaymentSent }) => {
   // Pay functionality state
   const [payAmount, setPayAmount] = useState("");
   const [payMessage, setPayMessage] = useState("");
@@ -204,6 +207,10 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
       setPayAmount("");
       setPayMessage("");
 
+      // Close both panels
+      close();
+      onPaymentSent?.();
+
       console.log(
         `Payment of ${payAmount} KAS${
           payMessage ? ` with message "${payMessage}"` : ""
@@ -231,105 +238,114 @@ export const SendPayment: FC<{ address: string }> = ({ address }) => {
 
   return (
     <Popover className="relative">
-      <PopoverButton>
-        <button
-          className="p-2 w-full rounded hover:bg-white/5 flex items-center gap-2"
-          title="Send Kaspa payment to recipient"
-        >
-          <KasIcon
-            className="w-10 h-10"
-            circleClassName="fill-kas-primary"
-            kClassName="fill-gray-800"
-          />
-        </button>
-      </PopoverButton>
-      <PopoverPanel
-        ref={popoverPanelRef}
-        anchor={{ to: "top end", gap: "24px" }}
-        className="absolute mb-20 block z-50 mt-3 p-4 bg-[var(--secondary-bg)] border border-[var(--border-color)] rounded-lg transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
-        transition
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-[var(--text-primary)]">
-            Send Payment
-          </h4>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {/* Message input field */}
-          <div className="w-full">
-            <Input
-              type="text"
-              value={payMessage}
-              onChange={(e) => handlePayMessageChange(e.target.value)}
-              placeholder={
-                canSendMessageWithPayment
-                  ? "Message (optional)"
-                  : "Complete handshake to send messages"
-              }
-              disabled={!canSendMessageWithPayment}
-              className={clsx(
-                "w-full px-3 py-2 bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-md text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[#70C7BA] focus:border-transparent",
-                {
-                  "opacity-50 cursor-not-allowed": !canSendMessageWithPayment,
-                }
-              )}
-            />
-            {!canSendMessageWithPayment && (
-              <div className="text-xs text-[var(--text-secondary)] mt-1">
-                Complete a handshake to send encrypted messages with payments
-              </div>
-            )}
-          </div>
-
-          <div className="flex flex-col items-center gap-2 md:flex-row md:items-start">
-            <div className="flex-1 w-full">
-              <div className="relative">
-                <Input
-                  ref={inputRef}
-                  type="text"
-                  value={payAmount}
-                  onChange={(e) => handlePayAmountChange(e.target.value)}
-                  placeholder="Amount (KAS)"
-                  className="w-full px-3 py-2 pr-12 bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-md text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[#70C7BA] focus:border-transparent"
-                />
-                <button
-                  type="button"
-                  onClick={handleMaxPayClick}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#70C7BA] hover:opacity-80 font-medium text-xs border border-kas-primary rounded-sm px-1 py-0.5"
-                >
-                  Max
-                </button>
-              </div>
-              {balance?.matureDisplay && (
-                <div className="text-xs text-[var(--text-secondary)] mt-1">
-                  Available: {balance.matureDisplay} KAS
-                </div>
-              )}
+      {({ close }: { close: () => void }) => (
+        <>
+          <PopoverButton>
+            <button
+              className="p-2 w-full rounded hover:bg-white/5 flex items-center gap-2"
+              title="Send Kaspa payment to recipient"
+            >
+              <KasIcon
+                className="w-10 h-10"
+                circleClassName="fill-kas-primary"
+                kClassName="fill-gray-800"
+              />
+            </button>
+          </PopoverButton>
+          <PopoverPanel
+            ref={popoverPanelRef}
+            anchor={{ to: "top end", gap: "24px" }}
+            className="absolute mb-20 block z-50 mt-3 p-4 bg-[var(--secondary-bg)] border border-[var(--border-color)] rounded-lg transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
+            transition
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-[var(--text-primary)]">
+                Send Payment
+              </h4>
             </div>
 
-            <button
-              onClick={handleSendPayment}
-              disabled={isSendingPayment || !payAmount}
-              className={clsx(
-                "px-4 py-2 w-full md:w-auto rounded-md font-medium text-sm transition-all duration-200 h-10",
-                "bg-[#70C7BA] text-white hover:bg-[#5fb5a3] focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
-                {
-                  "opacity-50 cursor-not-allowed":
-                    isSendingPayment || !payAmount,
-                },
-                "self-center md:self-auto"
-              )}
-            >
-              {isSendingPayment ? "Sending..." : "Send KAS"}
-            </button>
-          </div>
-        </div>
+            <div className="flex flex-col gap-3">
+              {/* Message input field */}
+              <div className="w-full">
+                <Input
+                  type="text"
+                  value={payMessage}
+                  onChange={(e) => handlePayMessageChange(e.target.value)}
+                  placeholder={
+                    canSendMessageWithPayment
+                      ? "Message (optional)"
+                      : "Complete handshake to send messages"
+                  }
+                  disabled={!canSendMessageWithPayment}
+                  className={clsx(
+                    "w-full px-3 py-2 bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-md text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[#70C7BA] focus:border-transparent",
+                    {
+                      "opacity-50 cursor-not-allowed":
+                        !canSendMessageWithPayment,
+                    }
+                  )}
+                />
+                {!canSendMessageWithPayment && (
+                  <div className="text-xs text-[var(--text-secondary)] mt-1">
+                    Complete a handshake to send encrypted messages with
+                    payments
+                  </div>
+                )}
+              </div>
 
-        {paymentError && (
-          <div className="mt-2 text-sm text-red-500">{paymentError}</div>
-        )}
-      </PopoverPanel>
+              <div className="flex flex-col items-center gap-2 md:flex-row md:items-start">
+                <div className="flex-1 w-full">
+                  <div className="relative">
+                    <Input
+                      ref={inputRef}
+                      type="text"
+                      value={payAmount}
+                      onChange={(e) => handlePayAmountChange(e.target.value)}
+                      placeholder="Amount (KAS)"
+                      className="w-full px-3 py-2 pr-12 bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-md text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[#70C7BA] focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleMaxPayClick}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#70C7BA] hover:opacity-80 font-medium text-xs border border-kas-primary rounded-sm px-1 py-0.5"
+                    >
+                      Max
+                    </button>
+                  </div>
+                  {balance?.matureDisplay && (
+                    <div className="text-xs text-[var(--text-secondary)] mt-1">
+                      Available: {balance.matureDisplay} KAS
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={async () => {
+                    await handleSendPayment();
+                    close();
+                  }}
+                  disabled={isSendingPayment || !payAmount}
+                  className={clsx(
+                    "px-4 py-2 w-full md:w-auto rounded-md font-medium text-sm transition-all duration-200 h-10",
+                    "bg-[#70C7BA] text-white hover:bg-[#5fb5a3] focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
+                    {
+                      "opacity-50 cursor-not-allowed":
+                        isSendingPayment || !payAmount,
+                    },
+                    "self-center md:self-auto"
+                  )}
+                >
+                  {isSendingPayment ? "Sending..." : "Send KAS"}
+                </button>
+              </div>
+            </div>
+
+            {paymentError && (
+              <div className="mt-2 text-sm text-red-500">{paymentError}</div>
+            )}
+          </PopoverPanel>
+        </>
+      )}
     </Popover>
   );
 };

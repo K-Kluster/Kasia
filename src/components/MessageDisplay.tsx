@@ -149,25 +149,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       );
     }
 
-    // Priority order: decrypted content, then original content, then fallback
-    let messageToRender = "";
-
-    // If we have decrypted content from the useEffect, use that first
-    if (decryptionAttempted && decryptedContent) {
-      messageToRender = decryptedContent;
-    }
-    // If the content field already contains payment JSON (outgoing messages), use that
-    else if (content) {
-      try {
-        const parsed = JSON.parse(content);
-        if (parsed.type === "payment") {
-          messageToRender = content;
-        }
-      } catch (e) {
-        // Content is not payment JSON, use it as is
-        messageToRender = content;
-      }
-    }
+    // For payment messages, we'll only show the UI elements, not the raw content
+    const messageToRender = content;
 
     try {
       if (messageToRender) {
@@ -176,9 +159,9 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         if (paymentPayload.type === "payment") {
           return (
             <div className="flex items-center gap-3 p-4">
-              <div className="flex items-center justify-center min-w-10 h-10 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]">
+              <div className="flex items-center justify-center min-w-20 h-20 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)] animate-pulse">
                 <KasIcon
-                  className="w-10 h-10 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  className="w-20 h-20 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
                   kClassName="fill-[#70C7BA]"
                 />
