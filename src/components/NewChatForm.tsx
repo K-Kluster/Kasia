@@ -1,15 +1,27 @@
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  useMemo,
+} from "react";
 import { kaspaToSompi } from "kaspa-wasm";
 import styles from "../components/NewChatForm.module.css";
+import { knsIntegrationService_getDomainResolution } from "../service/integrations/kns-integration-service";
+import { unknownErrorToErrorLike } from "../utils/errors";
+import { KaspaAddress } from "./KaspaAddress";
 
 interface NewChatFormProps {
   onClose: () => void;
 }
 
 export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
-  const [recipientAddress, setRecipientAddress] = useState("");
+  const [recipientInputValue, setRecipientInputValue] = useState("");
+  const [resolvedRecipientAddress, setResolvedRecipientAddress] = useState<
+    string | null
+  >(null);
   const [handshakeAmount, setHandshakeAmount] = useState("0.2");
   const [error, setError] = useState<string | null>(null);
   const [recipientWarning, setRecipientWarning] = useState<string | null>(null);
@@ -18,7 +30,6 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
 
   // kns related
-  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [isResolvingKns, setIsResolvingKns] = useState(false);
   const [knsError, setKnsError] = useState<string | null>(null);
   const [knsDomainId, setKnsDomainId] = useState<string | null>(null);
@@ -28,14 +39,26 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const walletStore = useWalletStore();
   const balance = useWalletStore((state) => state.balance);
 
-  const useRecipientAddressRef = useCallback(
-    (node: HTMLInputElement | null) => {
-      if (node) {
-        node.focus();
-      }
-    },
-    []
-  );
+  const detectedRecipientInputValueFormat = useMemo<
+    "address" | "kns" | "undetermined"
+  >(() => {
+    if (
+      recipientInputValue.startsWith("kaspa:") ||
+      recipientInputValue.startsWith("kaspatest:")
+    ) {
+      return "address";
+    } else if (recipientInputValue.length > 0) {
+      return "kns";
+    } else {
+      return "undetermined";
+    }
+  }, [recipientInputValue]);
+
+  const useRecipientInputRef = useCallback((node: HTMLInputElement | null) => {
+    if (node) {
+      node.focus();
+    }
+  }, []);
 
   // Handle escape key to close
   useEffect(() => {
@@ -51,46 +74,55 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   // KNS domain resolution effect
   useEffect(() => {
-    if (recipientAddress.endsWith(".kas")) {
-      setIsResolvingKns(true);
-      setKnsError(null);
-      knsDomainRef.current = recipientAddress;
-      const timeoutId = setTimeout(async () => {
-        try {
-          const domain = recipientAddress.trim();
-          const response = await fetch(
-            `https://api.knsdomains.org/mainnet/api/v1/${encodeURIComponent(
-              domain
-            )}/owner`
-          );
-          const data = await response.json();
-          if (data.success && data.data && data.data.owner) {
-            setResolvedAddress(data.data.owner);
-            setKnsDomainId(data.data.id || null);
-            setKnsError(null);
-          } else {
-            setResolvedAddress(null);
-            setKnsDomainId(null);
-            setKnsError("KNS domain does not exist");
-          }
-        } catch (e) {
-          setResolvedAddress(null);
-          setKnsDomainId(null);
-          setKnsError("Failed to resolve KNS domain");
-        } finally {
-          setIsResolvingKns(false);
-        }
-      }, 1000);
-      return () => clearTimeout(timeoutId);
-    } else {
-      setResolvedAddress(null);
+    // format changed to not kns related, reset kns related states
+    if (!(detectedRecipientInputValueFormat === "kns")) {
+      setResolvedRecipientAddress(null);
       setKnsDomainId(null);
       setKnsError(null);
+      return;
     }
-  }, [recipientAddress]);
+
+    // prepare kns related states for resolution
+    setIsResolvingKns(true);
+    setKnsError(null);
+
+    // Convert to domain format for API calls
+    const domainWithSuffix = recipientInputValue.trim().endsWith(".kas")
+      ? recipientInputValue.trim()
+      : recipientInputValue.trim() + ".kas";
+    knsDomainRef.current = domainWithSuffix;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const domainResution = await knsIntegrationService_getDomainResolution(
+          walletStore.selectedNetwork,
+          domainWithSuffix
+        );
+
+        if (domainResution) {
+          setResolvedRecipientAddress(domainResution.ownerAddress);
+          setKnsDomainId(domainResution.id || null);
+          setKnsError(null);
+        } else {
+          setResolvedRecipientAddress(null);
+          setKnsDomainId(null);
+          setKnsError("Username does not exist (KNS domain not found)");
+        }
+      } catch (error) {
+        setResolvedRecipientAddress(null);
+        setKnsDomainId(null);
+        setKnsError(unknownErrorToErrorLike(error).message);
+      } finally {
+        setIsResolvingKns(false);
+      }
+    }, 750);
+
+    // clear timeout if the component unmounts or the input value changes
+    return () => clearTimeout(timeoutId);
+  }, [detectedRecipientInputValueFormat, recipientInputValue]);
 
   // Use the resolved address for all backend logic
-  const knsRecipientAddress = resolvedAddress || recipientAddress;
+  const knsRecipientAddress = resolvedRecipientAddress || recipientInputValue;
 
   // Update checkRecipientBalance and validation to use knsRecipientAddress
   const checkRecipientBalance = useCallback(
@@ -241,10 +273,16 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       // Initiate handshake with custom amount
 
       await messageStore.initiateHandshake(knsRecipientAddress, amountSompi);
-      messageStore.setOpenedRecipient(recipientAddress);
+      messageStore.setOpenedRecipient(recipientInputValue);
 
-      if (recipientAddress.endsWith(".kas") && resolvedAddress) {
-        messageStore.setContactNickname(resolvedAddress, recipientAddress);
+      if (
+        detectedRecipientInputValueFormat === "kns" &&
+        resolvedRecipientAddress
+      ) {
+        messageStore.setContactNickname(
+          resolvedRecipientAddress,
+          recipientInputValue
+        );
       }
       // Close the form
 
@@ -269,15 +307,17 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   if (showConfirmation) {
     let recipientDisplay;
-    if (recipientAddress.endsWith(".kas") && resolvedAddress) {
+    if (
+      detectedRecipientInputValueFormat === "kns" &&
+      resolvedRecipientAddress
+    ) {
       recipientDisplay = (
-        <>
-          {recipientAddress}
-          <span className="mt-1 text-kas-secondary break-all">
-            {" "}
-            ({formatKaspaAddress(resolvedAddress)})
-          </span>
-        </>
+        <div className="inline mb-2">
+          <span>{recipientInputValue}</span>
+          <div className="flex justify-start break-all">
+            <KaspaAddress address={resolvedRecipientAddress} />
+          </div>
+        </div>
       );
     } else {
       recipientDisplay = knsRecipientAddress;
@@ -290,8 +330,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           <p>
             <strong>Recipient:</strong> {recipientDisplay}
           </p>
-          {recipientAddress.endsWith(".kas") &&
-            resolvedAddress &&
+          {detectedRecipientInputValueFormat === "kns" &&
+            resolvedRecipientAddress &&
             knsDomainId && (
               <p>
                 <strong>Domain ID:</strong> {knsDomainId}
@@ -346,35 +386,37 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             Recipient Address
           </label>
           <input
-            ref={useRecipientAddressRef}
+            ref={useRecipientInputRef}
             className={styles.input}
             type="text"
             id="recipientAddress"
-            value={recipientAddress}
-            onChange={(e) => setRecipientAddress(e.target.value)}
+            value={recipientInputValue}
+            onChange={(e) => setRecipientInputValue(e.target.value)}
             placeholder="Kaspa address or Kns domain"
             disabled={isLoading}
             required
             autoComplete="off"
           />
-          {isResolvingKns && recipientAddress.endsWith(".kas") && (
+          {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
             <div className={styles["checking-text"]}>
               Resolving KNS domain...
             </div>
           )}
-          {resolvedAddress &&
-            recipientAddress.endsWith(".kas") &&
+          {resolvedRecipientAddress &&
+            detectedRecipientInputValueFormat === "kns" &&
             !isResolvingKns &&
             !knsError && (
-              <div className={styles["resolved-address"]}>
-                <span style={{ fontFamily: "monospace", userSelect: "all" }}>
-                  {resolvedAddress}
-                </span>
+              <div className="mt-2 mb-4 flex justify-start break-all">
+                <KaspaAddress address={resolvedRecipientAddress} />
               </div>
             )}
-          {knsError && recipientAddress.endsWith(".kas") && !isResolvingKns && (
-            <div className={`mt-2 ${styles["error-message"]}`}>{knsError}</div>
-          )}
+          {knsError &&
+            detectedRecipientInputValueFormat === "kns" &&
+            !isResolvingKns && (
+              <div className={`mt-2 ${styles["error-message"]}`}>
+                {knsError}
+              </div>
+            )}
           {isCheckingRecipient && (
             <div className={styles["checking-text"]}>
               Checking recipient balance...
