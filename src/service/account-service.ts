@@ -16,6 +16,7 @@ import {
 } from "kaspa-wasm";
 import { TransactionId } from "src/types/transactions";
 import { UnlockedWallet } from "src/types/wallet.type";
+import { DecryptionCache } from "../utils/decryption-cache";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { KaspaClient } from "../utils/all-in-one";
@@ -977,6 +978,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     blockTime: number
   ) {
     try {
+      const txId = tx.verboseData?.transactionId;
+      if (!txId) {
+        console.warn("Transaction ID is missing in real-time processing");
+        return;
+      }
+
+      // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
+      if (DecryptionCache.hasFailed(txId)) {
+        if (process.env.NODE_ENV === "development") {
+          console.debug(`Real-time: Skipping known failed decryption: ${txId}`);
+        }
+        return;
+      }
+
       // Get sender address from transaction inputs
       let senderAddress = null;
       if (tx.inputs && tx.inputs.length > 0) {
@@ -1134,14 +1149,27 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
         }
 
+        // 🚀 OPTIMIZATION: Mark decryption result in cache
+        if (decryptionSuccess) {
+          DecryptionCache.markSuccess(txId);
+          if (process.env.NODE_ENV === "development") {
+            console.debug(
+              `Real-time: Successful decryption for ${txId} - removed from failed cache if present`
+            );
+          }
+        } else {
+          DecryptionCache.markFailed(txId);
+          if (process.env.NODE_ENV === "development") {
+            console.debug(
+              `Real-time: Failed decryption for ${txId} - marked as failed in cache`
+            );
+          }
+        }
+
         if (
           decryptionSuccess &&
           (isHandshake || isMonitoredAddress || isCommForUs)
         ) {
-          const txId = tx.verboseData?.transactionId;
-          if (!txId) {
-            throw new Error("Transaction ID is missing");
-          }
           const message: DecodedMessage = {
             transactionId: txId,
             senderAddress: senderAddress || "Unknown",

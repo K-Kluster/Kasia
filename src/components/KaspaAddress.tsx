@@ -84,9 +84,9 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
 
         <PopoverPanel
           transition
-          className="z-50 mt-2 absolute rounded shadow-lg bg-bg-primary border-bg-secondary border transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
+          className="z-50 w-18 mt-2 absolute rounded shadow-lg bg-bg-primary border-bg-secondary border transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
         >
-          <p className="text-sm p-2 text-white">Copied!</p>
+          <p className="text-sm text-center p-2 text-white">Copied!</p>
         </PopoverPanel>
       </Popover>
     </span>

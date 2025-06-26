@@ -6,7 +6,7 @@ import {
 import { clsx } from "clsx";
 import { Address } from "kaspa-wasm";
 import { FC, useCallback, useEffect, useState } from "react";
-import { useWalletStore } from "../store/wallet.store";
+import { useWalletStore } from "../../store/wallet.store";
 
 // Type definitions
 type CompoundResult = {
@@ -123,7 +123,6 @@ export const UtxoCompound: FC = () => {
     unlockedWallet,
     balance,
     address,
-    walletStore.balance,
     resetAllStates,
     getUserFriendlyErrorMessage,
   ]);

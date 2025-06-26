@@ -1,16 +1,36 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { Input } from "@headlessui/react";
+import {
+  Input,
+  Popover,
+  PopoverButton,
+  PopoverPanel,
+  Transition,
+} from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
-import { PaperClipIcon, PaperAirplaneIcon } from "@heroicons/react/24/outline";
+import {
+  PaperClipIcon,
+  PaperAirplaneIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
+import clsx from "clsx";
 
 type SendMessageFormProps = unknown;
+
+// Arbritary fee levels to colour the fee indicator in chat
+const FEE_LEVELS = [
+  { limit: 0.00002000, classes: "text-green-400 border-green-400" },
+  { limit: 0.00005000, classes: "text-blue-400  border-blue-400" },
+  { limit: 0.0005, classes: "text-yellow-400 border-yellow-400" },
+  { limit: 0.001, classes: "text-orange-400 border-orange-400" },
+  { limit: Infinity, classes: "text-red-400 border-red-400" },
+];
 
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
@@ -24,6 +44,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const openFileDialog = () => fileInputRef.current?.click();
+
+  const estimatedFeesDisplayClasses = useMemo(() => {
+    if (feeEstimate == null) return "";
+    return FEE_LEVELS.find(({ limit }) => feeEstimate <= limit)!.classes;
+  }, [feeEstimate]);
 
   useEffect(() => {
     messageInputRef.current?.focus();
@@ -311,7 +338,25 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   };
 
   return (
-    <div className="message-input-container cursor-text">
+    <div className="flex-col gap-8 relative">
+      {openedRecipient && message && (
+        <div className="absolute right-0 -top-7.5">
+          <div
+            className={clsx(
+              "inline-block bg-white/10 text-xs mr-5 py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
+              feeEstimate != null && estimatedFeesDisplayClasses
+            )}
+          >
+            {isEstimating
+              ? feeEstimate != null
+                ? `Updating fee… ${formatKasAmount(feeEstimate)} KAS`
+                : `Estimating fee…`
+              : feeEstimate != null
+              ? `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`
+              : `Calculating fee…`}
+          </div>
+        </div>
+      )}
       <div className="message-input-wrapper">
         <Input
           ref={messageInputRef}
@@ -328,6 +373,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           spellCheck="false"
           data-form-type="other"
         />
+
         <input
           type="file"
           ref={fileInputRef}
@@ -335,17 +381,38 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           onChange={handleFileUpload}
           accept="image/*,.txt,.json,.md"
         />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-5 h-5 m-1 flex items-center justify-center cursor-pointer text-gray-300 hover:text-gray-200"
-          title="Upload file (images up to 100KB, other files up to 10KB)"
-          disabled={isUploading}
-        >
-          <PaperClipIcon className="w-full h-full" />
-        </button>
+        <Popover className="relative">
+          {({ close }) => (
+            <>
+              <PopoverButton className="p-2 hover:bg-white/5 rounded">
+                <PlusIcon className="size-5" />
+              </PopoverButton>
+              <Transition
+                enter="transition ease-out duration-100"
+                enterFrom="opacity-0 translate-y-1"
+                enterTo="opacity-100 translate-y-0"
+                leave="transition ease-in duration-75"
+                leaveFrom="opacity-100 translate-y-0"
+                leaveTo="opacity-0 translate-y-1"
+              >
+                <PopoverPanel className="absolute bottom-full mb-2 right-0 flex flex-col gap-2 bg-[var(--secondary-bg)] p-2 rounded shadow-lg">
+                  <button
+                    onClick={() => {
+                      openFileDialog();
+                      close();
+                    }}
+                    className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
+                    disabled={isUploading}
+                  >
+                    <PaperClipIcon className="size-5 m-2" />
+                  </button>
 
-        {openedRecipient && <SendPayment address={openedRecipient} />}
-
+                  {openedRecipient && <SendPayment address={openedRecipient} />}
+                </PopoverPanel>
+              </Transition>
+            </>
+          )}
+        </Popover>
         <button
           onClick={onSendClicked}
           className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
@@ -353,25 +420,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
-
-      {/* Enhanced fee estimate - no more flashing */}
-      {openedRecipient && message && (
-        <div className="fee-estimate">
-          {isEstimating ? (
-            <span>
-              {feeEstimate !== null ? (
-                <>Updating fee estimate... {formatKasAmount(feeEstimate)} KAS</>
-              ) : (
-                <>Estimating fee...</>
-              )}
-            </span>
-          ) : feeEstimate !== null ? (
-            <span>Estimated fee: {formatKasAmount(feeEstimate)} KAS</span>
-          ) : (
-            <span>Calculating fee...</span>
-          )}
-        </div>
-      )}
     </div>
   );
 };

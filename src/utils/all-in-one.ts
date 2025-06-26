@@ -204,7 +204,7 @@ export async function fetchAddressTransactions(address: string) {
 }
 
 // Add this helper function at the top level
-function stringifyWithBigInt(obj: any): string {
+function stringifyWithBigInt(obj: unknown): string {
   return JSON.stringify(obj, (_, value) =>
     typeof value === "bigint" ? value.toString() : value
   );
