@@ -21,6 +21,7 @@ jobs:
           target: wasm32-unknown-unknown
           # key based on branch name
           cache-key: cipher-wasm-build-cache-${{ github.ref_name }}
+          cache-workspaces: ./cipher -> target
 
       - name: Build Cipher Wasm
         # install wasm-pack, move to ./cipher and build with wasm-pack
