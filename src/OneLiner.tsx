@@ -13,7 +13,7 @@ import { ContactSection } from "./containers/ContactSection";
 import { Header } from "./components/Layout/Header";
 import { useIsMobile } from "./utils/useIsMobile";
 import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
-import { useModals} from "./context/ModalContext";
+import { useModals } from "./context/ModalContext";
 import { Modal } from "./components/Common/modal";
 import { WalletAddressSection } from "./components/Modals/WalletAddressSection";
 import { WalletWithdrawal } from "./components/Modals/WalletWithdrawal";
@@ -46,7 +46,7 @@ export const OneLiner: FC = () => {
   const isMobile = useIsMobile();
 
   const { isOpen, closeModal } = useModals();
-  
+
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
     const syncToWidth = () => {
@@ -280,19 +280,6 @@ export const OneLiner: FC = () => {
       </div>
       {/* Global Error Section*/}
       <ErrorCard error={errorMessage} onDismiss={() => setErrorMessage(null)} />
-
-      {/* Address Modal (triggered via openModal("address")) */}
-      {isOpen("address") && (
-        <Modal onClose={() => closeModal("address")}>
-          {walletStore.address ? (
-            <WalletAddressSection address={walletStore.address.toString()} />
-          ) : (
-            <div className="flex justify-center py-6">
-              <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
-            </div>
-          )}
-        </Modal>
-      )}
 
       {/* Address Modal */}
       {isOpen("address") && (
