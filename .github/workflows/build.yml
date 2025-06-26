@@ -10,41 +10,41 @@ on:
 
 jobs:
   # @TODO: uncomment this
-  build-cipher-wasm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  # build-cipher-wasm:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-      # install rust
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.86.0
-          target: wasm32-unknown-unknown
-          # key based on branch name
-          cache-shared-key: cipher-wasm-build-cache-${{ github.ref_name }}
-          cache-workspaces: ./cipher -> target
+  #     # install rust
+  #     - uses: actions-rust-lang/setup-rust-toolchain@v1
+  #       with:
+  #         toolchain: 1.86.0
+  #         target: wasm32-unknown-unknown
+  #         # key based on branch name
+  #         cache-shared-key: cipher-wasm-build-cache-${{ github.ref_name }}
+  #         cache-workspaces: ./cipher -> target
 
-      - name: Build Cipher Wasm
-        # install wasm-pack, move to ./cipher and build with wasm-pack
-        run: |
-          cargo install wasm-pack
-          cd ./cipher
-          wasm-pack build --target web --release -d ../cipher-wasm
+  #     - name: Build Cipher Wasm
+  #       # install wasm-pack, move to ./cipher and build with wasm-pack
+  #       run: |
+  #         cargo install wasm-pack
+  #         cd ./cipher
+  #         wasm-pack build --target web --release -d ../cipher-wasm
 
-      # Instead of relying on cache, let's use artifacts to store the wasm files
-      - name: Upload Cipher Wasm artifact
-        uses: actions/upload-artifact@v4
-        with:
-          # @TODO: change to [...]-${{github.ref_name}}
-          name: cipher-wasm-staging
-          path: cipher-wasm
-          retention-days: 90
-          overwrite: true
+  #     # Instead of relying on cache, let's use artifacts to store the wasm files
+  #     - name: Upload Cipher Wasm artifact
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         # @TODO: change to [...]-${{github.ref_name}}
+  #         name: cipher-wasm-staging
+  #         path: cipher-wasm
+  #         retention-days: 90
+  #         overwrite: true
 
   build-web-app:
     runs-on: ubuntu-latest
     # @TODO: uncomment this
-    needs: build-cipher-wasm
+    # needs: build-cipher-wasm
     steps:
       - uses: actions/checkout@v4
 
@@ -66,9 +66,9 @@ jobs:
 
       - name: Unzip Kaspa WASM Files & Move /web/kaspa to /wasm
         run: |
-          unzip kaspa-wasm32-sdk.zip -d kaspa-wasm32-sdk && mkdir wasm && mv kaspa-wasm32-sdk/web/kaspa wasm/kaspa
+          unzip kaspa-wasm32-sdk.zip -d kaspa-wasm32-sdk && mkdir wasm && mv kaspa-wasm32-sdk/web/kaspa/* wasm/
           rm -rf kaspa-wasm32-sdk.zip kaspa-wasm32-sdk
-          ls -la wasm/kaspa
+          ls -la wasm/
 
       - name: Install Node.js
         uses: actions/setup-node@v4
