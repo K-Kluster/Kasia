@@ -54,6 +54,7 @@ jobs:
           # @TODO: change to [...]-${{github.ref_name}}
           name: cipher-wasm-staging
           path: cipher-wasm
+          github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
 
       # https://github.com/marketplace/actions/fetch-github-release-asset
       - name: Download Kaspa WASM Files
