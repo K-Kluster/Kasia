@@ -104,7 +104,7 @@ jobs:
   build-android-app:
     runs-on: ubuntu-latest
     # @TODO: uncomment this
-    # needs: build-web-app
+    needs: build-web-app
     steps:
       - uses: actions/checkout@v4
 
@@ -235,6 +235,8 @@ jobs:
 
   build-ios-app:
     runs-on: macos-14
+    # @TODO: uncomment this
+    needs: build-web-app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
