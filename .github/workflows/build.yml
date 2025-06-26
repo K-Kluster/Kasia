@@ -148,7 +148,11 @@ jobs:
           base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > $RUNNER_TEMP/keystore.jks
           echo "storeFile=$RUNNER_TEMP/keystore.jks" >> keystore.properties
           echo "Keystore properties created."
-          cd ../../.. # Go back to root
+          cd app
+          echo "${{ secrets.GOOGLE_SERVICE }}" > google-services.json
+          echo "Google services created."
+
+          cd ../../../.. # Go back to root
 
       # get web-app artifacts
       - name: Get Web App Artifact
