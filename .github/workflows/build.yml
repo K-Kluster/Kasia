@@ -97,8 +97,6 @@ jobs:
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
-        env:
-          MODE: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
         with:
-          name: kasia-build-$MODE
-          path: build/$MODE
+          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          path: dist
