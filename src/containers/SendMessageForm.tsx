@@ -233,6 +233,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Only reset the message input, keep the recipient
       if (messageInputRef.current) messageInputRef.current.value = "";
       setMessage("");
+      if (messageInputRef.current) {
+        messageInputRef.current.style.height = "";
+      }
       setFeeEstimate(null);
 
       // Keep the conversation open with the same recipient
@@ -251,19 +254,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     },
     [onSendClicked]
   );
-
-  useEffect(() => {
-    const messageInput = messageInputRef.current;
-    if (messageInput) {
-      messageInput.addEventListener("keypress", onMessageInputKeyPressed);
-    }
-
-    return () => {
-      if (messageInput) {
-        messageInput.removeEventListener("keypress", onMessageInputKeyPressed);
-      }
-    };
-  }, [messageInputRef, onMessageInputKeyPressed]);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -356,13 +346,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           </div>
         </div>
       )}
-      <div className="message-input-wrapper">
+      <div className="flex items-center gap-2 bg-[var(--primary-bg)] rounded-lg p-1 border border-[var(--border-color)]">
         <Textarea
           ref={messageInputRef}
-          id="messageInput"
           rows={1}
           placeholder="Type your message..."
-          className="message-input w-full resize-none overflow-y-auto max-h-36 border rounded px-2 py-1"
+          className="resize-none overflow-y-auto bg-transparent border-none text-[var(--text-primary)] p-2 text-[0.9em] outline-none flex-1"
           value={message}
           onChange={(e) => setMessage(e.currentTarget.value)}
           onInput={(e) => {
@@ -371,7 +360,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               onSendClicked();
             }
