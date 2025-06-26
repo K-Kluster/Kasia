@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -19,8 +19,18 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
+import clsx from "clsx";
 
 type SendMessageFormProps = unknown;
+
+// Arbritary fee levels to colour the fee indicator in chat
+const FEE_LEVELS = [
+  { limit: 0.00002, classes: "text-green-400 border-green-400" },
+  { limit: 0.00005, classes: "text-blue-400  border-blue-400" },
+  { limit: 0.0005, classes: "text-yellow-400 border-yellow-400" },
+  { limit: 0.001, classes: "text-orange-400 border-orange-400" },
+  { limit: Infinity, classes: "text-red-400 border-red-400" },
+];
 
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
@@ -36,6 +46,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+
+  const estimatedFeesDisplayClasses = useMemo(() => {
+    if (feeEstimate == null) return "";
+    return FEE_LEVELS.find(({ limit }) => feeEstimate <= limit)!.classes;
+  }, [feeEstimate]);
 
   useEffect(() => {
     messageInputRef.current?.focus();
@@ -160,7 +175,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             content: parsedContent.content,
           });
         }
-      } catch (e) {
+      } catch {
         // Not a file message, use message as is
       }
 
@@ -323,7 +338,25 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   };
 
   return (
-    <div className="message-input-container cursor-text">
+    <div className="flex-col gap-8 relative">
+      {openedRecipient && message && (
+        <div className="absolute right-0 -top-7.5">
+          <div
+            className={clsx(
+              "inline-block bg-white/10 text-xs mr-5 py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
+              feeEstimate != null && estimatedFeesDisplayClasses
+            )}
+          >
+            {isEstimating
+              ? feeEstimate != null
+                ? `Updating fee… ${formatKasAmount(feeEstimate)} KAS`
+                : `Estimating fee…`
+              : feeEstimate != null
+              ? `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`
+              : `Calculating fee…`}
+          </div>
+        </div>
+      )}
       <div className="message-input-wrapper">
         <Input
           ref={messageInputRef}
@@ -392,25 +425,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PaperAirplaneIcon className="w-full h-full" />
         </button>
       </div>
-
-      {/* Enhanced fee estimate - no more flashing */}
-      {openedRecipient && message && (
-        <div className="fee-estimate">
-          {isEstimating ? (
-            <span>
-              {feeEstimate !== null ? (
-                <>Updating fee estimate... {formatKasAmount(feeEstimate)} KAS</>
-              ) : (
-                <>Estimating fee...</>
-              )}
-            </span>
-          ) : feeEstimate !== null ? (
-            <span>Estimated fee: {formatKasAmount(feeEstimate)} KAS</span>
-          ) : (
-            <span>Calculating fee...</span>
-          )}
-        </div>
-      )}
     </div>
   );
 };

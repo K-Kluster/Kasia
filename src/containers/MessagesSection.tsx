@@ -1,4 +1,4 @@
-import { FC, useCallback, useMemo } from "react";
+import { FC, useMemo, useEffect, useState, useRef } from "react";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessageDisplay } from "../components/MessageDisplay";
@@ -6,6 +6,8 @@ import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { KaspaAddress } from "../components/KaspaAddress";
+import { Contact } from "../types/all";
+import styles from "../components/NewChatForm.module.css";
 
 export const MessageSection: FC<{
   mobileView: "contacts" | "messages";
@@ -23,16 +25,71 @@ export const MessageSection: FC<{
     return "filtered";
   }, [contacts, openedRecipient]);
 
-  const onClearHistory = useCallback(() => {
-    if (!address) return;
+  // KNS domain move check state
+  const [showKnsMovedModal, setShowKnsMovedModal] = useState(false);
+  const [knsMovedNewAddress, setKnsMovedNewAddress] = useState<string | null>(
+    null
+  );
+  const [knsMovedDomain, setKnsMovedDomain] = useState<string | null>(null);
+  const [knsMovedContact, setKnsMovedContact] = useState<Contact | null>(null);
+
+  const lastKnsCheckRef = useRef<{ nickname: string; address: string } | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (boxState !== "filtered" || !openedRecipient) return;
+    const contact = contacts.find((c) => c.address === openedRecipient);
+    if (!contact || !contact.nickname || !contact.nickname.endsWith(".kas"))
+      return;
+    // Check if user has chosen to ignore warnings for this domain
+    const ignoreKey = `ignoreKnsMoved_${contact.nickname}`;
+    if (localStorage.getItem(ignoreKey) === "1") return;
+    // Only check if nickname/address changed
     if (
-      confirm(
-        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
-      )
+      lastKnsCheckRef.current &&
+      lastKnsCheckRef.current.nickname === contact.nickname &&
+      lastKnsCheckRef.current.address === contact.address
     ) {
-      messageStore.flushWalletHistory(address.toString());
+      return;
     }
-  }, [address, messageStore]);
+    lastKnsCheckRef.current = {
+      nickname: contact.nickname,
+      address: contact.address,
+    };
+    // Fetch current KNS owner
+    fetch(
+      `https://api.knsdomains.org/mainnet/api/v1/${encodeURIComponent(
+        contact.nickname
+      )}/owner`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data && data.data.owner) {
+          if (data.data.owner !== contact.address) {
+            setKnsMovedNewAddress(data.data.owner);
+            setKnsMovedDomain(contact.nickname || "");
+            setKnsMovedContact(contact);
+            setShowKnsMovedModal(true);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [boxState, openedRecipient, contacts]);
+
+  // Helper to format old domain nickname
+  function formatOldDomainNickname(domain: string) {
+    if (!domain) return "";
+    if (domain.length <= 15) {
+      return `(OLD) ${domain}`;
+    }
+    // Truncate long domains: [old] verylongdomain...kas
+    const prefix = "[old] ";
+    const suffix = domain.slice(-3); // Keep the .kas part
+    const availableLength = 20 - prefix.length - 3; // 3 for "..."
+    const truncatedPart = domain.slice(0, availableLength);
+    return `${prefix}${truncatedPart}...${suffix}`;
+  }
 
   return (
     <div
@@ -41,6 +98,106 @@ export const MessageSection: FC<{
         ${mobileView === "contacts" ? "hidden sm:flex" : ""}
       `}
     >
+      {showKnsMovedModal &&
+        knsMovedDomain &&
+        knsMovedNewAddress &&
+        knsMovedContact && (
+          <div className="modal-overlay" style={{ zIndex: 1000 }}>
+            <div
+              className="modal"
+              style={{
+                background: "#222",
+                color: "#fff",
+                padding: 24,
+                borderRadius: 12,
+                maxWidth: 800,
+                margin: "80px auto",
+                boxShadow: "0 2px 16px #0008",
+              }}
+            >
+              <h3
+                style={{
+                  marginBottom: 12,
+                  textAlign: "center",
+                  color: "#ff4444",
+                  fontWeight: "bold",
+                }}
+              >
+                KNS Domain Moved
+              </h3>
+              <p style={{ wordBreak: "break-all", marginBottom: 10 }}>
+                The KNS domain <b>{knsMovedDomain}</b> is now linked to a
+                different address.
+                <br />
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: "#7fd6ff",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  Old: {knsMovedContact.address}
+                </span>
+                <br />
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: "#7fd6ff",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  New: {knsMovedNewAddress}
+                </span>
+              </p>
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <button
+                  className={`${styles.button} ${styles["submit-button"]}`}
+                  onClick={() => {
+                    messageStore.setContactNickname(
+                      knsMovedContact.address,
+                      ""
+                    );
+                    setShowKnsMovedModal(false);
+                  }}
+                >
+                  Change Nickname
+                </button>
+                <button
+                  className={`${styles.button} ${styles["submit-button"]}`}
+                  onClick={() => {
+                    localStorage.setItem(
+                      `ignoreKnsMoved_${knsMovedDomain}`,
+                      "1"
+                    );
+                    setShowKnsMovedModal(false);
+                  }}
+                >
+                  Keep Nickname & Ignore Future Warnings
+                </button>
+                <button
+                  className={`${styles.button} ${styles["submit-button"]}`}
+                  onClick={() => {
+                    messageStore.setIsCreatingNewChat(true);
+                    messageStore.setContactNickname(
+                      knsMovedContact.address,
+                      formatOldDomainNickname(knsMovedDomain || "")
+                    );
+                    setShowKnsMovedModal(false);
+                  }}
+                >
+                  Create new conversation with {knsMovedDomain}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       {boxState === "new" && (
         /* ONBOARDING ─ show help when no contacts exist */
         <>
