@@ -23,17 +23,6 @@ export const MessageSection: FC<{
     return "filtered";
   }, [contacts, openedRecipient]);
 
-  const onClearHistory = useCallback(() => {
-    if (!address) return;
-    if (
-      confirm(
-        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
-      )
-    ) {
-      messageStore.flushWalletHistory(address.toString());
-    }
-  }, [address, messageStore]);
-
   return (
     <div
       className={`

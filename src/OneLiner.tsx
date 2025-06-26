@@ -9,8 +9,17 @@ import { NewChatForm } from "./components/NewChatForm";
 import { MessageSection } from "./containers/MessagesSection";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
-import { ContactSection } from "./components/ContactSection";
+import { ContactSection } from "./containers/ContactSection";
 import { Header } from "./components/Layout/Header";
+import { useIsMobile } from "./utils/useIsMobile";
+import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
+import { useModals } from "./context/ModalContext";
+import { Modal } from "./components/Common/modal";
+import { WalletAddressSection } from "./components/Modals/WalletAddressSection";
+import { WalletWithdrawal } from "./components/Modals/WalletWithdrawal";
+import { WalletSeedRetreiveDisplay } from "./components/Modals/WalletSeedRetreiveDisplay";
+import { MessageBackup } from "./components/Modals/MessageBackup";
+import { WalletInfo } from "./components/Modals/WalletInfo";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -34,11 +43,13 @@ export const OneLiner: FC = () => {
   const walletStore = useWalletStore();
 
   const toggleSettings = () => setIsSettingsOpen((v) => !v);
+  const isMobile = useIsMobile();
+
+  const { isOpen, closeModal } = useModals();
 
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
     const syncToWidth = () => {
-      const isMobile = window.innerWidth < 640;
       if (isMobile) {
         if (contactsCollapsed) setContactsCollapsed(false);
         if (!messageStore.openedRecipient) setMobileView("contacts");
@@ -50,8 +61,7 @@ export const OneLiner: FC = () => {
     syncToWidth(); // run once on mount
     window.addEventListener("resize", syncToWidth);
     return () => window.removeEventListener("resize", syncToWidth);
-  }, [contactsCollapsed, messageStore.openedRecipient]);
-  
+  }, [contactsCollapsed, messageStore.openedRecipient, isMobile]);
 
   // Network connection effect
   useEffect(() => {
@@ -192,17 +202,31 @@ export const OneLiner: FC = () => {
   return (
     <>
       {/* Top Bar / Header */}
-      <Header
-        isWalletReady={isWalletReady}
-        walletAddress={walletStore.address?.toString()}
-        isSettingsOpen={isSettingsOpen}
-        isWalletInfoOpen={isWalletInfoOpen}
-        menuRef={menuRef}
-        toggleSettings={toggleSettings}
-        onCloseWallet={handleCloseWallet}
-        setIsWalletInfoOpen={setIsWalletInfoOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
-      />
+      {!isMobile && (
+        <Header
+          isWalletReady={isWalletReady}
+          walletAddress={walletStore.address?.toString()}
+          isSettingsOpen={isSettingsOpen}
+          isWalletInfoOpen={isWalletInfoOpen}
+          menuRef={menuRef}
+          toggleSettings={toggleSettings}
+          onCloseWallet={handleCloseWallet}
+          setIsWalletInfoOpen={setIsWalletInfoOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+        />
+      )}
+      {isMobile && isSettingsOpen && (
+        <SlideOutMenu
+          open={isSettingsOpen}
+          address={walletStore.address?.toString()}
+          onClose={() => setIsSettingsOpen(false)}
+          isWalletInfoOpen={isWalletInfoOpen}
+          onOpenWalletInfo={() => setIsWalletInfoOpen(true)}
+          isWalletReady={isWalletReady}
+          onCloseWallet={handleCloseWallet}
+        />
+      )}
+
       {/* Main Message Section*/}
       <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
@@ -216,8 +240,8 @@ export const OneLiner: FC = () => {
           ) : messageStore.isLoaded ? (
             <div
               className="
-              bg-[var(--secondary-bg)] rounded-xl shadow-md max-w-[1200px] w-full mx-auto
-              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[85vh] min-h-[300px]
+              bg-[var(--secondary-bg)] rounded-xl shadow-md sm:max-w-[1200px] w-full sm:mx-auto
+              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[95vh] sm:h-[85vh] min-h-[300px]
               flex
             "
             >
@@ -231,6 +255,7 @@ export const OneLiner: FC = () => {
                 contactsCollapsed={contactsCollapsed}
                 setContactsCollapsed={setContactsCollapsed}
                 setMobileView={setMobileView}
+                onOpenMobileMenu={() => setIsSettingsOpen(true)}
               />
               <MessageSection
                 mobileView={mobileView}
@@ -240,7 +265,7 @@ export const OneLiner: FC = () => {
           ) : (
             <div className="flex flex-col items-center w-full text-xs">
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-              <div className="relative max-w-[1200px] w-full mx-auto min-w-[320px] h-[85vh] min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
+              <div className="relative sm:max-w-[1200px] w-full mx-auto min-w-[320px] h-[95vh] sm:h-[85vh]  min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
                 <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
                 <div className="relative flex flex-col items-center justify-center h-full space-y-4">
                   <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
@@ -255,13 +280,55 @@ export const OneLiner: FC = () => {
       </div>
       {/* Global Error Section*/}
       <ErrorCard error={errorMessage} onDismiss={() => setErrorMessage(null)} />
+
+      {/* Address Modal */}
+      {isOpen("address") && (
+        <Modal onClose={() => closeModal("address")}>
+          {walletStore.address ? (
+            <WalletAddressSection address={walletStore.address.toString()} />
+          ) : (
+            <div className="flex justify-center py-6">
+              <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* Withdraw Modal */}
+      {isOpen("withdraw") && (
+        <Modal onClose={() => closeModal("withdraw")}>
+          <WalletWithdrawal />
+        </Modal>
+      )}
+
+      {/* Backup Modal */}
+      {isOpen("backup") && (
+        <Modal onClose={() => closeModal("backup")}>
+          <MessageBackup />
+        </Modal>
+      )}
+
+      {/* Seed Modal */}
+      {isOpen("seed") && (
+        <Modal onClose={() => closeModal("seed")}>
+          <WalletSeedRetreiveDisplay />
+        </Modal>
+      )}
+
+      {/* Wallet Info Modal */}
+      {isOpen("walletInfo") && (
+        <Modal onClose={() => closeModal("walletInfo")}>
+          <WalletInfo />
+        </Modal>
+      )}
+
       {/* Start New Conversation Modal */}
       {messageStore.isCreatingNewChat && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+        <Modal onClose={() => messageStore.setIsCreatingNewChat(false)}>
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
           />
-        </div>
+        </Modal>
       )}
     </>
   );
