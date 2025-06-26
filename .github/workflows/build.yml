@@ -30,8 +30,25 @@ jobs:
           cd ./cipher
           wasm-pack build --target web --release -d ../cipher-wasm
 
-      - name: Cache WASM
-        id: cipher-wasm-cache
+      # Restore Cipeher Wasm Cache to delete only if it exists
+      - name: Restore Cipher Wasm cache
+        uses: actions/cache/restore@v4
+        id: cache
+        with:
+          path: ./tmp/cipher-wasm
+          key: cipher-wasm-${{ github.ref_name }}
+
+      # Delete the old cache on hit to emulate a cache update. See
+      # https://github.com/actions/cache/issues/342.
+      - name: Delete old Cipher Wasm cache
+        env:
+          GH_TOKEN: ${{ github.token }}
+        if: steps.cache.outputs.cache-hit
+        # Using `--repo` makes it so that this step doesn't require checking out the
+        # repo first.
+        run: gh cache delete --repo ${{ github.repository }} ${{ steps.cache.outputs.cache-primary-key }}
+
+      - name: Save Cipher Wasm cache
         uses: actions/cache/save@v4
         with:
           path: cipher-wasm
