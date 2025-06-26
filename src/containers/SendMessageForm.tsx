@@ -25,8 +25,8 @@ type SendMessageFormProps = unknown;
 
 // Arbritary fee levels to colour the fee indicator in chat
 const FEE_LEVELS = [
-  { limit: 0.00002000, classes: "text-green-400 border-green-400" },
-  { limit: 0.00005000, classes: "text-blue-400  border-blue-400" },
+  { limit: 0.00002, classes: "text-green-400 border-green-400" },
+  { limit: 0.00005, classes: "text-blue-400  border-blue-400" },
   { limit: 0.0005, classes: "text-yellow-400 border-yellow-400" },
   { limit: 0.001, classes: "text-orange-400 border-orange-400" },
   { limit: Infinity, classes: "text-red-400 border-red-400" },
@@ -175,7 +175,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             content: parsedContent.content,
           });
         }
-      } catch (e) {
+      } catch {
         // Not a file message, use message as is
       }
 
@@ -407,7 +407,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                     <PaperClipIcon className="size-5 m-2" />
                   </button>
 
-                  {openedRecipient && <SendPayment address={openedRecipient} />}
+                  {openedRecipient && (
+                    <SendPayment
+                      address={openedRecipient}
+                      onPaymentSent={close}
+                    />
+                  )}
                 </PopoverPanel>
               </Transition>
             </>
