@@ -84,7 +84,7 @@ jobs:
 
       - name: Unzip Kaspa WASM Files & Move /web/kaspa to /wasm
         run: |
-          unzip kaspa-wasm32-sdk.zip -d kaspa-wasm32-sdk && mkdir wasm && mv kaspa-wasm32-sdk/web/kaspa/* wasm/
+          unzip kaspa-wasm32-sdk.zip -d kaspa-wasm32-sdk && mv kaspa-wasm32-sdk/web/kaspa/* wasm/
           rm -rf kaspa-wasm32-sdk.zip kaspa-wasm32-sdk
           ls -la wasm/
 
