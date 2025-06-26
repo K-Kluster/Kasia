@@ -20,7 +20,7 @@ jobs:
           toolchain: 1.86.0
           target: wasm32-unknown-unknown
           # key based on branch name
-          cache-key: cipher-wasm-build-cache-${{ github.ref_name }}
+          cache-shared-key: cipher-wasm-build-cache-${{ github.ref_name }}
           cache-workspaces: ./cipher -> target
 
       - name: Build Cipher Wasm
