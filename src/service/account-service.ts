@@ -543,9 +543,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         throw new Error("Failed to generate transaction");
       }
 
-      if ((await generator.next()) !== null) {
-        throw new Error("Unexpected multiple transaction generation");
-      }
+      // @yura: commented out as it is unnecessarily blocks the compounding feature
+      // if ((await generator.next()) !== null) {
+      //   throw new Error("Unexpected multiple transaction generation");
+      // }
 
       // Log the addresses that need signing
       const addressesToSign = pendingTransaction.addresses();
