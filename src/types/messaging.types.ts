@@ -50,6 +50,14 @@ export interface HandshakePayload {
   isResponse?: boolean; // Flag to indicate this is a response
 }
 
+export interface PaymentPayload {
+  type: "payment";
+  message: string;
+  amount: number; // Amount in KAS
+  timestamp: number;
+  version: number;
+}
+
 export interface ConversationEvents {
   onHandshakeInitiated: (conversation: Conversation) => void;
   onHandshakeCompleted: (conversation: Conversation) => void;

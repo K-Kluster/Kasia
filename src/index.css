@@ -302,12 +302,6 @@ h1 {
   background-color: var(--secondary-bg);
 }
 
-.message-input-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .recipient-input {
   background-color: var(--primary-bg);
   border: 1px solid var(--border-color);
@@ -630,24 +624,6 @@ h1 {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.fee-estimate {
-  font-size: 0.9rem;
-  color: #94a3b8;
-  padding: 0.35rem 0.75rem;
-  margin-top: 0.5rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  text-align: right;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: fadeIn 0.3s ease-out;
-}
-
-.fee-estimate-fallback {
-  color: #fbbf24; /* amber-400 */
-  background-color: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .file-upload-button {
