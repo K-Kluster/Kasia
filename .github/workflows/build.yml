@@ -48,6 +48,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # by using github script, list artifacts for the repository and return the workflow run id for the artifact named cipher-wasm-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+      - name: Get Cipher Wasm artifact
+        id: get-cipher-wasm-artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+              name: 'cipher-wasm-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              sort: 'created',
+              order: 'desc',
+            });
+            return artifacts.data.artifacts[0].workflow_run.id;
+
       - name: Restore Cipher Wasm artifact
         uses: actions/download-artifact@v4
         with:
@@ -55,6 +71,7 @@ jobs:
           name: cipher-wasm-staging
           path: cipher-wasm
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
+          run-id: ${{ steps.get-cipher-wasm-artifact.outputs.result }}
 
       # https://github.com/marketplace/actions/fetch-github-release-asset
       - name: Download Kaspa WASM Files
