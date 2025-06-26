@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -32,10 +32,6 @@ const FEE_LEVELS = [
   { limit: Infinity, classes: "text-red-400 border-red-400" },
 ];
 
-function getFeeClasses(fee: number) {
-  return FEE_LEVELS.find(({ limit }) => fee <= limit)!.classes;
-}
-
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
   const walletStore = useWalletStore();
@@ -50,6 +46,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+
+  const estimatedFeesDisplayClasses = useMemo(() => {
+    if (feeEstimate == null) return "";
+    return FEE_LEVELS.find(({ limit }) => feeEstimate <= limit)!.classes;
+  }, [feeEstimate]);
 
   useEffect(() => {
     messageInputRef.current?.focus();
@@ -343,7 +344,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <div
             className={clsx(
               "inline-block bg-white/10 text-xs mr-5 py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
-              feeEstimate != null && getFeeClasses(feeEstimate)
+              feeEstimate != null && estimatedFeesDisplayClasses
             )}
           >
             {isEstimating
