@@ -3,7 +3,7 @@ import initCipherWasm from "cipher";
 import "./utils/debug-commands"; // Import debug commands
 import "./utils/logging";
 import { createRoot } from "react-dom/client";
-import { SplashScreen } from "./components/Splash";
+import { SplashScreen } from "./components/Layout/Splash";
 
 // load wasm entry point, and lazy load sub-module so we don't have to worry
 // about ordering of wasm module initialization
