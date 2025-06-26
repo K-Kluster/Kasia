@@ -1111,7 +1111,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     return new Generator({
       changeAddress: primaryAddress, // Always use primary address for change
-      entries: this.context,
+      entries: [this.context
+          .getMatureRange(0, this.context.matureLength)[1]],
       outputs: outputs,
       payload: transaction.payload,
       networkId: this.networkId,

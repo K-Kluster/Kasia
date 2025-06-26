@@ -19,7 +19,6 @@ export const SendPayment: FC<{
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const balance = useWalletStore((s) => s.balance);
   const walletStore = useWalletStore();
-  const messagingStore = useMessagingStore();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const popoverPanelRef = useCallback(
@@ -62,15 +61,9 @@ export const SendPayment: FC<{
     }
   }, [balance]);
 
-  // Check if we have an active conversation with this address
-  const getActiveConversation = useCallback(() => {
-    const activeConversations = messagingStore.getActiveConversations();
-    return activeConversations.find((conv) => conv.kaspaAddress === address);
-  }, [address, messagingStore]);
-
   // New function to send payment with encrypted message using payment protocol
   const sendPaymentWithMessage = useCallback(
-    async (recipientAddress: string, amountSompi: bigint, message: string) => {
+    async (recipientAddress: string, amountSompi: bigint, message?: string) => {
       if (
         !walletStore.unlockedWallet?.password ||
         !walletStore.accountService
@@ -123,7 +116,7 @@ export const SendPayment: FC<{
       // Create and store outgoing payment message record (simplified)
       const paymentContent = JSON.stringify({
         type: "payment",
-        message: message,
+        message: message ?? "",
         amount: Number(amountSompi) / 100000000,
         timestamp: Date.now(),
         version: 1,
@@ -153,7 +146,11 @@ export const SendPayment: FC<{
 
       return txId;
     },
-    [walletStore.accountService, walletStore.unlockedWallet?.password]
+    [
+      walletStore.accountService,
+      walletStore.address,
+      walletStore.unlockedWallet?.password,
+    ]
   );
 
   const handleSendPayment = useCallback(async () => {
@@ -208,7 +205,6 @@ export const SendPayment: FC<{
       setPayMessage("");
 
       // Close both panels
-      close();
       onPaymentSent?.();
 
       console.log(
@@ -225,11 +221,13 @@ export const SendPayment: FC<{
       setIsSendingPayment(false);
     }
   }, [
-    address,
     payAmount,
-    payMessage,
-    balance,
+    balance?.mature,
+    balance?.matureDisplay,
     walletStore.unlockedWallet?.password,
+    payMessage,
+    onPaymentSent,
+    address,
     sendPaymentWithMessage,
   ]);
 

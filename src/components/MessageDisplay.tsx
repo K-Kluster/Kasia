@@ -7,7 +7,6 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
-import clsx from "clsx";
 
 type MessageDisplayProps = {
   message: MessageType;
