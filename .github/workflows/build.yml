@@ -31,7 +31,13 @@ jobs:
 
       - name: Cache WASM
         id: cipher-wasm-cache
-        uses: actions/cache@v4
+        uses: actions/cache/save@v4
         with:
           path: cipher-wasm
           key: cipher-wasm-${{ github.ref_name }}
+# uses: dsaltares/fetch-gh-release-asset@master
+# with:
+#   repo: 'dsaltares/godot-wild-jam-18'
+#   version: 'tags/v0.1.18'
+#   file: 'plague-linux.zip'
+#   token: ${{ secrets.GITHUB_TOKEN }}
