@@ -607,10 +607,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           const messageStr = hexToString(messageHex);
           const parts = messageStr.split(":");
 
-          if (parts.length >= 4 && parts[1] === "payment") {
+          if (parts.length >= 3 && parts[1] === "payment") {
             // For outgoing messages, we don't decrypt - we already know the content!
-            // Extract the alias from the payload to get the original message details
-            const theirAlias = parts[2];
+            // New simplified format: parts[0] = "1", parts[1] = "payment", parts[2] = encrypted_payload
 
             // We need to recreate the payment payload that was originally encrypted
             // This should match the structure that was passed to createPaymentWithMessage
@@ -619,7 +618,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             // Create payment content using the original message if available
             const paymentContent = JSON.stringify({
               type: "payment",
-              alias: theirAlias,
               message: paymentTransaction.originalMessage || "Payment sent",
               amount: paymentAmount,
               timestamp: Math.floor(Date.now() / 1000),
@@ -1274,6 +1272,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           encryptedHex = parts[3];
         }
       } else if (messageHex.startsWith(paymentPrefix)) {
+        messageType = "payment";
+        // For payments, we don't need to parse aliases - just get the encrypted content
+        // New format: 1:payment:{encrypted_payload}
         const hexToString = (hex: string) => {
           let str = "";
           for (let i = 0; i < hex.length; i += 2) {
@@ -1285,10 +1286,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 
-        if (parts.length >= 4) {
-          messageType = "payment";
-          targetAlias = parts[2];
-          encryptedHex = parts[3];
+        if (parts.length >= 3) {
+          // parts[0] = "1", parts[1] = "payment", parts[2] = encrypted_payload
+          encryptedHex = parts[2];
         }
       }
 
@@ -1299,10 +1299,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         messageType === "comm" &&
         targetAlias &&
         this.monitoredConversations.has(targetAlias);
+
+      // For payments, check if the sender address is one we're monitoring
+      // (i.e., we have a conversation with them OR they sent us a payment)
       const isPaymentForUs =
         messageType === "payment" &&
-        targetAlias &&
-        this.monitoredConversations.has(targetAlias);
+        (isMonitoredAddress ||
+          recipientAddress === this.receiveAddress?.toString());
 
       try {
         const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(

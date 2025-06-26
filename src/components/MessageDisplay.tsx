@@ -6,8 +6,8 @@ import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
-import "../styles/PaymentMessage.css";
 import { KasIcon } from "./icons/KasCoin";
+import clsx from "clsx";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -142,7 +142,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   // Render payment message content
   const renderPaymentMessage = () => {
     if (isDecrypting) {
-      return <div className="decrypting">Decrypting payment message...</div>;
+      return (
+        <div className="px-3 py-2 bg-teal-50 rounded-md text-gray-600 italic text-xs">
+          Decrypting payment message...
+        </div>
+      );
     }
 
     // Priority order: decrypted content, then original content, then fallback
@@ -171,19 +175,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
         if (paymentPayload.type === "payment") {
           return (
-            <div className="payment-message">
-              <div className="payment-icon">
+            <div className="flex items-center gap-3 p-4">
+              <div className="flex items-center justify-center min-w-10 h-10 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]">
                 <KasIcon
-                  className="w-8 h-8"
+                  className="w-10 h-10 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
-                  kClassName="fill-gray-800"
+                  kClassName="fill-[#70C7BA]"
                 />
               </div>
-              <div className="payment-content">
-                <div className="payment-message-text">
-                  "{paymentPayload.message}"
+              <div className="flex-1">
+                <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+                  {paymentPayload.message}
                 </div>
-                <div className="payment-amount">
+                <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
                   {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
                 </div>
               </div>
@@ -200,17 +204,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
     // Fallback to showing basic payment info
     return (
-      <div className="payment-message">
-        <div className="payment-icon">
+      <div className="flex items-center gap-3 p-4">
+        <div className="flex items-center justify-center min-w-10 h-10 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]">
           <KasIcon
-            className="w-8 h-8"
+            className="w-10 h-10 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
             circleClassName="fill-white"
-            kClassName="fill-gray-800"
+            kClassName="fill-[#70C7BA]"
           />
         </div>
-        <div className="payment-content">
-          <div className="payment-message-text">Payment message</div>
-          <div className="payment-amount">
+        <div className="flex-1">
+          <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+            Payment message
+          </div>
+          <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
             {isOutgoing ? "Sent" : "Received"} payment
           </div>
         </div>
@@ -248,7 +254,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
     // Wait for decryption attempt before showing content
     if (isDecrypting) {
-      return <div className="decrypting">Decrypting message...</div>;
+      return (
+        <div className="px-3 py-2 bg-gray-50 rounded-md text-gray-600 italic text-xs">
+          Decrypting message...
+        </div>
+      );
     }
 
     // Only use decrypted content if decryption was attempted and successful
