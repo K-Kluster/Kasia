@@ -3,7 +3,6 @@ import { FeeBuckets } from "../FeeBuckets";
 import {
   InformationCircleIcon,
   ArrowLongLeftIcon,
-
   ChevronRightIcon,
   ChevronDownIcon,
   UserIcon,
@@ -163,6 +162,17 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
                 <span className="text-white text-sm">View Seed Phrase</span>
+              </li>
+              {/* Show UTXO Compound Item */}
+              <li
+                onClick={() => {
+                  openModal("utxo-compound");
+                  setActionsMenuOpen(false);
+                  onCloseMenu();
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Compound UTXOs</span>
               </li>
             </ul>
           )}
