@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - staging
+      - master
+      # todo remove
+      - chore/mobile
+
+jobs:
+  build-cipher-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # install rust
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: 1.28.2
+          target: wasm32-unknown-unknown
+          # key based on branch name
+          cache-key: cipher-wasm-build-cache-${{ github.ref_name }}
+
+      - name: Build Cipher Wasm
+        # install wasm-pack, move to ./cipher and build with wasm-pack
+        run: |
+          cargo install wasm-pack
+          cd ./cipher
+          wasm-pack build --target web --release -d ../cipher-wasm
+
+      - name: Cache WASM
+        id: cipher-wasm-cache
+        uses: actions/cache@v4
+        with:
+          path: cipher-wasm
+          key: cipher-wasm-${{ github.ref_name }}
