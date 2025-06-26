@@ -109,27 +109,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          distribution: "zulu"
           java-version: "17"
+          distribution: "temurin"
 
       - name: Cache NDK
         id: cache-ndk
         uses: actions/cache@v4
         with:
-          # Path where NDK version 27.0.11902837 is expected to be installed by setup-android
-          path: /usr/local/lib/android/sdk/ndk/27.0.11902837
-          key: ndk-${{ runner.os }}-27.0.11902837
+          # Path where NDK version 29.0.13599879 is expected to be installed by setup-android
+          path: /usr/local/lib/android/sdk/ndk/29.0.13599879
+          key: ndk-${{ runner.os }}-29.0.13599879
 
       - name: Setup Android SDK and NDK
         uses: android-actions/setup-android@v3
         with:
-          cmdline-tools-version: 12266719 # v16
+          cmdline-tools-version: 13114758 # v19
 
       - name: Install NDK
-        run: sdkmanager "ndk;27.0.11902837"
+        run: sdkmanager "ndk;29.0.13599879"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -190,7 +190,7 @@ jobs:
       - name: Build App
         run: tauri android build -v
         env:
-          NDK_HOME: /usr/local/lib/android/sdk/ndk/27.0.11902837
+          NDK_HOME: /usr/local/lib/android/sdk/ndk/29.0.13599879
 
       - name: Get Tauri App Version
         id: app-version
