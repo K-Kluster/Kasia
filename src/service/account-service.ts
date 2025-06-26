@@ -1,27 +1,26 @@
+import { encrypt_message } from "cipher";
+import EventEmitter from "eventemitter3";
 import {
   Address,
+  FeeSource,
   Generator,
+  GeneratorSummary,
+  ITransaction,
   kaspaToSompi,
   PaymentOutput,
   PendingTransaction,
-  UtxoContext,
-  UtxoProcessor,
-  UtxoEntry,
-  IUtxosChanged,
-  ITransaction,
   sompiToKaspaString,
-  FeeSource,
-  GeneratorSummary,
+  UtxoContext,
+  UtxoEntry,
+  UtxoProcessor,
 } from "kaspa-wasm";
-import { KaspaClient } from "../utils/all-in-one";
-import { WalletStorage } from "../utils/wallet-storage";
-import EventEmitter from "eventemitter3";
-import { encrypt_message } from "cipher";
-import { CipherHelper } from "../utils/cipher-helper";
+import { TransactionId } from "src/types/transactions";
+import { UnlockedWallet } from "src/types/wallet.type";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { UnlockedWallet } from "src/types/wallet.type";
-import { TransactionId } from "src/types/transactions";
+import { KaspaClient } from "../utils/all-in-one";
+import { CipherHelper } from "../utils/cipher-helper";
+import { WalletStorage } from "../utils/wallet-storage";
 
 // Message related types
 type DecodedMessage = {
@@ -541,10 +540,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       if (!pendingTransaction) {
         throw new Error("Failed to generate transaction");
-      }
-
-      if ((await generator.next()) !== null) {
-        throw new Error("Unexpected multiple transaction generation");
       }
 
       // Log the addresses that need signing
