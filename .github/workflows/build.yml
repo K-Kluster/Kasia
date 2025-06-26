@@ -234,105 +234,105 @@ jobs:
           name: kasia-android-${{ github.ref_name == 'main' && 'production' || 'staging' }}
           path: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.apk
 
-build-ios-app:
-  runs-on: macos-14
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+  build-ios-app:
+    runs-on: macos-14
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        cache: "npm"
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: "npm"
 
-    # install xcode (not xcode cli)
-    - name: Install Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: "16.4"
+      # install xcode (not xcode cli)
+      - name: Install Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
 
-    - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: 1.86.0
-        targets: aarch64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.86.0
+          targets: aarch64-apple-ios, aarch64-apple-ios-sim, x86_64-apple-ios
 
-    # get web-app artifacts
-    - name: Get Web App Artifact
-      id: get-web-app-artifact
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const artifacts = await github.rest.actions.listArtifactsForRepo({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            per_page: 100,
-            name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
-            sort: 'created',
-            order: 'desc',
-          });
-          return artifacts.data.artifacts[0].workflow_run.id;
+      # get web-app artifacts
+      - name: Get Web App Artifact
+        id: get-web-app-artifact
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+              name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              sort: 'created',
+              order: 'desc',
+            });
+            return artifacts.data.artifacts[0].workflow_run.id;
 
-    - name: Restore Web App artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
-        path: dist
-        github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
-        run-id: ${{ steps.get-web-app-artifact.outputs.result }}
+      - name: Restore Web App artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          path: dist
+          github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
+          run-id: ${{ steps.get-web-app-artifact.outputs.result }}
 
-    # install @tauri-apps/cli@latest
-    - name: Install Tauri CLI
-      run: npm install -g @tauri-apps/cli@latest
+      # install @tauri-apps/cli@latest
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli@latest
 
-    - name: Install Homebrew
-      run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      - name: Install Homebrew
+        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-    - name: Install CocoaPods
-      run: brew install cocoapods
+      - name: Install CocoaPods
+        run: brew install cocoapods
 
-    - name: Build App
-      run: tauri ios build -v
-      env:
-        NDK_HOME: /usr/local/lib/android/sdk/ndk/29.0.13599879
+      - name: Build App
+        run: tauri ios build -v
+        env:
+          NDK_HOME: /usr/local/lib/android/sdk/ndk/29.0.13599879
 
-    - name: Get Tauri App Version
-      id: app-version
-      run: |
-        CARGO_TOML_PATH="src-tauri/Cargo.toml"
-        echo "Attempting to read version from $CARGO_TOML_PATH"
+      - name: Get Tauri App Version
+        id: app-version
+        run: |
+          CARGO_TOML_PATH="src-tauri/Cargo.toml"
+          echo "Attempting to read version from $CARGO_TOML_PATH"
 
-        if [ ! -f "$CARGO_TOML_PATH" ]; then
-          echo "Error: $CARGO_TOML_PATH not found."
-          exit 1
-        fi
+          if [ ! -f "$CARGO_TOML_PATH" ]; then
+            echo "Error: $CARGO_TOML_PATH not found."
+            exit 1
+          fi
 
-        echo "--- Relevant content from $CARGO_TOML_PATH (looking for 'version = \"...' line) ---"
-        grep '^version = "' "$CARGO_TOML_PATH" || echo "No line starting with 'version = \"' found in $CARGO_TOML_PATH."
-        echo "--- End of relevant content ---"
+          echo "--- Relevant content from $CARGO_TOML_PATH (looking for 'version = \"...' line) ---"
+          grep '^version = "' "$CARGO_TOML_PATH" || echo "No line starting with 'version = \"' found in $CARGO_TOML_PATH."
+          echo "--- End of relevant content ---"
 
-        # Extract version string from Cargo.toml.
-        # This looks for a line like 'version = "x.y.z"' in the [package] section.
-        VERSION_STRING=$(grep '^version = "' "$CARGO_TOML_PATH" | head -n 1 | sed -e 's/version = "//' -e 's/"//')
+          # Extract version string from Cargo.toml.
+          # This looks for a line like 'version = "x.y.z"' in the [package] section.
+          VERSION_STRING=$(grep '^version = "' "$CARGO_TOML_PATH" | head -n 1 | sed -e 's/version = "//' -e 's/"//')
 
-        echo "Extracted version_string: '$VERSION_STRING'" # Debug output
+          echo "Extracted version_string: '$VERSION_STRING'" # Debug output
 
-        if [ -z "$VERSION_STRING" ] || [ "$VERSION_STRING" = "null" ]; then # Check for empty or literal "null"
-          echo "Error: Version not found or is invalid in $CARGO_TOML_PATH."
-          echo "Please ensure $CARGO_TOML_PATH contains a line like 'version = \"x.y.z\"' (typically under the [package] section)."
-          exit 1
-        fi
+          if [ -z "$VERSION_STRING" ] || [ "$VERSION_STRING" = "null" ]; then # Check for empty or literal "null"
+            echo "Error: Version not found or is invalid in $CARGO_TOML_PATH."
+            echo "Please ensure $CARGO_TOML_PATH contains a line like 'version = \"x.y.z\"' (typically under the [package] section)."
+            exit 1
+          fi
 
-        echo "Successfully extracted version: $VERSION_STRING"
-        echo "version_string=$VERSION_STRING" >> "$GITHUB_OUTPUT"
-      shell: bash
+          echo "Successfully extracted version: $VERSION_STRING"
+          echo "version_string=$VERSION_STRING" >> "$GITHUB_OUTPUT"
+        shell: bash
 
-    - name: Rename iOS IPA file
-      run: |
-        mv ./src-tauri/gen/ios/app/build/Release-iphoneos/kasia.ipa ./src-tauri/gen/ios/app/build/Release-iphoneos/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.ipa
+      - name: Rename iOS IPA file
+        run: |
+          mv ./src-tauri/gen/ios/app/build/Release-iphoneos/kasia.ipa ./src-tauri/gen/ios/app/build/Release-iphoneos/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.ipa
 
-    - name: Upload IPA Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: kasia-ios-${{ github.ref_name == 'main' && 'production' || 'staging' }}
-        path: ./src-tauri/gen/ios/app/build/Release-iphoneos/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.ipa
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kasia-ios-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          path: ./src-tauri/gen/ios/app/build/Release-iphoneos/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.ipa
