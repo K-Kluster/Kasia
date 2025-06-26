@@ -1,12 +1,12 @@
-import { FC, useState, useCallback, useEffect } from "react";
-import { useWalletStore } from "../store/wallet.store";
-import { Address } from "kaspa-wasm";
-import { clsx } from "clsx";
 import {
+  ArrowPathIcon,
   ExclamationTriangleIcon,
   XCircleIcon,
-  ArrowPathIcon,
 } from "@heroicons/react/24/solid";
+import { clsx } from "clsx";
+import { Address } from "kaspa-wasm";
+import { FC, useCallback, useEffect, useState } from "react";
+import { useWalletStore } from "../store/wallet.store";
 
 // Type definitions
 type CompoundResult = {
@@ -114,84 +114,15 @@ export const UtxoCompound: FC = () => {
     });
 
     try {
-      const utxoCount = balance.matureUtxoCount;
-      console.log(`Starting UTXO compounding for ${utxoCount} UTXOs`);
-      console.log(`Total balance: ${balance.matureDisplay} KAS`);
+      const txId = await accountService.createWithdrawTransaction(
+        {
+          address: new Address(address.toString()), // Send to self
+          amount: balance.mature, // Send entire balance
+        },
+        unlockedWallet.password
+      );
 
-      const needsBatching = utxoCount > BATCH_SIZE;
-
-      if (needsBatching) {
-        // Process in batches
-        const totalBatches = Math.ceil(utxoCount / BATCH_SIZE);
-        const txIds: string[] = [];
-
-        console.log(
-          `Processing ${utxoCount} UTXOs in ${totalBatches} batches of ${BATCH_SIZE}`
-        );
-
-        for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-          setBatchProgress({
-            current: batchIndex + 1,
-            total: totalBatches,
-            txIds: [...txIds],
-          });
-
-          console.log(`Processing batch ${batchIndex + 1}/${totalBatches}`);
-
-          // Wait for balance to stabilize between batches
-          if (batchIndex > 0) {
-            await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
-          }
-
-          // Wait for balance to update and get current balance
-          // Note: Balance will be updated automatically through the wallet store
-
-          // Get fresh balance for this batch (it changes after each batch)
-          const currentBalance = walletStore.balance;
-          if (!currentBalance?.mature) {
-            throw new Error("No balance available for batch processing");
-          }
-
-          // Create withdrawal transaction for current balance
-          const txId = await accountService.createWithdrawTransaction(
-            {
-              address: new Address(address.toString()), // Send to self
-              amount: currentBalance.mature, // Send current balance
-            },
-            unlockedWallet.password
-          );
-
-          txIds.push(txId);
-          console.log(`Batch ${batchIndex + 1} transaction created: ${txId}`);
-        }
-
-        // Store final result
-        setPendingResult({
-          txId: txIds[txIds.length - 1], // Last transaction ID
-          utxoCount,
-        });
-
-        console.log(
-          `All ${totalBatches} batches completed. Transaction IDs:`,
-          txIds
-        );
-      } else {
-        // Single transaction for smaller UTXO counts
-        const txId = await accountService.createWithdrawTransaction(
-          {
-            address: new Address(address.toString()), // Send to self
-            amount: balance.mature, // Send entire balance
-          },
-          unlockedWallet.password
-        );
-
-        console.log(`Single compound transaction created: ${txId}`);
-
-        setPendingResult({
-          txId,
-          utxoCount,
-        });
-      }
+      console.log(`UTXO Compounding succeed, txid: ${txId}`);
     } catch (err) {
       console.error("UTXO compounding failed:", err);
       setError(getUserFriendlyErrorMessage(err));
