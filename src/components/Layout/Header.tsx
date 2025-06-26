@@ -1,7 +1,6 @@
 import { FC } from "react";
 import { Bars3Icon } from "@heroicons/react/24/solid";
-import MenuHamburger from "../MenuHamburger";
-import { WalletInfo } from "../WalletInfo";
+import MenuHamburger from "./HamburgerMenu";
 import { FeeBuckets } from "../FeeBuckets";
 
 type Props = {
@@ -14,20 +13,17 @@ type Props = {
   onCloseWallet: () => void;
   setIsWalletInfoOpen: (v: boolean) => void;
   setIsSettingsOpen: (v: boolean) => void;
-  isMessageStoreLoaded: boolean;
 };
 
 export const Header: FC<Props> = ({
   isWalletReady,
   walletAddress,
   isSettingsOpen,
-  isWalletInfoOpen,
   menuRef,
   toggleSettings,
   onCloseWallet,
   setIsWalletInfoOpen,
   setIsSettingsOpen,
-  isMessageStoreLoaded,
 }) => {
   return (
     <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
@@ -56,7 +52,6 @@ export const Header: FC<Props> = ({
             <Bars3Icon className="h-8 w-8 text-kas-primary animate-pulse" />
           </button>
 
-          {!isWalletInfoOpen ? (
             <MenuHamburger
               open={isSettingsOpen}
               address={walletAddress}
@@ -66,17 +61,8 @@ export const Header: FC<Props> = ({
                 setIsSettingsOpen(false);
               }}
               onCloseWallet={onCloseWallet}
-              messageStoreLoaded={isMessageStoreLoaded}
             />
-          ) : (
-            <WalletInfo
-              state={walletAddress ? "connected" : "loading"}
-              address={walletAddress}
-              isWalletReady={isWalletReady}
-              open={isWalletInfoOpen}
-              onClose={() => setIsWalletInfoOpen(false)}
-            />
-          )}
+          
         </div>
       )}
     </div>

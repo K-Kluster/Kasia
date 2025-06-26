@@ -6,6 +6,7 @@ import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import "./FetchApiMessages.css";
 import { CipherHelper } from "../utils/cipher-helper";
+import { DecryptionCache } from "../utils/decryption-cache";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
@@ -145,6 +146,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             if (existingTxIds.has(tx.transaction_id)) {
               console.log(
                 `API Messages: Skipping existing transaction: ${tx.transaction_id}`
+              );
+              continue;
+            }
+
+            // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
+            if (DecryptionCache.hasFailed(tx.transaction_id)) {
+              console.log(
+                `API Messages: Skipping known failed decryption: ${tx.transaction_id}`
               );
               continue;
             }
@@ -480,7 +489,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   );
                 }
 
+                // 🚀 OPTIMIZATION: Mark decryption result in cache
                 if (!decryptionSuccess) {
+                  DecryptionCache.markFailed(tx.transaction_id);
                   console.log(
                     `API Messages: Could not decrypt message for transaction ${
                       tx.transaction_id
@@ -488,12 +499,13 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       walletStore.unlockedWallet.derivationType === "standard"
                         ? " and legacy keys"
                         : ""
-                    }`
+                    } - marked as failed in cache`
                   );
                   decryptedContent = "[Could not decrypt message]";
                 } else {
+                  DecryptionCache.markSuccess(tx.transaction_id);
                   console.log(
-                    `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex}`
+                    `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex} - removed from failed cache if present`
                   );
                   console.log(
                     `API Messages: Decrypted content: ${decryptedContent}`

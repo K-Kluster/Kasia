@@ -54,18 +54,20 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
 
   if (loading && !feeEstimate) {
     return inline ? null : (
-      <div className="fee-buckets">
-        <h4>Network Fees</h4>
-        <div className="loading">Loading fee estimates...</div>
+      <div className="mt-4 border-t border-white/10 pt-2">
+        <h4 className="mt-2 mb-2 text-[0.9rem] text-gray-400">Network Fees</h4>
+        <div className="text-[0.8rem] text-gray-400 mb-2">
+          Loading fee estimates...
+        </div>
       </div>
     );
   }
 
   if (error && !feeEstimate) {
     return inline ? null : (
-      <div className="fee-buckets">
-        <h4>Network Fees</h4>
-        <div className="error">{error}</div>
+      <div className="mt-4 border-t border-white/10 pt-2">
+        <h4 className="mt-2 mb-2 text-[0.9rem] text-gray-400">Network Fees</h4>
+        <div className="text-[0.8rem] text-red-500 mb-2">{error}</div>
       </div>
     );
   }
@@ -104,11 +106,15 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
   // For inline display, show all three buckets in a compact format
   if (inline) {
     return (
-      <div className="fee-buckets-inline">
+      <div className="flex items-center gap-2 m-0 p-0">
         {estimate.priorityBucket && (
           <div
             className="fee-rate-inline priority"
-            title={`Fast - Time: ${formatTime(estimate.priorityBucket.estimatedSeconds)} - Fee: ${calculateAndFormatFee(estimate.priorityBucket.feerate)} KAS`}
+            title={`Fast - Time: ${formatTime(
+              estimate.priorityBucket.estimatedSeconds
+            )} - Fee: ${calculateAndFormatFee(
+              estimate.priorityBucket.feerate
+            )} KAS`}
           >
             <span className="fee-label">P:</span>
             <span className="fee-value">
@@ -119,7 +125,11 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
         {estimate.normalBuckets && estimate.normalBuckets.length > 0 && (
           <div
             className="fee-rate-inline normal"
-            title={`Normal - Time: ${formatTime(estimate.normalBuckets[0]?.estimatedSeconds)} - Fee: ${calculateAndFormatFee(estimate.normalBuckets[0]?.feerate)} KAS`}
+            title={`Normal - Time: ${formatTime(
+              estimate.normalBuckets[0]?.estimatedSeconds
+            )} - Fee: ${calculateAndFormatFee(
+              estimate.normalBuckets[0]?.feerate
+            )} KAS`}
           >
             <span className="fee-label">N:</span>
             <span className="fee-value">
@@ -130,7 +140,11 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
         {estimate.lowBuckets && estimate.lowBuckets.length > 0 && (
           <div
             className="fee-rate-inline low"
-            title={`Slow - Time: ${formatTime(estimate.lowBuckets[0]?.estimatedSeconds)} - Fee: ${calculateAndFormatFee(estimate.lowBuckets[0]?.feerate)} KAS`}
+            title={`Slow - Time: ${formatTime(
+              estimate.lowBuckets[0]?.estimatedSeconds
+            )} - Fee: ${calculateAndFormatFee(
+              estimate.lowBuckets[0]?.feerate
+            )} KAS`}
           >
             <span className="fee-label">L:</span>
             <span className="fee-value">
@@ -143,46 +157,46 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
   }
 
   return (
-    <div className="fee-buckets">
-      <h4>Network Fees</h4>
+    <div className="border-white/10">
+      <h4 className="mb-2 text-[0.9rem] text-gray-400">Network Fees</h4>
 
       {estimate.priorityBucket && (
-        <div className="fee-bucket priority">
-          <div className="fee-bucket-header">Fast</div>
-          <div className="fee-bucket-rate">
+        <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 rounded bg-red-500/10 border border-red-500/20 text-[0.8rem]">
+          <div className="font-medium">Fast</div>
+          <div className="font-mono text-[0.85rem]">
             {calculateAndFormatFee(estimate.priorityBucket.feerate)} KAS
           </div>
-          <div className="fee-bucket-time">
+          <div className="text-gray-400 text-xs">
             {formatTime(estimate.priorityBucket.estimatedSeconds)}
           </div>
         </div>
       )}
 
       {estimate.normalBuckets && estimate.normalBuckets.length > 0 && (
-        <div className="fee-bucket normal">
-          <div className="fee-bucket-header">Normal</div>
-          <div className="fee-bucket-rate">
+        <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 rounded bg-blue-500/10 border border-blue-500/20 text-[0.8rem]">
+          <div className="font-medium">Normal</div>
+          <div className="font-mono text-[0.85rem]">
             {calculateAndFormatFee(estimate.normalBuckets[0]?.feerate)} KAS
           </div>
-          <div className="fee-bucket-time">
+          <div className="text-gray-400 text-xs">
             {formatTime(estimate.normalBuckets[0]?.estimatedSeconds)}
           </div>
         </div>
       )}
 
       {estimate.lowBuckets && estimate.lowBuckets.length > 0 && (
-        <div className="fee-bucket low">
-          <div className="fee-bucket-header">Slow</div>
-          <div className="fee-bucket-rate">
+        <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 rounded bg-green-500/10 border border-green-500/20 text-[0.8rem]">
+          <div className="font-medium">Slow</div>
+          <div className="font-mono text-[0.85rem]">
             {calculateAndFormatFee(estimate.lowBuckets[0]?.feerate)} KAS
           </div>
-          <div className="fee-bucket-time">
+          <div className="text-gray-400 text-xs">
             {formatTime(estimate.lowBuckets[0]?.estimatedSeconds)}
           </div>
         </div>
       )}
 
-      <div className="fee-buckets-info">
+      <div className="mt-2 text-xs text-gray-400">
         <small>
           Fees calculated for standard transaction size (
           {STANDARD_TRANSACTION_MASS} grams)
