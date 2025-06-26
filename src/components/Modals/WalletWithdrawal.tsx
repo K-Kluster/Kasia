@@ -1,7 +1,7 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
-import { createWithdrawTransaction } from "../service/account-service";
+import { createWithdrawTransaction } from "../../service/account-service";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
-import { useWalletStore } from "../store/wallet.store";
+import { useWalletStore } from "../../store/wallet.store";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 

@@ -1,7 +1,7 @@
 import { FC, useEffect, useState } from "react";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
-import { useWalletStore } from "../store/wallet.store";
-import { StoredWallet } from "../types/wallet.type";
+import { useWalletStore } from "../../store/wallet.store";
+import { StoredWallet } from "../../types/wallet.type";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 
@@ -102,7 +102,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
               className="mb-2 px-4 py-2 w-3/4 bg-black/30 border border-white/10 text-white rounded-md"
             />
             <button
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-fit px-3 py-2 shadow transition-all duration-200"
+              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-fit px-3 py-2 shadow transition-all duration-200 cursor-pointer"
               onClick={handleViewSeedPhrase}
             >
               View Seed Phrase
