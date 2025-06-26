@@ -1,18 +1,15 @@
 import { FC, useCallback, useEffect, useState, useRef } from "react";
 import { unknownErrorToErrorLike } from "./utils/errors";
-import { Contact, NetworkType } from "./types/all";
+import { Contact } from "./types/all";
 import { useMessagingStore } from "./store/messaging.store";
 import { ErrorCard } from "./components/ErrorCard";
 import { useWalletStore } from "./store/wallet.store";
-import { WalletGuard } from "./containers/WalletGuard";
 import { NewChatForm } from "./components/NewChatForm";
 import { MessageSection } from "./containers/MessagesSection";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
 import { ContactSection } from "./containers/ContactSection";
-import { Header } from "./components/Layout/Header";
 import { useIsMobile } from "./utils/useIsMobile";
-import { SlideOutMenu } from "./components/Layout/SlideOutMenu";
 import { useModals } from "./context/ModalContext";
 import { Modal } from "./components/Common/modal";
 import { WalletAddressSection } from "./components/Modals/WalletAddressSection";
@@ -20,32 +17,31 @@ import { WalletWithdrawal } from "./components/Modals/WalletWithdrawal";
 import { WalletSeedRetreiveDisplay } from "./components/Modals/WalletSeedRetreiveDisplay";
 import { MessageBackup } from "./components/Modals/MessageBackup";
 import { WalletInfo } from "./components/Modals/WalletInfo";
+import { useNavigate } from "react-router-dom";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWalletReady, setIsWalletReady] = useState(false);
 
   const networkStore = useNetworkStore();
-  const isConnected = useNetworkStore((state) => state.isConnected);
-  const connect = useNetworkStore((state) => state.connect);
-
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isWalletInfoOpen, setIsWalletInfoOpen] = useState(false);
   const [messagesClientStarted, setMessageClientStarted] = useState(false);
   const [contactsCollapsed, setContactsCollapsed] = useState(false);
   const [mobileView, setMobileView] = useState<"contacts" | "messages">(
     "contacts"
   );
 
-  const menuRef = useRef<HTMLDivElement>(null);
-
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
 
-  const toggleSettings = () => setIsSettingsOpen((v) => !v);
   const isMobile = useIsMobile();
 
+  const navigate = useNavigate();
   const { isOpen, closeModal } = useModals();
+
+  useEffect(() => {
+    if (walletStore.unlockedWallet) setIsWalletReady(true);
+  }, [walletStore.unlockedWallet]);
+
 
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
@@ -62,43 +58,6 @@ export const OneLiner: FC = () => {
     window.addEventListener("resize", syncToWidth);
     return () => window.removeEventListener("resize", syncToWidth);
   }, [contactsCollapsed, messageStore.openedRecipient, isMobile]);
-
-  // Network connection effect
-  useEffect(() => {
-    // Skip if no network selected or connection attempt in progress
-    if (isConnected) {
-      return;
-    }
-    connect();
-    // this is on purpose, we only want to run this once upon component mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  const onNetworkChange = useCallback(
-    (network: NetworkType) => {
-      networkStore.setNetwork(network);
-
-      // Trigger reconnection when network changes
-      connect();
-    },
-    [connect, networkStore]
-  );
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsSettingsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const onWalletUnlocked = useCallback(() => {
-    setIsWalletReady(true);
-  }, []);
 
   const onNewChatClicked = useCallback(async () => {
     try {
@@ -182,16 +141,6 @@ export const OneLiner: FC = () => {
     [messageStore, walletStore.address]
   );
 
-  const handleCloseWallet = () => {
-    walletStore.lock();
-    setIsWalletReady(false);
-    messageStore.setIsLoaded(false);
-    messageStore.setOpenedRecipient(null);
-    messageStore.setIsCreatingNewChat(false);
-    setIsSettingsOpen(false);
-    setIsWalletInfoOpen(false);
-  };
-
   // if we disconnect or something including or other than a graceful close, still kill the messaging client
   useEffect(() => {
     if (!isWalletReady || !walletStore.unlockedWallet) {
@@ -199,83 +148,52 @@ export const OneLiner: FC = () => {
     }
   }, [isWalletReady, walletStore.unlockedWallet]);
 
+  if (!isWalletReady) navigate("/");
+
   return (
     <>
-      {/* Top Bar / Header */}
-      {!isMobile && (
-        <Header
-          isWalletReady={isWalletReady}
-          walletAddress={walletStore.address?.toString()}
-          isSettingsOpen={isSettingsOpen}
-          isWalletInfoOpen={isWalletInfoOpen}
-          menuRef={menuRef}
-          toggleSettings={toggleSettings}
-          onCloseWallet={handleCloseWallet}
-          setIsWalletInfoOpen={setIsWalletInfoOpen}
-          setIsSettingsOpen={setIsSettingsOpen}
-        />
-      )}
-      {isMobile && isSettingsOpen && (
-        <SlideOutMenu
-          open={isSettingsOpen}
-          address={walletStore.address?.toString()}
-          onClose={() => setIsSettingsOpen(false)}
-          isWalletInfoOpen={isWalletInfoOpen}
-          onOpenWalletInfo={() => setIsWalletInfoOpen(true)}
-          isWalletReady={isWalletReady}
-          onCloseWallet={handleCloseWallet}
-        />
-      )}
-
       {/* Main Message Section*/}
       <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
-          {!isWalletReady ? (
-            <WalletGuard
-              onSuccess={onWalletUnlocked}
-              selectedNetwork={networkStore.network}
-              onNetworkChange={onNetworkChange}
-              isConnected={networkStore.isConnected}
-            />
-          ) : messageStore.isLoaded ? (
-            <div
-              className="
+          {isWalletReady &&
+            (isWalletReady && messageStore.isLoaded ? (
+              <div
+                className="
               bg-[var(--secondary-bg)] rounded-xl shadow-md sm:max-w-[1200px] w-full sm:mx-auto
               border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[95vh] sm:h-[85vh] min-h-[300px]
               flex
             "
-            >
-              <ContactSection
-                contacts={messageStore.contacts}
-                onNewChatClicked={onNewChatClicked}
-                onContactClicked={onContactClicked}
-                openedRecipient={messageStore.openedRecipient}
-                walletAddress={walletStore.address?.toString()}
-                mobileView={mobileView}
-                contactsCollapsed={contactsCollapsed}
-                setContactsCollapsed={setContactsCollapsed}
-                setMobileView={setMobileView}
-                onOpenMobileMenu={() => setIsSettingsOpen(true)}
-              />
-              <MessageSection
-                mobileView={mobileView}
-                setMobileView={setMobileView}
-              />
-            </div>
-          ) : (
-            <div className="flex flex-col items-center w-full text-xs">
-              {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-              <div className="relative sm:max-w-[1200px] w-full mx-auto min-w-[320px] h-[95vh] sm:h-[85vh]  min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
-                <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
-                <div className="relative flex flex-col items-center justify-center h-full space-y-4">
-                  <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
-                    Connecting message client...
-                  </span>
-                  <ArrowPathIcon className="w-14 h-14 text-gray-500 animate-spin" />
+              >
+                <ContactSection
+                  contacts={messageStore.contacts}
+                  onNewChatClicked={onNewChatClicked}
+                  onContactClicked={onContactClicked}
+                  openedRecipient={messageStore.openedRecipient}
+                  walletAddress={walletStore.address?.toString()}
+                  mobileView={mobileView}
+                  contactsCollapsed={contactsCollapsed}
+                  setContactsCollapsed={setContactsCollapsed}
+                  setMobileView={setMobileView}
+                />
+                <MessageSection
+                  mobileView={mobileView}
+                  setMobileView={setMobileView}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center w-full text-xs">
+                {/* If wallet is unlocked but message are not loaded, show the loading state*/}
+                <div className="relative sm:max-w-[1200px] w-full mx-auto min-w-[320px] h-[95vh] sm:h-[85vh]  min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
+                  <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
+                  <div className="relative flex flex-col items-center justify-center h-full space-y-4">
+                    <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
+                      Connecting message client...
+                    </span>
+                    <ArrowPathIcon className="w-14 h-14 text-gray-500 animate-spin" />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            ))}
         </div>
       </div>
       {/* Global Error Section*/}

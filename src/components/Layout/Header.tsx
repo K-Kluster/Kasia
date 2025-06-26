@@ -2,29 +2,24 @@ import { FC } from "react";
 import { Bars3Icon } from "@heroicons/react/24/solid";
 import MenuHamburger from "./HamburgerMenu";
 import { FeeBuckets } from "../FeeBuckets";
+import { useUiStore } from "../../store/ui.store";
 
 type Props = {
   isWalletReady: boolean;
   walletAddress?: string;
-  isSettingsOpen: boolean;
-  isWalletInfoOpen: boolean;
   menuRef: React.RefObject<HTMLDivElement | null>;
-  toggleSettings: () => void;
   onCloseWallet: () => void;
-  setIsWalletInfoOpen: (v: boolean) => void;
-  setIsSettingsOpen: (v: boolean) => void;
 };
 
 export const Header: FC<Props> = ({
   isWalletReady,
   walletAddress,
-  isSettingsOpen,
   menuRef,
-  toggleSettings,
   onCloseWallet,
-  setIsWalletInfoOpen,
-  setIsSettingsOpen,
 }) => {
+  const toggleSettings = useUiStore((s) => s.toggleSettings);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+
   return (
     <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
       <div className="flex items-center gap-2">
@@ -39,9 +34,12 @@ export const Header: FC<Props> = ({
       </div>
 
       {isWalletReady && (
-        <div ref={menuRef} className="relative flex items-center gap-2">
+        <div
+          ref={menuRef}
+          className="relative flex items-center gap-2"
+        >
           <div className="hidden sm:block">
-            <FeeBuckets inline={true} />
+            <FeeBuckets inline />
           </div>
 
           <button
@@ -52,17 +50,11 @@ export const Header: FC<Props> = ({
             <Bars3Icon className="h-8 w-8 text-kas-primary animate-pulse" />
           </button>
 
-            <MenuHamburger
-              open={isSettingsOpen}
-              address={walletAddress}
-              onCloseMenu={() => setIsSettingsOpen(false)}
-              onOpenWalletInfo={() => {
-                setIsWalletInfoOpen(true);
-                setIsSettingsOpen(false);
-              }}
-              onCloseWallet={onCloseWallet}
-            />
-          
+          <MenuHamburger
+            address={walletAddress}
+            onCloseMenu={() => setSettingsOpen(false)}
+            onCloseWallet={onCloseWallet}
+          />
         </div>
       )}
     </div>

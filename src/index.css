@@ -514,14 +514,14 @@ h1 {
   }
 }
 
-.wallet-guard {
+/* .wallet-guard {
   background-color: var(--secondary-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   margin: 2rem auto;
   max-width: 600px;
   padding: 2rem;
-}
+} */
 
 .wallet-info-container {
   position: static;

@@ -12,26 +12,24 @@ import {
 import { useMessagingStore } from "../../store/messaging.store";
 import { useModals } from "../../context/ModalContext";
 import { FeeBuckets } from "../FeeBuckets";
+import { useUiStore } from "../../store/ui.store";
 
 type SlideOutMenuProps = {
-  open: boolean;
   address?: string;
-  onClose: () => void;
-  onOpenWalletInfo: () => void;
-  isWalletInfoOpen: boolean;
-  isWalletReady: boolean;
   onCloseWallet: () => void;
+  isWalletReady: boolean;
 };
 
 export const SlideOutMenu: FC<SlideOutMenuProps> = ({
-  open,
   address,
-  onClose,
   onCloseWallet,
+  isWalletReady
 }) => {
+  const open = useUiStore((s) => s.isSettingsOpen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+
   const msgStore = useMessagingStore();
   const [actionsOpen, setActionsOpen] = useState(false);
-
   const { openModal } = useModals();
 
   useEffect(() => {
@@ -52,12 +50,15 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
     }
   }, [address, msgStore]);
 
-  if (!open) return null;
+  if (!open || !isWalletReady) return null;
 
   return (
     <>
       {/* Modal Darkness */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/50 z-40"
+        onClick={() => setSettingsOpen(false)}
+      />
 
       {/* Draw type thing */}
       <aside
@@ -70,7 +71,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
       >
         <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
           <button
-            onClick={onClose}
+            onClick={() => setSettingsOpen(false)}
             className="p-2 cursor-pointer"
             aria-label="Close menu"
           >
@@ -148,6 +149,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               >
                 Withdraw Funds
               </li>
+
               {msgStore.isLoaded && (
                 <li
                   onClick={() => {
@@ -159,12 +161,14 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   Import / Export Messages
                 </li>
               )}
+
               <li
                 onClick={clearHistory}
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
                 Delete All Messages
               </li>
+
               <li
                 onClick={() => {
                   openModal("seed");
@@ -176,9 +180,11 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               </li>
             </ul>
           )}
+
           <li className="block sm:hidden px-4 py-3">
             <FeeBuckets inline={false} />
           </li>
+
           <li
             onClick={onCloseWallet}
             className="
