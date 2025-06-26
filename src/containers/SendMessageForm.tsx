@@ -19,8 +19,22 @@ import {
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
+import clsx from "clsx";
 
 type SendMessageFormProps = unknown;
+
+// Arbritary fee levels to colour the fee indicator in chat
+const FEE_LEVELS = [
+  { limit: 0.00002000, classes: "text-green-400 border-green-400" },
+  { limit: 0.00005000, classes: "text-blue-400  border-blue-400" },
+  { limit: 0.0005, classes: "text-yellow-400 border-yellow-400" },
+  { limit: 0.001, classes: "text-orange-400 border-orange-400" },
+  { limit: Infinity, classes: "text-red-400 border-red-400" },
+];
+
+function getFeeClasses(fee: number) {
+  return FEE_LEVELS.find(({ limit }) => fee <= limit)!.classes;
+}
 
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
@@ -323,7 +337,25 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   };
 
   return (
-    <div className="message-input-container cursor-text">
+    <div className="flex-col gap-8 relative">
+      {openedRecipient && message && (
+        <div className="absolute right-0 -top-7.5">
+          <div
+            className={clsx(
+              "inline-block bg-white/10 text-xs mr-5 py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
+              feeEstimate != null && getFeeClasses(feeEstimate)
+            )}
+          >
+            {isEstimating
+              ? feeEstimate != null
+                ? `Updating fee… ${formatKasAmount(feeEstimate)} KAS`
+                : `Estimating fee…`
+              : feeEstimate != null
+              ? `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`
+              : `Calculating fee…`}
+          </div>
+        </div>
+      )}
       <div className="message-input-wrapper">
         <Input
           ref={messageInputRef}
