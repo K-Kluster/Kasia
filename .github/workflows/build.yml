@@ -49,8 +49,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check if Cipher Wasm artifact exists
+        uses: actions/xSAVIKx/artifact-exists-action@v0
+        id: cipher-wasm-artifact-exists
+        with:
+          # @TODO: change to [...]-${{github.ref_name}}
+          name: cipher-wasm-staging
+
       - name: Restore Cipher Wasm artifact
         uses: actions/download-artifact@v4
+        if: steps.cipher-wasm-artifact-exists.outputs.exists
         with:
           # @TODO: change to [...]-${{github.ref_name}}
           name: cipher-wasm-staging
