@@ -3,11 +3,11 @@ import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import {
-  Input,
   Popover,
   PopoverButton,
   PopoverPanel,
   Transition,
+  Textarea
 } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
@@ -46,7 +46,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   const messageStore = useMessagingStore();
 
-  const messageInputRef = useRef<HTMLInputElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
@@ -357,16 +357,24 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         </div>
       )}
       <div className="message-input-wrapper">
-        <Input
+        <Textarea
           ref={messageInputRef}
-          type="text"
           id="messageInput"
+          rows={1}
           placeholder="Type your message..."
-          className="message-input"
+          className="message-input w-full resize-none overflow-y-auto max-h-36 border rounded px-2 py-1"
           value={message}
-          onChange={(e) => {
-            const value = e.target.value;
-            setMessage(value);
+          onChange={(e) => setMessage(e.currentTarget.value)}
+          onInput={(e) => {
+            const t = e.currentTarget;
+            t.style.height = "auto";
+            t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onSendClicked();
+            }
           }}
           autoComplete="off"
           spellCheck="false"
