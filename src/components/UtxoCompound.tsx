@@ -110,6 +110,7 @@ export const UtxoCompound: FC = () => {
       );
 
       console.log(`UTXO Compounding succeed, txid: ${txId}`);
+      setFrozenBalance(null); // Clear frozen balance on complete
     } catch (err) {
       console.error("UTXO compounding failed:", err);
       setError(getUserFriendlyErrorMessage(err));
