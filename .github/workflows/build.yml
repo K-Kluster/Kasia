@@ -387,7 +387,7 @@ jobs:
           path: ./src-tauri/target/x86_64-apple-darwin/release/bundle/macos/kasia.app.tar.gz
           retention-days: 1
 
-    build-macos-arm-app:
+  build-macos-arm-app:
     runs-on: macos-15
 
     # @TODO: uncomment this
@@ -444,7 +444,6 @@ jobs:
           name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-linux
           path: ./src-tauri/target/aarch64-apple-darwin/release/bundle/macos/kasia.app.tar.gz
           retention-days: 1
-
 
   build-linux-app:
     runs-on: ubuntu-22.04
