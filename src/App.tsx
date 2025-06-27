@@ -94,11 +94,11 @@ const App: React.FC = () => {
               />
             }
           />
-
-          {/* protect the route so people cant access */}
-          <Route element={<RequireUnlockedWallet />}>
-            <Route path=":walletId" element={<OneLiner />} />
-          </Route>
+        </Route>
+        
+        {/* protect the route so people cant access */}
+        <Route element={<RequireUnlockedWallet />}>
+          <Route path=":walletId" element={<OneLiner />} />
         </Route>
 
         <Route path="settings-network" element={<SettingsPage />} />

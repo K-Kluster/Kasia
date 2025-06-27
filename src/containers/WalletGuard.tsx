@@ -22,7 +22,8 @@ type Step = {
     | "unlock"
     | "migrate"
     | "seed"
-    | "success";
+  | "success"
+  | "unlocked";
   mnemonic?: Mnemonic;
   name?: string;
   walletId?: string;
@@ -77,12 +78,6 @@ export const WalletGuard = ({
   } = useWalletStore();
 
   useEffect(() => {
-    if (unlockedWallet) {
-      navigate(`/wallet/${unlockedWallet.id}`);
-    }
-  }, [unlockedWallet]);
-
-  useEffect(() => {
     setIsMounted(true);
     loadWallets();
     return () => setIsMounted(false);
@@ -90,7 +85,7 @@ export const WalletGuard = ({
 
   if (!isMounted) return null;
 
-  const onClickStep = (type: Step["type"], walletId?: string) => {
+  const onStepChange = (type: Step["type"], walletId?: string) => {
     if (unlockedWallet) return;
     switch (type) {
       case "home":
@@ -107,6 +102,9 @@ export const WalletGuard = ({
         break;
       case "migrate":
         navigate(`/wallet/migrate/${walletId ?? ""}`);
+        break;
+      case "unlocked":
+        navigate(`/${walletId ?? "/"}`);
         break;
       default:
         return;
@@ -178,7 +176,9 @@ export const WalletGuard = ({
       return;
     }
     try {
+      onStepChange("unlocked", selectedWalletId);
       await unlock(selectedWalletId, passwordRef.current.value);
+      
     } catch (err) {
       console.error("Unlock error:", err);
       // Clear the password field and focus it
@@ -281,7 +281,7 @@ export const WalletGuard = ({
                     {getDerivationTypeDisplay(w.derivationType)}
                     {w.derivationType === "legacy" && (
                       <button
-                        onClick={() => onClickStep("migrate", w.id)}
+                        onClick={() => onStepChange("migrate", w.id)}
                         className="migrate-button"
                         title="Migrate to standard derivation for Kaspium compatibility"
                       >
@@ -309,13 +309,13 @@ export const WalletGuard = ({
           </div>
           <div className="wallet-options">
             <button
-              onClick={() => onClickStep("create")}
+              onClick={() => onStepChange("create")}
               className="bg-[var(--accent-blue)] text-white border-none py-3 px-6 rounded-lg cursor-pointer text-base transition-colors duration-200"
             >
               Create New Wallet
             </button>
             <button
-              onClick={() => onClickStep("import")}
+              onClick={() => onStepChange("import")}
               className="bg-[var(--accent-blue)] text-white border-none py-3 px-6 rounded-lg cursor-pointer text-base transition-colors duration-200"
             >
               Import Wallet
@@ -409,7 +409,7 @@ export const WalletGuard = ({
           {error && <div className="error">{error}</div>}
 
           <div className="form-actions">
-            <button onClick={() => onClickStep("home")}>Back</button>
+            <button onClick={() => onStepChange("home")}>Back</button>
             <button onClick={onCreateWallet}>Create</button>
           </div>
         </>
@@ -477,7 +477,7 @@ export const WalletGuard = ({
             className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
             onClick={() => {
               setStep({ type: "home", mnemonic: undefined });
-              onClickStep("home");
+              onStepChange("home");
             }}
           >
             Back to Wallets
@@ -571,7 +571,7 @@ export const WalletGuard = ({
           {error && <div className="error">{error}</div>}
 
           <div className="form-actions">
-            <button onClick={() => onClickStep("home")}>Back</button>
+            <button onClick={() => onStepChange("home")}>Back</button>
             <button onClick={onImportWallet}>Import</button>
           </div>
         </>
@@ -584,7 +584,7 @@ export const WalletGuard = ({
 
           <button
             className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
-            onClick={() => onClickStep("home")}
+            onClick={() => onStepChange("home")}
           >
             Back to Wallets
           </button>
@@ -639,7 +639,7 @@ export const WalletGuard = ({
           {error && <div className="error">{error}</div>}
 
           <div className="form-actions">
-            <button onClick={() => onClickStep("home")}>Cancel</button>
+            <button onClick={() => onStepChange("home")}>Cancel</button>
             <button onClick={onMigrateWallet}>Migrate Wallet</button>
           </div>
         </>
@@ -676,7 +676,7 @@ export const WalletGuard = ({
           {error && <div className="error">{error}</div>}
 
           <div className="form-actions">
-            <button onClick={() => onClickStep("home")}>Back</button>
+            <button onClick={() => onStepChange("home")}>Back</button>
             <button onClick={onUnlockWallet}>Unlock</button>
           </div>
         </>
