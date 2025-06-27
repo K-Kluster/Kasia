@@ -16,6 +16,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
+import { KasIcon } from "../components/icons/KasCoin";
 
 export type Step = {
   type:

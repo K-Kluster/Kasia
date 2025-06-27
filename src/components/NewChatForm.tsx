@@ -297,14 +297,6 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     }
   };
 
-  // Helper to format kaspa address for display
-  function formatKaspaAddress(addr: string) {
-    if (!addr.startsWith("kaspa:")) return addr;
-    const core = addr.slice(6);
-    if (core.length <= 6) return addr;
-    return `kaspa:${core.slice(0, 3)}.....${core.slice(-3)}`;
-  }
-
   if (showConfirmation) {
     let recipientDisplay;
     if (
@@ -328,7 +320,10 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         <h3 className={styles.title}>Confirm Handshake</h3>
         <div className="text-white/80 text-sm mb-5 leading-normal">
           <p>
-            <strong>Recipient:</strong> {recipientDisplay}
+            <strong>Recipient:</strong>
+            <div className="flex justify-start break-all">
+              <KaspaAddress address={recipientDisplay} />
+            </div>
           </p>
           {detectedRecipientInputValueFormat === "kns" &&
             resolvedRecipientAddress &&

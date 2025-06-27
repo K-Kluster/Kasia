@@ -18,6 +18,7 @@ import { WalletSeedRetreiveDisplay } from "./components/Modals/WalletSeedRetreiv
 import { MessageBackup } from "./components/Modals/MessageBackup";
 import { WalletInfo } from "./components/Modals/WalletInfo";
 import { useNavigate } from "react-router-dom";
+import { UtxoCompound } from "./components/Modals/UtxoCompound";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -230,6 +231,13 @@ export const OneLiner: FC = () => {
       {isOpen("seed") && (
         <Modal onClose={() => closeModal("seed")}>
           <WalletSeedRetreiveDisplay />
+        </Modal>
+      )}
+
+      {/* UTXO Compound Modal */}
+      {isOpen("utxo-compound") && (
+        <Modal onClose={() => closeModal("utxo-compound")}>
+          <UtxoCompound />
         </Modal>
       )}
 

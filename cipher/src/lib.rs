@@ -134,12 +134,12 @@ pub fn debug_address_to_pubkey(address_string: &str) -> Result<String, JsError> 
 #[wasm_bindgen]
 pub fn debug_can_decrypt(encrypted_hex: &str, private_key_hex: &str) -> Result<String, JsError> {
     // Try to parse the hex string into EncryptedMessage
-    let encrypted_bytes = match hex::decode(encrypted_hex) {
+    match hex::decode(encrypted_hex) {
         Ok(bytes) => bytes,
         Err(_) => return Err(JsError::new("Invalid encrypted message hex")),
     };
 
-    let encrypted_message = EncryptedMessage::from_bytes(&encrypted_bytes);
+    // let encrypted_message = EncryptedMessage::from_bytes(&encrypted_bytes);
 
     // Try to parse the private key
     let private_key_bytes = match hex::decode(private_key_hex) {
