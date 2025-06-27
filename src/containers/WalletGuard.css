@@ -1,40 +1,3 @@
-/* 
-.wallet-item {
-  background-color: var(--primary-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-} */
-
-/* .wallet-actions {
-  display: flex;
-  gap: 0.5rem;
-} */
-
-/* .select-button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-} */
-/* 
-.delete-button {
-  background-color: transparent;
-  color: #ef4444;
-  border: 1px solid #ef4444;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-} */
 
 .delete-button:hover {
   background-color: #ef4444;
@@ -46,18 +9,6 @@
   gap: 1rem;
   justify-content: center;
 }
-/* 
-.create-wallet-button,
-.import-wallet-button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.2s;
-} */
 
 .form-group {
   margin-bottom: 15px;
@@ -234,25 +185,6 @@
   font-size: 12px;
 }
 
-.mnemonic-phrase {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 15px;
-  width: 100%;
-  margin-bottom: 15px;
-  filter: blur(8px);
-  pointer-events: none;
-  user-select: none;
-  transition: all 0.3s ease;
-}
-
-.mnemonic-phrase.visible {
-  filter: none;
-  pointer-events: auto;
-  user-select: text;
-}
-
 .show-phrase-toggle {
   display: flex;
   align-items: center;
@@ -278,10 +210,10 @@
   user-select: none;
 }
 
-.mnemonic-phrase.visible + .copy-button {
+/* .mnemonic-phrase.visible + .copy-button {
   opacity: 1;
   pointer-events: auto;
-}
+} */
 
 .mnemonic-word {
   font-family: monospace;
@@ -352,15 +284,6 @@
   background-color: #2563eb;
 }
 
-/* Derivation and seed length options */
-/* .derivation-options,
-.seed-length-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-} */
-
 .radio-option {
   display: flex;
   align-items: flex-start;
@@ -420,21 +343,6 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  /* .wallet-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  } */
-
-  /* .wallet-actions {
-    width: 100%;
-    justify-content: flex-end;
-  } */
-
-  /* .derivation-options,
-  .seed-length-options {
-    gap: 0.5rem;
-  } */
 
   .radio-option {
     padding: 0.5rem;

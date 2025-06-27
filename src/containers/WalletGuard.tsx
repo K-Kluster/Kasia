@@ -10,7 +10,10 @@ import {
   disablePasswordRequirements,
 } from "../config/password";
 import { MnemonicEntry } from "../components/MnemonicEntry";
-import { Cog6ToothIcon } from "@heroicons/react/24/outline";
+import {
+  Cog6ToothIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 
@@ -352,7 +355,7 @@ export const WalletGuard = ({
                     setDerivationType(e.target.value as WalletDerivationType)
                   }
                 />
-                <span className="ml-3">Standard (Recommended)</span>
+                <span className="ml-1">Standard (Recommended)</span>
                 <small>
                   Compatible with Kaspium and other standard wallets
                 </small>
@@ -367,7 +370,7 @@ export const WalletGuard = ({
                     setDerivationType(e.target.value as WalletDerivationType)
                   }
                 />
-                <span>Legacy</span>
+                <span className="ml-1">Legacy</span>
                 <small>For compatibility with older wallets</small>
               </label>
             </div>
@@ -389,7 +392,7 @@ export const WalletGuard = ({
                   checked={seedPhraseLength === 12}
                   onChange={() => setSeedPhraseLength(12)}
                 />
-                <span>12 words</span>
+                <span className="ml-1">12 words</span>
                 <small>128-bit entropy</small>
               </label>
               <label className="radio-option">
@@ -400,7 +403,7 @@ export const WalletGuard = ({
                   checked={seedPhraseLength === 24}
                   onChange={() => setSeedPhraseLength(24)}
                 />
-                <span>24 words (Recommended)</span>
+                <span className="ml-1">24 words (Recommended)</span>
                 <small>256-bit entropy</small>
               </label>
             </div>
@@ -425,65 +428,70 @@ export const WalletGuard = ({
       )}
 
       {/* Seed continues from Create without a new path */}
-      {step.type === "seed" && (
+      {step.type === "seed" && step.mnemonic && (
         <>
-          <h2 className="font-bold text-lg text-center">Wallet Unlocked</h2>
+          <h2 className="font-bold text-lg text-center">Wallet Created</h2>
 
-          {step.mnemonic && (
-            <div className="my-5 py-4 px-4 bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center">
-              <p>Please save your mnemonic phrase securely:</p>
-              <div className="my-5 p-4 bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center">
-                ⚠️ This is the only time you will see your seed phrase - back it
-                up now!
-              </div>
-
-              <div className="show-phrase-toggle">
-                <input
-                  type="checkbox"
-                  id="showPhrase"
-                  onChange={(e) => {
-                    const el = document.querySelector(".mnemonic-phrase");
-                    el?.classList.toggle("visible", e.target.checked);
-                  }}
-                />
-                <label htmlFor="showPhrase">
-                  I understand that anyone with my seed phrase can access my
-                  wallet. Show seed phrase
-                </label>
-              </div>
-
-              <div className="mnemonic-phrase">
-                {step.mnemonic.phrase.split(" ").map((word, i) => (
-                  <span key={i} className="mnemonic-word">
-                    <span className="word-number">{i + 1}.</span> {word}
-                  </span>
-                ))}
-              </div>
-
-              <button
-                className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
-                onClick={() => {
-                  navigator.clipboard
-                    .writeText(step.mnemonic!.phrase)
-                    .then(() => {
-                      const btn = document.querySelector(
-                        ".copy-button"
-                      ) as HTMLButtonElement;
-                      if (btn) {
-                        const original = btn.textContent;
-                        btn.textContent = "Copied!";
-                        setTimeout(() => (btn.textContent = original), 2000);
-                      }
-                    });
-                }}
-              >
-                Copy Seed Phrase
-              </button>
+          <div className="my-5 py-4 px-4 bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center w-full">
+            <p className="font-semibold">
+              Please save your mnemonic phrase securely:
+            </p>
+            <div className="my-2 p-2 text-base rounded-lg flex flex-col items-center text-center text-amber-300">
+              <ExclamationTriangleIcon className="w-8 h-8" />
+              This is the only time you will see your seed phrase – back it up
+              now!
             </div>
-          )}
+
+            {/* Reveal toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                const grid = document.querySelector(".mnemonic-phrase");
+                const copyBtn = document.querySelector(
+                  ".copy-button"
+                ) as HTMLButtonElement;
+                // toggle visibility
+                const nowVisible = !!grid?.classList.toggle("filter-none");
+                grid?.classList.toggle("pointer-events-auto", nowVisible);
+                grid?.classList.toggle("select-text", nowVisible);
+                // enable/disable copy button
+                if (copyBtn) {
+                  copyBtn.disabled = !nowVisible;
+                  copyBtn.classList.toggle("opacity-50", !nowVisible);
+                  copyBtn.classList.toggle("cursor-not-allowed", !nowVisible);
+                }
+              }}
+              className="font-bold cursor-pointer mx-auto my-4 px-4 py-2 bg-[rgba(76,175,80,0.1)] border border-[rgba(76,175,80,0.3)] rounded text-white text-sm"
+            >
+              Anyone with your seed phrase can access your wallet
+              <div className="font-semibold my-1 text-amber-300 underline">
+                Show seed phrase
+              </div>
+            </button>
+
+            {/* Phrase grid (starts blurred) */}
+            <div className="mnemonic-phrase grid grid-cols-3 gap-[10px] p-[15px] w-full mb-[15px] filter blur-[8px] pointer-events-none select-none transition-all duration-300 ease-linear">
+              {step.mnemonic!.phrase.split(" ").map((word, i) => (
+                <span key={i} className="mnemonic-word">
+                  <span className="word-number font-bold">{i + 1}.</span> {word}
+                </span>
+              ))}
+            </div>
+
+            {/* Copy button (initially disabled) */}
+            <button
+              className="copy-button mx-auto mt-2 bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              onClick={() =>
+                navigator.clipboard.writeText(step.mnemonic!.phrase)
+              }
+              disabled
+            >
+              Copy Seed Phrase
+            </button>
+          </div>
 
           <button
-            className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
+            className="mx-auto mt-4 bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded"
             onClick={() => {
               setStep({ type: "home", mnemonic: undefined });
               onStepChange("home");
