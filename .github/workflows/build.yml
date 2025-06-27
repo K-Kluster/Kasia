@@ -379,6 +379,9 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
 
+      - name: Build App
+        run: tauri build -v
+
       # upload artifact
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -436,6 +439,9 @@ jobs:
       # install @tauri-apps/cli@latest
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
+
+      - name: Build App
+        run: tauri build -v
 
       # upload artifact
       - name: Upload Artifact
@@ -499,6 +505,9 @@ jobs:
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
 
+      - name: Build App
+        run: tauri build -v
+
       # upload artifact
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -555,6 +564,9 @@ jobs:
       # install @tauri-apps/cli@latest
       - name: Install Tauri CLI
         run: npm install -g @tauri-apps/cli@latest
+
+      - name: Build App
+        run: tauri build -v
 
       # upload artifact
       - name: Upload Artifact
