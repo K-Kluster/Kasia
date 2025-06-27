@@ -156,6 +156,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         const paymentPayload = JSON.parse(messageToRender);
 
         if (paymentPayload.type === "payment") {
+          // Check if message is empty or just whitespace
+          const hasMessage =
+            paymentPayload.message && paymentPayload.message.trim();
+
           return (
             <div className="flex items-center gap-3 p-4">
               <div className="flex items-center justify-center min-w-20 h-20 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)] animate-pulse">
@@ -166,9 +170,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
                 />
               </div>
               <div className="flex-1">
-                <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
-                  {paymentPayload.message}
-                </div>
+                {hasMessage && (
+                  <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+                    {paymentPayload.message}
+                  </div>
+                )}
                 <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
                   {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
                 </div>
