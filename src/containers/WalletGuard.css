@@ -4,12 +4,6 @@
   color: white;
 }
 
-.wallet-options {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
 .form-group {
   margin-bottom: 15px;
 }
