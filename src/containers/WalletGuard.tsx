@@ -14,7 +14,7 @@ import { Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 
-type Step = {
+export type Step = {
   type:
     | "home"
     | "create"
