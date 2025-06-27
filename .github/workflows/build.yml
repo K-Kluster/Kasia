@@ -386,7 +386,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-linux
+          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-intel-macos
           path: ./src-tauri/target/x86_64-apple-darwin/release/bundle/macos/kasia.app.tar.gz
           retention-days: 1
 
@@ -447,8 +447,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-linux
-          path: ./src-tauri/target/aarch64-apple-darwin/release/bundle/macos/kasia.app.tar.gz
+          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-arm-macos
+          path: ./src-tauri/target/release/bundle/macos/kasia.app
           retention-days: 1
 
   build-linux-app:
@@ -508,12 +508,17 @@ jobs:
       - name: Build App
         run: tauri build -v
 
+      - name: Group Build Artifacts
+        run: |
+          mkdir -p ./tmp
+          mv ./src-tauri/target/release/bundle ./tmp/
+
       # upload artifact
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-linux
-          path: ./src-tauri/target/
+          path: ./tmp/
           retention-days: 1
 
   build-window-app:
