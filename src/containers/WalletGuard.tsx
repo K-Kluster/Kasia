@@ -144,6 +144,8 @@ export const WalletGuard = ({
     } catch (err) {
       console.error("Wallet creation error:", err);
       setError(err instanceof Error ? err.message : "Failed to create wallet");
+    } finally {
+      passwordRef.current!.value = "";
     }
   };
 
@@ -168,6 +170,10 @@ export const WalletGuard = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid mnemonic");
     }
+    finally {
+      mnemonicRef.current.value= ""
+      passwordRef.current!.value = "";
+    }
   };
 
   const onUnlockWallet = async () => {
@@ -178,7 +184,6 @@ export const WalletGuard = ({
     try {
       onStepChange("unlocked", selectedWalletId);
       await unlock(selectedWalletId, passwordRef.current.value);
-      
     } catch (err) {
       console.error("Unlock error:", err);
       // Clear the password field and focus it
@@ -193,6 +198,8 @@ export const WalletGuard = ({
           ? "Incorrect password. Please try again."
           : "Failed to unlock wallet. Please try again.";
       setError(msg);
+    } finally {
+      passwordRef.current!.value = "";
     }
   };
 
@@ -214,6 +221,8 @@ export const WalletGuard = ({
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to migrate wallet");
+    } finally {
+      passwordRef.current!.value = "";
     }
   };
 
@@ -452,7 +461,7 @@ export const WalletGuard = ({
               </div>
 
               <button
-                className="copy-button"
+                className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
                 onClick={() => {
                   navigator.clipboard
                     .writeText(step.mnemonic!.phrase)
@@ -581,20 +590,23 @@ export const WalletGuard = ({
       {step.type === "success" && (
         <>
           <h2 className="font-bold text-lg text-center">Wallet Unlocked</h2>
-
-          <button
-            className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
-            onClick={() => onStepChange("home")}
-          >
-            Back to Wallets
-          </button>
+          <div className="mt-5 flex justify-center">
+            <button
+              className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
+              onClick={() => onStepChange("home")}
+            >
+              Back to Wallets
+            </button>
+          </div>
         </>
       )}
 
       {/* Migrate wallet 'Route' */}
       {step.type === "migrate" && (
         <>
-          <h2 className="font-bold text-lg text-center">Migrate Legacy Wallet</h2>
+          <h2 className="font-bold text-lg text-center">
+            Migrate Legacy Wallet
+          </h2>
           <div className="migration-info">
             <p>
               Migrating wallet:{" "}
