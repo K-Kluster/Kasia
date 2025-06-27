@@ -1,0 +1,53 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "kasia",
+  "version": "0.1.0",
+  "identifier": "kas.kluster.kasia",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "npm run dev",
+    "removeUnusedCommands": true
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "kasia",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "appimage", "deb", "dmg", "msi", "nsis"],
+    "icon": [
+      "./icons/icon.png",
+      "./icons/icon.ico",
+      "./icons/icon.icns",
+      "./icons/32x32.png",
+      "./icons/128x128.png",
+      "./icons/128x128@2x.png",
+      "./icons/StoreLogo.png"
+    ],
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/README.md": "../README.md",
+          "/usr/share/LICENSE": "../LICENSE"
+        }
+      },
+      "appimage": {
+        "files": {
+          "/usr/share/README.md": "../README.md",
+          "/usr/LICENSE": "../LICENSE"
+        }
+      }
+    }
+  }
+}
