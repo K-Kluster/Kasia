@@ -25,6 +25,20 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all"
+    "targets": "all",
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/README.md": "../README.md",
+          "/usr/share/LICENSE": "../LICENSE"
+        }
+      },
+      "appimage": {
+        "files": {
+          "/usr/share/README.md": "../README.md",
+          "/usr/LICENSE": "../LICENSE"
+        }
+      }
+    }
   }
 }
