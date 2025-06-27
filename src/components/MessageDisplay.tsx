@@ -206,7 +206,87 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     );
   };
 
-  // Parse and render message content
+  // Add GIF link detection and rendering
+  const renderGifEmbed = (message: string) => {
+    // Handle direct Giphy media URLs
+    if (message.match(/https?:\/\/media\d?\.giphy\.com\/.*\.gif/i)) {
+      return (
+        <div className="my-2">
+          <img
+            src={message}
+            alt="GIF"
+            className="w-full rounded-lg"
+            loading="lazy"
+          />
+        </div>
+      );
+    }
+
+    // Handle Tenor media URLs
+    if (message.match(/https?:\/\/media\.tenor\.com\/.*\.gif/i)) {
+      return (
+        <div className="my-2">
+          <img
+            src={message}
+            alt="GIF"
+            className="w-full rounded-lg"
+            loading="lazy"
+          />
+        </div>
+      );
+    }
+
+    // Handle giphy.com website URLs
+    const giphyWebsiteRegex =
+      /https?:\/\/(?:www\.)?giphy\.com\/(?:gifs|embed)\/([a-zA-Z0-9]+)/i;
+    const giphyMatch = message.match(giphyWebsiteRegex);
+
+    if (giphyMatch) {
+      const giphyId = giphyMatch[1];
+      return (
+        <>
+          <div className="my-2 relative w-full pt-[56.25%]">
+            <iframe
+              src={`https://giphy.com/embed/${giphyId}`}
+              className="absolute inset-0 w-full h-full rounded-lg"
+              frameBorder="0"
+              allowFullScreen
+            />
+          </div>
+          <a
+            href={`https://giphy.com/gifs/${giphyId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs opacity-50 hover:opacity-100 transition-opacity"
+          >
+            via GIPHY
+          </a>
+        </>
+      );
+    }
+
+    // Handle tenor.com website URLs
+    const tenorWebsiteRegex =
+      /https?:\/\/(?:www\.)?tenor\.com\/view\/([a-zA-Z0-9-]+)/i;
+    const tenorMatch = message.match(tenorWebsiteRegex);
+
+    if (tenorMatch) {
+      return (
+        <div className="my-2">
+          <img
+            src={message}
+            alt="GIF"
+            className="w-full rounded-lg"
+            loading="lazy"
+          />
+        </div>
+      );
+    }
+
+    return message;
+  };
+
+  // Modify renderMessageContent to use the new renderGifEmbed
   const renderMessageContent = () => {
     // If this is a handshake message and we found the conversation
     if (isHandshake && conversation) {
@@ -279,7 +359,6 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       );
     }
 
-    // Try to parse as JSON in case it's a file message in content
     try {
       const parsedContent = JSON.parse(messageToRender);
       if (parsedContent.type === "file") {
@@ -314,10 +393,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         );
       }
     } catch (e) {
-      // Not a JSON message, render as text
+      // Not a JSON message, check for GIF links
+      return renderGifEmbed(messageToRender);
     }
 
-    return messageToRender;
+    return renderGifEmbed(messageToRender);
   };
 
   const [decryptedContent, setDecryptedContent] = useState<string>("");
