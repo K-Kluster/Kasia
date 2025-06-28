@@ -7,6 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
+import clsx from "clsx"
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -440,14 +441,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   }, []);
 
   return (
-    <div className={`message ${isOutgoing ? "outgoing" : "incoming"}`}>
-      <div className="message-header">
-        <div className="message-timestamp">
-          {new Date(timestamp).toLocaleString()}
-        </div>
+    <div
+      className={clsx(
+        "relative my-2 mb-4 px-4 py-3 rounded-[16px] max-w-[70%] break-words hyphens-auto",
+        isOutgoing ? "bg-[#007aff] text-white ml-auto" : "bg-gray-200 mr-auto"
+      )}
+    >
+      <div className="flex justify-between items-center mb-[6px] text-[0.8em] whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+        <div className="opacity-70">{new Date(timestamp).toLocaleString()}</div>
       </div>
-      <div className="message-content">{renderMessageContent()}</div>
-      <div className="message-footer">
+      <div className="text-[1em] my-2 break-words overflow-wrap leading-[1.4]">
+        {renderMessageContent()}
+      </div>
+      <div className="flex justify-between items-center mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
         {formatAmountAndFee()}
         {transactionId && (
           <a

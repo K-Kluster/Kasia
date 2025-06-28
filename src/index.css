@@ -301,7 +301,7 @@ h1 {
   height: 36px;
 }
 
-.message {
+/* .message {
   position: relative;
   background-color: var(--secondary-bg);
   padding: 12px 16px;
@@ -311,7 +311,7 @@ h1 {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
-}
+} */
 
 .contact-preview {
   font-size: 0.8em;
@@ -362,7 +362,7 @@ h1 {
   border-left: 20px solid var(--accent-blue);
   border-bottom-right-radius: 16px;
 }
-
+/* 
 .message-header {
   display: flex;
   justify-content: space-between;
@@ -377,17 +377,17 @@ h1 {
 
 .message.outgoing .message-header {
   color: rgba(255, 255, 255, 0.8);
-}
+} */
 
-.message-content {
+/* .message-content {
   font-size: 1em;
   margin: 8px 0;
   word-break: break-word;
   overflow-wrap: break-word;
   line-height: 1.4;
-}
+} */
 
-.message-footer {
+/* .message-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -402,9 +402,9 @@ h1 {
 
 .message.outgoing .message-footer {
   color: rgba(255, 255, 255, 0.8);
-}
+} */
 
-.message-id {
+/* .message-id {
   background-color: rgba(0, 0, 0, 0.2);
   padding: 2px 6px;
   border-radius: 10px;
@@ -418,7 +418,7 @@ h1 {
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
-}
+} */
 
 .tx-label {
   user-select: none;
