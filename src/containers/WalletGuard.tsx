@@ -277,7 +277,7 @@ export const WalletGuard = ({
   
 
   const wrapperClass =
-  clsx("sm:max-w-[600px] w-full mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
+  clsx("sm:max-w-[600px] w-fit sm:w-full mx-2 sm:mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
         {
           "relative": step.type === "home" //support the cog!
         }
@@ -689,7 +689,7 @@ export const WalletGuard = ({
           <h2 className="font-bold text-lg text-center">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
-            <div className="selected-wallet-info">
+            <div className="text-center mb-5 p-2.5 bg-[#2c3e50] rounded">
               <span className="font-semibold text-[var(--text-primary)]">
                 {wallets.find((w) => w.id === selectedWalletId)?.name}
               </span>

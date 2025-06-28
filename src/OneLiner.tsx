@@ -152,14 +152,14 @@ export const OneLiner: FC = () => {
   return (
     <>
       {/* Main Message Section*/}
-      <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
+      <div className="sm:px-8 sm:py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           {isWalletReady &&
             (isWalletReady && messageStore.isLoaded ? (
               <div
                 className="
               bg-[var(--secondary-bg)] rounded-xl shadow-md sm:max-w-[1200px] w-full sm:mx-auto
-              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[95vh] sm:h-[85vh] min-h-[300px]
+              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[100vh] sm:h-[85vh] min-h-[300px]
               flex
             "
               >
@@ -182,7 +182,7 @@ export const OneLiner: FC = () => {
             ) : (
               <div className="flex flex-col items-center w-full text-xs">
                 {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-                <div className="relative sm:max-w-[1200px] w-full mx-auto min-w-[320px] h-[95vh] sm:h-[85vh]  min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
+                <div className="relative sm:max-w-[1200px] w-full mx-auto min-w-[320px] h-[100vh] sm:h-[85vh]  min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
                   <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
                   <div className="relative flex flex-col items-center justify-center h-full space-y-4">
                     <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
