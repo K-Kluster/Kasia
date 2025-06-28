@@ -42,40 +42,47 @@ interface FeatureState {
   getAvailableFeatures: () => Array<FeatureFlag>;
 }
 
+// Helper to ensure we always have a Set
+const ensureFeatureSet = (features: unknown): Set<FeatureFlag> => {
+  if (features instanceof Set) return features;
+  if (Array.isArray(features)) return new Set(features);
+  return new Set(defaultRuntimeFeatures);
+};
+
 export const useFeatureStore = create<FeatureState>()(
   persist(
     (set, get) => ({
       enabledFeatures: new Set(defaultRuntimeFeatures),
 
       isFeatureEnabled: (feature: FeatureFlag) => {
-        // Feature must be available at build time AND enabled at runtime
-        return (
-          buildTimeFeatures.has(feature) && get().enabledFeatures.has(feature)
-        );
+        const state = get();
+        const features = ensureFeatureSet(state.enabledFeatures);
+        return buildTimeFeatures.has(feature) && features.has(feature);
       },
 
       isFeatureAvailable: (feature: FeatureFlag) => {
-        // Check if feature is available at build time
         return buildTimeFeatures.has(feature);
       },
 
       enableFeature: (feature: FeatureFlag) => {
-        // Can only enable features that are available at build time
         if (!buildTimeFeatures.has(feature)) {
           console.warn(`Feature '${feature}' is not available at build time`);
           return;
         }
 
-        set((state) => ({
-          enabledFeatures: new Set([...state.enabledFeatures, feature]),
-        }));
+        set((state) => {
+          const features = ensureFeatureSet(state.enabledFeatures);
+          return {
+            enabledFeatures: new Set([...features, feature]),
+          };
+        });
       },
 
       disableFeature: (feature: FeatureFlag) => {
         set((state) => {
-          const newFeatures = new Set(state.enabledFeatures);
-          newFeatures.delete(feature);
-          return { enabledFeatures: newFeatures };
+          const features = ensureFeatureSet(state.enabledFeatures);
+          features.delete(feature);
+          return { enabledFeatures: features };
         });
       },
 
@@ -94,8 +101,17 @@ export const useFeatureStore = create<FeatureState>()(
     }),
     {
       name: "feature-flags-storage",
-      // Only persist runtime toggles, not build-time config
-      partialize: (state) => ({ enabledFeatures: state.enabledFeatures }),
+      // Convert Set to Array for storage
+      partialize: (state) => ({
+        enabledFeatures: Array.from(state.enabledFeatures),
+      }),
+      // Convert Array back to Set after rehydration
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          // Ensure enabledFeatures is a Set
+          state.enabledFeatures = ensureFeatureSet(state.enabledFeatures);
+        }
+      },
     }
   )
 );

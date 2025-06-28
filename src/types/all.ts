@@ -1,3 +1,11 @@
+import { Root } from "react-dom/client";
+
+declare global {
+  interface Window {
+    __APP_ROOT__: Root;
+  }
+}
+
 export type Message = {
   transactionId: string;
   senderAddress: string;
