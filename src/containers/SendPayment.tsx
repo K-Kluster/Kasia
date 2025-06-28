@@ -189,16 +189,12 @@ export const SendPayment: FC<{
       setIsSendingPayment(true);
       setPaymentError(null);
 
-      if (payMessage.trim()) {
-        // Send payment with encrypted message using the simplified payment protocol
-        await sendPaymentWithMessage(address, amountSompi, payMessage.trim());
-      } else {
-        // Simple payment without message - use existing withdraw transaction
-        const { createWithdrawTransaction } = await import(
-          "../service/account-service"
-        );
-        await createWithdrawTransaction(address, amountSompi);
-      }
+      // Always use payment protocol to ensure chat visibility
+      // Use the provided message, or an empty space if no message provided
+      const messageToSend = payMessage.trim() || " ";
+
+      // Send payment with encrypted message using the simplified payment protocol
+      await sendPaymentWithMessage(address, amountSompi, messageToSend);
 
       // Reset forms on success
       setPayAmount("");
@@ -209,7 +205,7 @@ export const SendPayment: FC<{
 
       console.log(
         `Payment of ${payAmount} KAS${
-          payMessage ? ` with message "${payMessage}"` : ""
+          payMessage ? ` with message "${payMessage}"` : " (no message)"
         } sent successfully to ${address}`
       );
     } catch (error) {

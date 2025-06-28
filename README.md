@@ -1,3 +1,14 @@
+- [How To Run Kasia Locally](#how-to-run-kasia-locally)
+  * [Getting started](#getting-started)
+  * [Install Rust](#install-rust)
+  * [Install WASM](#install-wasm)
+  * [Clone the repository](#clone-the-repository)
+  * [Build the cipher wasm package](#build-the-cipher-wasm-package)
+  * [Install Node.js](#install-nodejs)
+  * [Install Kaspa WASM Files](#install-kaspa-wasm-files)
+  * [Run Kasia Locally](#run-kasia-locally)
+- [Links](#links)
+
 # How To Run Kasia Locally
 
 ## Getting started
@@ -174,3 +185,8 @@ npm run dev
 ```
 
 Additionally, it is possible to configure variables via `.env`, simply copy the environment variable file template from `.env.dist` to `.env` and start modify them.
+
+# Links
+
+* [Discord](https://discord.gg/ssB46MXzRU)
+* [X](https://x.com/kasiamessaging)
