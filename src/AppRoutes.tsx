@@ -2,19 +2,19 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
-import { WalletGuard } from "./containers/WalletGuard";
+import { WalletFlow } from "./containers/WalletFlow";
 import { RequireUnlockedWallet } from "./containers/RequireUnlockedWallet";
 import { OneLiner } from "./OneLiner";
 import { SettingsPage } from "./SettingsPage";
 import type { NetworkType } from "./types/all";
-import type { Step } from "./containers/WalletGuard";
+import type { Step } from "./containers/WalletFlow";
 
-type WalletGuardRouteConfig = {
+type WalletFlowRouteConfig = {
   path: string | undefined;
   initialStep: Step["type"];
 };
 
-const walletGuardRoutes: WalletGuardRouteConfig[] = [
+const walletFlowRoutes: WalletFlowRouteConfig[] = [
   { path: "create", initialStep: "create" },
   { path: "import", initialStep: "import" },
   { path: "unlock/:wallet", initialStep: "unlock" },
@@ -38,7 +38,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route
         index
         element={
-          <WalletGuard
+          <WalletFlow
             initialStep="home"
             selectedNetwork={network}
             onNetworkChange={onNetworkChange}
@@ -50,12 +50,12 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
       <Route path="wallet">
         {/* index for /wallet */}
         <Route index element={<Navigate to="/" replace />} />
-        {walletGuardRoutes.map(({ path, initialStep }) => (
+        {walletFlowRoutes.map(({ path, initialStep }) => (
           <Route
             key={path!}
             path={path!}
             element={
-              <WalletGuard
+              <WalletFlow
                 initialStep={initialStep}
                 selectedNetwork={network}
                 onNetworkChange={onNetworkChange}
