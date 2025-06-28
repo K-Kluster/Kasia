@@ -134,7 +134,17 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
               >
                 <span className="text-white text-sm">Withdraw Funds</span>
               </li>
-
+              {/* Compound messages Item */}
+              <li
+                onClick={() => {
+                  openModal("utxo-compound");
+                  setActionsMenuOpen(false);
+                  onCloseMenu();
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Compound UTXOs</span>
+              </li>
               {/* Show IO messages Item */}
               {messageStore.isLoaded && (
                 <li
@@ -171,17 +181,6 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
                 <span className="text-white text-sm">View Seed Phrase</span>
-              </li>
-              {/* Show UTXO Compound Item */}
-              <li
-                onClick={() => {
-                  openModal("utxo-compound");
-                  setActionsMenuOpen(false);
-                  onCloseMenu();
-                }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
-              >
-                <span className="text-white text-sm">Compound UTXOs</span>
               </li>
             </ul>
           )}

@@ -149,7 +149,15 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               >
                 Withdraw Funds
               </li>
-
+              <li
+                onClick={() => {
+                  openModal("utxo-compound");
+                  setActionsOpen(false);
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Compound UTXOs</span>
+              </li>
               {msgStore.isLoaded && (
                 <li
                   onClick={() => {
