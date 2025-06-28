@@ -443,28 +443,39 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   return (
     <div
       className={clsx(
-        "relative my-2 mb-4 px-4 py-3 rounded-[16px] max-w-[70%] break-words hyphens-auto",
-        isOutgoing ? "bg-[#007aff] text-white ml-auto" : "bg-gray-200 mr-auto"
+        "flex w-full my-2",
+        isOutgoing ? "justify-end" : "justify-start"
       )}
     >
-      <div className="flex justify-between items-center mb-[6px] text-[0.8em] whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-        <div className="opacity-70">{new Date(timestamp).toLocaleString()}</div>
-      </div>
-      <div className="text-[1em] my-2 break-words overflow-wrap leading-[1.4]">
-        {renderMessageContent()}
-      </div>
-      <div className="flex justify-between items-center mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-        {formatAmountAndFee()}
-        {transactionId && (
-          <a
-            href={getExplorerUrl(transactionId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transaction-link"
-          >
-            View Transaction
-          </a>
+      <div
+        className={clsx(
+          "relative mb-4 px-4 py-3 rounded-[16px] max-w-[70%] break-words hyphens-auto",
+          isOutgoing
+            ? "bg-[#007aff] text-white text-right"
+            : "bg-[var(--secondary-bg)] text-left"
         )}
+      >
+        <div className="flex justify-between items-center mb-[6px] text-[0.8em] whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+          <div className="opacity-70">
+            {new Date(timestamp).toLocaleString()}
+          </div>
+        </div>
+        <div className="text-[1em] my-2 break-words overflow-wrap leading-[1.4]">
+          {renderMessageContent()}
+        </div>
+        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap break-words max-w-full">
+          {formatAmountAndFee()}
+          {transactionId && (
+            <a
+              href={getExplorerUrl(transactionId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transaction-link"
+            >
+              View Transaction
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
