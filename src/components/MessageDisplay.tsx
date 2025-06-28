@@ -6,6 +6,7 @@ import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
+import { KasIcon } from "./icons/KasCoin";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -35,6 +36,36 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const isHandshake =
     (payload?.startsWith("ciph_msg:") && payload?.includes(":handshake:")) ||
     (content?.startsWith("ciph_msg:") && content?.includes(":handshake:"));
+
+  // Check if this is a payment message by checking the hex payload OR decrypted content
+  const isPayment = (() => {
+    // First check if it's a hex payload starting with ciph_msg prefix
+    if (payload) {
+      const prefix = "636970685f6d73673a"; // hex for "ciph_msg:"
+      if (payload.startsWith(prefix)) {
+        // Extract the message part and check for payment prefix
+        const messageHex = payload.substring(prefix.length);
+        const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
+        if (messageHex.startsWith(paymentPrefix)) {
+          return true;
+        }
+      }
+    }
+
+    // Also check if the content is already decrypted payment JSON
+    if (content) {
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed.type === "payment") {
+          return true;
+        }
+      } catch (e) {
+        // Not JSON, continue checking
+      }
+    }
+
+    return false;
+  })();
 
   // Get conversation if it's a handshake
   const conversation = isHandshake
@@ -107,6 +138,80 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     return null; // Don't show amount for any messages
   };
 
+  // Render payment message content
+  const renderPaymentMessage = () => {
+    if (isDecrypting) {
+      return (
+        <div className="px-3 py-2 bg-teal-50 rounded-md text-gray-600 italic text-xs">
+          Decrypting payment message...
+        </div>
+      );
+    }
+
+    // For payment messages, we'll only show the UI elements, not the raw content
+    const messageToRender = content;
+
+    try {
+      if (messageToRender) {
+        const paymentPayload = JSON.parse(messageToRender);
+
+        if (paymentPayload.type === "payment") {
+          // Check if message is empty or just whitespace
+          const hasMessage =
+            paymentPayload.message && paymentPayload.message.trim();
+
+          return (
+            <div className="flex items-center gap-3 p-4">
+              <div className="flex items-center justify-center min-w-20 h-20 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)] animate-pulse">
+                <KasIcon
+                  className="w-20 h-20 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  circleClassName="fill-white"
+                  kClassName="fill-[#70C7BA]"
+                />
+              </div>
+              <div className="flex-1">
+                {hasMessage && (
+                  <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+                    {paymentPayload.message}
+                  </div>
+                )}
+                <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
+                  {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
+                </div>
+              </div>
+            </div>
+          );
+        }
+      }
+    } catch (error) {
+      console.warn("Could not parse payment message:", error);
+      // If we can't parse it but we know it's a payment message,
+      // show the raw content for debugging
+      console.log("Raw payment content:", messageToRender);
+    }
+
+    // Fallback to showing basic payment info
+    return (
+      <div className="flex items-center gap-3 p-4">
+        <div className="flex items-center justify-center min-w-10 h-10 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]">
+          <KasIcon
+            className="w-10 h-10 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+            circleClassName="fill-white"
+            kClassName="fill-[#70C7BA]"
+          />
+        </div>
+        <div className="flex-1">
+          <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+            Payment message
+          </div>
+          <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
+            {isOutgoing ? "Sent" : "Received"} payment
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Parse and render message content
   const renderMessageContent = () => {
     // If this is a handshake message and we found the conversation
@@ -130,9 +235,18 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         : "Handshake received";
     }
 
+    // If this is a payment message, handle it specially
+    if (isPayment) {
+      return renderPaymentMessage();
+    }
+
     // Wait for decryption attempt before showing content
     if (isDecrypting) {
-      return <div className="decrypting">Decrypting message...</div>;
+      return (
+        <div className="px-3 py-2 bg-gray-50 rounded-md text-gray-600 italic text-xs">
+          Decrypting message...
+        </div>
+      );
     }
 
     // Only use decrypted content if decryption was attempted and successful

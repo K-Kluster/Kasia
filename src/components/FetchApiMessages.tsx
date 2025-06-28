@@ -206,6 +206,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                 const handshakePrefix = "313a68616e647368616b653a"; // "1:handshake:"
                 const commPrefix = "313a636f6d6d3a"; // "1:comm:"
+                const paymentPrefix = "313a7061796d656e743a"; // "1:payment:"
 
                 let messageType = "unknown";
                 let isHandshake = false;
@@ -232,6 +233,23 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     messageType = "comm";
                     targetAlias = parts[2];
                     encryptedContent = parts[3];
+                  }
+                } else if (messageHex.startsWith(paymentPrefix)) {
+                  // Parse payment messages - simplified format without aliases
+                  const hexToString = (hex: string) => {
+                    const hexArray = hex.match(/.{1,2}/g) || [];
+                    return hexArray
+                      .map((byte) => String.fromCharCode(parseInt(byte, 16)))
+                      .join("");
+                  };
+
+                  const messageStr = hexToString(messageHex);
+                  const parts = messageStr.split(":");
+
+                  if (parts.length >= 3) {
+                    messageType = "payment";
+                    // No alias needed - parts[2] is the encrypted content
+                    encryptedContent = parts[2];
                   }
                 }
 

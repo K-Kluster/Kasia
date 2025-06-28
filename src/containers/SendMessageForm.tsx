@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -50,6 +50,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+
+  const estimatedFeesDisplayClasses = useMemo(() => {
+    if (feeEstimate == null) return "";
+    return FEE_LEVELS.find(({ limit }) => feeEstimate <= limit)!.classes;
+  }, [feeEstimate]);
 
   useEffect(() => {
     messageInputRef.current?.focus();
@@ -174,7 +179,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             content: parsedContent.content,
           });
         }
-      } catch (e) {
+      } catch {
         // Not a file message, use message as is
       }
 

@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode , FC } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  FC,
+} from "react";
 
 export type ModalType =
   | "address"
@@ -6,7 +12,8 @@ export type ModalType =
   | "withdraw"
   | "backup"
   | "delete"
-  | "seed";
+  | "seed"
+  | "utxo-compound";
 
 interface ModalContextValue {
   openModal: (m: ModalType) => void;

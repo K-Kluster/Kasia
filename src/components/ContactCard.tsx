@@ -44,6 +44,16 @@ export const ContactCard: FC<{
         return decoded || "Encrypted message";
       }
 
+      // Check if it's a payment message
+      try {
+        const parsed = JSON.parse(message.content);
+        if (parsed.type === "payment") {
+          return parsed.message || "Payment sent";
+        }
+      } catch (e) {
+        // Not a payment message, continue with normal handling
+      }
+
       // Plain text content
       return message.content;
     }

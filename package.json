@@ -8,7 +8,8 @@
     "build:production": "tsc -b && vite build ",
     "build:staging": "tsc -b && vite build --mode staging",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",
@@ -34,6 +35,7 @@
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@tailwindcss/postcss": "^4.1.8",
+    "@tauri-apps/cli": "^2.5.0",
     "@types/elliptic": "^6.4.18",
     "@types/node": "^22.15.18",
     "@types/qrcode": "^1.5.5",
