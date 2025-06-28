@@ -4,7 +4,6 @@ import "./utils/debug-commands"; // Import debug commands
 import "./utils/logging";
 import { createRoot, type Root } from "react-dom/client";
 import { SplashScreen } from "./components/Layout/Splash";
-import { useNetworkStore } from "./store/network.store";
 import "./index.css";
 
 let root: Root;
@@ -22,13 +21,14 @@ export async function boot() {
 
   console.log("Kaspa SDK initialized successfully");
 
-  // connect before we do anything, we always need to be connected
-  const { connect, isConnected } = useNetworkStore.getState();
-  if (!isConnected) connect();
-
   // lazy load main
   const { loadApplication } = await import("./main");
   await loadApplication(root);
+
+  // lazy load network store after the main app is running
+  const { useNetworkStore } = await import("./store/network.store");
+  const { connect, isConnected } = useNetworkStore.getState();
+  if (!isConnected) connect();
 }
 
 boot();

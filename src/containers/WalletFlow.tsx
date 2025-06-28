@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
-import "./WalletGuard.css";
+import "./WalletFlow.css";
 import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
@@ -14,7 +14,7 @@ import {
   Cog6ToothIcon,
   ExclamationTriangleIcon,
   TrashIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -29,26 +29,26 @@ export type Step = {
     | "unlock"
     | "migrate"
     | "seed"
-  | "success"
-  | "unlocked";
+    | "success"
+    | "unlocked";
   mnemonic?: Mnemonic;
   name?: string;
   walletId?: string;
 };
 
-type WalletGuardProps = {
+type WalletFlowProps = {
   initialStep: Step["type"];
   selectedNetwork: NetworkType;
   onNetworkChange: (network: NetworkType) => void;
   isConnected: boolean;
 };
 
-export const WalletGuard = ({
+export const WalletFlow = ({
   initialStep,
   selectedNetwork,
   onNetworkChange,
   isConnected,
-}: WalletGuardProps) => {
+}: WalletFlowProps) => {
   const navigate = useNavigate();
 
   const { wallet } = useParams<{ wallet: string }>();
@@ -59,7 +59,7 @@ export const WalletGuard = ({
   const [derivationType, setDerivationType] =
     useState<WalletDerivationType>("standard");
   const [revealed, setRevealed] = useState(false);
-  
+
   const [unlocking, setUnlocking] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
@@ -125,7 +125,7 @@ export const WalletGuard = ({
     const text = step.mnemonic!.phrase;
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("Seed phrase copied")
+      toast.success("Seed phrase copied");
     } catch {
       const textarea = document.createElement("textarea");
       textarea.value = text;
@@ -198,8 +198,7 @@ export const WalletGuard = ({
       setStep({ type: "success" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid mnemonic");
-    }
-    finally {
+    } finally {
       if (mnemonicRef.current.value) mnemonicRef.current.value = "";
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
@@ -212,7 +211,7 @@ export const WalletGuard = ({
       return;
     }
 
-    setError(""); 
+    setError("");
     try {
       setUnlocking(true);
       await unlock(selectedWalletId, pass);
@@ -280,14 +279,13 @@ export const WalletGuard = ({
         Legacy
       </span>
     );
-  
 
-  const wrapperClass =
-  clsx("sm:max-w-[600px] w-full sm:mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
-        {
-          "relative": step.type === "home" //support the cog!
-        }
-      )
+  const wrapperClass = clsx(
+    "sm:max-w-[600px] w-full mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
+    {
+      relative: step.type === "home", //support the cog!
+    }
+  );
 
   return (
     <div className={wrapperClass}>
