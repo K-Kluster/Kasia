@@ -78,11 +78,7 @@ interface MessagingState {
   processHandshake: (
     senderAddress: string,
     payload: string
-  ) => Promise<{
-    isNewHandshake: boolean;
-    requiresResponse: boolean;
-    conversation: Conversation;
-  }>;
+  ) => Promise<unknown>;
   getActiveConversations: () => Conversation[];
   getPendingConversations: () => PendingConversation[];
 
