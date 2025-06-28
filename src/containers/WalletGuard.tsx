@@ -283,7 +283,7 @@ export const WalletGuard = ({
   
 
   const wrapperClass =
-  clsx("sm:max-w-[600px] w-full mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
+  clsx("sm:max-w-[600px] w-full sm:mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
         {
           "relative": step.type === "home" //support the cog!
         }
@@ -355,16 +355,16 @@ export const WalletGuard = ({
             ))}
           </div>
 
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
             <button
               onClick={() => onStepChange("create")}
-              className="bg-[var(--accent-blue)] text-white border-none py-3 px-6 rounded-lg cursor-pointer text-base transition-colors duration-200"
+              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
             >
               Create New Wallet
             </button>
             <button
               onClick={() => onStepChange("import")}
-              className="bg-[var(--accent-blue)] text-white border-none py-3 px-6 rounded-lg cursor-pointer text-base transition-colors duration-200"
+              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
             >
               Import Wallet
             </button>
@@ -456,9 +456,19 @@ export const WalletGuard = ({
 
           {error && <div className="error">{error}</div>}
 
-          <div className="form-actions">
-            <button onClick={() => onStepChange("home")}>Back</button>
-            <button onClick={onCreateWallet}>Create</button>
+          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+            <button
+              onClick={onCreateWallet}
+              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            >
+              Create
+            </button>
+            <button
+              onClick={() => onStepChange("home")}
+              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            >
+              Back
+            </button>
           </div>
         </>
       )}
@@ -610,9 +620,19 @@ export const WalletGuard = ({
 
           {error && <div className="error">{error}</div>}
 
-          <div className="form-actions">
-            <button onClick={() => onStepChange("home")}>Back</button>
-            <button onClick={onImportWallet}>Import</button>
+          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+            <button
+              onClick={onImportWallet}
+              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            >
+              Create
+            </button>
+            <button
+              onClick={() => onStepChange("home")}
+              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            >
+              Back
+            </button>
           </div>
         </>
       )}
@@ -623,7 +643,7 @@ export const WalletGuard = ({
           <h2 className="font-bold text-lg text-center">Wallet Unlocked</h2>
           <div className="mt-5 flex justify-center">
             <button
-              className="bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
+              className="w-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
               onClick={() => onStepChange("home")}
             >
               Back to Wallets
@@ -650,9 +670,10 @@ export const WalletGuard = ({
               path (m/44'/111111'/0') that is compatible with Kaspium and other
               standard wallets.
             </p>
-            <div className="my-5 p-4 bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center">
-              ⚠️ Your original wallet will remain unchanged. You'll need to
-              transfer funds to the new wallet addresses.
+            <div className="my-5 text-amber-300 p-4 text-center bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center">
+              <ExclamationTriangleIcon className="w-5 h-5" /> Your original
+              wallet will remain unchanged. You'll need to transfer funds to the
+              new wallet addresses.
             </div>
           </div>
 
@@ -681,9 +702,19 @@ export const WalletGuard = ({
 
           {error && <div className="error">{error}</div>}
 
-          <div className="form-actions">
-            <button onClick={() => onStepChange("home")}>Cancel</button>
-            <button onClick={onMigrateWallet}>Migrate Wallet</button>
+          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+            <button
+              onClick={onMigrateWallet}
+              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            >
+              Create
+            </button>
+            <button
+              onClick={() => onStepChange("home")}
+              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            >
+              Back
+            </button>
           </div>
         </>
       )}
@@ -695,7 +726,7 @@ export const WalletGuard = ({
           <h2 className="font-bold text-lg text-center">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
-            <div className="selected-wallet-info">
+            <div className="text-center mb-5 p-2.5 bg-[#2c3e50] rounded">
               <span className="font-semibold text-[var(--text-primary)]">
                 {wallets.find((w) => w.id === selectedWalletId)?.name}
               </span>

@@ -42,7 +42,6 @@ body {
     sans-serif;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
   background-color: var(--primary-bg);
   color: var(--text-primary);
   line-height: 1.5;

@@ -202,7 +202,7 @@
   font-size: 12px;
 }
 
-.selected-wallet-info {
+/* .selected-wallet-info {
   text-align: center;
   margin-bottom: 20px;
   padding: 10px;
@@ -213,7 +213,7 @@
 .selected-wallet-info .wallet-name {
   font-weight: 600;
   color: var(--text-primary);
-}
+} */
 
 .radio-option {
   display: flex;
