@@ -6,12 +6,10 @@ import { Header } from "../Layout/Header";
 import { SlideOutMenu } from "../Layout/SlideOutMenu";
 import { ModalProvider } from "../../context/ModalContext";
 import { ToastContainer } from "../Common/ToastContainer";
-import { useMessagingStore } from "../../store/messaging.store";
 import { useUiStore } from "../../store/ui.store";
 
 export const RootLayout: FC = () => {
   const walletStore = useWalletStore();
-  const messagingStore = useMessagingStore();
   const uiStore = useUiStore();
 
   const isWalletReady = Boolean(walletStore.unlockedWallet);
@@ -21,14 +19,6 @@ export const RootLayout: FC = () => {
   const navigate = useNavigate();
 
   const handleCloseWallet = () => {
-    // lock wallet
-    walletStore.lock();
-
-    // reset messaging state
-    messagingStore.setIsLoaded(false);
-    messagingStore.setOpenedRecipient(null);
-    messagingStore.setIsCreatingNewChat(false);
-
     // close settings panel
     uiStore.setSettingsOpen(false);
 
