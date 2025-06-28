@@ -3,11 +3,11 @@ import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import {
-  Input,
   Popover,
   PopoverButton,
   PopoverPanel,
   Transition,
+  Textarea
 } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
@@ -25,12 +25,16 @@ type SendMessageFormProps = unknown;
 
 // Arbritary fee levels to colour the fee indicator in chat
 const FEE_LEVELS = [
-  { limit: 0.00002, classes: "text-green-400 border-green-400" },
-  { limit: 0.00005, classes: "text-blue-400  border-blue-400" },
+  { limit: 0.00002000, classes: "text-green-400 border-green-400" },
+  { limit: 0.00005000, classes: "text-blue-400  border-blue-400" },
   { limit: 0.0005, classes: "text-yellow-400 border-yellow-400" },
   { limit: 0.001, classes: "text-orange-400 border-orange-400" },
   { limit: Infinity, classes: "text-red-400 border-red-400" },
 ];
+
+function getFeeClasses(fee: number) {
+  return FEE_LEVELS.find(({ limit }) => fee <= limit)!.classes;
+}
 
 export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
@@ -42,7 +46,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   const messageStore = useMessagingStore();
 
-  const messageInputRef = useRef<HTMLInputElement | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
@@ -234,6 +238,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       // Only reset the message input, keep the recipient
       if (messageInputRef.current) messageInputRef.current.value = "";
       setMessage("");
+      if (messageInputRef.current) {
+        messageInputRef.current.style.height = "";
+      }
       setFeeEstimate(null);
 
       // Keep the conversation open with the same recipient
@@ -252,19 +259,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     },
     [onSendClicked]
   );
-
-  useEffect(() => {
-    const messageInput = messageInputRef.current;
-    if (messageInput) {
-      messageInput.addEventListener("keypress", onMessageInputKeyPressed);
-    }
-
-    return () => {
-      if (messageInput) {
-        messageInput.removeEventListener("keypress", onMessageInputKeyPressed);
-      }
-    };
-  }, [messageInputRef, onMessageInputKeyPressed]);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -344,7 +338,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <div
             className={clsx(
               "inline-block bg-white/10 text-xs mr-5 py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
-              feeEstimate != null && estimatedFeesDisplayClasses
+              feeEstimate != null && getFeeClasses(feeEstimate)
             )}
           >
             {isEstimating
@@ -357,17 +351,24 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           </div>
         </div>
       )}
-      <div className="message-input-wrapper">
-        <Input
+      <div className="flex items-center gap-2 bg-[var(--primary-bg)] rounded-lg p-1 border border-[var(--border-color)]">
+        <Textarea
           ref={messageInputRef}
-          type="text"
-          id="messageInput"
+          rows={1}
           placeholder="Type your message..."
-          className="message-input"
+          className="resize-none overflow-y-auto bg-transparent border-none text-[var(--text-primary)] p-2 text-[0.9em] outline-none flex-1"
           value={message}
-          onChange={(e) => {
-            const value = e.target.value;
-            setMessage(value);
+          onChange={(e) => setMessage(e.currentTarget.value)}
+          onInput={(e) => {
+            const t = e.currentTarget;
+            t.style.height = "auto";
+            t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              onSendClicked();
+            }
           }}
           autoComplete="off"
           spellCheck="false"
@@ -407,12 +408,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                     <PaperClipIcon className="size-5 m-2" />
                   </button>
 
-                  {openedRecipient && (
-                    <SendPayment
-                      address={openedRecipient}
-                      onPaymentSent={close}
-                    />
-                  )}
+                  {openedRecipient && <SendPayment address={openedRecipient} />}
                 </PopoverPanel>
               </Transition>
             </>
