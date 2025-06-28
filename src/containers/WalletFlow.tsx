@@ -280,21 +280,12 @@ export const WalletFlow = ({
       </span>
     );
 
-<<<<<<< HEAD:src/containers/WalletGuard.tsx
-  const wrapperClass =
-  clsx("sm:max-w-[600px] w-full sm:mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
-        {
-          "relative": step.type === "home" //support the cog!
-        }
-      )
-=======
   const wrapperClass = clsx(
     "sm:max-w-[600px] w-full mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
     {
       relative: step.type === "home", //support the cog!
     }
   );
->>>>>>> d29bc69 (refactor: change WalletGuard to WalletFlow):src/containers/WalletFlow.tsx
 
   return (
     <div className={wrapperClass}>
