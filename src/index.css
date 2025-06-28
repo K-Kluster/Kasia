@@ -314,26 +314,6 @@ h1 {
   height: 36px;
 }
 
-.message-input-wrapper {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  background-color: var(--primary-bg);
-  border-radius: 8px;
-  padding: 4px;
-  border: 1px solid var(--border-color);
-}
-
-.message-input {
-  background: none;
-  border: none;
-  color: var(--text-primary);
-  padding: 8px;
-  font-size: 0.9em;
-  outline: none;
-  flex: 1;
-}
-
 .message {
   position: relative;
   background-color: var(--secondary-bg);
