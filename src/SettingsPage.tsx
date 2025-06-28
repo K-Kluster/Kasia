@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { Link } from "react-router";
 import { ArrowLeftIcon } from "@heroicons/react/24/solid";
 import { useIsMobile } from "./utils/useIsMobile";
+import { FeatureToggleSettings } from "./components/FeatureToggleSettings";
 
 export const SettingsPage: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -130,6 +131,12 @@ export const SettingsPage: React.FC = () => {
                 Successfully connected to the node!
               </div>
             )}
+
+            {/* Feature Toggle Settings */}
+            <div className="mt-8">
+              <FeatureToggleSettings />
+            </div>
+
             <div className="flex justify-end mt-16">
               <Link to="/">
                 <button className="leading-8  bg-[var(--primary-bg)] hover:opacity-80 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer">

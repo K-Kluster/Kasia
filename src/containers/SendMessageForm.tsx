@@ -22,6 +22,7 @@ import { SendPayment } from "./SendPayment";
 import clsx from "clsx";
 import { GifPicker } from "../components/GifPicker";
 import { GifIcon } from "../components/icons/GifIcon";
+import { useFeatureStore } from "../store/feature.store";
 
 type SendMessageFormProps = unknown;
 
@@ -42,6 +43,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
+  const isGifEnabled = useFeatureStore((state) =>
+    state.isFeatureEnabled("gif")
+  );
 
   const messageStore = useMessagingStore();
 
@@ -351,7 +355,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   return (
     <div className="flex-col gap-8 relative">
       {/* GIF Picker Modal */}
-      {showGifPicker && (
+      {showGifPicker && isGifEnabled && (
         <GifPicker
           onGifSelect={handleGifSelect}
           onClose={() => setShowGifPicker(false)}
@@ -426,15 +430,17 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                     <PaperClipIcon className="size-5 m-2" />
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setShowGifPicker(true);
-                      close();
-                    }}
-                    className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
-                  >
-                    <GifIcon className="size-5 m-2" />
-                  </button>
+                  {isGifEnabled && (
+                    <button
+                      onClick={() => {
+                        setShowGifPicker(true);
+                        close();
+                      }}
+                      className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
+                    >
+                      <GifIcon className="size-5 m-2" />
+                    </button>
+                  )}
 
                   {openedRecipient && (
                     <SendPayment

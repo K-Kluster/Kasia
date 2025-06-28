@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useRef } from "react";
-import clsx from "clsx";
+import { Modal } from "./Common/modal";
 
 interface GifPickerProps {
   onGifSelect: (gifUrl: string) => void;
@@ -148,19 +148,13 @@ export const GifPicker: FC<GifPickerProps> = ({ onGifSelect, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-[var(--secondary-bg)] rounded-lg p-4 max-w-md w-full mx-4 max-h-[80vh] flex flex-col">
+    <Modal onClose={onClose}>
+      <div className="max-h-[70vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h3 className="text-lg font-semibold text-[var(--text-primary)]">
             Choose a GIF
           </h3>
-          <button
-            onClick={onClose}
-            className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xl leading-none"
-          >
-            ×
-          </button>
         </div>
 
         {/* Search Input */}
@@ -231,6 +225,6 @@ export const GifPicker: FC<GifPickerProps> = ({ onGifSelect, onClose }) => {
           Powered by Tenor
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };

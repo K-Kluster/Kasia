@@ -7,6 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
+import { useFeatureStore } from "../store/feature.store";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -30,6 +31,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   const walletStore = useWalletStore();
   const messagingStore = useMessagingStore();
+  const featureStore = useFeatureStore();
   const mounted = useRef(true);
 
   // Check if this is a handshake message
@@ -208,6 +210,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Add GIF link detection and rendering
   const renderGifEmbed = (message: string) => {
+    // Only render GIFs if feature is enabled
+    if (!featureStore.isFeatureEnabled("gif")) {
+      return message; // Return raw URL if feature disabled
+    }
+
     // Handle direct Giphy media URLs
     if (message.match(/https?:\/\/media\d?\.giphy\.com\/.*\.gif/i)) {
       return (
