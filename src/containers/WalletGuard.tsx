@@ -277,7 +277,7 @@ export const WalletGuard = ({
   
 
   const wrapperClass =
-  clsx("sm:max-w-[600px] w-fit sm:w-full mx-2 sm:mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
+  clsx("sm:max-w-[600px] w-full sm:mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
         {
           "relative": step.type === "home" //support the cog!
         }
@@ -350,16 +350,16 @@ export const WalletGuard = ({
             ))}
           </div>
 
-          <div className="flex gap-2 justify-center">
+          <div className="flex flex-col gap-2 justify-center sm:flex-row">
             <button
               onClick={() => onStepChange("create")}
-              className="bg-[var(--accent-blue)] text-white border-none py-3 px-6 rounded-lg cursor-pointer text-base transition-colors duration-200"
+              className="w-full sm:w-auto bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
             >
               Create New Wallet
             </button>
             <button
               onClick={() => onStepChange("import")}
-              className="bg-[var(--accent-blue)] text-white border-none py-3 px-6 rounded-lg cursor-pointer text-base transition-colors duration-200"
+              className="w-full sm:w-auto bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
             >
               Import Wallet
             </button>
