@@ -1,13 +1,11 @@
-import { createRoot } from "react-dom/client";
-import "./index.css";
 import App from "./App.tsx";
+import { type Root } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
-// routes declaration
-export const loadApplication = async () => {
-  createRoot(document.getElementById("root")!).render(
+export async function loadApplication(root: Root) {
+  root.render(
     <BrowserRouter>
       <App />
     </BrowserRouter>
   );
-};
+}

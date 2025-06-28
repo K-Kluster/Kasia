@@ -170,7 +170,7 @@ export const WalletGuard = ({
       console.error("Wallet creation error:", err);
       setError(err instanceof Error ? err.message : "Failed to create wallet");
     } finally {
-      passwordRef.current!.value = "";
+      if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
 
@@ -196,8 +196,8 @@ export const WalletGuard = ({
       setError(err instanceof Error ? err.message : "Invalid mnemonic");
     }
     finally {
-      mnemonicRef.current.value= ""
-      passwordRef.current!.value = "";
+      if (mnemonicRef.current.value) mnemonicRef.current.value = "";
+      if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
 
@@ -224,7 +224,7 @@ export const WalletGuard = ({
           : "Failed to unlock wallet. Please try again.";
       setError(msg);
     } finally {
-      passwordRef.current!.value = "";
+      if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
 
@@ -247,7 +247,7 @@ export const WalletGuard = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to migrate wallet");
     } finally {
-      passwordRef.current!.value = "";
+      if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
 

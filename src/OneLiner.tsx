@@ -149,8 +149,6 @@ export const OneLiner: FC = () => {
     }
   }, [isWalletReady, walletStore.unlockedWallet]);
 
-  if (!isWalletReady) navigate("/");
-
   return (
     <>
       {/* Main Message Section*/}
