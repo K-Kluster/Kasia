@@ -215,47 +215,6 @@
   color: var(--text-primary);
 }
 
-/* New styles for derivation types and migration */
-.wallet-derivation {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-
-.derivation-standard {
-  background-color: #10b981;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.derivation-legacy {
-  background-color: #f59e0b;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.migrate-button {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.75rem;
-  transition: background-color 0.2s;
-}
-
-.migrate-button:hover {
-  background-color: #2563eb;
-}
-
 .radio-option {
   display: flex;
   align-items: flex-start;

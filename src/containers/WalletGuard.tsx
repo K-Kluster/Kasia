@@ -13,6 +13,8 @@ import { MnemonicEntry } from "../components/MnemonicEntry";
 import {
   Cog6ToothIcon,
   ExclamationTriangleIcon,
+  TrashIcon,
+  ChevronDoubleRightIcon
 } from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -264,12 +266,13 @@ export const WalletGuard = ({
 
   const getDerivationTypeDisplay = (d?: WalletDerivationType) =>
     d === "standard" ? (
-      <span className="derivation-standard">
-        {" "}
+      <span className="bg-emerald-500 text-white py-1 px-2 rounded text-xs font-medium">
         Standard (Kaspium Compatible)
       </span>
     ) : (
-      <span className="derivation-legacy"> Legacy</span>
+      <span className="bg-amber-500 text-white py-1 px-2 rounded text-xs font-medium">
+        Legacy
+      </span>
     );
   
 
@@ -299,49 +302,54 @@ export const WalletGuard = ({
           <h2 className="text-center mt-4 mb-2 text-[var(--text-primary)] text-[1.5rem] font-semibold">
             {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
           </h2>
-          <div className="flex flex-col gap-4 mb-4">
+          <div className="flex flex-col gap-2 sm:gap-4 mb-4">
             {wallets.map((w) => (
               <div
                 key={w.id}
-                className="bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-lg p-4 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4"
+                onClick={() => onSelectWallet(w)}
+                className="relative cursor-pointer bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4"
               >
+                {/* delete icon top-right */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteWallet(w.id);
+                  }}
+                  className="cursor-pointer absolute top-2 right-2 p-1 text-red-500 hover:text-red-700"
+                  title="Delete"
+                >
+                  <TrashIcon className="h-6 w-6" />
+                </button>
+
                 <div className="flex flex-col gap-2">
-                  <div className="font-semibold text-[var(--text-primary)]">
-                    {w.name}
+                  <div className="inline-flex items-center space-x-1 font-semibold text-[var(--text-primary)]">
+                    <ChevronDoubleRightIcon className="w-5 h-5" />
+                    <span>{w.name}</span>
                   </div>
+
                   <div className="text-sm text-[var(--text-secondary)]">
                     Created: {new Date(w.createdAt).toLocaleDateString()}
                   </div>
-                  <div className="wallet-derivation">
+                  <div className="flex items-center gap-2 mt-1">
                     {getDerivationTypeDisplay(w.derivationType)}
                     {w.derivationType === "legacy" && (
                       <button
-                        onClick={() => onStepChange("migrate", w.id)}
-                        className="migrate-button"
-                        title="Migrate to standard derivation for Kaspium compatibility"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStepChange("migrate", w.id);
+                        }}
+                        className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs cursor-pointer transition-colors duration-200 animate-pulse"
+                        title="Migrate to standard derivation"
                       >
                         Migrate
                       </button>
                     )}
                   </div>
                 </div>
-                <div className="flex gap-2 w-full md:w-auto justify-end md:justify-start">
-                  <button
-                    onClick={() => onSelectWallet(w)}
-                    className="bg-[var(--accent-blue)] text-white rounded-md py-2 px-4 cursor-pointer text-sm transition-colors duration-200 hover:bg-[var(--accent-blue)]/90"
-                  >
-                    Select
-                  </button>
-                  <button
-                    onClick={() => onDeleteWallet(w.id)}
-                    className="bg-transparent text-red-500 border border-red-500 py-2 px-4 rounded-md cursor-pointer text-sm transition duration-200 hover:bg-red-500 hover:text-white"
-                  >
-                    Delete
-                  </button>
-                </div>
               </div>
             ))}
           </div>
+
           <div className="flex gap-2 justify-center">
             <button
               onClick={() => onStepChange("create")}
@@ -367,7 +375,7 @@ export const WalletGuard = ({
           {/* Derivation Type Selection */}
           <div className="form-group">
             <label>Derivation Standard</label>
-            <div className="flex flex-col gap-2 md:gap-3 mt-2">
+            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -406,7 +414,7 @@ export const WalletGuard = ({
 
           <div className="form-group">
             <label>Seed Phrase Length</label>
-            <div className="flex flex-col gap-2 md:gap-3 mt-2">
+            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -520,7 +528,7 @@ export const WalletGuard = ({
           {/* Derivation Type Selection */}
           <div className="form-group">
             <label>Derivation Standard</label>
-            <div className="flex flex-col gap-2 md:gap-3 mt-2">
+            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -558,7 +566,7 @@ export const WalletGuard = ({
           </div>
           <div className="form-group">
             <label>Seed Phrase Length</label>
-            <div className="flex flex-col gap-2 md:gap-3 mt-2">
+            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
               <label className="radio-option">
                 <input
                   type="radio"
