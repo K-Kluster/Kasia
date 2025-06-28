@@ -68,23 +68,6 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="app">
-      {!isMobile && (
-        <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
-          <Link to="/">
-            <div className="flex items-center gap-2">
-              <img
-                src="/kasia-logo.png"
-                alt="Kasia Logo"
-                className="w-[60px] h-[60px] object-contain -mr-6"
-              />
-              <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
-                Kasia
-              </div>
-            </div>
-          </Link>
-        </div>
-      )}
-
       <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
         <div className="flex items-center gap-4">
           <div className="max-w-[600px] relative mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]">
