@@ -35,8 +35,6 @@ export const OneLiner: FC = () => {
   const walletStore = useWalletStore();
 
   const isMobile = useIsMobile();
-
-  const navigate = useNavigate();
   const { isOpen, closeModal } = useModals();
 
   useEffect(() => {
@@ -186,7 +184,7 @@ export const OneLiner: FC = () => {
                   <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
                   <div className="relative flex flex-col items-center justify-center h-full space-y-4">
                     <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
-                      Connecting message client...
+                      Starting the message client...
                     </span>
                     <ArrowPathIcon className="w-14 h-14 text-gray-500 animate-spin" />
                   </div>

@@ -14,6 +14,7 @@ import {
   Cog6ToothIcon,
   ExclamationTriangleIcon,
   TrashIcon,
+  ArrowPathIcon
 } from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -58,6 +59,8 @@ export const WalletGuard = ({
   const [derivationType, setDerivationType] =
     useState<WalletDerivationType>("standard");
   const [revealed, setRevealed] = useState(false);
+  
+  const [unlocking, setUnlocking] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -203,13 +206,17 @@ export const WalletGuard = ({
   };
 
   const onUnlockWallet = async () => {
-    if (!selectedWalletId || !passwordRef.current?.value) {
+    const pass = passwordRef.current?.value;
+    if (!selectedWalletId || !pass) {
       setError("Please enter your wallet password");
       return;
     }
+
+    setError(""); 
     try {
+      setUnlocking(true);
+      await unlock(selectedWalletId, pass);
       onStepChange("unlocked", selectedWalletId);
-      await unlock(selectedWalletId, passwordRef.current.value);
     } catch (err) {
       console.error("Unlock error:", err);
       // Clear the password field and focus it
@@ -225,7 +232,7 @@ export const WalletGuard = ({
           : "Failed to unlock wallet. Please try again.";
       setError(msg);
     } finally {
-      if (passwordRef.current?.value) passwordRef.current.value = "";
+      setUnlocking(false);
     }
   };
 
@@ -713,6 +720,7 @@ export const WalletGuard = ({
       )}
 
       {/* Unlock wallet 'Route' */}
+      {/* Unlock wallet 'Route' */}
       {step.type === "unlock" && (
         <>
           <h2 className="font-bold text-lg text-center">Unlock Wallet</h2>
@@ -725,36 +733,46 @@ export const WalletGuard = ({
             </div>
           )}
 
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              data-1p-ignore
-              data-lpignore="true"
-              data-protonpass-ignore="true"
-              autoComplete="off"
-              ref={usePasswordRef}
-              type="password"
-              placeholder="Enter your password"
-              className={error ? "error" : ""}
-              onKeyDown={(e) => e.key === "Enter" && onUnlockWallet()}
-            />
-          </div>
+          {unlocking ? (
+            <div className="relative my-2 flex flex-col items-center justify-center h-full space-y-4">
+              <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
+                Unlocking Wallet…
+              </span>
+              <ArrowPathIcon className="my-2 w-14 h-14 text-gray-500 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <div className="form-group">
+                <label>Password</label>
+                <input
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-protonpass-ignore="true"
+                  autoComplete="off"
+                  ref={usePasswordRef}
+                  type="password"
+                  placeholder="Enter your password"
+                  className={error ? "error" : ""}
+                  onKeyDown={(e) => e.key === "Enter" && onUnlockWallet()}
+                  disabled={unlocking}
+                />
+              </div>
 
-          {error && <div className="error">{error}</div>}
-          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-            <button
-              onClick={onUnlockWallet}
-              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
-              Unlock
-            </button>
-            <button
-              onClick={() => onStepChange("home")}
-              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
-              Back
-            </button>
-          </div>
+              {error && <div className="error">{error}</div>}
+
+              <div className="form-actions">
+                <button
+                  onClick={() => onStepChange("home")}
+                  disabled={unlocking}
+                >
+                  Back
+                </button>
+                <button onClick={onUnlockWallet} disabled={unlocking}>
+                  Unlock
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
