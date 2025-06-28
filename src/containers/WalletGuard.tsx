@@ -14,7 +14,6 @@ import {
   Cog6ToothIcon,
   ExclamationTriangleIcon,
   TrashIcon,
-  ChevronDoubleRightIcon
 } from "@heroicons/react/24/outline";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
@@ -323,7 +322,6 @@ export const WalletGuard = ({
 
                 <div className="flex flex-col gap-2">
                   <div className="inline-flex items-center space-x-1 font-semibold text-[var(--text-primary)]">
-                    <ChevronDoubleRightIcon className="w-5 h-5" />
                     <span>{w.name}</span>
                   </div>
 
