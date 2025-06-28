@@ -481,8 +481,8 @@ export const WalletFlow = ({
             </p>
             <div className="my-2 p-2 text-base rounded-lg flex flex-col items-center text-center text-amber-300">
               <ExclamationTriangleIcon className="w-8 h-8" />
-              This is the only time you will see your seed phrase – back it up
-              now!
+              Please keep your seed phrase safe, if you lose your seed phrase
+              there is no recovery.
             </div>
 
             <button
