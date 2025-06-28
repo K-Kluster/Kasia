@@ -141,6 +141,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
         if (!currentRpcClient) {
           throw new Error("RPC client not initialized");
         }
+        
         wallet.client = currentRpcClient;
         set({ unlockedWallet: wallet });
 

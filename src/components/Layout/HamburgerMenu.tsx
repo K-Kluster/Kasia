@@ -11,21 +11,22 @@ import {
 import { useMessagingStore } from "../../store/messaging.store";
 import { useModals } from "../../context/ModalContext";
 import clsx from "clsx";
+import { useUiStore } from "../../store/ui.store";
 
-type WalletSettingsProps = {
-  open: boolean;
+type MenuHamburgerProps = {
   address: string | undefined;
   onCloseMenu: () => void;
-  onOpenWalletInfo: () => void;
   onCloseWallet: () => void;
 };
 
-const MenuHamburger: FC<WalletSettingsProps> = ({
-  open,
+const MenuHamburger: FC<MenuHamburgerProps> = ({
   address,
   onCloseMenu,
   onCloseWallet,
 }) => {
+  const open = useUiStore((s) => s.isSettingsOpen);
+  const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const messageStore = useMessagingStore();
   const { openModal } = useModals();
@@ -53,6 +54,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
     <>
       <div
         className="absolute right-0 top-full mt-2 w-56 bg-[var(--primary-bg)] border-1 border-gray-500 rounded shadow-lg z-10"
+        onMouseLeave={onCloseMenu}
         onClick={(e) => e.stopPropagation()}
       >
         <ul className="divide-y divide-gray-700">
@@ -60,6 +62,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
           <li
             onClick={() => {
               openModal("address");
+              setSettingsOpen(false);
               onCloseMenu();
             }}
             className={clsx(
@@ -70,16 +73,17 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
             <UserIcon className="h-5 w-5 text-white" />
             <span className="text-white text-sm flex items-center">
               Show Address
-              {address === "" ||
-                (address === undefined && (
-                  <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
-                ))}
+              {!address && (
+                <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
+              )}
             </span>
           </li>
+
           {/* Show Wallet Info Item */}
           <li
             onClick={() => {
               openModal("walletInfo");
+              setSettingsOpen(false);
               onCloseMenu();
             }}
             className={clsx(
@@ -90,7 +94,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
             <InformationCircleIcon className="h-5 w-5 text-white" />
             <span className="text-white text-sm flex items-center">
               Wallet Info
-              {(address === "" || address === undefined) && (
+              {!address && (
                 <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
               )}
             </span>
@@ -100,6 +104,7 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
           <li className="block sm:hidden px-4 py-3">
             <FeeBuckets inline={false} />
           </li>
+
           {/* Show Action List Sub Items */}
           <li
             className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
@@ -122,48 +127,14 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
                 onClick={() => {
                   openModal("withdraw");
                   setActionsMenuOpen(false);
+                  setSettingsOpen(false);
                   onCloseMenu();
                 }}
                 className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
               >
                 <span className="text-white text-sm">Withdraw Funds</span>
               </li>
-              {/* Show IO messages Item */}
-              {messageStore.isLoaded && (
-                <li
-                  onClick={() => {
-                    openModal("backup");
-                    setActionsMenuOpen(false);
-                    onCloseMenu();
-                  }}
-                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
-                >
-                  <span className="text-white text-sm">
-                    Import / Export <br /> Messages
-                  </span>
-                </li>
-              )}
-              {/* Show Delete All item */}
-              <li
-                onClick={() => {
-                  onClearHistory();
-                }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
-              >
-                <span className="text-white text-sm">Delete All Messages</span>
-              </li>
-              {/* Show Seed extract Item */}
-              <li
-                onClick={() => {
-                  openModal("seed");
-                  setActionsMenuOpen(false);
-                  onCloseMenu();
-                }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
-              >
-                <span className="text-white text-sm">View Seed Phrase</span>
-              </li>
-              {/* Show UTXO Compound Item */}
+              {/* Compound messages Item */}
               <li
                 onClick={() => {
                   openModal("utxo-compound");
@@ -174,8 +145,46 @@ const MenuHamburger: FC<WalletSettingsProps> = ({
               >
                 <span className="text-white text-sm">Compound UTXOs</span>
               </li>
+              {/* Show IO messages Item */}
+              {messageStore.isLoaded && (
+                <li
+                  onClick={() => {
+                    openModal("backup");
+                    setActionsMenuOpen(false);
+                    setSettingsOpen(false);
+                    onCloseMenu();
+                  }}
+                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                >
+                  <span className="text-white text-sm">
+                    Import / Export <br /> Messages
+                  </span>
+                </li>
+              )}
+
+              {/* Show Delete All item */}
+              <li
+                onClick={onClearHistory}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">Delete All Messages</span>
+              </li>
+
+              {/* Show Seed extract Item */}
+              <li
+                onClick={() => {
+                  openModal("seed");
+                  setActionsMenuOpen(false);
+                  setSettingsOpen(false);
+                  onCloseMenu();
+                }}
+                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+              >
+                <span className="text-white text-sm">View Seed Phrase</span>
+              </li>
             </ul>
           )}
+
           {/* Show close wallet Item */}
           <li
             onClick={onCloseWallet}

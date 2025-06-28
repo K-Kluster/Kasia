@@ -8,6 +8,7 @@ import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
 import { Contact } from "../types/all";
 import { useIsMobile } from "../utils/useIsMobile";
+import { useUiStore } from "../store/ui.store";
 
 interface ContactSectionProps {
   contacts: Contact[];
@@ -19,7 +20,6 @@ interface ContactSectionProps {
   contactsCollapsed: boolean;
   setContactsCollapsed: (v: boolean) => void;
   setMobileView: (v: "contacts" | "messages") => void;
-  onOpenMobileMenu: () => void;
 }
 
 export const ContactSection: FC<ContactSectionProps> = ({
@@ -32,10 +32,10 @@ export const ContactSection: FC<ContactSectionProps> = ({
   contactsCollapsed,
   setContactsCollapsed,
   setMobileView,
-  onOpenMobileMenu,
 }) => {
   const collapsedW = "w-14";
   const isMobile = useIsMobile();
+  const toggleSettings = useUiStore((s) => s.toggleSettings);
 
   return (
     <div
@@ -63,7 +63,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
           </button>
         ) : (
           <button
-            onClick={onOpenMobileMenu}
+            onClick={toggleSettings}
             className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
             aria-label="Settings"
           >

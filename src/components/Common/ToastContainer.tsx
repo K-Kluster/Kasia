@@ -18,10 +18,10 @@ export function ToastContainer() {
           className={clsx(
             "flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm animate-fade-in",
             {
-              "bg-green-100 text-green-900": toast.type === "success",
-              "bg-red-100 text-red-900": toast.type === "error",
-              "bg-yellow-100 text-yellow-900": toast.type === "warning",
-              "bg-blue-100 text-blue-900": toast.type === "info",
+              "bg-green-100/80 text-green-900": toast.type === "success",
+              "bg-red-100/80 text-red-900": toast.type === "error",
+              "bg-yellow-100/80 text-yellow-900": toast.type === "warning",
+              "bg-blue-100/80 text-blue-900": toast.type === "info",
             }
           )}
         >
@@ -34,7 +34,7 @@ export function ToastContainer() {
           <span className="flex-1">{toast.message}</span>
           <button
             onClick={() => remove(toast.id)}
-            className="text-lg font-bold"
+            className="text-lg font-bold cursor-pointer"
           >
             ×
           </button>

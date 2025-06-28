@@ -8,7 +8,7 @@ export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
   children,
 }) => (
   <div
-    className="fixed inset-0 bg-black/50 flex items-center justify-center"
+    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
     onClick={onClose}
   >
     <div
@@ -17,7 +17,7 @@ export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
     >
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 p-2 cursor-pointer hover:text-white  z-50"
+        className="absolute top-2 right-2 p-2 cursor-pointer hover:text-white hover:scale-110 z-60"
       >
         <XMarkIcon className="h-6 w-6 text-gray-200" />
       </button>
