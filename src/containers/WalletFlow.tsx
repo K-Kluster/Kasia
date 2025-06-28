@@ -758,15 +758,20 @@ export const WalletFlow = ({
 
               {error && <div className="error">{error}</div>}
 
-              <div className="form-actions">
+              <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+                <button
+                  onClick={onUnlockWallet}
+                  disabled={unlocking}
+                  className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+                >
+                  Create
+                </button>
                 <button
                   onClick={() => onStepChange("home")}
                   disabled={unlocking}
+                  className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
                 >
                   Back
-                </button>
-                <button onClick={onUnlockWallet} disabled={unlocking}>
-                  Unlock
                 </button>
               </div>
             </>
