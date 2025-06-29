@@ -370,6 +370,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PriorityFeeSelector
             currentFee={priorityFee}
             onFeeChange={setPriorityFee}
+            className="mr-0 sm:mr-2"
           />
         </div>
       )}
