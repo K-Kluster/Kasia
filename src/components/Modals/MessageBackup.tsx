@@ -1,6 +1,8 @@
 import React, { useCallback } from "react";
 import { useWalletStore } from "../../store/wallet.store";
 import { useMessagingStore } from "../../store/messaging.store";
+import { Button } from "../Common/Button";
+import clsx from "clsx";
 
 export const MessageBackup: React.FC = () => {
   const walletStore = useWalletStore();
@@ -77,18 +79,22 @@ export const MessageBackup: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center space-y-2 max-w-3/4 mx-auto h-full">
       <h4 className="text-lg font-semibold">Message Backup</h4>
-      <button
+      <Button
         onClick={onExportMessages}
-        className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 w-full text-center"
+        variant="primary"
+        className="w-full px-4 py-2"
       >
         Export Messages
-      </button>
+      </Button>
       <label
         htmlFor="importInput"
-        className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 w-full text-center cursor-pointer block"
+        className={clsx(
+          "cursor-pointer w-full text-gray-100 text-center font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-20 bg-emerald-500 hover:bg-emerald-500/70 active:bg-emerald-500/20"
+        )}
       >
         Import Messages
       </label>
+
       <input
         id="importInput"
         type="file"
