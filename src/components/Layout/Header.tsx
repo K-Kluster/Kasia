@@ -34,10 +34,7 @@ export const Header: FC<Props> = ({
       </div>
 
       {isWalletReady && (
-        <div
-          ref={menuRef}
-          className="relative flex items-center gap-2"
-        >
+        <div ref={menuRef} className="relative flex items-center gap-2">
           <div className="hidden sm:block">
             <FeeBuckets inline />
           </div>

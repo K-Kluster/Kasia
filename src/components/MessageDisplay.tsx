@@ -12,7 +12,7 @@ import clsx from "clsx";
 type MessageDisplayProps = {
   message: MessageType;
   isOutgoing: boolean;
-  showTimestamp?: boolean
+  showTimestamp?: boolean;
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
@@ -45,7 +45,6 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     showMeta || !isRecent
       ? date.toLocaleString()
       : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
 
   // Check if this is a handshake message
   const isHandshake =
@@ -250,8 +249,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return conversation.status === "active"
         ? "Handshake completed"
         : conversation.initiatedByMe
-        ? "Handshake sent"
-        : "Handshake received";
+          ? "Handshake sent"
+          : "Handshake received";
     }
 
     // If this is a payment message, handle it specially
@@ -350,7 +349,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const [decryptionAttempted, setDecryptionAttempted] =
     useState<boolean>(false);
-  
+
   useEffect(() => {
     const decryptMessage = async () => {
       if (!mounted.current || !walletStore.unlockedWallet) {
@@ -509,5 +508,4 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       </div>
     </div>
   );
-  
-}
+};

@@ -39,7 +39,9 @@
   background: rgba(0, 0, 0, 0.3);
   color: #ffffff;
   font-family: monospace;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
   box-sizing: border-box;
   line-height: 1.4;
   height: 40px;
@@ -76,7 +78,9 @@
   background: rgba(0, 0, 0, 0.3);
   color: #ffffff;
   font-family: monospace;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
   box-sizing: border-box;
   line-height: 1.4;
   height: 40px;
@@ -265,4 +269,3 @@
     transform: translateY(0);
   }
 }
-

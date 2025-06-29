@@ -23,7 +23,7 @@ type SlideOutMenuProps = {
 export const SlideOutMenu: FC<SlideOutMenuProps> = ({
   address,
   onCloseWallet,
-  isWalletReady
+  isWalletReady,
 }) => {
   const open = useUiStore((s) => s.isSettingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);

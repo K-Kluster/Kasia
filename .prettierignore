@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+*.lock
+*.log
+.vscode
+*.md
+cipher
+cipher-wasm
+wasm

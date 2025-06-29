@@ -41,7 +41,6 @@ export const OneLiner: FC = () => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);
   }, [walletStore.unlockedWallet]);
 
-
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
     const syncToWidth = () => {
