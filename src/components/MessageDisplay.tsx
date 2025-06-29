@@ -470,10 +470,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       <div
         onClick={() => setShowMeta((prev) => !prev)}
         className={clsx(
-          "relative z-0 cursor-pointer mb-4 px-4 py-3 max-w-[70%] break-words hyphens-auto",
+          "relative z-0 cursor-pointer mb-4 px-4 py-3 max-w-[70%] break-words text-left hyphens-auto",
           isOutgoing
-            ? "bg-[#007aff] text-white text-right rounded-2xl rounded-br-none"
-            : "bg-[var(--secondary-bg)] text-left rounded-2xl rounded-bl-none"
+            ? "bg-[#007aff] text-white rounded-2xl rounded-br-none"
+            : "bg-[var(--secondary-bg)] rounded-2xl rounded-bl-none"
         )}
       >
         {(showMeta || showTimestamp) && (
