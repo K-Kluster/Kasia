@@ -80,7 +80,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       console.log("Estimating fee for message:", {
         length: message.length,
         openedRecipient,
-        priorityFee: priorityFee.amount.toString(),
+        priorityFee: {
+          amount: priorityFee.amount.toString(),
+          feerate: priorityFee.feerate || "none",
+          source: priorityFee.source,
+        },
       });
 
       setIsEstimating(true);
@@ -214,6 +218,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           messageToSend,
           new Address(recipient),
           walletStore.unlockedWallet.password,
+          undefined, // customAmount - use default
           priorityFee
         );
       }

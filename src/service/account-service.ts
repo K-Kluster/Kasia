@@ -1120,13 +1120,38 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       ? []
       : [new PaymentOutput(destinationAddress, transaction.amount)];
 
+    // Calculate additional fee based on fee rate difference
+    let additionalFee = BigInt(0);
+    
+    if (transaction.priorityFee?.feerate && transaction.priorityFee.feerate > 1) {
+      // Estimate transaction mass (typical message transaction ~2500-3000 grams)
+      const estimatedMass = 2800; // grams - rough estimate for message transaction
+      const baseFeeRate = 1; // sompi per gram
+      const additionalFeeRate = transaction.priorityFee.feerate - baseFeeRate;
+      additionalFee = BigInt(Math.floor(additionalFeeRate * estimatedMass));
+      
+      console.log("Calculated additional priority fee:", {
+        selectedFeeRate: transaction.priorityFee.feerate,
+        baseFeeRate,
+        additionalFeeRate,
+        estimatedMass,
+        additionalFeeSompi: additionalFee.toString(),
+        additionalFeeKAS: Number(additionalFee) / 100_000_000,
+      });
+    } else if (transaction.priorityFee?.amount && transaction.priorityFee.amount > 0) {
+      additionalFee = transaction.priorityFee.amount;
+      console.log("Using explicit priority fee amount:", additionalFee.toString());
+    }
+
+    console.log("Final priority fee for Generator:", additionalFee.toString());
+
     return new Generator({
-      changeAddress: primaryAddress, // Always use primary address for change
+      changeAddress: primaryAddress,
       entries: this.context,
       outputs: outputs,
       payload: transaction.payload,
       networkId: this.networkId,
-      priorityFee: transaction.priorityFee || BigInt(0),
+      priorityFee: additionalFee,
     });
   }
 
