@@ -8,6 +8,8 @@
     "build:production": "tsc -b && vite build ",
     "build:staging": "tsc -b && vite build --mode staging",
     "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "preview": "vite preview",
     "tauri": "tauri",
     "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd .."
@@ -51,6 +53,7 @@
     "globals": "^15.15.0",
     "postcss": "^8.5.4",
     "postcss-preset-env": "^10.2.1",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4.1.8",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
