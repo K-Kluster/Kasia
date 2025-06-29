@@ -180,21 +180,21 @@ export const ContactCard: FC<{
                 if (e.key === "Escape") handleNicknameCancel();
               }}
               autoFocus
-              placeholder="Enter nickname..."
+              placeholder={contact?.address}
               className="flex-1 rounded-sm text-xs h-5 leading-none"
             />
             <div className="flex justify-between md:justify-start gap-2 mt-2 md:mt-0 w-full md:w-auto">
               <button
                 onClick={handleNicknameSave}
-                className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
+                className="flex items-center justify-center p-0.5 rounded-sm cursor-pointer w-full md:w-fit bg-green-500 hover:bg-gray-600"
               >
-                <CheckCircleIcon className="h-5 w-5 text-green-500 fill-current" />
+                <CheckCircleIcon className="h-5 w-5 text-gray-300 fill-current" />
               </button>
               <button
                 onClick={handleNicknameCancel}
-                className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
+                className="flex items-center justify-center p-0.5 rounded-sm cursor-pointer w-full md:w-fit bg-red-500 text-white hover:bg-gray-600"
               >
-                <XCircleIcon className="h-5 w-5 text-red-500 fill-current" />
+                <XCircleIcon className="h-5 w-5 text-gray-300 fill-current" />
               </button>
             </div>
           </div>
@@ -220,7 +220,7 @@ export const ContactCard: FC<{
               title="Edit nickname"
               className="bg-transparent border-0 cursor-pointer opacity-60 hover:opacity-100 text-xs"
             >
-              <PencilIcon className="h-4 w-4" />
+              <PencilIcon className="h-5 w-5 md:h-4 md:w-4" />
             </button>
           </div>
         )}

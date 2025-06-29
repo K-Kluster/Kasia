@@ -11,17 +11,17 @@ export function ToastContainer() {
   const { toasts, remove } = useToastStore();
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-16 sm:top-4 right-4 z-50 space-y-2">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={clsx(
-            "flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm animate-fade-in",
+            "flex items-center gap-2 px-2 py-1 sm:px-4 sm:py-3 rounded-xl shadow-lg text-sm animate-fade-in",
             {
               "bg-green-100/80 text-green-900": toast.type === "success",
               "bg-red-100/80 text-red-900": toast.type === "error",
               "bg-yellow-100/80 text-yellow-900": toast.type === "warning",
-              "bg-blue-100/80 text-blue-900": toast.type === "info",
+              "bg-blue-100/70 text-gray-600": toast.type === "info",
             }
           )}
         >

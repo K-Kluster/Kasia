@@ -12,6 +12,7 @@ import styles from "../components/NewChatForm.module.css";
 import { knsIntegrationService_getDomainResolution } from "../service/integrations/kns-integration-service";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { KaspaAddress } from "./KaspaAddress";
+import { Textarea } from "@headlessui/react";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -54,11 +55,14 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     }
   }, [recipientInputValue]);
 
-  const useRecipientInputRef = useCallback((node: HTMLInputElement | null) => {
-    if (node) {
-      node.focus();
-    }
-  }, []);
+  const useRecipientInputRef = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      if (node) {
+        node.focus();
+      }
+    },
+    []
+  );
 
   // Handle escape key to close
   useEffect(() => {
@@ -317,7 +321,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
     return (
       <>
-        <h3 className={styles.title}>Confirm Handshake</h3>
+        <h3 className="m-0 mb-5 text-white text-[1.2rem]">Confirm Handshake</h3>
         <div className="text-white/80 text-sm mb-5 leading-normal">
           <p>
             <strong>Recipient:</strong>
@@ -350,22 +354,22 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           )}
           <p>This will initiate a handshake conversation. Continue?</p>
         </div>
-        <div className={styles["form-actions"]}>
-          <button
-            type="button"
-            onClick={() => setShowConfirmation(false)}
-            disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-500 hover:bg-gray-600 active:bg-gray-700 border border-gray-500 text-white"
-          >
-            Back
-          </button>
+        <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
           <button
             type="button"
             onClick={confirmHandshake}
             disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-blue-300 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-500 hover:bg-blue-600 active:bg-blue-700 border border-blue-500 text-white"
+            className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
           >
             {isLoading ? "Sending..." : "Confirm & Send"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowConfirmation(false)}
+            disabled={isLoading}
+            className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+          >
+            Back
           </button>
         </div>
       </>
@@ -374,16 +378,21 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   return (
     <>
-      <h3 className={styles.title}>Start New Conversation</h3>
+      <h3 className="mb-5 text-white text-base font-semibold">
+        Start New Conversation
+      </h3>
       <form onSubmit={handleSubmit}>
-        <div className={styles["form-group"]}>
-          <label className={styles.label} htmlFor="recipientAddress">
+        <div className={"mb-5"}>
+          <label
+            className="block mb-[5px] text-white font-bold text-[14px]"
+            htmlFor="recipientAddress"
+          >
             Recipient Address
           </label>
-          <input
+          <Textarea
             ref={useRecipientInputRef}
-            className={styles.input}
-            type="text"
+            className="w-full resize-none py-2 px-3 text-base border border-white/10 rounded-md bg-black/30 text-white font-mono transition-colors duration-200 box-border leading-[1.4] flex items-center placeholder-white/50 hover:bg-white/10 hover:border-white/20 focus:outline-none focus:bg-white/10 focus:border-white/20 disabled:bg-black/50 disabled:text-white/30"
+            rows={2}
             id="recipientAddress"
             value={recipientInputValue}
             onChange={(e) => setRecipientInputValue(e.target.value)}
@@ -422,8 +431,11 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           )}
         </div>
 
-        <div className={styles["form-group"]}>
-          <label className={styles.label} htmlFor="handshakeAmount">
+        <div className={"mb-5"}>
+          <label
+            className="block mb-[5px] text-white font-bold text-[14px]"
+            htmlFor="handshakeAmount"
+          >
             Handshake Amount (KAS)
           </label>
           <input
@@ -475,21 +487,21 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         </div>
 
         {error && <div className={styles["error-message"]}>{error}</div>}
-        <div className={styles["form-actions"]}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-500 hover:bg-gray-600 active:bg-gray-700 border border-gray-500 text-white cursor-pointer"
-          >
-            Cancel
-          </button>
+
+        <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[#2196f3] hover:bg-[#1976d2] text-white cursor-pointer"
+            className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
           >
             {isLoading ? "Initiating..." : "Start Chat"}
+          </button>
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+          >
+            Cancel
           </button>
         </div>
       </form>
