@@ -58,6 +58,18 @@ export const OneLiner: FC = () => {
     return () => window.removeEventListener("resize", syncToWidth);
   }, [contactsCollapsed, messageStore.openedRecipient, isMobile]);
 
+  // Clean up useEffect
+  useEffect(() => {
+    return () => {
+      // Called when OneLiner unmounts (user leaves route), so we can reset all the states
+      walletStore.lock();
+
+      messageStore.setIsLoaded(false);
+      messageStore.setOpenedRecipient(null);
+      messageStore.setIsCreatingNewChat(false);
+    };
+  }, []);
+
   const onNewChatClicked = useCallback(async () => {
     try {
       if (!walletStore.unlockedWallet?.password) {

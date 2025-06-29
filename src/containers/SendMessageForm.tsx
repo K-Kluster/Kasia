@@ -51,16 +51,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   const openFileDialog = () => fileInputRef.current?.click();
 
-  const estimatedFeesDisplayClasses = useMemo(() => {
-    if (feeEstimate == null) return "";
-    return FEE_LEVELS.find(({ limit }) => feeEstimate <= limit)!.classes;
-  }, [feeEstimate]);
-
-  useEffect(() => {
-    messageInputRef.current?.focus();
-    setMessage("");
-  }, [openedRecipient]);
-
   useEffect(() => {
     if (messageInputRef.current) {
       messageInputRef.current.value = "";
@@ -351,12 +341,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           </div>
         </div>
       )}
-      <div className="flex items-center gap-2 bg-[var(--primary-bg)] rounded-lg p-1 border border-[var(--border-color)]">
+      <div className=" flex items-center gap-2 bg-[var(--primary-bg)] rounded-lg p-1 border border-[var(--border-color)]">
         <Textarea
           ref={messageInputRef}
           rows={1}
           placeholder="Type your message..."
-          className="resize-none overflow-y-auto bg-transparent border-none text-[var(--text-primary)] p-2 text-[0.9em] outline-none flex-1"
+          className="peer resize-none overflow-y-auto bg-transparent border-none text-[var(--text-primary)] p-2 text-[0.9em] outline-none flex-1"
           value={message}
           onChange={(e) => setMessage(e.currentTarget.value)}
           onInput={(e) => {
@@ -385,7 +375,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         <Popover className="relative">
           {({ close }) => (
             <>
-              <PopoverButton className="p-2 hover:bg-white/5 rounded">
+              <PopoverButton className="peer p-2 hover:bg-white/5 rounded">
                 <PlusIcon className="size-5" />
               </PopoverButton>
               <Transition
@@ -414,11 +404,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
             </>
           )}
         </Popover>
+
         <button
           onClick={onSendClicked}
-          className="w-6 h-6 bg-transparent m-1 flex items-center justify-center cursor-pointer text-kas-primary hover:text-kas-secondary"
+          className="cursor-pointer flex items-center justify-center text-kas-primary hover:text-kas-secondary overflow-hidden w-0 peer-focus:w-6 transition-width duration-200 ease-out mr-2"
+          aria-label="Send"
         >
-          <PaperAirplaneIcon className="w-full h-full" />
+          <PaperAirplaneIcon className="w-6 h-6" />
         </button>
       </div>
     </div>
