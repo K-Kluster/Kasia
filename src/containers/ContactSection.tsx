@@ -77,7 +77,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
             </span>
             <button
               aria-label="new chat"
-              className="text-kas-secondary hover:scale-110"
+              className="text-kas-secondary cursor-pointer hover:scale-110"
               onClick={onNewChatClicked}
             >
               <PlusIcon className="size-8" />
