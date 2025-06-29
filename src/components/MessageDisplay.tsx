@@ -12,7 +12,6 @@ import clsx from "clsx";
 type MessageDisplayProps = {
   message: MessageType;
   isOutgoing: boolean;
-  showTimestamp?: boolean
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
@@ -46,6 +45,15 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       ? date.toLocaleString()
       : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+
+  const isRecent = Date.now() - timestamp < 12 * 60 * 60 * 1000; // if message is younger than 12 hours, its recent
+  const date = new Date(timestamp);
+
+  // if expanded OR stale, full date+time; otherwise just HH:MM
+  const displayStamp =
+    showMeta || !isRecent
+      ? date.toLocaleString()
+      : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   // Check if this is a handshake message
   const isHandshake =
@@ -250,8 +258,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return conversation.status === "active"
         ? "Handshake completed"
         : conversation.initiatedByMe
-        ? "Handshake sent"
-        : "Handshake received";
+          ? "Handshake sent"
+          : "Handshake received";
     }
 
     // If this is a payment message, handle it specially
@@ -459,31 +467,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   }, []);
 
   return (
-    <div
-      className={clsx(
-        "flex w-full my-2",
-        isOutgoing
-          ? "justify-end pr-0.5 sm:pr-2"
-          : "justify-start pl-0.5 sm:pl-2"
-      )}
-    >
-      <div
-        onClick={() => setShowMeta((prev) => !prev)}
-        className={clsx(
-          "relative z-0 cursor-pointer mb-4 px-4 py-3 max-w-[70%] break-words hyphens-auto",
-          isOutgoing
-            ? "bg-[#007aff] text-white text-right rounded-2xl rounded-br-none"
-            : "bg-[var(--secondary-bg)] text-left rounded-2xl rounded-bl-none"
-        )}
-      >
-        {(showMeta || showTimestamp) && (
-          <div className="flex justify-between items-center mb-[6px] text-[0.8em] truncate">
-            <div className="opacity-70">{displayStamp}</div>
-          </div>
-        )}
-
-        <div className="text-[1em] my-2 leading-[1.4]">
-          {renderMessageContent()}
+    <div className={`message ${isOutgoing ? "outgoing" : "incoming"}`}>
+      <div className="message-header">
+        <div className="message-timestamp">
+          {new Date(timestamp).toLocaleString()}
         </div>
 
         {showMeta && (

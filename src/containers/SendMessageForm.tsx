@@ -7,7 +7,7 @@ import {
   PopoverButton,
   PopoverPanel,
   Transition,
-  Textarea
+  Textarea,
 } from "@headlessui/react";
 import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
@@ -25,8 +25,8 @@ type SendMessageFormProps = unknown;
 
 // Arbritary fee levels to colour the fee indicator in chat
 const FEE_LEVELS = [
-  { limit: 0.00002000, classes: "text-green-400 border-green-400" },
-  { limit: 0.00005000, classes: "text-blue-400  border-blue-400" },
+  { limit: 0.00002, classes: "text-green-400 border-green-400" },
+  { limit: 0.00005, classes: "text-blue-400  border-blue-400" },
   { limit: 0.0005, classes: "text-yellow-400 border-yellow-400" },
   { limit: 0.001, classes: "text-orange-400 border-orange-400" },
   { limit: Infinity, classes: "text-red-400 border-red-400" },
@@ -336,8 +336,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                 ? `Updating fee… ${formatKasAmount(feeEstimate)} KAS`
                 : `Estimating fee…`
               : feeEstimate != null
-              ? `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`
-              : `Calculating fee…`}
+                ? `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`
+                : `Calculating fee…`}
           </div>
         </div>
       )}

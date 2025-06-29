@@ -25,4 +25,3 @@ export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
     </div>
   </div>
 );
-
