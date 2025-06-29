@@ -119,7 +119,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
   }, [parsedSettings, onFeeChange]);
 
   // Get dynamic fee buckets from network data
-  const getDynamicFeeBuckets = useMemo(() => {
+  const dynamicFeeBuckets = useMemo(() => {
     const buckets: FeeBucket[] = [];
     const estimate = feeEstimate?.estimate || {};
 
@@ -330,7 +330,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
             </div>
 
             <div className="space-y-2">
-              {getDynamicFeeBuckets.map((bucket, index) => (
+              {dynamicFeeBuckets.map((bucket, index) => (
                 <button
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
