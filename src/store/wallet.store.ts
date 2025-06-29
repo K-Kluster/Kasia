@@ -198,9 +198,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
       get().fetchFeeEstimates();
 
       // Set up polling every 2 minutes
-      _feeEstimateInterval = setInterval(() => {
-        get().fetchFeeEstimates();
-      }, 2 * 60 * 1000);
+      _feeEstimateInterval = setInterval(
+        () => {
+          get().fetchFeeEstimates();
+        },
+        2 * 60 * 1000
+      );
     },
 
     stopFeeEstimatePolling: () => {

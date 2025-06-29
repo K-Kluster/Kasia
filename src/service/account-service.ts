@@ -1122,14 +1122,17 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     // Calculate additional fee based on fee rate difference
     let additionalFee = BigInt(0);
-    
-    if (transaction.priorityFee?.feerate && transaction.priorityFee.feerate > 1) {
+
+    if (
+      transaction.priorityFee?.feerate &&
+      transaction.priorityFee.feerate > 1
+    ) {
       // Estimate transaction mass (typical message transaction ~2500-3000 grams)
       const estimatedMass = 2800; // grams - rough estimate for message transaction
       const baseFeeRate = 1; // sompi per gram
       const additionalFeeRate = transaction.priorityFee.feerate - baseFeeRate;
       additionalFee = BigInt(Math.floor(additionalFeeRate * estimatedMass));
-      
+
       console.log("Calculated additional priority fee:", {
         selectedFeeRate: transaction.priorityFee.feerate,
         baseFeeRate,
@@ -1138,9 +1141,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         additionalFeeSompi: additionalFee.toString(),
         additionalFeeKAS: Number(additionalFee) / 100_000_000,
       });
-    } else if (transaction.priorityFee?.amount && transaction.priorityFee.amount > 0) {
+    } else if (
+      transaction.priorityFee?.amount &&
+      transaction.priorityFee.amount > 0
+    ) {
       additionalFee = transaction.priorityFee.amount;
-      console.log("Using explicit priority fee amount:", additionalFee.toString());
+      console.log(
+        "Using explicit priority fee amount:",
+        additionalFee.toString()
+      );
     }
 
     console.log("Final priority fee for Generator:", additionalFee.toString());
