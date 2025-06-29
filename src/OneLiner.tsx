@@ -17,12 +17,13 @@ import { WalletWithdrawal } from "./components/Modals/WalletWithdrawal";
 import { WalletSeedRetreiveDisplay } from "./components/Modals/WalletSeedRetreiveDisplay";
 import { MessageBackup } from "./components/Modals/MessageBackup";
 import { WalletInfo } from "./components/Modals/WalletInfo";
-import { useNavigate } from "react-router-dom";
 import { UtxoCompound } from "./components/Modals/UtxoCompound";
+import { useUiStore } from "./store/ui.store";
 
 export const OneLiner: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWalletReady, setIsWalletReady] = useState(false);
+  const uiStore = useUiStore();
 
   const networkStore = useNetworkStore();
   const [messagesClientStarted, setMessageClientStarted] = useState(false);
@@ -62,7 +63,8 @@ export const OneLiner: FC = () => {
     return () => {
       // Called when OneLiner unmounts (user leaves route), so we can reset all the states
       walletStore.lock();
-
+      uiStore.setSettingsOpen(false);
+      
       messageStore.setIsLoaded(false);
       messageStore.setOpenedRecipient(null);
       messageStore.setIsCreatingNewChat(false);
