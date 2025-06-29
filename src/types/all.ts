@@ -137,8 +137,8 @@ export interface PriorityFeeConfig {
   feerate?: number; // Store the fee rate used for calculation
 }
 
-// Maximum priority fee (10 KAS)
-export const MAX_PRIORITY_FEE = BigInt(10 * 100_000_000);
+// Maximum priority fee (5 KAS) - Originally 10 but lowering for intial release
+export const MAX_PRIORITY_FEE = BigInt(5 * 100_000_000);
 
 // Standard transaction mass in grams (typical Kaspa transaction)
 export const STANDARD_TRANSACTION_MASS = 2036;
