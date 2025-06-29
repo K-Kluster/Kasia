@@ -272,11 +272,11 @@ export const WalletFlow = ({
 
   const getDerivationTypeDisplay = (d?: WalletDerivationType) =>
     d === "standard" ? (
-      <span className="bg-emerald-500 text-white py-1 px-2 rounded text-xs font-medium">
+      <span className="rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-white">
         Standard (Kaspium Compatible)
       </span>
     ) : (
-      <span className="bg-amber-500 text-white py-1 px-2 rounded text-xs font-medium">
+      <span className="rounded bg-amber-500 px-2 py-1 text-xs font-medium text-white">
         Legacy
       </span>
     );
@@ -296,7 +296,7 @@ export const WalletFlow = ({
           <Link to="/settings-network">
             <Cog6ToothIcon className="absolute top-4 right-4 size-6 hover:cursor-pointer hover:opacity-80" />
           </Link>
-          <div className="grow flex items-center justify-center mb-1">
+          <div className="mb-1 flex grow items-center justify-center">
             <NetworkSelector
               selectedNetwork={selectedNetwork}
               onNetworkChange={onNetworkChange}
@@ -304,15 +304,15 @@ export const WalletFlow = ({
             />
           </div>
           <TrustMessage />
-          <h2 className="text-center mt-4 mb-2 text-[var(--text-primary)] text-[1.5rem] font-semibold">
+          <h2 className="mt-4 mb-2 text-center text-[1.5rem] font-semibold text-[var(--text-primary)]">
             {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
           </h2>
-          <div className="flex flex-col gap-2 sm:gap-4 mb-4">
+          <div className="mb-4 flex flex-col gap-2 sm:gap-4">
             {wallets.map((w) => (
               <div
                 key={w.id}
                 onClick={() => onSelectWallet(w)}
-                className="relative cursor-pointer bg-[var(--primary-bg)] border border-[var(--border-color)] rounded-lg p-4 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-4"
+                className="relative flex cursor-pointer flex-col items-start gap-4 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 {/* delete icon top-right */}
                 <button
@@ -320,7 +320,7 @@ export const WalletFlow = ({
                     e.stopPropagation();
                     onDeleteWallet(w.id);
                   }}
-                  className="cursor-pointer absolute top-2 right-2 p-1 text-red-500 hover:text-red-700"
+                  className="absolute top-2 right-2 cursor-pointer p-1 text-red-500 hover:text-red-700"
                   title="Delete"
                 >
                   <TrashIcon className="h-6 w-6" />
@@ -334,7 +334,7 @@ export const WalletFlow = ({
                   <div className="text-sm text-[var(--text-secondary)]">
                     Created: {new Date(w.createdAt).toLocaleDateString()}
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="mt-1 flex items-center gap-2">
                     {getDerivationTypeDisplay(w.derivationType)}
                     {w.derivationType === "legacy" && (
                       <button
@@ -342,7 +342,7 @@ export const WalletFlow = ({
                           e.stopPropagation();
                           onStepChange("migrate", w.id);
                         }}
-                        className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs cursor-pointer transition-colors duration-200 animate-pulse"
+                        className="animate-pulse cursor-pointer rounded bg-blue-500 px-2 py-1 text-xs text-white transition-colors duration-200 hover:bg-blue-600"
                         title="Migrate to standard derivation"
                       >
                         Migrate
@@ -354,7 +354,7 @@ export const WalletFlow = ({
             ))}
           </div>
 
-          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+          <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button variant="primary" onClick={() => onStepChange("create")}>
               Create New Wallet
             </Button>
@@ -368,12 +368,12 @@ export const WalletFlow = ({
       {/* Create wallet 'Route' */}
       {step.type === "create" && (
         <>
-          <h2 className="font-bold text-lg text-center">Create New Wallet</h2>
+          <h2 className="text-center text-lg font-bold">Create New Wallet</h2>
 
           {/* Derivation Type Selection */}
           <div className="form-group">
             <label>Derivation Standard</label>
-            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
+            <div className="mt-2 flex flex-col gap-2 sm:gap-3">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -412,7 +412,7 @@ export const WalletFlow = ({
 
           <div className="form-group">
             <label>Seed Phrase Length</label>
-            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
+            <div className="mt-2 flex flex-col gap-2 sm:gap-3">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -449,7 +449,7 @@ export const WalletFlow = ({
 
           {error && <div className="error">{error}</div>}
 
-          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+          <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button onClick={onCreateWallet} variant="primary">
               Create
             </Button>
@@ -463,13 +463,13 @@ export const WalletFlow = ({
       {/* Seed continues from Create without a new path */}
       {step.type === "seed" && step.mnemonic && (
         <>
-          <h2 className="font-bold text-lg text-center">Wallet Created</h2>
-          <div className="my-5 py-4 px-4 bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center w-full">
+          <h2 className="text-center text-lg font-bold">Wallet Created</h2>
+          <div className="my-5 flex w-full flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] px-4 py-4">
             <p className="font-semibold">
               Please save your mnemonic phrase securely:
             </p>
-            <div className="my-2 p-2 text-base rounded-lg flex flex-col items-center text-center text-amber-300">
-              <ExclamationTriangleIcon className="w-8 h-8" />
+            <div className="my-2 flex flex-col items-center rounded-lg p-2 text-center text-base text-amber-300">
+              <ExclamationTriangleIcon className="h-8 w-8" />
               Please keep your seed phrase safe, if you lose your seed phrase
               there is no recovery.
             </div>
@@ -477,19 +477,19 @@ export const WalletFlow = ({
             <button
               type="button"
               onClick={() => setRevealed(!revealed)}
-              className="font-bold cursor-pointer mx-auto my-4 px-4 py-2 bg-[rgba(76,175,80,0.1)] border border-[rgba(76,175,80,0.3)] rounded text-white text-sm"
+              className="mx-auto my-4 cursor-pointer rounded border border-[rgba(76,175,80,0.3)] bg-[rgba(76,175,80,0.1)] px-4 py-2 text-sm font-bold text-white"
             >
               Anyone with your seed phrase can access your wallet
-              <div className="font-semibold my-1 text-amber-300 underline">
+              <div className="my-1 font-semibold text-amber-300 underline">
                 {revealed ? "Hide seed phrase" : "Show seed phrase"}
               </div>
             </button>
 
             <div
-              className={`mnemonic-phrase grid grid-cols-3 gap-[10px] p-[15px] w-full mb-[15px] transition-all duration-300 ease-linear ${
+              className={`mnemonic-phrase mb-[15px] grid w-full grid-cols-3 gap-[10px] p-[15px] transition-all duration-300 ease-linear ${
                 revealed
-                  ? "filter-none pointer-events-auto select-text"
-                  : "filter blur-[8px] pointer-events-none select-none"
+                  ? "pointer-events-auto filter-none select-text"
+                  : "pointer-events-none blur-[8px] filter select-none"
               }`}
             >
               {step.mnemonic!.phrase.split(" ").map((word, i) => (
@@ -504,7 +504,7 @@ export const WalletFlow = ({
               onClick={handleCopy}
               disabled={!revealed}
               variant="primary"
-              className="mx-auto mt-2 text-sm py-2 px-4 disabled:cursor-not-allowed"
+              className="mx-auto mt-2 px-4 py-2 text-sm disabled:cursor-not-allowed"
             >
               Copy Seed Phrase
             </Button>
@@ -517,7 +517,7 @@ export const WalletFlow = ({
               onStepChange("home");
             }}
             variant="secondary"
-            className="mx-auto text-sm py-2 px-4"
+            className="mx-auto px-4 py-2 text-sm"
           >
             Back to Wallets
           </Button>
@@ -527,12 +527,12 @@ export const WalletFlow = ({
       {/* Import wallet 'Route' */}
       {step.type === "import" && (
         <>
-          <h2 className="font-bold text-lg text-center">Import Wallet</h2>
+          <h2 className="text-center text-lg font-bold">Import Wallet</h2>
 
           {/* Derivation Type Selection */}
           <div className="form-group">
             <label>Derivation Standard</label>
-            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
+            <div className="mt-2 flex flex-col gap-2 sm:gap-3">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -570,7 +570,7 @@ export const WalletFlow = ({
           </div>
           <div className="form-group">
             <label>Seed Phrase Length</label>
-            <div className="flex flex-col gap-2 sm:gap-3 mt-2">
+            <div className="mt-2 flex flex-col gap-2 sm:gap-3">
               <label className="radio-option">
                 <input
                   type="radio"
@@ -609,7 +609,7 @@ export const WalletFlow = ({
 
           {error && <div className="error">{error}</div>}
 
-          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+          <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button onClick={onImportWallet} variant="primary">
               Create
             </Button>
@@ -623,12 +623,12 @@ export const WalletFlow = ({
       {/* import success continues from import without a new path */}
       {step.type === "success" && (
         <>
-          <h2 className="font-bold text-lg text-center">Wallet Unlocked</h2>
+          <h2 className="text-center text-lg font-bold">Wallet Unlocked</h2>
           <div className="mt-5 flex justify-center">
             <Button
               onClick={() => onStepChange("home")}
               variant="primary"
-              className="w-full text-sm py-2 px-4"
+              className="w-full px-4 py-2 text-sm"
             >
               Back to Wallets
             </Button>
@@ -639,7 +639,7 @@ export const WalletFlow = ({
       {/* Migrate wallet 'Route' */}
       {step.type === "migrate" && (
         <>
-          <h2 className="font-bold text-lg text-center">
+          <h2 className="text-center text-lg font-bold">
             Migrate Legacy Wallet
           </h2>
           <div className="migration-info">
@@ -654,8 +654,8 @@ export const WalletFlow = ({
               path (m/44'/111111'/0') that is compatible with Kaspium and other
               standard wallets.
             </p>
-            <div className="my-5 text-amber-300 p-4 text-center bg-[#1a1f2e] border border-[#2a3042] rounded-lg flex flex-col items-center">
-              <ExclamationTriangleIcon className="w-5 h-5" /> Your original
+            <div className="my-5 flex flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] p-4 text-center text-amber-300">
+              <ExclamationTriangleIcon className="h-5 w-5" /> Your original
               wallet will remain unchanged. You'll need to transfer funds to the
               new wallet addresses.
             </div>
@@ -686,7 +686,7 @@ export const WalletFlow = ({
 
           {error && <div className="error">{error}</div>}
 
-          <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+          <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button onClick={onMigrateWallet} variant="primary">
               Create
             </Button>
@@ -700,10 +700,10 @@ export const WalletFlow = ({
       {/* Unlock wallet 'Route' */}
       {step.type === "unlock" && (
         <>
-          <h2 className="font-bold text-lg text-center">Unlock Wallet</h2>
+          <h2 className="text-center text-lg font-bold">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
-            <div className="text-center mb-5 p-2.5 bg-[#2c3e50] rounded">
+            <div className="mb-5 rounded bg-[#2c3e50] p-2.5 text-center">
               <span className="font-semibold text-[var(--text-primary)]">
                 {wallets.find((w) => w.id === selectedWalletId)?.name}
               </span>
@@ -711,11 +711,11 @@ export const WalletFlow = ({
           )}
 
           {unlocking ? (
-            <div className="relative my-2 flex flex-col items-center justify-center h-full space-y-4">
-              <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
+            <div className="relative my-2 flex h-full flex-col items-center justify-center space-y-4">
+              <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                 Unlocking Wallet…
               </span>
-              <ArrowPathIcon className="my-2 w-14 h-14 text-gray-500 animate-spin" />
+              <ArrowPathIcon className="my-2 h-14 w-14 animate-spin text-gray-500" />
             </div>
           ) : (
             <>
@@ -737,7 +737,7 @@ export const WalletFlow = ({
 
               {error && <div className="error">{error}</div>}
 
-              <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+              <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
                 <Button
                   onClick={onUnlockWallet}
                   disabled={unlocking}

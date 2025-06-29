@@ -348,12 +348,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   };
 
   return (
-    <div className="flex-col gap-8 relative">
+    <div className="relative flex-col gap-8">
       {openedRecipient && message && (
-        <div className="absolute right-4 -top-7.5 flex items-center gap-2">
+        <div className="absolute -top-7.5 right-4 flex items-center gap-2">
           <div
             className={clsx(
-              "inline-block bg-white/10 text-xs py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
+              "inline-block rounded-md border bg-white/10 px-3 py-1 text-right text-xs text-gray-400 transition-opacity duration-300 ease-out",
               feeEstimate != null && getFeeClasses(feeEstimate)
             )}
           >
@@ -373,12 +373,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           />
         </div>
       )}
-      <div className=" flex items-center gap-2 bg-[var(--primary-bg)] rounded-lg p-1 border border-[var(--border-color)]">
+      <div className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-1">
         <Textarea
           ref={messageInputRef}
           rows={1}
           placeholder="Type your message..."
-          className="peer resize-none overflow-y-auto bg-transparent border-none text-[var(--text-primary)] p-2 text-[0.9em] outline-none flex-1"
+          className="peer flex-1 resize-none overflow-y-auto border-none bg-transparent p-2 text-[0.9em] text-[var(--text-primary)] outline-none"
           value={message}
           onChange={(e) => setMessage(e.currentTarget.value)}
           onInput={(e) => {
@@ -407,7 +407,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         <Popover className="relative">
           {({ close }) => (
             <>
-              <PopoverButton className="peer p-2 hover:bg-white/5 rounded">
+              <PopoverButton className="peer rounded p-2 hover:bg-white/5">
                 <PlusIcon className="size-5" />
               </PopoverButton>
               <Transition
@@ -418,16 +418,16 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                 leaveFrom="opacity-100 translate-y-0"
                 leaveTo="opacity-0 translate-y-1"
               >
-                <PopoverPanel className="absolute bottom-full mb-2 right-0 flex flex-col gap-2 bg-[var(--secondary-bg)] p-2 rounded shadow-lg">
+                <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
                   <button
                     onClick={() => {
                       openFileDialog();
                       close();
                     }}
-                    className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
+                    className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
                     disabled={isUploading}
                   >
-                    <PaperClipIcon className="size-5 m-2" />
+                    <PaperClipIcon className="m-2 size-5" />
                   </button>
 
                   {openedRecipient && (
@@ -444,10 +444,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
         <button
           onClick={onSendClicked}
-          className="cursor-pointer flex items-center justify-center text-kas-primary hover:text-kas-secondary overflow-hidden w-0 peer-focus:w-6 transition-width duration-200 ease-out mr-2"
+          className="text-kas-primary hover:text-kas-secondary transition-width mr-2 flex w-0 cursor-pointer items-center justify-center overflow-hidden duration-200 ease-out peer-focus:w-6"
           aria-label="Send"
         >
-          <PaperAirplaneIcon className="w-6 h-6" />
+          <PaperAirplaneIcon className="h-6 w-6" />
         </button>
       </div>
     </div>

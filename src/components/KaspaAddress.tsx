@@ -64,11 +64,11 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           {typeof address === "string" ? address : address.toString()}
         </span>
       ) : (
-        <span className="align-middle inline-block leading-normal">
+        <span className="inline-block align-middle leading-normal">
           {firstSubPart}
           <span
             onClick={handleToggle}
-            className="px-0.5 text-blue-500 hover:underline cursor-pointer text-xl"
+            className="cursor-pointer px-0.5 text-xl text-blue-500 hover:underline"
           >
             ...
           </span>
@@ -77,7 +77,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
       )}
       <button
         onClick={handleCopy}
-        className="focus:outline-none cursor-pointer block mt-auto ml-2"
+        className="mt-auto ml-2 block cursor-pointer focus:outline-none"
       >
         <Square2StackIcon className="size-5 text-white hover:opacity-80" />
       </button>

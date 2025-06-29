@@ -164,17 +164,11 @@ export const OneLiner: FC = () => {
   return (
     <>
       {/* Main Message Section*/}
-      <div className="sm:px-8 sm:py-4 bg-[var(--primary-bg)]">
+      <div className="bg-[var(--primary-bg)] sm:px-8 sm:py-4">
         <div className="flex items-center gap-4">
           {isWalletReady &&
             (isWalletReady && messageStore.isLoaded ? (
-              <div
-                className="
-              bg-[var(--secondary-bg)] rounded-xl shadow-md sm:max-w-[1200px] w-full sm:mx-auto
-              border border-[var(--border-color)] overflow-hidden min-w-[320px] h-[100vh] sm:h-[85vh] min-h-[300px]
-              flex
-            "
-              >
+              <div className="flex h-[100vh] min-h-[300px] w-full min-w-[320px] overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--secondary-bg)] shadow-md sm:mx-auto sm:h-[85vh] sm:max-w-[1200px]">
                 <ContactSection
                   contacts={messageStore.contacts}
                   onNewChatClicked={onNewChatClicked}
@@ -192,15 +186,15 @@ export const OneLiner: FC = () => {
                 />
               </div>
             ) : (
-              <div className="flex flex-col items-center w-full text-xs">
+              <div className="flex w-full flex-col items-center text-xs">
                 {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-                <div className="relative sm:max-w-[1200px] w-full mx-auto min-w-[320px] h-[100vh] sm:h-[85vh]  min-h-[300px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md">
-                  <div className="absolute inset-0 bg-[var(--secondary-bg)]/20 animate-pulse" />
-                  <div className="relative flex flex-col items-center justify-center h-full space-y-4">
-                    <span className="text-sm sm:text-lg text-gray-300 font-medium tracking-wide">
+                <div className="relative mx-auto h-[100vh] min-h-[300px] w-full min-w-[320px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md sm:h-[85vh] sm:max-w-[1200px]">
+                  <div className="absolute inset-0 animate-pulse bg-[var(--secondary-bg)]/20" />
+                  <div className="relative flex h-full flex-col items-center justify-center space-y-4">
+                    <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                       Starting the message client...
                     </span>
-                    <ArrowPathIcon className="w-14 h-14 text-gray-500 animate-spin" />
+                    <ArrowPathIcon className="h-14 w-14 animate-spin text-gray-500" />
                   </div>
                 </div>
               </div>
@@ -217,7 +211,7 @@ export const OneLiner: FC = () => {
             <WalletAddressSection address={walletStore.address.toString()} />
           ) : (
             <div className="flex justify-center py-6">
-              <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
+              <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
             </div>
           )}
         </Modal>

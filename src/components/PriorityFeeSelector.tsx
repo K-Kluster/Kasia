@@ -309,8 +309,8 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
           <div className="space-y-4">
-            <h3 className="text-lg font-medium mb-4">Select Priority Fee</h3>
-            <div className="flex items-start gap-2 text-xs sm:text-sm text-[var(--text-secondary)]">
+            <h3 className="mb-4 text-lg font-medium">Select Priority Fee</h3>
+            <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] sm:text-sm">
               <InformationCircleIcon className="h-5 w-5 flex-shrink-0" />
               <p>
                 Priority fees help your transaction get processed faster during
@@ -324,14 +324,14 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
                   className={clsx(
-                    "cursor-pointer w-full py-2 px-4 sm:py-4 rounded-lg border text-left transition-colors",
+                    "w-full cursor-pointer rounded-lg border px-4 py-2 text-left transition-colors sm:py-4",
                     "hover:bg-[var(--primary-bg)] focus:ring-2 focus:ring-blue-500",
                     settings.selectedBucket === bucket.label
                       ? "border-blue-500 bg-blue-500/10"
                       : "border-[var(--border-color)] bg-[var(--primary-bg)]"
                   )}
                 >
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-[var(--text-primary)]">
                         {bucket.label}
@@ -340,12 +340,12 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                         {bucket.description}
                       </div>
                       {bucket.estimatedSeconds && (
-                        <div className="text-xs text-[var(--text-secondary)] mt-1">
+                        <div className="mt-1 text-xs text-[var(--text-secondary)]">
                           {formatTime(bucket.estimatedSeconds)}
                         </div>
                       )}
                     </div>
-                    <div className="text-sm font-mono text-[var(--accent-green)]">
+                    <div className="font-mono text-sm text-[var(--accent-green)]">
                       {bucket.feerate === 1
                         ? "Base fee"
                         : `${bucket.feerate}x fee rate`}
@@ -356,14 +356,14 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
 
               {/* Custom fee option */}
               <div className="mt-4">
-                <div className="text-sm font-medium mb-2">Custom Fee</div>
+                <div className="mb-2 text-sm font-medium">Custom Fee</div>
                 <div className="flex gap-2">
                   <Input
                     type="text"
                     value={customAmount}
                     onChange={(e) => handleCustomAmountChange(e.target.value)}
                     placeholder="Enter amount in KAS"
-                    className="flex-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--input-bg)] px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                   <Button onClick={handleCustomFee} className="!w-fit">
                     Set

@@ -136,4 +136,3 @@ export interface PriorityFeeConfig {
   source: FeeSource;
   feerate?: number; // Store the fee rate used for calculation
 }
-

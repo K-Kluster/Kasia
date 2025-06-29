@@ -23,7 +23,7 @@ export const Button: FC<ButtonProps> = ({
       {...props}
       disabled={disabled}
       className={clsx(base, variantClasses, className, {
-        "opacity-50 cursor-not-allowed": disabled,
+        "cursor-not-allowed opacity-50": disabled,
       })}
     >
       {children}

@@ -39,7 +39,7 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
   // For inline display, show all three buckets in a compact format
   if (inline) {
     return (
-      <div className="flex items-center gap-2 m-0 p-0">
+      <div className="m-0 flex items-center gap-2 p-0">
         {estimate.priorityBucket && (
           <div
             className="fee-rate-inline priority"
@@ -94,36 +94,36 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
       <h4 className="mb-2 text-[0.9rem] text-gray-400">Network Fees</h4>
 
       {estimate.priorityBucket && (
-        <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 rounded bg-red-500/10 border border-red-500/20 text-[0.8rem]">
+        <div className="mb-1.5 flex items-center justify-between rounded border border-red-500/20 bg-red-500/10 px-2 py-1.5 text-[0.8rem]">
           <div className="font-medium">Fast</div>
           <div className="font-mono text-[0.85rem]">
             {calculateAndFormatFee(estimate.priorityBucket.feerate)} KAS
           </div>
-          <div className="text-gray-400 text-xs">
+          <div className="text-xs text-gray-400">
             {formatTime(estimate.priorityBucket.estimatedSeconds)}
           </div>
         </div>
       )}
 
       {estimate.normalBuckets && estimate.normalBuckets.length > 0 && (
-        <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 rounded bg-blue-500/10 border border-blue-500/20 text-[0.8rem]">
+        <div className="mb-1.5 flex items-center justify-between rounded border border-blue-500/20 bg-blue-500/10 px-2 py-1.5 text-[0.8rem]">
           <div className="font-medium">Normal</div>
           <div className="font-mono text-[0.85rem]">
             {calculateAndFormatFee(estimate.normalBuckets[0]?.feerate)} KAS
           </div>
-          <div className="text-gray-400 text-xs">
+          <div className="text-xs text-gray-400">
             {formatTime(estimate.normalBuckets[0]?.estimatedSeconds)}
           </div>
         </div>
       )}
 
       {estimate.lowBuckets && estimate.lowBuckets.length > 0 && (
-        <div className="flex justify-between items-center px-2 py-1.5 mb-1.5 rounded bg-green-500/10 border border-green-500/20 text-[0.8rem]">
+        <div className="mb-1.5 flex items-center justify-between rounded border border-green-500/20 bg-green-500/10 px-2 py-1.5 text-[0.8rem]">
           <div className="font-medium">Slow</div>
           <div className="font-mono text-[0.85rem]">
             {calculateAndFormatFee(estimate.lowBuckets[0]?.feerate)} KAS
           </div>
-          <div className="text-gray-400 text-xs">
+          <div className="text-xs text-gray-400">
             {formatTime(estimate.lowBuckets[0]?.estimatedSeconds)}
           </div>
         </div>

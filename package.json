@@ -9,7 +9,7 @@
     "build:staging": "tsc -b && vite build --mode staging",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "format:fix": "prettier --write .",
+    "format:fix": "prettier --write ./src",
     "preview": "vite preview",
     "tauri": "tauri",
     "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd ..",

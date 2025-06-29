@@ -156,7 +156,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const renderPaymentMessage = () => {
     if (isDecrypting) {
       return (
-        <div className="px-3 py-2 bg-teal-50 rounded-md text-gray-600 italic text-xs">
+        <div className="rounded-md bg-teal-50 px-3 py-2 text-xs text-gray-600 italic">
           Decrypting payment message...
         </div>
       );
@@ -178,22 +178,22 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             <div className={clsx("flex items-center gap-1 p-2")}>
               <div
                 className={clsx(
-                  "flex mr-2 items-center justify-center w-18 h-18 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)] animate-pulse"
+                  "mr-2 flex h-18 w-18 animate-pulse items-center justify-center drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]"
                 )}
               >
                 <KasIcon
-                  className="w-18 h-18 scale-140 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  className="h-18 w-18 scale-140 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
                   kClassName="fill-[#70C7BA]"
                 />
               </div>
               <div className="flex-1">
                 {hasMessage && (
-                  <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+                  <div className="mb-1 text-sm font-medium text-white drop-shadow-sm">
                     {paymentPayload.message}
                   </div>
                 )}
-                <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
+                <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
                   {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
                 </div>
               </div>
@@ -211,18 +211,18 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     // Fallback to showing basic payment info
     return (
       <div className="flex items-center gap-3 p-4">
-        <div className="flex items-center justify-center min-w-10 h-10 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]">
+        <div className="mr-1 flex h-10 min-w-10 items-center justify-center drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]">
           <KasIcon
-            className="w-10 h-10 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+            className="h-10 w-10 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
             circleClassName="fill-white"
             kClassName="fill-[#70C7BA]"
           />
         </div>
         <div className="flex-1">
-          <div className="text-white font-medium text-sm mb-1 drop-shadow-sm">
+          <div className="mb-1 text-sm font-medium text-white drop-shadow-sm">
             Payment message
           </div>
-          <div className="text-white/80 text-xs font-semibold drop-shadow-sm">
+          <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
             {isOutgoing ? "Sent" : "Received"} payment
           </div>
         </div>
@@ -261,7 +261,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     // Wait for decryption attempt before showing content
     if (isDecrypting) {
       return (
-        <div className="px-3 py-2 bg-gray-50 rounded-md text-gray-600 italic text-xs">
+        <div className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 italic">
           Decrypting message...
         </div>
       );
@@ -460,7 +460,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   return (
     <div
       className={clsx(
-        "flex w-full my-2",
+        "my-2 flex w-full",
         isOutgoing
           ? "justify-end pr-0.5 sm:pr-2"
           : "justify-start pl-0.5 sm:pl-2"
@@ -469,29 +469,29 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       <div
         onClick={() => setShowMeta((prev) => !prev)}
         className={clsx(
-          "relative z-0 cursor-pointer mb-4 px-4 py-3 max-w-[70%] break-words text-left hyphens-auto",
+          "relative z-0 mb-4 max-w-[70%] cursor-pointer px-4 py-3 text-left break-words hyphens-auto",
           isOutgoing
-            ? "bg-[#007aff] text-white rounded-2xl rounded-br-none"
-            : "bg-[var(--secondary-bg)] rounded-2xl rounded-bl-none"
+            ? "rounded-2xl rounded-br-none bg-[#007aff] text-white"
+            : "rounded-2xl rounded-bl-none bg-[var(--secondary-bg)]"
         )}
       >
         {(showMeta || showTimestamp) && (
-          <div className="flex justify-between items-center mb-[6px] text-[0.8em] truncate">
+          <div className="mb-[6px] flex items-center justify-between truncate text-[0.8em]">
             <div className="opacity-70">{displayStamp}</div>
           </div>
         )}
 
-        <div className="text-[1em] my-2 leading-[1.4]">
+        <div className="my-2 text-[1em] leading-[1.4]">
           {renderMessageContent()}
         </div>
 
         {showMeta && (
           <div
             className={clsx(
-              "mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap",
+              "mt-[6px] text-[0.75em] whitespace-nowrap opacity-80",
               isOutgoing
                 ? "flex flex-col items-start space-y-1"
-                : "flex flex-col sm:flex-row sm:justify-between items-start sm:items-center space-x-4"
+                : "flex flex-col items-start space-x-4 sm:flex-row sm:items-center sm:justify-between"
             )}
           >
             {formatAmountAndFee()}
