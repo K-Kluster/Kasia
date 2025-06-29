@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useMemo } from "react";
+import { FC, useState, useEffect, useMemo, useCallback } from "react";
 import { Modal } from "./Common/modal";
 import {
   ArrowsUpDownIcon,
@@ -9,6 +9,8 @@ import { FeeSource } from "kaspa-wasm";
 import clsx from "clsx";
 import { useWalletStore } from "../store/wallet.store";
 import { Button } from "./Common/Button";
+import { toast } from "../utils/toast";
+import { Input } from "@headlessui/react";
 
 interface PriorityFeeSelectorProps {
   onFeeChange: (fee: PriorityFeeConfig) => void;
@@ -180,6 +182,16 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     setIsModalOpen(false);
   };
 
+  const handleCustomAmountChange = useCallback((value: string) => {
+    // Allow decimal numbers
+    if (/^\d*\.?\d*$/.test(value)) {
+      setCustomAmount(value);
+    } else
+    {
+      toast.warning("Amount must be a number",1500)
+      }
+  }, []);
+
   const handleCustomFee = () => {
     const kasValue = parseFloat(customAmount);
     if (isNaN(kasValue) || kasValue < 0) return;
@@ -187,7 +199,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     const sompiValue = BigInt(Math.floor(kasValue * 100_000_000));
 
     if (sompiValue > MAX_PRIORITY_FEE) {
-      alert(
+      toast.warning(
         `Priority fee cannot exceed ${
           Number(MAX_PRIORITY_FEE) / 100_000_000
         } KAS`
@@ -342,11 +354,10 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
               <div className="mt-4">
                 <div className="text-sm font-medium mb-2">Custom Fee</div>
                 <div className="flex gap-2">
-                  <input
-                    type="number"
-                    step="0.00001"
+                  <Input
+                    type="text"
                     value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
+                    onChange={(e) => handleCustomAmountChange(e.target.value)}
                     placeholder="Enter amount in KAS"
                     className="flex-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
