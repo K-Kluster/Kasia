@@ -36,7 +36,7 @@ export const OneLiner: FC = () => {
   const walletStore = useWalletStore();
 
   const isMobile = useIsMobile();
-  const { isOpen, closeModal } = useModals();
+  const { isOpen, closeModal, closeAllModals } = useModals();
 
   useEffect(() => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);
@@ -64,6 +64,7 @@ export const OneLiner: FC = () => {
       // Called when OneLiner unmounts (user leaves route), so we can reset all the states
       walletStore.lock();
       uiStore.setSettingsOpen(false);
+      closeAllModals();
 
       messageStore.setIsLoaded(false);
       messageStore.setOpenedRecipient(null);
