@@ -47,16 +47,15 @@ export const WalletSeedRetreiveDisplay: FC = () => {
 
   const handleViewSeedPhrase = async () => {
     try {
-      setError("");
       if (!selectedWalletId) {
-        setError("No wallet selected");
+        toast.error("No wallet selected");
         return;
       }
 
       // Get the stored wallet data
       const walletsString = localStorage.getItem("wallets");
       if (!walletsString) {
-        setError("No wallets found");
+        toast.error("No wallets found");
         return;
       }
 
@@ -65,7 +64,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
         (w) => w.id === selectedWalletId
       );
       if (!foundStoredWallet) {
-        setError("Wallet not found");
+        toast.error("Wallet not found");
         return;
       }
 
