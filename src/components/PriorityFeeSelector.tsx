@@ -38,38 +38,6 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
   // Get fee estimate from wallet store instead of fetching directly
   const feeEstimate = useWalletStore((s) => s.feeEstimate);
 
-  // useEffect(() => {
-  //   const saved = sessionStorage.getItem("priorityFeeSettings");
-  //   if (saved) {
-  //     try {
-  //       const parsed = JSON.parse(saved);
-  //       const fee: PriorityFeeConfig = {
-  //         amount: BigInt(0), // Let WASM calculate the amount
-  //         source: parsed.fee.source,
-  //         feerate: parsed.fee.feerate,
-  //       };
-  //       setSettings({
-  //         fee,
-  //         isPersistent: parsed.isPersistent,
-  //         selectedBucket: parsed.selectedBucket,
-  //       });
-  //       onFeeChange(fee);
-  //     } catch (error) {
-  //       console.error("Failed to load priority fee settings:", error);
-  //     }
-  //   } else {
-  //     // Initialize with Low bucket (0 fee) as default
-  //     const defaultFee = { amount: BigInt(0), source: FeeSource.SenderPays };
-  //     setSettings((prev) => ({
-  //       ...prev,
-  //       fee: defaultFee,
-  //       selectedBucket: "Low",
-  //     }));
-  //     onFeeChange(defaultFee);
-  //   }
-  // }, [onFeeChange]);
-
-  // Sync settings when currentFee changes externally
   useEffect(() => {
     setSettings((prev) => ({
       ...prev,
@@ -273,20 +241,6 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     return "Custom";
   };
 
-  const getCurrentBucketColor = () => {
-    const bucket = getCurrentBucketLabel();
-    switch (bucket) {
-      case "Priority":
-        return "text-red-400";
-      case "Normal":
-        return "text-blue-400";
-      case "Low":
-        return "text-green-400";
-      default:
-        return "text-[#49EACB]"; // Default green for custom
-    }
-  };
-
   const formatTime = (seconds: number | undefined) => {
     if (seconds === undefined || seconds === null) return "";
     const value = Number(seconds);
@@ -309,7 +263,14 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
         onClick={() => setIsModalOpen(true)}
         className={clsx(
           "flex items-center gap-1 text-sm font-medium",
-          getCurrentBucketColor(),
+          {
+            "text-red-400": getCurrentBucketLabel() === "Priority",
+            "text-blue-400": getCurrentBucketLabel() === "Normal",
+            "text-green-400": getCurrentBucketLabel() === "Low",
+            "text-[#49EACB]": !["Priority", "Normal", "Low"].includes(
+              getCurrentBucketLabel()
+            ),
+          },
           className
         )}
       >
@@ -321,7 +282,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
         <Modal onClose={() => setIsModalOpen(false)}>
           <div className="space-y-4">
             <h3 className="text-lg font-medium mb-4">Select Priority Fee</h3>
-            <div className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+            <div className="flex items-start gap-2 text-xs sm:text-sm text-[var(--text-secondary)]">
               <InformationCircleIcon className="h-5 w-5 flex-shrink-0" />
               <p>
                 Priority fees help your transaction get processed faster during
@@ -335,11 +296,11 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
                   className={clsx(
-                    "cursor-pointer w-full p-4 rounded-lg border text-left transition-colors",
-                    "hover:bg-[var(--secondary-bg)] focus:ring-2 focus:ring-blue-500",
+                    "cursor-pointer w-full py-2 px-4 sm:py-4 rounded-lg border text-left transition-colors",
+                    "hover:bg-[var(--primary-bg)] focus:ring-2 focus:ring-blue-500",
                     settings.selectedBucket === bucket.label
                       ? "border-blue-500 bg-blue-500/10"
-                      : "border-[var(--border-color)]"
+                      : "border-[var(--border-color)] bg-[var(--primary-bg)]"
                   )}
                 >
                   <div className="flex justify-between items-center">
@@ -371,6 +332,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                 <div className="flex gap-2">
                   <input
                     type="number"
+                    step="0.00001"
                     value={customAmount}
                     onChange={(e) => setCustomAmount(e.target.value)}
                     placeholder="Enter amount in KAS"
@@ -383,7 +345,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
               </div>
 
               {/* Remember choice option */}
-              <div className="mt-4 flex items-center gap-2">
+              <div className="my-4 flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="remember-choice"
