@@ -41,8 +41,8 @@ export const MnemonicEntry = ({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputEl = e.target as HTMLInputElement;
     const allInputs = inputEl.parentElement?.querySelectorAll("input") ?? [];
-    const words = Array.from(allInputs).map(
-      (inp) => (inp as HTMLInputElement).value
+    const words = Array.from(allInputs).map((inp) =>
+      (inp as HTMLInputElement).value.trim()
     );
     if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ");
   };
