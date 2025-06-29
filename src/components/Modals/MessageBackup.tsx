@@ -82,7 +82,6 @@ export const MessageBackup: React.FC = () => {
       <Button
         onClick={onExportMessages}
         variant="primary"
-        className="w-full px-4 py-2"
       >
         Export Messages
       </Button>
