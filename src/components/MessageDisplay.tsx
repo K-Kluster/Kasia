@@ -465,31 +465,29 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         isOutgoing ? "justify-end pr-5" : "justify-start pl-5"
       )}
     >
-      {/* Message bubble toggles metadata on click: shows HH:MM if <12h old when collapsed,
-      otherwise full date/time, and always full date/time when expanded.*/}
       <div
         onClick={() => setShowMeta((prev) => !prev)}
         className={clsx(
-          "cursor-pointer relative mb-4 px-4 py-3 rounded-[16px] max-w-[70%] break-words hyphens-auto",
+          "relative z-0 cursor-pointer mb-4 px-4 py-3 max-w-[70%] break-words hyphens-auto",
           isOutgoing
-            ? "bg-[#007aff] text-white text-right"
-            : "bg-[var(--secondary-bg)] text-left",
+            ? "bg-[#007aff] text-white text-right rounded-2xl rounded-br-none"
+            : "bg-[var(--secondary-bg)] text-left rounded-2xl rounded-bl-none"
         )}
       >
         {(showMeta || showTimestamp) && (
-          <div className="flex justify-between items-center mb-[6px] text-[0.8em] whitespace-nowrap overflow-hidden truncate">
+          <div className="flex justify-between items-center mb-[6px] text-[0.8em] truncate">
             <div className="opacity-70">{displayStamp}</div>
           </div>
         )}
 
-        <div className="text-[1em] my-2 break-words leading-[1.4]">
+        <div className="text-[1em] my-2 leading-[1.4]">
           {renderMessageContent()}
         </div>
 
         {showMeta && (
           <div
             className={clsx(
-              "mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap break-words",
+              "mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap",
               isOutgoing
                 ? "flex flex-col items-start space-y-1"
                 : "flex flex-col sm:flex-row sm:justify-between items-start sm:items-center space-x-4"
@@ -511,4 +509,5 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       </div>
     </div>
   );
+  
 }
