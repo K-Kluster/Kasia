@@ -9,7 +9,8 @@
     "build:staging": "tsc -b && vite build --mode staging",
     "lint": "eslint .",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd .."
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",
