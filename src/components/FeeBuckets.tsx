@@ -1,6 +1,7 @@
 import { FC } from "react";
 import { formatKasAmount } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
+import { STANDARD_TRANSACTION_MASS } from "src/types/all";
 
 interface FeeBucketsProps {
   inline?: boolean;
@@ -19,7 +20,6 @@ export const FeeBuckets: FC<FeeBucketsProps> = ({ inline = false }) => {
   const estimate = feeEstimate.estimate || {};
 
   const calculateAndFormatFee = (feerate: number = 1) => {
-    const STANDARD_TRANSACTION_MASS = 2036; // grams
     const feeInSompi = Math.ceil(feerate * STANDARD_TRANSACTION_MASS);
     return formatKasAmount(feeInSompi, true);
   };
