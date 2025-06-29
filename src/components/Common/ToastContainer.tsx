@@ -16,7 +16,7 @@ export function ToastContainer() {
         <div
           key={toast.id}
           className={clsx(
-            "flex items-center gap-2 px-2 p2-1 sm:px-4 sm:py-3 rounded-xl shadow-lg text-sm animate-fade-in",
+            "flex items-center gap-2 px-2 py-1 sm:px-4 sm:py-3 rounded-xl shadow-lg text-sm animate-fade-in",
             {
               "bg-green-100/80 text-green-900": toast.type === "success",
               "bg-red-100/80 text-red-900": toast.type === "error",

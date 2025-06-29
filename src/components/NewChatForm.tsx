@@ -55,11 +55,14 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     }
   }, [recipientInputValue]);
 
-  const useRecipientInputRef = useCallback((node: HTMLTextAreaElement | null) => {
-    if (node) {
-      node.focus();
-    }
-  }, []);
+  const useRecipientInputRef = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      if (node) {
+        node.focus();
+      }
+    },
+    []
+  );
 
   // Handle escape key to close
   useEffect(() => {
