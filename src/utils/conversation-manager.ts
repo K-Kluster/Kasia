@@ -154,11 +154,7 @@ export class ConversationManager {
   public async processHandshake(
     senderAddress: string,
     payloadString: string
-  ): Promise<{
-    isNewHandshake: boolean;
-    requiresResponse: boolean;
-    conversation: Conversation;
-  }> {
+  ): Promise<unknown> {
     try {
       const payload = this.parseHandshakePayload(payloadString);
       this.validateHandshakePayload(payload);
@@ -166,9 +162,11 @@ export class ConversationManager {
       // First try to find conversation by ID from payload
       let existingConv = this.conversations.get(payload.conversationId);
 
-      // If not found by ID, try by address
+      // If not found by ID, try by address and ultimately by alias if necessary
       if (!existingConv) {
-        const existingConvId = this.addressToConversation.get(senderAddress);
+        const existingConvId =
+          this.addressToConversation.get(senderAddress) ??
+          this.aliasToConversation.get(payload.alias);
         if (existingConvId) {
           existingConv = this.conversations.get(existingConvId);
         }
@@ -384,9 +382,11 @@ export class ConversationManager {
     return true;
   }
 
-  public updateConversation(conversation: Conversation) {
+  public updateConversation(
+    conversation: Pick<Conversation, "conversationId"> & Partial<Conversation>
+  ) {
     // Validate the conversation
-    if (!conversation.conversationId || !conversation.kaspaAddress) {
+    if (!conversation.conversationId) {
       throw new Error("Invalid conversation: missing required fields");
     }
 
@@ -397,26 +397,33 @@ export class ConversationManager {
     }
 
     // Update the conversation
-    this.conversations.set(conversation.conversationId, {
+    const updatedConversation = {
       ...existing,
       ...conversation,
       lastActivity: Date.now(),
-    });
+    };
+    this.conversations.set(conversation.conversationId, updatedConversation);
 
     // If status changed to active, trigger the completion event
     if (existing.status === "pending" && conversation.status === "active") {
-      this.events?.onHandshakeCompleted?.(conversation);
+      this.events?.onHandshakeCompleted?.(updatedConversation);
     }
 
     // Update mappings
-    this.addressToConversation.set(
-      conversation.kaspaAddress,
-      conversation.conversationId
-    );
-    this.aliasToConversation.set(
-      conversation.myAlias,
-      conversation.conversationId
-    );
+    if (conversation.kaspaAddress) {
+      this.addressToConversation.set(
+        conversation.kaspaAddress,
+        conversation.conversationId
+      );
+    }
+
+    if (conversation.myAlias) {
+      this.aliasToConversation.set(
+        conversation.myAlias,
+        conversation.conversationId
+      );
+    }
+
     if (conversation.theirAlias) {
       this.aliasToConversation.set(
         conversation.theirAlias,
@@ -500,14 +507,26 @@ export class ConversationManager {
   private async processNewHandshake(
     payload: HandshakePayload,
     senderAddress: string
-  ): Promise<{
-    isNewHandshake: true;
-    requiresResponse: true;
-    conversation: Conversation;
-  }> {
-    // Check for duplicate alias collision
-    if (this.aliasToConversation.has(payload.alias)) {
+  ) {
+    const existingConversationIdForThisReceivedAlias =
+      this.aliasToConversation.get(payload.alias);
+
+    // if this alias is already known, probably the state was corrupted.
+    if (existingConversationIdForThisReceivedAlias) {
       throw new Error("Alias collision detected - handshake rejected");
+    }
+
+    // if an alias has changed, replace it with the new one
+    // use-case: recipient cleared their storage and wants to re-establish the conversation with a new alias
+    const existingConversationIdForThisReceivedAddress =
+      this.addressToConversation.get(senderAddress);
+    if (existingConversationIdForThisReceivedAddress) {
+      this.updateConversation({
+        conversationId: existingConversationIdForThisReceivedAddress,
+        // update the alias to the new one received in the handshake
+        theirAlias: payload.alias,
+      });
+      return;
     }
 
     // When receiving a handshake, we did not initiate it
@@ -523,12 +542,6 @@ export class ConversationManager {
     };
 
     this.saveConversation(conversation);
-
-    return {
-      isNewHandshake: true,
-      requiresResponse: true,
-      conversation,
-    };
   }
 
   private validateHandshakePayload(payload: HandshakePayload) {

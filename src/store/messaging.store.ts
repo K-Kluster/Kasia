@@ -78,11 +78,7 @@ interface MessagingState {
   processHandshake: (
     senderAddress: string,
     payload: string
-  ) => Promise<{
-    isNewHandshake: boolean;
-    requiresResponse: boolean;
-    conversation: Conversation;
-  }>;
+  ) => Promise<unknown>;
   getActiveConversations: () => Conversation[];
   getPendingConversations: () => PendingConversation[];
 
@@ -810,9 +806,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     // Create the handshake payload
-    const { payload, conversation } = await manager.initiateHandshake(
-      recipientAddress
-    );
+    const { payload, conversation } =
+      await manager.initiateHandshake(recipientAddress);
 
     // Send the handshake message
     console.log("Sending handshake message to:", recipientAddress);

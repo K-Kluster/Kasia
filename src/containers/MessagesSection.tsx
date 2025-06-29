@@ -37,6 +37,18 @@ export const MessageSection: FC<{
     null
   );
 
+  // compute last index of outgoing and incoming messages so we can render the message ui accordingly!
+  const { lastOutgoing, lastIncoming } = useMemo(() => {
+    const msgs = messageStore.messagesOnOpenedRecipient;
+    let lastOut = -1;
+    let lastIn = -1;
+    msgs.forEach((m, i) => {
+      if (m.senderAddress === address?.toString()) lastOut = i;
+      else lastIn = i;
+    });
+    return { lastOutgoing: lastOut, lastIncoming: lastIn };
+  }, [messageStore.messagesOnOpenedRecipient, address]);
+
   useEffect(() => {
     if (boxState !== "filtered" || !openedRecipient) return;
     const contact = contacts.find((c) => c.address === openedRecipient);
@@ -94,7 +106,7 @@ export const MessageSection: FC<{
   return (
     <div
       className={`
-        flex flex-col flex-[2] border-l border-[var(--border-color)]
+        flex flex-col overflow-x-hidden flex-[2] border-l border-[var(--border-color)]
         ${mobileView === "contacts" ? "hidden sm:flex" : ""}
       `}
     >
@@ -246,22 +258,27 @@ export const MessageSection: FC<{
           </div>
 
           <div
-            className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]"
             ref={(el) => {
-              // Auto-scroll to bottom when new messages arrive
-              if (el) {
-                el.scrollTop = el.scrollHeight;
-              }
+              if (el) el.scrollTop = el.scrollHeight;
             }}
           >
             {messageStore.messagesOnOpenedRecipient.length ? (
-              messageStore.messagesOnOpenedRecipient.map((msg) => (
-                <MessageDisplay
-                  isOutgoing={msg.senderAddress === address?.toString()}
-                  key={msg.transactionId}
-                  message={msg}
-                />
-              ))
+              messageStore.messagesOnOpenedRecipient.map((msg, idx) => {
+                const isOutgoing = msg.senderAddress === address?.toString();
+                const showTimestamp = isOutgoing
+                  ? idx === lastOutgoing
+                  : idx === lastIncoming;
+
+                return (
+                  <MessageDisplay
+                    key={msg.transactionId}
+                    isOutgoing={isOutgoing}
+                    showTimestamp={showTimestamp}
+                    message={msg}
+                  />
+                );
+              })
             ) : (
               <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
                 No messages in this conversation.

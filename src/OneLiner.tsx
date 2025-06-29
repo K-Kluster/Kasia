@@ -41,7 +41,6 @@ export const OneLiner: FC = () => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);
   }, [walletStore.unlockedWallet]);
 
-
   // Effect to handle if you drag from desktop to mobile, we need the mobile view to be aware!
   useEffect(() => {
     const syncToWidth = () => {
@@ -57,6 +56,18 @@ export const OneLiner: FC = () => {
     window.addEventListener("resize", syncToWidth);
     return () => window.removeEventListener("resize", syncToWidth);
   }, [contactsCollapsed, messageStore.openedRecipient, isMobile]);
+
+  // Clean up useEffect
+  useEffect(() => {
+    return () => {
+      // Called when OneLiner unmounts (user leaves route), so we can reset all the states
+      walletStore.lock();
+
+      messageStore.setIsLoaded(false);
+      messageStore.setOpenedRecipient(null);
+      messageStore.setIsCreatingNewChat(false);
+    };
+  }, []);
 
   const onNewChatClicked = useCallback(async () => {
     try {

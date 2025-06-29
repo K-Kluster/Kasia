@@ -15,10 +15,6 @@ use wasm_bindgen::{JsError, UnwrapThrowExt, prelude::wasm_bindgen};
 #[wasm_bindgen(inspectable)]
 #[derive(Debug, Clone)]
 pub struct EncryptedMessage {
-    // size is 1 byte
-    #[wasm_bindgen(skip)]
-    pub version: u8,
-
     // size is 12 bytes
     #[wasm_bindgen(skip)]
     pub nonce: Vec<u8>,
@@ -32,9 +28,8 @@ pub struct EncryptedMessage {
 
 #[wasm_bindgen]
 impl EncryptedMessage {
-    pub fn new(version: u8, ciphertext: &[u8], nonce: &[u8], ephemeral_public_key: &[u8]) -> Self {
+    pub fn new(ciphertext: &[u8], nonce: &[u8], ephemeral_public_key: &[u8]) -> Self {
         Self {
-            version,
             ciphertext: ciphertext.to_vec(),
             nonce: nonce.to_vec(),
             ephemeral_public_key: ephemeral_public_key.to_vec(),
@@ -43,7 +38,6 @@ impl EncryptedMessage {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
-        bytes.push(self.version);
         bytes.extend_from_slice(&self.nonce);
         bytes.extend_from_slice(&self.ephemeral_public_key);
         bytes.extend_from_slice(&self.ciphertext);
@@ -51,25 +45,21 @@ impl EncryptedMessage {
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Self {
-        // The version is always the first byte
-        let version = bytes[0];
-
         // The nonce is always 12 bytes
-        let nonce = bytes[1..13].to_vec();
+        let nonce = bytes[0..12].to_vec();
 
         // Check if the key starts with SEC1 compressed format marker (02 or 03)
-        let is_sec1_compressed = bytes.len() > 12 && (bytes[13] == 0x02 || bytes[13] == 0x03);
+        let is_sec1_compressed = bytes.len() > 12 && (bytes[12] == 0x02 || bytes[12] == 0x03);
 
         // If it's a SEC1 compressed key, it's 33 bytes, otherwise assume 32 bytes
         let key_size = if is_sec1_compressed { 33 } else { 32 };
-        let key_end = 13 + key_size;
+        let key_end = 12 + key_size;
 
         // Ensure we don't go out of bounds
         if bytes.len() < key_end {
             // Not enough bytes for the key, use what we have
-            let ephemeral_public_key = bytes[13..].to_vec();
+            let ephemeral_public_key = bytes[12..].to_vec();
             return Self {
-                version,
                 nonce,
                 ephemeral_public_key,
                 ciphertext: Vec::new(), // No bytes left for ciphertext
@@ -77,7 +67,7 @@ impl EncryptedMessage {
         }
 
         // Extract the key and ciphertext
-        let ephemeral_public_key = bytes[13..key_end].to_vec();
+        let ephemeral_public_key = bytes[12..key_end].to_vec();
         let ciphertext = if bytes.len() > key_end {
             bytes[key_end..].to_vec()
         } else {
@@ -85,7 +75,6 @@ impl EncryptedMessage {
         };
 
         Self {
-            version,
             nonce,
             ephemeral_public_key,
             ciphertext,
@@ -205,7 +194,6 @@ pub fn encrypt_message(
         .expect_throw("Failed to encrypt message");
 
     let encrypted_message = EncryptedMessage::new(
-        1,
         ciphertext.as_slice(),
         nonce.as_slice(),
         ephemeral_public_key.to_sec1_bytes().deref(),

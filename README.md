@@ -1,12 +1,12 @@
 - [How To Run Kasia Locally](#how-to-run-kasia-locally)
-  * [Getting started](#getting-started)
-  * [Install Rust](#install-rust)
-  * [Install WASM](#install-wasm)
-  * [Clone the repository](#clone-the-repository)
-  * [Build the cipher wasm package](#build-the-cipher-wasm-package)
-  * [Install Node.js](#install-nodejs)
-  * [Install Kaspa WASM Files](#install-kaspa-wasm-files)
-  * [Run Kasia Locally](#run-kasia-locally)
+  - [Getting started](#getting-started)
+  - [Install Rust](#install-rust)
+  - [Install WASM](#install-wasm)
+  - [Clone the repository](#clone-the-repository)
+  - [Build the cipher wasm package](#build-the-cipher-wasm-package)
+  - [Install Node.js](#install-nodejs)
+  - [Install Kaspa WASM Files](#install-kaspa-wasm-files)
+  - [Run Kasia Locally](#run-kasia-locally)
 - [Links](#links)
 
 # How To Run Kasia Locally
@@ -92,38 +92,38 @@ rustup update
     ```
 2.  Install llvm.
 
-          The default XCode installation of `llvm` does not support WASM build targets.
+            The default XCode installation of `llvm` does not support WASM build targets.
 
     To build WASM on MacOS you need to install `llvm` from homebrew (at the time of writing, the llvm version for MacOS is 16.0.1).
     `bash
-      brew install llvm
-      `
+brew install llvm
+`
 
-          **NOTE:** Homebrew can use different keg installation locations depending on your configuration. For example:
-          - `/opt/homebrew/opt/llvm` -> `/opt/homebrew/Cellar/llvm/16.0.1`
-          - `/usr/local/Cellar/llvm/16.0.1`
+            **NOTE:** Homebrew can use different keg installation locations depending on your configuration. For example:
+            - `/opt/homebrew/opt/llvm` -> `/opt/homebrew/Cellar/llvm/16.0.1`
+            - `/usr/local/Cellar/llvm/16.0.1`
 
-          To determine the installation location you can use `brew list llvm` command and then modify the paths below accordingly:
-          ```bash
-          % brew list llvm
-          /usr/local/Cellar/llvm/16.0.1/bin/FileCheck
-          /usr/local/Cellar/llvm/16.0.1/bin/UnicodeNameMappingGenerator
-          ...
-          ```
-          If you have `/opt/homebrew/Cellar`, then you should be able to use `/opt/homebrew/opt/llvm`.
+            To determine the installation location you can use `brew list llvm` command and then modify the paths below accordingly:
+            ```bash
+            % brew list llvm
+            /usr/local/Cellar/llvm/16.0.1/bin/FileCheck
+            /usr/local/Cellar/llvm/16.0.1/bin/UnicodeNameMappingGenerator
+            ...
+            ```
+            If you have `/opt/homebrew/Cellar`, then you should be able to use `/opt/homebrew/opt/llvm`.
 
-          Add the following to your `~/.zshrc` file:
-          ```bash
-          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-          export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-          export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
-          ```
+            Add the following to your `~/.zshrc` file:
+            ```bash
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+            export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
+            ```
 
-          Reload the `~/.zshrc` file
-          ```bash
-          source ~/.zshrc
-          ```
+            Reload the `~/.zshrc` file
+            ```bash
+            source ~/.zshrc
+            ```
 
 3.  Install the [rust toolchain](https://rustup.rs/)
 
@@ -154,15 +154,7 @@ cd Kasia
 ## Build the cipher wasm package
 
 ```
-cd cipher
-```
-
-```
-wasm-pack build --target web --release -d ../cipher-wasm
-```
-
-```
-cd ..
+npm run wasm:build
 ```
 
 ## Install Node.js
@@ -188,5 +180,5 @@ Additionally, it is possible to configure variables via `.env`, simply copy the 
 
 # Links
 
-* [Discord](https://discord.gg/ssB46MXzRU)
-* [X](https://x.com/kasiamessaging)
+- [Discord](https://discord.gg/ssB46MXzRU)
+- [X](https://x.com/kasiamessaging)

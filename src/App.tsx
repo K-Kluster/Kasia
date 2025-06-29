@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect } from 'react'
-import { useNetworkStore } from './store/network.store'
-import type { NetworkType } from './types/all'
-import { AppRoutes } from './AppRoutes';
-import { useIsMobile } from './utils/useIsMobile';
+import React, { useCallback, useEffect } from "react";
+import { useNetworkStore } from "./store/network.store";
+import type { NetworkType } from "./types/all";
+import { AppRoutes } from "./AppRoutes";
+import { useIsMobile } from "./utils/useIsMobile";
 
 const App: React.FC = () => {
   const networkStore = useNetworkStore();

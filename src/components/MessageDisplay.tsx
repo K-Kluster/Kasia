@@ -7,16 +7,21 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
+import clsx from "clsx";
 
 type MessageDisplayProps = {
   message: MessageType;
   isOutgoing: boolean;
+  showTimestamp?: boolean
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
   message,
   isOutgoing,
+  showTimestamp,
 }) => {
+  const [showMeta, setShowMeta] = useState(false);
+
   const {
     senderAddress,
     recipientAddress,
@@ -31,6 +36,16 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const walletStore = useWalletStore();
   const messagingStore = useMessagingStore();
   const mounted = useRef(true);
+
+  const isRecent = Date.now() - timestamp < 12 * 60 * 60 * 1000; // if message is younger than 12 hours, its recent
+  const date = new Date(timestamp);
+
+  // if expanded OR stale, full date+time; otherwise just HH:MM
+  const displayStamp =
+    showMeta || !isRecent
+      ? date.toLocaleString()
+      : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
 
   // Check if this is a handshake message
   const isHandshake =
@@ -161,10 +176,14 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             paymentPayload.message && paymentPayload.message.trim();
 
           return (
-            <div className="flex items-center gap-3 p-4">
-              <div className="flex items-center justify-center min-w-20 h-20 mr-1 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)] animate-pulse">
+            <div className={clsx("flex items-center gap-1 p-2")}>
+              <div
+                className={clsx(
+                  "flex mr-2 items-center justify-center w-18 h-18 drop-shadow-[0_0_20px_rgba(112,199,186,0.7)] animate-pulse"
+                )}
+              >
                 <KasIcon
-                  className="w-20 h-20 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  className="w-18 h-18 scale-140 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
                   kClassName="fill-[#70C7BA]"
                 />
@@ -331,7 +350,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const [decryptionAttempted, setDecryptionAttempted] =
     useState<boolean>(false);
-
+  
   useEffect(() => {
     const decryptMessage = async () => {
       if (!mounted.current || !walletStore.unlockedWallet) {
@@ -440,26 +459,57 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   }, []);
 
   return (
-    <div className={`message ${isOutgoing ? "outgoing" : "incoming"}`}>
-      <div className="message-header">
-        <div className="message-timestamp">
-          {new Date(timestamp).toLocaleString()}
+    <div
+      className={clsx(
+        "flex w-full my-2",
+        isOutgoing
+          ? "justify-end pr-0.5 sm:pr-2"
+          : "justify-start pl-0.5 sm:pl-2"
+      )}
+    >
+      <div
+        onClick={() => setShowMeta((prev) => !prev)}
+        className={clsx(
+          "relative z-0 cursor-pointer mb-4 px-4 py-3 max-w-[70%] break-words text-left hyphens-auto",
+          isOutgoing
+            ? "bg-[#007aff] text-white rounded-2xl rounded-br-none"
+            : "bg-[var(--secondary-bg)] rounded-2xl rounded-bl-none"
+        )}
+      >
+        {(showMeta || showTimestamp) && (
+          <div className="flex justify-between items-center mb-[6px] text-[0.8em] truncate">
+            <div className="opacity-70">{displayStamp}</div>
+          </div>
+        )}
+
+        <div className="text-[1em] my-2 leading-[1.4]">
+          {renderMessageContent()}
         </div>
-      </div>
-      <div className="message-content">{renderMessageContent()}</div>
-      <div className="message-footer">
-        {formatAmountAndFee()}
-        {transactionId && (
-          <a
-            href={getExplorerUrl(transactionId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transaction-link"
+
+        {showMeta && (
+          <div
+            className={clsx(
+              "mt-[6px] text-[0.75em] opacity-80 whitespace-nowrap",
+              isOutgoing
+                ? "flex flex-col items-start space-y-1"
+                : "flex flex-col sm:flex-row sm:justify-between items-start sm:items-center space-x-4"
+            )}
           >
-            View Transaction
-          </a>
+            {formatAmountAndFee()}
+            {transactionId && (
+              <a
+                href={getExplorerUrl(transactionId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transaction-link"
+              >
+                View Transaction
+              </a>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
-};
+  
+}

@@ -10,7 +10,7 @@ export const SplashScreen: FC = () => {
         <h1 className="text-center text-4xl font-bold mt-4">
           Kasia: Encrypted Messaging Platform
         </h1>
-        <p className="text-lg mt-2">No fees, only freedom.</p>
+        <p className="text-lg mt-2">Freedom at your fingertips.</p>
       </div>
       <div className="mt-4 flex items-center gap-2">
         <ArrowPathIcon className="animate-spin h-8 w-8 text-kas-primary" />
