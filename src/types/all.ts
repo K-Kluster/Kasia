@@ -1,3 +1,5 @@
+import { FeeSource } from "kaspa-wasm";
+
 export type Message = {
   transactionId: string;
   senderAddress: string;
@@ -120,3 +122,41 @@ export interface VerboseData3 {
   mergeSetRedsHashes: never[];
   isChainBlock: boolean;
 }
+
+export interface FeeBucket {
+  label: string;
+  description: string;
+  amount: bigint;
+  feerate?: number; // Fee rate in sompi per gram (from network)
+  estimatedSeconds?: number; // Estimated confirmation time
+}
+
+export interface PriorityFeeConfig {
+  amount: bigint;
+  source: FeeSource;
+  feerate?: number; // Store the fee rate used for calculation
+}
+
+// Maximum priority fee (10 KAS)
+export const MAX_PRIORITY_FEE = BigInt(10 * 100_000_000);
+
+// Standard transaction mass in grams (typical Kaspa transaction)
+export const STANDARD_TRANSACTION_MASS = 2036;
+
+export const FEE_BUCKETS: Record<string, FeeBucket> = {
+  LOW: {
+    label: "Low",
+    description: "Standard processing time",
+    amount: BigInt(0),
+  },
+  NORMAL: {
+    label: "Normal",
+    description: "Faster during busy times",
+    amount: BigInt(1000), // 0.00001 KAS (fallback)
+  },
+  PRIORITY: {
+    label: "Priority",
+    description: "Fastest processing",
+    amount: BigInt(10000), // 0.0001 KAS (fallback)
+  },
+};

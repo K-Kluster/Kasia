@@ -1,26 +1,28 @@
-import { encrypt_message } from "cipher";
-import EventEmitter from "eventemitter3";
+import { EventEmitter } from "eventemitter3";
 import {
   Address,
-  FeeSource,
-  Generator,
-  GeneratorSummary,
-  ITransaction,
-  kaspaToSompi,
-  PaymentOutput,
-  PendingTransaction,
-  sompiToKaspaString,
-  UtxoContext,
-  UtxoEntry,
   UtxoProcessor,
+  UtxoContext,
+  Generator,
+  PaymentOutput,
+  UtxoEntry,
+  ITransaction,
+  UtxoEntryReference,
+  PendingTransaction,
+  GeneratorSummary,
+  FeeSource,
+  sompiToKaspaString,
+  kaspaToSompi,
 } from "kaspa-wasm";
-import { TransactionId } from "src/types/transactions";
-import { UnlockedWallet } from "src/types/wallet.type";
+import { KaspaClient } from "../utils/all-in-one";
+import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
+import { CipherHelper } from "../utils/cipher-helper";
+import { PriorityFeeConfig, MAX_PRIORITY_FEE } from "../types/all";
+import { UnlockedWallet } from "../types/wallet.type";
+import { TransactionId } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { KaspaClient } from "../utils/all-in-one";
-import { CipherHelper } from "../utils/cipher-helper";
 import { WalletStorage } from "../utils/wallet-storage";
 
 // Message related types
@@ -63,11 +65,13 @@ type SendMessageArgs = {
   message: string;
   password: string;
   amount?: bigint; // Optional custom amount, defaults to 0.2 KAS
+  priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
 type EstimateSendMessageFeesArgs = {
   toAddress: Address;
   message: string;
+  priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
 type SendMessageWithContextArgs = {
@@ -75,6 +79,7 @@ type SendMessageWithContextArgs = {
   message: string;
   password: string;
   theirAlias: string;
+  priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
 type CreateTransactionArgs = {
@@ -83,11 +88,13 @@ type CreateTransactionArgs = {
   payload: string;
   payloadSize?: number;
   messageLength?: number;
+  priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
 type CreateWithdrawTransactionArgs = {
   address: Address;
   amount: bigint;
+  priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
 type CreatePaymentWithMessageArgs = {
@@ -95,6 +102,7 @@ type CreatePaymentWithMessageArgs = {
   amount: bigint;
   payload: string;
   originalMessage?: string; // Add the original message for outgoing record creation
+  priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
 // Add this helper function at the top level
@@ -878,6 +886,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           address: destinationAddress,
           amount: messageAmount,
           payload: payload,
+          priorityFee: sendMessage.priorityFee,
         },
         sendMessage.password
       );
@@ -932,6 +941,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         address: destinationAddress,
         amount: BigInt(0.2 * 100_000_000),
         payload: payloadHex,
+        priorityFee: sendMessage.priorityFee,
       });
 
       return summary;
@@ -1013,6 +1023,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         address: destinationAddress,
         amount: minimumAmount,
         payload: payload,
+        priorityFee: { amount: BigInt(0), source: FeeSource.SenderPays },
       },
       password
     );
@@ -1115,7 +1126,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       outputs: outputs,
       payload: transaction.payload,
       networkId: this.networkId,
-      priorityFee: BigInt(0),
+      priorityFee: transaction.priorityFee || BigInt(0),
     });
   }
 
@@ -1133,7 +1144,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       entries: this.context,
       outputs: [new PaymentOutput(transaction.address, transaction.amount)],
       networkId: this.networkId,
-      priorityFee: {
+      priorityFee: transaction.priorityFee || {
         amount: BigInt(1000), // 0.00001 KAS
         source: FeeSource.SenderPays,
       },
@@ -1162,7 +1173,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // priorityEntries: this.context.getMatureRange(0, this.context.matureLength),
       outputs: [new PaymentOutput(transaction.address, transaction.amount)],
       networkId: this.networkId,
-      priorityFee: {
+      priorityFee: transaction.priorityFee || {
         amount: BigInt(0),
         source: FeeSource.ReceiverPays,
       },
@@ -1582,6 +1593,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           address: destinationAddress,
           amount: minimumAmount,
           payload: payloadHex,
+          priorityFee: sendMessage.priorityFee,
         },
         sendMessage.password
       );
@@ -1691,6 +1703,7 @@ export const createWithdrawTransaction = async (
       {
         address: new Address(toAddress),
         amount: amountSompi,
+        priorityFee: { amount: BigInt(0), source: FeeSource.ReceiverPays },
       },
       password
     );
