@@ -4,12 +4,13 @@ import { useWalletStore } from "../../store/wallet.store";
 import { StoredWallet } from "../../types/wallet.type";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
+import { Button } from "../Common/Button";
+import { toast } from "../../utils/toast";
 
 export const WalletSeedRetreiveDisplay: FC = () => {
   const [password, setPassword] = useState("");
   const [showSeedPhrase, setShowSeedPhrase] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState("");
-  const [error, setError] = useState("");
   const [isBlurred, setIsBlurred] = useState(true);
   const selectedWalletId = useWalletStore((state) => state.selectedWalletId);
   const [blurTimeout, setBlurTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -77,14 +78,14 @@ export const WalletSeedRetreiveDisplay: FC = () => {
       setShowSeedPhrase(true);
     } catch (error) {
       console.error("Error viewing seed phrase:", error);
-      setError("Invalid password");
+      toast.error("Invalid password");
     }
   };
 
   return (
     <div className="mt-2">
       <h4 className="text-lg font-semibold">Security</h4>
-      <p className="text-red-500 text-sm font-semibold my-2 text-center">
+      <p className="text-amber-200 text-sm font-semibold my-2 text-center">
         Warning: Never share your seed phrase with anyone. Anyone with access to
         your seed phrase can access your funds.
       </p>
@@ -99,15 +100,15 @@ export const WalletSeedRetreiveDisplay: FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter wallet password"
-              className="mb-2 px-4 py-2 w-3/4 bg-black/30 border border-white/10 text-white rounded-md"
+              className="mb-2 px-4 py-2 w-full md:w-3/4 bg-black/30 border border-white/10 text-white rounded-md"
             />
-            <button
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-fit px-3 py-2 shadow transition-all duration-200 cursor-pointer"
+            <Button
               onClick={handleViewSeedPhrase}
+              variant="primary"
+              className="md:w-3/4"
             >
               View Seed Phrase
-            </button>
-            {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+            </Button>
           </div>
         </div>
       ) : (
@@ -138,17 +139,18 @@ export const WalletSeedRetreiveDisplay: FC = () => {
             </label>
           </div>
           <div className="flex justify-center mt-4">
-            <button
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded px-3 py-2 shadow transition-all duration-200"
+            <Button
               onClick={() => {
                 setShowSeedPhrase(false);
                 setSeedPhrase("");
                 setPassword("");
                 setIsBlurred(true);
               }}
+              variant="secondary"
+              className="px-3 py-2 shadow"
             >
               Hide Seed Phrase
-            </button>
+            </Button>
           </div>
         </div>
       )}
