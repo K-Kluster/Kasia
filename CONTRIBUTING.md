@@ -56,7 +56,7 @@ Some guidelines and notes on where we want to take the initial (current) Kasia d
 
 #### Headless UI
 
-- **Available for building complex UI** (e.g., dropdowns, pullovers etc).
+- **Available for building complex UI** (e.g., dropdowns, pullovers, textareas etc).
 - Use it when native or in-house alternatives don’t meet the complexity needs.
 
 #### Common Components
@@ -68,11 +68,8 @@ Currently available:
 - **Modal**  
   - Provides structural shell and exit button  
   - Consumers pass modal body as a child
-
-Planned/coming soon:
-
-- **Button**  
-  - Standardized with some variants, sizes, and loading state
+- **Button**
+  - Provides `primary` and `secondary` styles
 
 If you're building a reusable UI element, check if a common component already exists. If not, consider generalizing it.
 
