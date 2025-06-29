@@ -3,12 +3,13 @@ import { createWithdrawTransaction } from "../../service/account-service";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
+import { toast } from "../../utils/toast";
+
 const maxDustAmount = kaspaToSompi("0.19")!;
 
 export const WalletWithdrawal: FC = () => {
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawError, setWithdrawError] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   const [amountInputError, setAmountInputError] = useState<string | null>(null);
@@ -71,12 +72,15 @@ export const WalletWithdrawal: FC = () => {
     }
 
     try {
-      setWithdrawError("");
       setIsSending(true);
 
       if (!withdrawAddress || !withdrawAmount) {
-        throw new Error("Please enter both address and amount");
+        throw new Error("Please enter both Address and Amount");
       }
+      if (!withdrawAddress.toLowerCase().startsWith("kaspa")) {
+        throw new Error("Address must be of type Kaspa");
+      }
+      
 
       const amount = kaspaToSompi(withdrawAmount);
       if (amount === undefined) {
@@ -103,7 +107,7 @@ export const WalletWithdrawal: FC = () => {
       setWithdrawAddress("");
       setWithdrawAmount("");
     } catch (error) {
-      setWithdrawError(
+      toast.error(
         error instanceof Error ? error.message : "Failed to send transaction"
       );
     } finally {
@@ -149,11 +153,6 @@ export const WalletWithdrawal: FC = () => {
             {isSending ? "Sending..." : "Send"}
           </Button>
         </div>
-        {withdrawError && (
-          <div className="text-red-500 mt-2 text-sm text-center">
-            {withdrawError}
-          </div>
-        )}
 
         {amountInputError && (
           <div className="text-red-500 mt-2 text-sm text-center">
