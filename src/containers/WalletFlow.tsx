@@ -764,7 +764,7 @@ export const WalletFlow = ({
                   disabled={unlocking}
                   className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
                 >
-                  Create
+                  Unlock
                 </button>
                 <button
                   onClick={() => onStepChange("home")}

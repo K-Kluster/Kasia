@@ -106,7 +106,7 @@ export const MessageSection: FC<{
   return (
     <div
       className={`
-        flex flex-col flex-[2] border-l border-[var(--border-color)]
+        flex flex-col overflow-x-hidden flex-[2] border-l border-[var(--border-color)]
         ${mobileView === "contacts" ? "hidden sm:flex" : ""}
       `}
     >
