@@ -34,8 +34,8 @@ export const Header: FC<Props> = ({
       </div>
 
       {isWalletReady && (
-        <div ref={menuRef} className="relative flex items-center gap-2">
-          <div className="hidden sm:block">
+        <div ref={menuRef} className="relative flex items-center gap-2 group">
+          <div className="opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
             <FeeBuckets inline />
           </div>
 

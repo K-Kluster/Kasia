@@ -20,6 +20,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
 import { toast } from "../utils/toast";
+import { Button } from "../components/Common/Button";
 
 export type Step = {
   type:
@@ -354,18 +355,12 @@ export const WalletFlow = ({
           </div>
 
           <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-            <button
-              onClick={() => onStepChange("create")}
-              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            <Button variant="primary" onClick={() => onStepChange("create")}>
               Create New Wallet
-            </button>
-            <button
-              onClick={() => onStepChange("import")}
-              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            </Button>
+            <Button variant="primary" onClick={() => onStepChange("import")}>
               Import Wallet
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -455,18 +450,12 @@ export const WalletFlow = ({
           {error && <div className="error">{error}</div>}
 
           <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-            <button
-              onClick={onCreateWallet}
-              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            <Button onClick={onCreateWallet} variant="primary">
               Create
-            </button>
-            <button
-              onClick={() => onStepChange("home")}
-              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            </Button>
+            <Button onClick={() => onStepChange("home")} variant="secondary">
               Back
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -510,26 +499,28 @@ export const WalletFlow = ({
               ))}
             </div>
 
-            <button
+            <Button
               type="button"
               onClick={handleCopy}
               disabled={!revealed}
-              className="copy-button mx-auto mt-2 bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              className="mx-auto mt-2 text-sm py-2 px-4 disabled:cursor-not-allowed"
             >
               Copy Seed Phrase
-            </button>
+            </Button>
           </div>
 
-          <button
+          <Button
             type="button"
-            className="mx-auto mt-4 bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded"
             onClick={() => {
               setStep({ type: "home", mnemonic: undefined });
               onStepChange("home");
             }}
+            variant="secondary"
+            className="mx-auto text-sm py-2 px-4"
           >
             Back to Wallets
-          </button>
+          </Button>
         </>
       )}
 
@@ -619,18 +610,12 @@ export const WalletFlow = ({
           {error && <div className="error">{error}</div>}
 
           <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-            <button
-              onClick={onImportWallet}
-              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            <Button onClick={onImportWallet} variant="primary">
               Create
-            </button>
-            <button
-              onClick={() => onStepChange("home")}
-              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            </Button>
+            <Button onClick={() => onStepChange("home")} variant="secondary">
               Back
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -640,12 +625,13 @@ export const WalletFlow = ({
         <>
           <h2 className="font-bold text-lg text-center">Wallet Unlocked</h2>
           <div className="mt-5 flex justify-center">
-            <button
-              className="w-full bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer"
+            <Button
               onClick={() => onStepChange("home")}
+              variant="primary"
+              className="w-full text-sm py-2 px-4"
             >
               Back to Wallets
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -701,23 +687,16 @@ export const WalletFlow = ({
           {error && <div className="error">{error}</div>}
 
           <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-            <button
-              onClick={onMigrateWallet}
-              className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            <Button onClick={onMigrateWallet} variant="primary">
               Create
-            </button>
-            <button
-              onClick={() => onStepChange("home")}
-              className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-            >
+            </Button>
+            <Button onClick={() => onStepChange("home")} variant="secondary">
               Back
-            </button>
+            </Button>
           </div>
         </>
       )}
 
-      {/* Unlock wallet 'Route' */}
       {/* Unlock wallet 'Route' */}
       {step.type === "unlock" && (
         <>
@@ -759,20 +738,20 @@ export const WalletFlow = ({
               {error && <div className="error">{error}</div>}
 
               <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-                <button
+                <Button
                   onClick={onUnlockWallet}
                   disabled={unlocking}
-                  className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+                  variant="primary"
                 >
                   Unlock
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => onStepChange("home")}
                   disabled={unlocking}
-                  className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+                  variant="secondary"
                 >
                   Back
-                </button>
+                </Button>
               </div>
             </>
           )}

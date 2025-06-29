@@ -812,12 +812,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     // Send the handshake message
     console.log("Sending handshake message to:", recipientAddress);
     try {
-      const txId = await walletStore.sendMessage(
-        payload,
-        new Address(recipientAddress),
-        walletStore.unlockedWallet.password,
-        customAmount // Pass custom amount to sendMessage
-      );
+      const txId = await walletStore.sendMessage({
+        message: payload,
+        toAddress: new Address(recipientAddress),
+        password: walletStore.unlockedWallet.password,
+        customAmount,
+      });
 
       console.log("Handshake message sent, transaction ID:", txId);
 
@@ -915,11 +915,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         console.log("Valid Kaspa address created:", kaspaAddress.toString());
 
         // Send the handshake response
-        const txId = await walletStore.sendMessage(
-          messageContent,
-          kaspaAddress,
-          walletStore.unlockedWallet.password
-        );
+        const txId = await walletStore.sendMessage({
+          message: messageContent,
+          toAddress: kaspaAddress,
+          password: walletStore.unlockedWallet.password,
+        });
 
         // Update the conversation in the manager
         const conversation = manager.getConversationByAddress(recipientAddress);

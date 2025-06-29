@@ -2,10 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { NetworkSelector } from "./containers/NetworkSelector";
 import { useNetworkStore } from "./store/network.store";
 import { NetworkType } from "./types/all";
-import clsx from "clsx";
-import { Link } from "react-router";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
-import { useIsMobile } from "./utils/useIsMobile";
+import { Button } from "./components/Common/Button";
+import { useNavigate } from "react-router";
 
 export const SettingsPage: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -13,6 +11,7 @@ export const SettingsPage: React.FC = () => {
   const isConnected = useNetworkStore((state) => state.isConnected);
   const isConnecting = useNetworkStore((state) => state.isConnecting);
   const connect = useNetworkStore((state) => state.connect);
+  const navigate = useNavigate();
 
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
@@ -22,8 +21,6 @@ export const SettingsPage: React.FC = () => {
       localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
       ""
   );
-
-  const isMobile = useIsMobile();
 
   // Network connection effect
   useEffect(() => {
@@ -86,7 +83,7 @@ export const SettingsPage: React.FC = () => {
             <label htmlFor="node-url" className="block mb-4">
               Force using a node url for the selected network
             </label>
-            <div className="flex flex-col items-end gap-6">
+            <div className="flex flex-col items-stretch gap-6 w-full">
               <input
                 type="text"
                 id="node-url"
@@ -95,15 +92,18 @@ export const SettingsPage: React.FC = () => {
                 className="w-full flex-grow p-2 border border-[var(--border-color)] rounded bg-[var(--input-bg)] text-[var(--text-primary)]"
                 placeholder="wss://your-own-node-url.com"
               />
-              <button
-                onClick={handleSaveNodeUrl}
-                className={clsx(
-                  "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
-                  isConnecting && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                Save
-              </button>
+              <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+                <Button
+                  onClick={handleSaveNodeUrl}
+                  variant="primary"
+                  disabled={isConnecting}
+                >
+                  Save
+                </Button>
+                <Button onClick={() => navigate("/")} variant="secondary">
+                  Go Back
+                </Button>
+              </div>
             </div>
             {connectionError && (
               <div className="text-red-500 mt-4">{connectionError}</div>
@@ -113,14 +113,6 @@ export const SettingsPage: React.FC = () => {
                 Successfully connected to the node!
               </div>
             )}
-            <div className="flex justify-end mt-16">
-              <Link to="/">
-                <button className="leading-8  bg-[var(--primary-bg)] hover:opacity-80 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer">
-                  <ArrowLeftIcon className="size-6 font-bold inline-block mr-2" />
-                  Go Back
-                </button>
-              </Link>
-            </div>
           </div>
         </div>
       </div>

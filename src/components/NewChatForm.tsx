@@ -13,6 +13,7 @@ import { knsIntegrationService_getDomainResolution } from "../service/integratio
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { KaspaAddress } from "./KaspaAddress";
 import { Textarea } from "@headlessui/react";
+import { Button } from "./Common/Button";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -355,22 +356,22 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           <p>This will initiate a handshake conversation. Continue?</p>
         </div>
         <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-          <button
+          <Button
             type="button"
             onClick={confirmHandshake}
             disabled={isLoading}
-            className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            variant="primary"
           >
             {isLoading ? "Sending..." : "Confirm & Send"}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => setShowConfirmation(false)}
             disabled={isLoading}
-            className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
+            variant="secondary"
           >
             Back
-          </button>
+          </Button>
         </div>
       </>
     );
@@ -489,20 +490,12 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         {error && <div className={styles["error-message"]}>{error}</div>}
 
         <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="cursor-pointer w-full bg-[var(--accent-blue)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-          >
+          <Button type="submit" disabled={isLoading} variant="primary">
             {isLoading ? "Initiating..." : "Start Chat"}
-          </button>
-          <button
-            onClick={onClose}
-            disabled={isLoading}
-            className="cursor-pointer w-full bg-[var(--primary-bg)] text-white font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200"
-          >
+          </Button>
+          <Button onClick={onClose} disabled={isLoading} variant="secondary">
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     </>
