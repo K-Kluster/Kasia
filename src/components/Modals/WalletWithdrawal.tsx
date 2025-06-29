@@ -2,7 +2,7 @@ import { ChangeEvent, FC, useCallback, useState } from "react";
 import { createWithdrawTransaction } from "../../service/account-service";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
-
+import { Button } from "../Common/Button";
 const maxDustAmount = kaspaToSompi("0.19")!;
 
 export const WalletWithdrawal: FC = () => {
@@ -130,7 +130,7 @@ export const WalletWithdrawal: FC = () => {
               value={withdrawAmount}
               onChange={inputAmountUpdated}
               placeholder="Amount (KAS)"
-              className="w-full p-2 pl-2 pr-14 bg-black/30 border border-white/10 rounded-md text-white box-border"
+              className="w-full pl-2 pr-14 bg-black/30 border border-white/10 rounded-md text-white box-border"
             />
             <button
               type="button"
@@ -140,15 +140,14 @@ export const WalletWithdrawal: FC = () => {
               Max
             </button>
           </div>
-          <button
+          <Button
             onClick={handleWithdraw}
             disabled={isSending || amountInputError !== null}
-            className={`px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer transition-opacity duration-200 ${
-              isSending || amountInputError ? "opacity-70" : "opacity-100"
-            }`}
+            variant="primary"
+            className="!w-fit !py-2.5"
           >
             {isSending ? "Sending..." : "Send"}
-          </button>
+          </Button>
         </div>
         {withdrawError && (
           <div className="text-red-500 mt-2 text-sm text-center">
