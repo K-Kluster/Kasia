@@ -18,6 +18,7 @@ export type ModalType =
 interface ModalContextValue {
   openModal: (m: ModalType) => void;
   closeModal: (m: ModalType) => void;
+  closeAllModals: () => void;
   isOpen: (m: ModalType) => boolean;
 }
 
@@ -29,9 +30,12 @@ export const ModalProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const openModal = (m: ModalType) => setState((s) => ({ ...s, [m]: true }));
   const closeModal = (m: ModalType) => setState((s) => ({ ...s, [m]: false }));
   const isOpen = (m: ModalType) => !!state[m];
+  const closeAllModals = () => setState({});
 
   return (
-    <ModalContext.Provider value={{ openModal, closeModal, isOpen }}>
+    <ModalContext.Provider
+      value={{ openModal, closeModal, isOpen, closeAllModals }}
+    >
       {children}
     </ModalContext.Provider>
   );

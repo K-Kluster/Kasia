@@ -7,6 +7,7 @@ import { clsx } from "clsx";
 import { Address } from "kaspa-wasm";
 import { FC, useCallback, useEffect, useState } from "react";
 import { useWalletStore } from "../../store/wallet.store";
+import { Button } from "../Common/Button";
 
 // Type definitions
 type CompoundResult = {
@@ -219,12 +220,9 @@ export const UtxoCompound: FC = () => {
           !isCompounding &&
           !compoundResult &&
           !pendingResult && (
-            <button
-              onClick={handleCompoundUtxos}
-              className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+            <Button onClick={handleCompoundUtxos} variant="primary">
               Compound {balance?.matureUtxoCount ?? 0} UTXOs
-            </button>
+            </Button>
           )}
 
         {/* Processing State */}

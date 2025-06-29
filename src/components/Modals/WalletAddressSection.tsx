@@ -2,7 +2,8 @@
 import { FC, useState, useEffect, useCallback } from "react";
 import { toDataURL } from "qrcode";
 import { DocumentDuplicateIcon, QrCodeIcon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
+import { Button } from "../Common/Button";
+import { toast } from "../../utils/toast";
 
 type AddressSectionProps = {
   address?: string;
@@ -11,7 +12,6 @@ type AddressSectionProps = {
 export const WalletAddressSection: FC<AddressSectionProps> = ({
   address = "",
 }) => {
-  const [copyNotification, setCopyNotification] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
 
@@ -27,18 +27,16 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
 
   const handleCopyAddress = useCallback(async () => {
     if (!address) {
-      setCopyNotification("No address available");
+      toast.error("No address available");
       console.log("No address to copy");
-      setTimeout(() => setCopyNotification(""), 3000);
       return;
     }
     if (navigator.clipboard && window.isSecureContext) {
       try {
         console.log("Using modern clipboard API");
         await navigator.clipboard.writeText(address);
-        setCopyNotification("Address copied to clipboard");
         console.log("Address copied using modern clipboard API");
-        setTimeout(() => setCopyNotification(""), 3000);
+        toast.info("Address copied to clipboard");
         return;
       } catch (error) {
         console.log("Modern clipboard API failed:", error);
@@ -55,13 +53,11 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      setCopyNotification("Address copied to clipboard");
+      toast.info("Address copied to clipboard");
       console.log("Fallback copy successful");
     } catch {
-      setCopyNotification("Copy failed");
+      toast.error("Copy failed");
       console.log("Fallback copy failed");
-    } finally {
-      setTimeout(() => setCopyNotification(""), 3000);
     }
   }, [address]);
 
@@ -99,7 +95,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
             </span>
           </div>
           <div className="flex gap-2 items-center w-full sm:w-auto justify-between sm:justify-start">
-            <button
+            <Button
               onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -108,28 +104,23 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               }}
               title="Copy address to clipboard"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200 cursor-pointer"
+              variant="primary"
+              className="h-16 w-full p-0 flex items-center justify-center"
             >
-              <DocumentDuplicateIcon className="w-5 h-5" />
-            </button>
-            <button
+              <DocumentDuplicateIcon className="w-7 h-7 sm:w-5 sm:h-5" />
+            </Button>
+            <Button
               onClick={toggleQRCode}
               title="Show QR code"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200 cursor-pointer"
+              variant="primary"
+              className="h-16 w-full p-0 flex items-center justify-center"
             >
-              <QrCodeIcon className="w-5 h-5" />
-            </button>
+              <QrCodeIcon className="w-7 h-7 sm:w-5 sm:h-5" />
+            </Button>
           </div>
         </div>
-        <div
-          className={clsx(
-            "select-none absolute top-full left-0 bg-green-600 text-white px-3 py-2 rounded text-sm z-[1000] whitespace-nowrap transition-opacity duration-300",
-            copyNotification ? "opacity-100" : "opacity-0"
-          )}
-        >
-          {copyNotification}
-        </div>
+
         {showQRCode && qrCodeURL && (
           <div className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300 w-full sm:w-auto">
             <h4 className="text-white text-center mb-4">QR Code for Address</h4>

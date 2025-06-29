@@ -9,6 +9,7 @@ const toastMethods = {
     useToastStore.getState().add("info", message, timeout),
   warning: (message: string, timeout?: number) =>
     useToastStore.getState().add("warning", message, timeout),
+  removeAll: () => useToastStore.getState().removeAll(),
 };
 
 export const toast = {

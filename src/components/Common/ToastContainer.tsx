@@ -11,7 +11,7 @@ export function ToastContainer() {
   const { toasts, remove } = useToastStore();
 
   return (
-    <div className="fixed top-16 sm:top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-16 sm:top-4 right-4 z-60 space-y-2">
       {toasts.map((toast) => (
         <div
           key={toast.id}
@@ -21,7 +21,7 @@ export function ToastContainer() {
               "bg-green-100/80 text-green-900": toast.type === "success",
               "bg-red-100/80 text-red-900": toast.type === "error",
               "bg-yellow-100/80 text-yellow-900": toast.type === "warning",
-              "bg-blue-100/70 text-gray-600": toast.type === "info",
+              "bg-blue-100/70 text-gray-700": toast.type === "info",
             }
           )}
         >
