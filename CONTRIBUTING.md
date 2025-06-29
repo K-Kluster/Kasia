@@ -27,6 +27,58 @@ For VsCode user, this is automatically done through .vscode workspace settings.
 
 For any new implementations, we enforce the use of inline TailwindCSS. A well-known utility `clsx` is available within the codebase for more conplex style application (e.g.: conditional style)
 
+## UI Contributions
+
+Some guidelines and notes on where we want to take the initial (current) Kasia design system.
+
+### UI Stack & Styling
+
+- **TailwindCSS** is the **preferred styling approach**.  
+  All new UI code must be written in Tailwind.
+
+- There is legacy **CSS in the codebase**, but we are actively migrating.  
+  If you're touching a CSS-based component, you're encouraged to **convert it to Tailwind** (and more if you have the time).
+
+
+### Alerts & Notifications
+
+- Use the in-house **Toast system** for user alerts and messages.  
+  Do not use external libraries or implement custom solutions. If you have a a better idea, lets discuss in discord.
+
+
+### Icons & Assets
+
+- We mostly use:
+  - **Heroicons**
+  - Some additional SVG and images for Kasia and Kaspa content
+
+### Component Architecture
+
+#### Headless UI
+
+- **Available for building complex UI** (e.g., dropdowns, pullovers, textareas etc).
+- Use it when native or in-house alternatives don’t meet the complexity needs.
+
+#### Common Components
+
+We are building a growing set of shared, reusable components.
+
+Currently available:
+
+- **Modal**  
+  - Provides structural shell and exit button  
+  - Consumers pass modal body as a child
+- **Button**
+  - Provides `primary` and `secondary` styles
+
+If you're building a reusable UI element, check if a common component already exists. If not, consider generalizing it.
+
+### Design & Theming
+
+- There is **no formal design system theme set** in place yet.
+- Color usage can be inconsistent across the app, but look around anad try to mimic what you see. There should but not much of a reason to implement new colours *yet*.
+- We welcome contributions toward a standardized color system or theme guide.
+
 ## Submitting Changes
 
 Kasia uses GitHub's pull-request workflow and all contributions in terms of code should be done through pull requests.\
