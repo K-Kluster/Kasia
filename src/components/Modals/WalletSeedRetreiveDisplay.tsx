@@ -85,13 +85,13 @@ export const WalletSeedRetreiveDisplay: FC = () => {
   return (
     <div className="mt-2">
       <h4 className="text-lg font-semibold">Security</h4>
-      <p className="text-amber-200 text-sm font-semibold my-2 text-center">
+      <p className="my-2 text-center text-sm font-semibold text-amber-200">
         Warning: Never share your seed phrase with anyone. Anyone with access to
         your seed phrase can access your funds.
       </p>
       {!showSeedPhrase ? (
         <div>
-          <p className="text-white mb-2">
+          <p className="mb-2 text-white">
             Enter your password to view seed phrase:
           </p>
           <div className="flex flex-col items-center">
@@ -100,7 +100,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter wallet password"
-              className="mb-2 px-4 py-2 w-full md:w-3/4 bg-black/30 border border-white/10 text-white rounded-md"
+              className="mb-2 w-full rounded-md border border-white/10 bg-black/30 px-4 py-2 text-white md:w-3/4"
             />
             <Button
               onClick={handleViewSeedPhrase}
@@ -113,11 +113,11 @@ export const WalletSeedRetreiveDisplay: FC = () => {
         </div>
       ) : (
         <div>
-          <p className="text-white mb-2">Your seed phrase:</p>
+          <p className="mb-2 text-white">Your seed phrase:</p>
           <div
             className={clsx(
-              "bg-black/30 border border-white/10 text-white px-4 py-3 rounded-md mb-4 font-mono word-break break-all",
-              { "filter blur-sm": isBlurred }
+              "word-break mb-4 rounded-md border border-white/10 bg-black/30 px-4 py-3 font-mono break-all text-white",
+              { "blur-sm filter": isBlurred }
             )}
           >
             {seedPhrase}
@@ -130,15 +130,15 @@ export const WalletSeedRetreiveDisplay: FC = () => {
               onChange={(e) => handleBlurToggle(!e.target.checked)}
               className="hidden"
             />
-            <label htmlFor="toggleVisibility" className="cursor-pointer mb-2">
+            <label htmlFor="toggleVisibility" className="mb-2 cursor-pointer">
               {isBlurred ? (
-                <EyeIcon className="w-6 h-6 text-white" />
+                <EyeIcon className="h-6 w-6 text-white" />
               ) : (
-                <EyeSlashIcon className="w-6 h-6 text-white" />
+                <EyeSlashIcon className="h-6 w-6 text-white" />
               )}
             </label>
           </div>
-          <div className="flex justify-center mt-4">
+          <div className="mt-4 flex justify-center">
             <Button
               onClick={() => {
                 setShowSeedPhrase(false);

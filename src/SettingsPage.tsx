@@ -65,10 +65,10 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="app">
-      <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
+      <div className="bg-[var(--primary-bg)] px-1 py-4 sm:px-8">
         <div className="flex items-center gap-4">
-          <div className="max-w-[600px] relative mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]">
-            <div className="grow flex items-center justify-center mb-1">
+          <div className="relative mx-auto my-8 max-w-[600px] rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg)] p-8">
+            <div className="mb-1 flex grow items-center justify-center">
               <NetworkSelector
                 selectedNetwork={selectedNetwork}
                 onNetworkChange={onNetworkChange}
@@ -76,23 +76,23 @@ export const SettingsPage: React.FC = () => {
               />
             </div>
 
-            <h2 className="text-center my-8 text-[var(--text-primary)] text-[1.5rem] font-semibold">
+            <h2 className="my-8 text-center text-[1.5rem] font-semibold text-[var(--text-primary)]">
               Settings
             </h2>
 
-            <label htmlFor="node-url" className="block mb-4">
+            <label htmlFor="node-url" className="mb-4 block">
               Force using a node url for the selected network
             </label>
-            <div className="flex flex-col items-stretch gap-6 w-full">
+            <div className="flex w-full flex-col items-stretch gap-6">
               <input
                 type="text"
                 id="node-url"
                 value={nodeUrl}
                 onChange={(e) => setNodeUrl(e.target.value)}
-                className="w-full flex-grow p-2 border border-[var(--border-color)] rounded bg-[var(--input-bg)] text-[var(--text-primary)]"
+                className="w-full flex-grow rounded border border-[var(--border-color)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)]"
                 placeholder="wss://your-own-node-url.com"
               />
-              <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+              <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
                 <Button
                   onClick={handleSaveNodeUrl}
                   variant="primary"
@@ -106,7 +106,7 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
             {connectionError && (
-              <div className="text-red-500 mt-4">{connectionError}</div>
+              <div className="mt-4 text-red-500">{connectionError}</div>
             )}
             {connectionSuccess && (
               <div className="text-success mt-4">

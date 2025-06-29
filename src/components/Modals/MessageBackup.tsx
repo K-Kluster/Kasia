@@ -77,7 +77,7 @@ export const MessageBackup: React.FC = () => {
   );
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-2 max-w-3/4 mx-auto h-full">
+    <div className="mx-auto flex h-full max-w-3/4 flex-col items-center justify-center space-y-2">
       <h4 className="text-lg font-semibold">Message Backup</h4>
       <Button onClick={onExportMessages} variant="primary">
         Export Messages
@@ -85,7 +85,7 @@ export const MessageBackup: React.FC = () => {
       <label
         htmlFor="importInput"
         className={clsx(
-          "cursor-pointer w-full text-gray-100 text-center font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-20 bg-emerald-500 hover:bg-emerald-500/70 active:bg-emerald-500/20"
+          "w-full cursor-pointer rounded-lg bg-emerald-500 px-4 py-3 text-center font-bold text-gray-100 transition-colors duration-20 hover:bg-emerald-500/70 active:bg-emerald-500/20 sm:px-6"
         )}
       >
         Import Messages

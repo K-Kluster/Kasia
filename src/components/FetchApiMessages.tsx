@@ -590,7 +590,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         onClick={fetchAndProcessMessages}
         disabled={loading}
         className={clsx(
-          "flex items-center justify-center gap-2 px-4 py-2 rounded-md w-full cursor-pointer",
+          "flex w-full cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2",
           { "cursor-not-allowed": loading }
         )}
         title={
@@ -598,7 +598,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         }
       >
         {loading ? (
-          <ArrowPathIcon className="animate-spin h-6 w-6 text-gray-500" />
+          <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
         ) : (
           <ArrowPathIcon className="h-6 w-6 text-[#49EACB] hover:scale-110" />
         )}

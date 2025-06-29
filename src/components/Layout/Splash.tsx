@@ -4,16 +4,16 @@ import { ArrowPathIcon } from "@heroicons/react/24/solid";
 
 export const SplashScreen: FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-6">
-      <img src="/kasia-logo.png" alt="Kasia Logo" className="w-32 h-32" />
+    <div className="flex h-screen flex-col items-center justify-center gap-6">
+      <img src="/kasia-logo.png" alt="Kasia Logo" className="h-32 w-32" />
       <div className="flex flex-col items-center gap-4">
-        <h1 className="text-center text-4xl font-bold mt-4">
+        <h1 className="mt-4 text-center text-4xl font-bold">
           Kasia: Encrypted Messaging Platform
         </h1>
-        <p className="text-lg mt-2">Freedom at your fingertips.</p>
+        <p className="mt-2 text-lg">Freedom at your fingertips.</p>
       </div>
       <div className="mt-4 flex items-center gap-2">
-        <ArrowPathIcon className="animate-spin h-8 w-8 text-kas-primary" />
+        <ArrowPathIcon className="text-kas-primary h-8 w-8 animate-spin" />
         Loading Kasia SDKs...
       </div>
     </div>

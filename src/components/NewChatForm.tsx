@@ -309,7 +309,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       resolvedRecipientAddress
     ) {
       recipientDisplay = (
-        <div className="inline mb-2">
+        <div className="mb-2 inline">
           <span>{recipientInputValue}</span>
           <div className="flex justify-start break-all">
             <KaspaAddress address={resolvedRecipientAddress} />
@@ -322,8 +322,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
     return (
       <>
-        <h3 className="m-0 mb-5 text-white text-[1.2rem]">Confirm Handshake</h3>
-        <div className="text-white/80 text-sm mb-5 leading-normal">
+        <h3 className="m-0 mb-5 text-[1.2rem] text-white">Confirm Handshake</h3>
+        <div className="mb-5 text-sm leading-normal text-white/80">
           <p>
             <strong>Recipient:</strong>
             <div className="flex justify-start break-all">
@@ -355,7 +355,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           )}
           <p>This will initiate a handshake conversation. Continue?</p>
         </div>
-        <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+        <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
           <Button
             type="button"
             onClick={confirmHandshake}
@@ -379,20 +379,20 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   return (
     <>
-      <h3 className="mb-5 text-white text-base font-semibold">
+      <h3 className="mb-5 text-base font-semibold text-white">
         Start New Conversation
       </h3>
       <form onSubmit={handleSubmit}>
         <div className={"mb-5"}>
           <label
-            className="block mb-[5px] text-white font-bold text-[14px]"
+            className="mb-[5px] block text-[14px] font-bold text-white"
             htmlFor="recipientAddress"
           >
             Recipient Address
           </label>
           <Textarea
             ref={useRecipientInputRef}
-            className="w-full resize-none py-2 px-3 text-base border border-white/10 rounded-md bg-black/30 text-white font-mono transition-colors duration-200 box-border leading-[1.4] flex items-center placeholder-white/50 hover:bg-white/10 hover:border-white/20 focus:outline-none focus:bg-white/10 focus:border-white/20 disabled:bg-black/50 disabled:text-white/30"
+            className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
             rows={2}
             id="recipientAddress"
             value={recipientInputValue}
@@ -434,7 +434,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
         <div className={"mb-5"}>
           <label
-            className="block mb-[5px] text-white font-bold text-[14px]"
+            className="mb-[5px] block text-[14px] font-bold text-white"
             htmlFor="handshakeAmount"
           >
             Handshake Amount (KAS)
@@ -489,7 +489,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
         {error && <div className={styles["error-message"]}>{error}</div>}
 
-        <div className="flex flex-col gap-2 justify-center sm:flex-row-reverse sm:gap-4">
+        <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
           <Button type="submit" disabled={isLoading} variant="primary">
             {isLoading ? "Initiating..." : "Start Chat"}
           </Button>

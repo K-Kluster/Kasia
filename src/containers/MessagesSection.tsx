@@ -105,10 +105,7 @@ export const MessageSection: FC<{
 
   return (
     <div
-      className={`
-        flex flex-col overflow-x-hidden flex-[2] border-l border-[var(--border-color)]
-        ${mobileView === "contacts" ? "hidden sm:flex" : ""}
-      `}
+      className={`flex flex-[2] flex-col overflow-x-hidden border-l border-[var(--border-color)] ${mobileView === "contacts" ? "hidden sm:flex" : ""} `}
     >
       {showKnsMovedModal &&
         knsMovedDomain &&
@@ -213,9 +210,9 @@ export const MessageSection: FC<{
       {boxState === "new" && (
         /* ONBOARDING ─ show help when no contacts exist */
         <>
-          <div className="p-4 border-b border-[var(--border-color)] bg-[var(--secondary-bg)] h-[60px]" />
-          <div className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]">
-            <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
+          <div className="h-[60px] border-b border-[var(--border-color)] bg-[var(--secondary-bg)] p-4" />
+          <div className="flex-1 overflow-y-auto bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px] p-4">
+            <div className="m-5 rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
               Start by funding your wallet with some Kas (should be a small
               amount such as 10 Kas) and chat to someone by clicking the add (+)
               button on the top-left corner
@@ -226,9 +223,9 @@ export const MessageSection: FC<{
       {boxState === "unfiltered" && (
         //NOT SELECTED ANY CONTACT
         <>
-          <div className="p-4 border-b border-[var(--border-color)] bg-[var(--secondary-bg)] h-[60px]" />
-          <div className="flex-1 overflow-y-auto p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]">
-            <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
+          <div className="h-[60px] border-b border-[var(--border-color)] bg-[var(--secondary-bg)] p-4" />
+          <div className="flex-1 overflow-y-auto bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px] p-4">
+            <div className="m-5 rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
               Select a contact to view the conversation.
             </div>
           </div>
@@ -238,17 +235,17 @@ export const MessageSection: FC<{
       {boxState === "filtered" && (
         /* A CONVERSATION IS OPEN */
         <>
-          <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between bg-[var(--secondary-bg)] h-[60px]">
+          <div className="flex h-[60px] items-center justify-between border-b border-[var(--border-color)] bg-[var(--secondary-bg)] p-4">
             {/* mobile back button */}
             <button
               onClick={() => setMobileView("contacts")}
-              className="sm:hidden mr-2 p-1"
+              className="mr-2 p-1 sm:hidden"
               aria-label="Back to contacts"
             >
               <ChevronLeftIcon className="size-6" />
             </button>
 
-            <h3 className="text-base font-semibold truncate">
+            <h3 className="truncate text-base font-semibold">
               <KaspaAddress address={openedRecipient ?? ""} />
             </h3>
 
@@ -258,7 +255,7 @@ export const MessageSection: FC<{
           </div>
 
           <div
-            className="flex-1 overflow-y-auto overflow-x-hidden p-4 bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px]"
+            className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px] p-4"
             ref={(el) => {
               if (el) el.scrollTop = el.scrollHeight;
             }}
@@ -280,7 +277,7 @@ export const MessageSection: FC<{
                 );
               })
             ) : (
-              <div className="text-center text-[var(--text-secondary)] py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
+              <div className="m-5 rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
                 No messages in this conversation.
               </div>
             )}
