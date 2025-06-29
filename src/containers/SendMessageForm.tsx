@@ -51,16 +51,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   const openFileDialog = () => fileInputRef.current?.click();
 
-  const estimatedFeesDisplayClasses = useMemo(() => {
-    if (feeEstimate == null) return "";
-    return FEE_LEVELS.find(({ limit }) => feeEstimate <= limit)!.classes;
-  }, [feeEstimate]);
-
-  useEffect(() => {
-    messageInputRef.current?.focus();
-    setMessage("");
-  }, [openedRecipient]);
-
   useEffect(() => {
     if (messageInputRef.current) {
       messageInputRef.current.value = "";
