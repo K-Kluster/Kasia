@@ -10,7 +10,7 @@ import { Address } from "kaspa-wasm";
 
 export const SendPayment: FC<{
   address: string;
-  onPaymentSent?: () => void;
+  onPaymentSent: () => void;
 }> = ({ address, onPaymentSent }) => {
   // Pay functionality state
   const [payAmount, setPayAmount] = useState("");
@@ -208,6 +208,7 @@ export const SendPayment: FC<{
           payMessage ? ` with message "${payMessage}"` : " (no message)"
         } sent successfully to ${address}`
       );
+      onPaymentSent();
     } catch (error) {
       console.error("Error sending payment:", error);
       setPaymentError(
@@ -314,13 +315,10 @@ export const SendPayment: FC<{
                 </div>
 
                 <button
-                  onClick={async () => {
-                    await handleSendPayment();
-                    close();
-                  }}
+                  onClick={handleSendPayment}
                   disabled={isSendingPayment || !payAmount}
                   className={clsx(
-                    "px-4 py-2 w-full md:w-auto rounded-md font-medium text-sm transition-all duration-200 h-10",
+                    "px-4 py-2 w-full md:w-auto rounded-md font-medium text-sm transition duration-200 h-10",
                     "bg-[#70C7BA] text-white hover:bg-[#5fb5a3] focus:outline-none focus:ring-2 focus:ring-[#70C7BA]",
                     {
                       "opacity-50 cursor-not-allowed":
@@ -329,14 +327,15 @@ export const SendPayment: FC<{
                     "self-center md:self-auto"
                   )}
                 >
-                  {isSendingPayment ? "Sending..." : "Send KAS"}
+                  {isSendingPayment ? "Sending…" : "Send KAS"}
                 </button>
+                {paymentError && (
+                  <div className="mt-2 text-sm text-red-500">
+                    {paymentError}
+                  </div>
+                )}
               </div>
             </div>
-
-            {paymentError && (
-              <div className="mt-2 text-sm text-red-500">{paymentError}</div>
-            )}
           </PopoverPanel>
         </>
       )}

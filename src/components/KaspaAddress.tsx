@@ -51,7 +51,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   const handleCopy = () => {
     const asString = typeof address === "string" ? address : address.toString();
     navigator.clipboard.writeText(asString).then(() => {});
-    toast.success("Address copied");
+    toast.info("Address copied");
   };
 
   return (

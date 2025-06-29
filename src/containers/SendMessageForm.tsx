@@ -398,7 +398,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                     <PaperClipIcon className="size-5 m-2" />
                   </button>
 
-                  {openedRecipient && <SendPayment address={openedRecipient} />}
+                  {openedRecipient && (
+                    <SendPayment
+                      address={openedRecipient}
+                      onPaymentSent={close}
+                    />
+                  )}
                 </PopoverPanel>
               </Transition>
             </>
