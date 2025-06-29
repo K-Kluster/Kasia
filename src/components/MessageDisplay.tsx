@@ -462,7 +462,9 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     <div
       className={clsx(
         "flex w-full my-2",
-        isOutgoing ? "justify-end pr-5" : "justify-start pl-5"
+        isOutgoing
+          ? "justify-end pr-0.5 sm:pr-2"
+          : "justify-start pl-0.5 sm:pl-2"
       )}
     >
       <div
