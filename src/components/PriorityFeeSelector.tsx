@@ -8,6 +8,7 @@ import { FeeBucket, PriorityFeeConfig, MAX_PRIORITY_FEE } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import clsx from "clsx";
 import { useWalletStore } from "../store/wallet.store";
+import { Button } from "./Common/Button";
 
 interface PriorityFeeSelectorProps {
   onFeeChange: (fee: PriorityFeeConfig) => void;
@@ -298,7 +299,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
                   className={clsx(
-                    "w-full p-4 rounded-lg border text-left transition-colors",
+                    "cursor-pointer w-full p-4 rounded-lg border text-left transition-colors",
                     "hover:bg-[var(--secondary-bg)] focus:ring-2 focus:ring-blue-500",
                     settings.selectedBucket === bucket.label
                       ? "border-blue-500 bg-blue-500/10"
@@ -339,12 +340,9 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                     placeholder="Enter amount in KAS"
                     className="flex-1 px-3 py-2 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <button
-                    onClick={handleCustomFee}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                  <Button onClick={handleCustomFee} className="!w-fit">
                     Set
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -355,7 +353,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                   id="remember-choice"
                   checked={settings.isPersistent}
                   onChange={(e) => togglePersistence(e.target.checked)}
-                  className="rounded border-[var(--border-color)] bg-[var(--input-bg)] text-blue-500 focus:ring-2 focus:ring-blue-500"
+                  className="cursor-pointer rounded border-[var(--border-color)] bg-[var(--input-bg)] text-blue-500 focus:ring-2 focus:ring-blue-500"
                 />
                 <label
                   htmlFor="remember-choice"
