@@ -12,7 +12,8 @@
     "format:fix": "prettier --write .",
     "preview": "vite preview",
     "tauri": "tauri",
-    "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd .."
+    "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd ..",
+    "prepare": "node .husky/install.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",
@@ -51,6 +52,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
+    "husky": "^9.1.7",
     "postcss": "^8.5.4",
     "postcss-preset-env": "^10.2.1",
     "prettier": "^3.6.2",
