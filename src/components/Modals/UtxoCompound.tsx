@@ -220,10 +220,7 @@ export const UtxoCompound: FC = () => {
           !isCompounding &&
           !compoundResult &&
           !pendingResult && (
-            <Button
-              onClick={handleCompoundUtxos}
-              variant="primary"
-            >
+            <Button onClick={handleCompoundUtxos} variant="primary">
               Compound {balance?.matureUtxoCount ?? 0} UTXOs
             </Button>
           )}

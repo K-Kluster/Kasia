@@ -80,7 +80,6 @@ export const WalletWithdrawal: FC = () => {
       if (!withdrawAddress.toLowerCase().startsWith("kaspa")) {
         throw new Error("Address must be of type Kaspa");
       }
-      
 
       const amount = kaspaToSompi(withdrawAmount);
       if (amount === undefined) {

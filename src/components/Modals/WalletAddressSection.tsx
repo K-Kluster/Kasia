@@ -120,7 +120,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
             </Button>
           </div>
         </div>
-        
+
         {showQRCode && qrCodeURL && (
           <div className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300 w-full sm:w-auto">
             <h4 className="text-white text-center mb-4">QR Code for Address</h4>

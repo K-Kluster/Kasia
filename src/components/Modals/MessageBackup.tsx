@@ -79,10 +79,7 @@ export const MessageBackup: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center space-y-2 max-w-3/4 mx-auto h-full">
       <h4 className="text-lg font-semibold">Message Backup</h4>
-      <Button
-        onClick={onExportMessages}
-        variant="primary"
-      >
+      <Button onClick={onExportMessages} variant="primary">
         Export Messages
       </Button>
       <label

@@ -64,7 +64,7 @@ export const OneLiner: FC = () => {
       // Called when OneLiner unmounts (user leaves route), so we can reset all the states
       walletStore.lock();
       uiStore.setSettingsOpen(false);
-      
+
       messageStore.setIsLoaded(false);
       messageStore.setOpenedRecipient(null);
       messageStore.setIsCreatingNewChat(false);
