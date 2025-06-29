@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useMemo } from "react";
 import { Modal } from "./Common/modal";
 import {
   ArrowsUpDownIcon,
@@ -38,37 +38,36 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
   // Get fee estimate from wallet store instead of fetching directly
   const feeEstimate = useWalletStore((s) => s.feeEstimate);
 
-  // Load persistent settings on mount
-  useEffect(() => {
-    const saved = sessionStorage.getItem("priorityFeeSettings");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const fee: PriorityFeeConfig = {
-          amount: BigInt(0), // Let WASM calculate the amount
-          source: parsed.fee.source,
-          feerate: parsed.fee.feerate,
-        };
-        setSettings({
-          fee,
-          isPersistent: parsed.isPersistent,
-          selectedBucket: parsed.selectedBucket,
-        });
-        onFeeChange(fee);
-      } catch (error) {
-        console.error("Failed to load priority fee settings:", error);
-      }
-    } else {
-      // Initialize with Low bucket (0 fee) as default
-      const defaultFee = { amount: BigInt(0), source: FeeSource.SenderPays };
-      setSettings((prev) => ({
-        ...prev,
-        fee: defaultFee,
-        selectedBucket: "Low",
-      }));
-      onFeeChange(defaultFee);
-    }
-  }, [onFeeChange]);
+  // useEffect(() => {
+  //   const saved = sessionStorage.getItem("priorityFeeSettings");
+  //   if (saved) {
+  //     try {
+  //       const parsed = JSON.parse(saved);
+  //       const fee: PriorityFeeConfig = {
+  //         amount: BigInt(0), // Let WASM calculate the amount
+  //         source: parsed.fee.source,
+  //         feerate: parsed.fee.feerate,
+  //       };
+  //       setSettings({
+  //         fee,
+  //         isPersistent: parsed.isPersistent,
+  //         selectedBucket: parsed.selectedBucket,
+  //       });
+  //       onFeeChange(fee);
+  //     } catch (error) {
+  //       console.error("Failed to load priority fee settings:", error);
+  //     }
+  //   } else {
+  //     // Initialize with Low bucket (0 fee) as default
+  //     const defaultFee = { amount: BigInt(0), source: FeeSource.SenderPays };
+  //     setSettings((prev) => ({
+  //       ...prev,
+  //       fee: defaultFee,
+  //       selectedBucket: "Low",
+  //     }));
+  //     onFeeChange(defaultFee);
+  //   }
+  // }, [onFeeChange]);
 
   // Sync settings when currentFee changes externally
   useEffect(() => {
@@ -82,8 +81,45 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     }));
   }, [currentFee]);
 
+  const parsedSettings = useMemo(() => {
+    const saved = sessionStorage.getItem("priorityFeeSettings");
+    if (!saved) return null;
+    try {
+      const parsed = JSON.parse(saved);
+      return {
+        fee: {
+          amount: BigInt(0), // Let WASM calculate the amount
+          source: parsed.fee.source,
+          feerate: parsed.fee.feerate,
+        },
+        isPersistent: parsed.isPersistent,
+        selectedBucket: parsed.selectedBucket,
+      };
+    } catch {
+      console.error("Failed to load priority fee settings");
+      return null;
+    }
+  }, []);
+
+  // Load persistent settings on mount
+  useEffect(() => {
+    if (parsedSettings) {
+      setSettings(parsedSettings);
+      onFeeChange(parsedSettings.fee);
+    } else {
+      // Initialize with Low bucket (0 fee) as default
+      const defaultFee = { amount: BigInt(0), source: FeeSource.SenderPays };
+      setSettings((prev) => ({
+        ...prev,
+        fee: defaultFee,
+        selectedBucket: "Low",
+      }));
+      onFeeChange(defaultFee);
+    }
+  }, [parsedSettings, onFeeChange]);
+
   // Get dynamic fee buckets from network data
-  const getDynamicFeeBuckets = (): FeeBucket[] => {
+  const getDynamicFeeBuckets = useMemo(() => {
     const buckets: FeeBucket[] = [];
     const estimate = feeEstimate?.estimate || {};
 
@@ -135,7 +171,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     }
 
     return buckets;
-  };
+  },[feeEstimate]);
 
   const handleFeeSelect = (bucket: FeeBucket) => {
     const newFee: PriorityFeeConfig = {
@@ -294,7 +330,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
             </div>
 
             <div className="space-y-2">
-              {getDynamicFeeBuckets().map((bucket, index) => (
+              {getDynamicFeeBuckets.map((bucket, index) => (
                 <button
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
