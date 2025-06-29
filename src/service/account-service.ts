@@ -7,7 +7,6 @@ import {
   PaymentOutput,
   UtxoEntry,
   ITransaction,
-  UtxoEntryReference,
   PendingTransaction,
   GeneratorSummary,
   FeeSource,
@@ -18,7 +17,7 @@ import { KaspaClient } from "../utils/all-in-one";
 import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
-import { PriorityFeeConfig, MAX_PRIORITY_FEE } from "../types/all";
+import { PriorityFeeConfig } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import { TransactionId } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
@@ -104,13 +103,6 @@ type CreatePaymentWithMessageArgs = {
   originalMessage?: string; // Add the original message for outgoing record creation
   priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
-
-// Add this helper function at the top level
-function stringifyWithBigInt(obj: any): string {
-  return JSON.stringify(obj, (_, value) =>
-    typeof value === "bigint" ? value.toString() : value
-  );
-}
 
 interface Conversation {
   conversationId: string;

@@ -1,7 +1,7 @@
 import { FC } from "react";
 import { formatKasAmount } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
-import { STANDARD_TRANSACTION_MASS } from "../types/all";
+import { STANDARD_TRANSACTION_MASS } from "../config/constants";
 
 interface FeeBucketsProps {
   inline?: boolean;

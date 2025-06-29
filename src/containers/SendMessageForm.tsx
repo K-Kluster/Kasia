@@ -214,13 +214,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           "No active conversation found, sending regular message with priority fee:",
           priorityFee.amount.toString()
         );
-        txId = await walletStore.sendMessage(
-          messageToSend,
-          new Address(recipient),
-          walletStore.unlockedWallet.password,
-          undefined, // customAmount - use default
-          priorityFee
-        );
+        txId = await walletStore.sendMessage({
+          message: messageToSend,
+          toAddress: new Address(recipient),
+          password: walletStore.unlockedWallet.password,
+          priorityFee,
+        });
       }
 
       console.log("Message sent! Transaction response:", txId);

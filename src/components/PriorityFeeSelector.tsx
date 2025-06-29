@@ -4,13 +4,14 @@ import {
   ArrowsUpDownIcon,
   InformationCircleIcon,
 } from "@heroicons/react/24/outline";
-import { FeeBucket, PriorityFeeConfig, MAX_PRIORITY_FEE } from "../types/all";
+import { FeeBucket, PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import clsx from "clsx";
 import { useWalletStore } from "../store/wallet.store";
 import { Button } from "./Common/Button";
 import { toast } from "../utils/toast";
 import { Input } from "@headlessui/react";
+import { DEFAULT_FEE_BUCKETS, MAX_PRIORITY_FEE } from "../config/constants";
 
 interface PriorityFeeSelectorProps {
   onFeeChange: (fee: PriorityFeeConfig) => void;
@@ -103,7 +104,11 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
   // Get dynamic fee buckets from network data
   const dynamicFeeBuckets = useMemo(() => {
     const buckets: FeeBucket[] = [];
-    const estimate = feeEstimate?.estimate || {};
+    const estimate = feeEstimate?.estimate || null;
+
+    if (!estimate) {
+      return DEFAULT_FEE_BUCKETS;
+    }
 
     // Low bucket (slowest/cheapest) - should always be 0 priority fee
     buckets.push({
@@ -153,7 +158,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     }
 
     return buckets;
-  },[feeEstimate]);
+  }, [feeEstimate]);
 
   const handleFeeSelect = (bucket: FeeBucket) => {
     const newFee: PriorityFeeConfig = {
@@ -186,10 +191,9 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     // Allow decimal numbers
     if (/^\d*\.?\d*$/.test(value)) {
       setCustomAmount(value);
-    } else
-    {
-      toast.warning("Amount must be a number",1500)
-      }
+    } else {
+      toast.warning("Amount must be a number", 1500);
+    }
   }, []);
 
   const handleCustomFee = () => {

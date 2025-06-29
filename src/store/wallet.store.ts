@@ -19,6 +19,15 @@ import {
 } from "../types/wallet.type";
 import { TransactionId } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
+import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
+
+export interface WalletStoreSendMessageArgs {
+  message: string;
+  toAddress: Address;
+  password: string;
+  customAmount?: bigint;
+  priorityFee?: PriorityFeeConfig;
+}
 
 type WalletState = {
   wallets: {
@@ -74,13 +83,7 @@ type WalletState = {
   // wallet operations
   start: (client: KaspaClient) => Promise<{ receiveAddress: Address }>;
   stop: () => void;
-  sendMessage: (
-    message: string,
-    toAddress: Address,
-    password: string,
-    customAmount?: bigint,
-    priorityFee?: PriorityFeeConfig
-  ) => Promise<TransactionId>;
+  sendMessage: (args: WalletStoreSendMessageArgs) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
     preEncryptedHex: string,
     toAddress: Address,
@@ -197,13 +200,10 @@ export const useWalletStore = create<WalletState>((set, get) => {
       // Initial fetch
       get().fetchFeeEstimates();
 
-      // Set up polling every 2 minutes
-      _feeEstimateInterval = setInterval(
-        () => {
-          get().fetchFeeEstimates();
-        },
-        2 * 60 * 1000
-      );
+      // Set up polling
+      _feeEstimateInterval = setInterval(() => {
+        get().fetchFeeEstimates();
+      }, FEE_ESTIMATE_POLLING_INTERVAL_IN_MS);
     },
 
     stopFeeEstimatePolling: () => {
@@ -484,13 +484,13 @@ export const useWalletStore = create<WalletState>((set, get) => {
       });
     },
 
-    sendMessage: async (
-      message: string,
-      toAddress: Address,
-      password: string,
-      customAmount?: bigint,
-      priorityFee?: PriorityFeeConfig
-    ) => {
+    sendMessage: async ({
+      message,
+      toAddress,
+      password,
+      customAmount,
+      priorityFee,
+    }: WalletStoreSendMessageArgs) => {
       const state = get();
       if (!state.unlockedWallet || !state.accountService) {
         throw new Error("Wallet not unlocked or account service not running");

@@ -137,26 +137,3 @@ export interface PriorityFeeConfig {
   feerate?: number; // Store the fee rate used for calculation
 }
 
-// Maximum priority fee (5 KAS) - Originally 10 but lowering for intial release
-export const MAX_PRIORITY_FEE = BigInt(5 * 100_000_000);
-
-// Standard transaction mass in grams (typical Kaspa transaction)
-export const STANDARD_TRANSACTION_MASS = 2036;
-
-export const FEE_BUCKETS: Record<string, FeeBucket> = {
-  LOW: {
-    label: "Low",
-    description: "Standard processing time",
-    amount: BigInt(0),
-  },
-  NORMAL: {
-    label: "Normal",
-    description: "Faster during busy times",
-    amount: BigInt(1000), // 0.00001 KAS (fallback)
-  },
-  PRIORITY: {
-    label: "Priority",
-    description: "Fastest processing",
-    amount: BigInt(10000), // 0.0001 KAS (fallback)
-  },
-};
