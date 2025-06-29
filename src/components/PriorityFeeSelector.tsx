@@ -56,7 +56,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       const parsed = JSON.parse(saved);
       return {
         fee: {
-          amount: BigInt(0), // Let WASM calculate the amount
+          amount: BigInt(parsed.fee.amount ?? "0"),
           source: parsed.fee.source,
           feerate: parsed.fee.feerate,
         },
@@ -73,7 +73,19 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
   useEffect(() => {
     if (parsedSettings) {
       setSettings(parsedSettings);
-      onFeeChange(parsedSettings.fee);
+      if (parsedSettings.selectedBucket === "Custom") {
+        setCustomAmount(
+          (Number(parsedSettings.fee.amount) / 100_000_000).toString()
+        );
+      }
+      onFeeChange({
+        amount: parsedSettings.fee.amount,
+        source: parsedSettings.fee.source,
+        feerate:
+          parsedSettings.selectedBucket === "Custom"
+            ? undefined
+            : parsedSettings.fee.feerate,
+      });
     } else {
       // Initialize with Low bucket (0 fee) as default
       const defaultFee = { amount: BigInt(0), source: FeeSource.SenderPays };
@@ -221,7 +233,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       "priorityFeeSettings",
       JSON.stringify({
         fee: {
-          amount: "0", // Let WASM calculate the amount
+          amount: fee.amount.toString(),
           source: fee.source,
           feerate: fee.feerate,
         },
