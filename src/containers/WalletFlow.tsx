@@ -288,7 +288,14 @@ export const WalletFlow = ({
   const wrapperClass = clsx(
     "w-full bg-[var(--secondary-bg)] p-8",
     isMobile
-      ? "fixed inset-0 w-full max-h-screen overflow-y-auto"
+      ? clsx(
+          "fixed inset-0 w-full max-h-screen overflow-y-auto flex flex-col",
+          step.type === "home"
+            ? wallets.length > 2
+              ? "justify-start"
+              : "justify-center"
+            : "justify-start"
+        )
       : "mx-auto my-8 rounded-lg max-w-[600px] border border-[var(--border-color)]",
     { relative: step.type === "home" && !isMobile }
   );
@@ -301,7 +308,12 @@ export const WalletFlow = ({
           <Link to="/settings-network">
             <Cog6ToothIcon className="absolute top-4 right-4 size-6 hover:cursor-pointer hover:opacity-80" />
           </Link>
-          <div className="mb-1 flex grow items-center justify-center">
+          <div
+            className={clsx(
+              "mb-1 flex items-center justify-center",
+              isMobile ? "grow-0" : "grow"
+            )}
+          >
             <NetworkSelector
               selectedNetwork={selectedNetwork}
               onNetworkChange={onNetworkChange}
