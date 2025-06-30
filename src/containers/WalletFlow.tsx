@@ -312,7 +312,7 @@ export const WalletFlow = ({
           <h2 className="mt-2 mb-2 text-center text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:mb-3 sm:text-2xl">
             {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
           </h2>
-          <div className="mb-1 flex flex-col gap-2 sm:mb-3 sm:gap-4">
+          <div className="mb-3 flex flex-col gap-2 sm:gap-4">
             {wallets.map((w) => (
               <div
                 key={w.id}
@@ -373,7 +373,9 @@ export const WalletFlow = ({
       {/* Create wallet 'Route' */}
       {step.type === "create" && (
         <>
-          <h2 className="text-center text-lg font-bold">Create New Wallet</h2>
+          <h2 className="mb-1 text-center text-lg font-bold">
+            Create New Wallet
+          </h2>
 
           <RadioGroup
             name="derivationType"
@@ -381,7 +383,7 @@ export const WalletFlow = ({
             onChange={setDerivationType}
             className="mb-2 sm:mb-3"
           >
-            <Label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+            <Label className="mb-3 block text-base font-semibold text-white">
               Derivation Standard
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -415,8 +417,8 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+          <div className="mb-3">
+            <label className="mb-3 block text-base font-semibold text-white">
               Wallet Name
             </label>
             <input
@@ -431,9 +433,9 @@ export const WalletFlow = ({
             name="seedLength"
             value={seedPhraseLength}
             onChange={setSeedPhraseLength}
-            className="mb-2 sm:mb-3"
+            className="mb-3"
           >
-            <Label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+            <Label className="mb-3 block text-base font-semibold text-white">
               Seed Phrase Length
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -466,8 +468,8 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+          <div className="mb-3">
+            <label className="mb-3 block text-base font-semibold text-white">
               Wallet Name
             </label>
             <input
@@ -564,9 +566,9 @@ export const WalletFlow = ({
             name="derivationType"
             value={derivationType}
             onChange={setDerivationType}
-            className="mb-2 sm:mb-3"
+            className="mb-3"
           >
-            <Label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+            <Label className="mb-3 block text-base font-semibold text-white">
               Derivation Standard
             </Label>
 
@@ -601,8 +603,8 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+          <div className="mb-3">
+            <label className="mb-3 block text-base font-semibold text-white">
               Wallet Name
             </label>
             <input
@@ -619,7 +621,7 @@ export const WalletFlow = ({
             onChange={(val) => setSeedPhraseLength(val === "24" ? 24 : 12)}
             className="mb-2 sm:mb-3"
           >
-            <Label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+            <Label className="mb-3 block text-base font-semibold text-white">
               Seed Phrase Length
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -642,8 +644,8 @@ export const WalletFlow = ({
             mnemonicRef={mnemonicRef}
           />
 
-          <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+          <div className="mb-3">
+            <label className="mb-3 block text-base font-semibold text-white">
               Password
             </label>
             <input
