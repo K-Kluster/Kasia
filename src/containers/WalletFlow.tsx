@@ -22,6 +22,7 @@ import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
 import { toast } from "../utils/toast";
 import { Button } from "../components/Common/Button";
+import { useIsMobile } from "../utils/useIsMobile";
 
 export type Step = {
   type:
@@ -66,6 +67,8 @@ export const WalletFlow = ({
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+
+  const isMobile = useIsMobile();
 
   const usePasswordRef = useCallback((node: HTMLInputElement | null) => {
     passwordRef.current = node;
@@ -283,10 +286,11 @@ export const WalletFlow = ({
     );
 
   const wrapperClass = clsx(
-    "sm:max-w-[600px] w-full mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]",
-    {
-      relative: step.type === "home", //support the cog!
-    }
+    "w-full bg-[var(--secondary-bg)] p-8",
+    isMobile
+      ? "fixed inset-0 w-full max-h-screen overflow-y-auto"
+      : "mx-auto my-8 rounded-lg max-w-[600px] border border-[var(--border-color)]",
+    { relative: step.type === "home" && !isMobile }
   );
 
   return (
