@@ -13,6 +13,7 @@ export type ModalType =
   | "backup"
   | "delete"
   | "seed"
+  | "warn-costy-send-message" // confirm modals should be handled generically
   | "utxo-compound";
 
 interface ModalContextValue {
