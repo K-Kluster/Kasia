@@ -273,11 +273,11 @@ export const WalletFlow = ({
 
   const getDerivationTypeDisplay = (d?: WalletDerivationType) =>
     d === "standard" ? (
-      <span className="rounded bg-emerald-500 px-2 py-1 text-xs font-medium text-white">
+      <span className="bg-kas-primary rounded px-2 py-1 text-xs font-medium text-white">
         Standard (Kaspium Compatible)
       </span>
     ) : (
-      <span className="rounded bg-amber-500 px-2 py-1 text-xs font-medium text-white">
+      <span className="rounded bg-amber-400 px-2 py-1 text-xs font-medium text-white">
         Legacy
       </span>
     );
@@ -305,15 +305,15 @@ export const WalletFlow = ({
             />
           </div>
           <TrustMessage />
-          <h2 className="mt-4 mb-2 text-center text-[1.5rem] font-semibold text-[var(--text-primary)]">
+          <h2 className="mt-2 mb-2 text-center text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:mb-3 sm:text-2xl">
             {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
           </h2>
-          <div className="mb-4 flex flex-col gap-2 sm:gap-4">
+          <div className="mb-1 flex flex-col gap-2 sm:mb-3 sm:gap-4">
             {wallets.map((w) => (
               <div
                 key={w.id}
                 onClick={() => onSelectWallet(w)}
-                className="relative flex cursor-pointer flex-col items-start gap-4 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
+                className="hover:border-kas-secondary/50 relative flex cursor-pointer flex-col items-start gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 hover:bg-slate-900/20 sm:flex-row sm:items-center sm:justify-between"
               >
                 {/* delete icon top-right */}
                 <button
@@ -321,18 +321,18 @@ export const WalletFlow = ({
                     e.stopPropagation();
                     onDeleteWallet(w.id);
                   }}
-                  className="absolute top-2 right-2 cursor-pointer p-1 text-red-500 hover:text-red-700"
+                  className="absolute top-2 right-2 cursor-pointer p-1 text-red-400 hover:text-red-700"
                   title="Delete"
                 >
                   <TrashIcon className="h-6 w-6" />
                 </button>
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1">
                   <div className="inline-flex items-center space-x-1 font-semibold text-[var(--text-primary)]">
                     <span>{w.name}</span>
                   </div>
 
-                  <div className="text-sm text-[var(--text-secondary)]">
+                  <div className="text-xs text-[var(--text-secondary)] sm:text-sm">
                     Created: {new Date(w.createdAt).toLocaleDateString()}
                   </div>
                   <div className="mt-1 flex items-center gap-2">
@@ -359,7 +359,7 @@ export const WalletFlow = ({
             <Button variant="primary" onClick={() => onStepChange("create")}>
               Create New Wallet
             </Button>
-            <Button variant="primary" onClick={() => onStepChange("import")}>
+            <Button variant="secondary" onClick={() => onStepChange("import")}>
               Import Wallet
             </Button>
           </div>

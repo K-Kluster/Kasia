@@ -9,7 +9,7 @@ export const TrustMessage: FC = () => {
   return (
     <>
       {/* trust message section */}
-      <div className="mt-8 rounded-lg border border-[#70C7BA]/20 bg-gradient-to-br from-[#70C7BA]/10 to-[#70C7BA]/5 p-2">
+      <div className="mt-6 rounded-lg border border-[#70C7BA]/20 bg-gradient-to-br from-[#70C7BA]/10 to-[#70C7BA]/5 p-2">
         <div
           className="flex cursor-pointer items-center justify-center gap-2"
           onClick={() => setOpenTrust((v) => !v)}
@@ -44,7 +44,7 @@ export const TrustMessage: FC = () => {
       </div>
 
       {/* why kaspa wallet section */}
-      <div className="mt-4 rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 p-2">
+      <div className="mt-3 rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 p-2">
         <div
           className="flex cursor-pointer items-center justify-center gap-2"
           onClick={() => setOpenWhy((v) => !v)}
