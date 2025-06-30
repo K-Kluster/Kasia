@@ -478,8 +478,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
               will be sent to your correspondent. Are you sure you want to send
               it?
             </p>
-            <div className="flex items-start justify-start rounded-lg border border-blue-200 px-4 py-2">
-              <InformationCircleIcon className="mr-2 size-10 text-blue-200" />
+            <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
+              <InformationCircleIcon className="mr-2 size-10 text-white" />
               <p className="">
                 This is occuring because your correspondent hasn't accepted the
                 handshake yet.
