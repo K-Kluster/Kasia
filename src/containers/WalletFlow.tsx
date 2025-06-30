@@ -556,81 +556,97 @@ export const WalletFlow = ({
         <>
           <h2 className="text-center text-lg font-bold">Import Wallet</h2>
 
-          {/* Derivation Type Selection */}
-          <div className="form-group">
-            <label>Derivation Standard</label>
-            <div className="mt-2 flex flex-col gap-2 sm:gap-3">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="derivationType"
-                  value="standard"
-                  checked={derivationType === "standard"}
-                  onChange={(e) =>
-                    setDerivationType(e.target.value as WalletDerivationType)
-                  }
-                />
-                <span>Standard (Recommended)</span>
-                <small>
-                  Compatible with Kaspium and other standard wallets
-                </small>
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="derivationType"
-                  value="legacy"
-                  checked={derivationType === "legacy"}
-                  onChange={(e) =>
-                    setDerivationType(e.target.value as WalletDerivationType)
-                  }
-                />
-                <span>Legacy</span>
-                <small>For compatibility with older wallets</small>
-              </label>
-            </div>
-          </div>
+          <RadioGroup
+            name="derivationType"
+            value={derivationType}
+            onChange={setDerivationType}
+            className="mb-2 sm:mb-3"
+          >
+            <Label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+              Derivation Standard
+            </Label>
 
-          <div className="form-group">
-            <label>Wallet Name</label>
-            <input ref={nameRef} type="text" placeholder="My Wallet" />
-          </div>
-          <div className="form-group">
-            <label>Seed Phrase Length</label>
-            <div className="mt-2 flex flex-col gap-2 sm:gap-3">
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="importSeedLength"
-                  value="12"
-                  checked={seedPhraseLength === 12}
-                  onChange={() => setSeedPhraseLength(12)}
-                />
-                <span>12 words</span>
-              </label>
-              <label className="radio-option">
-                <input
-                  type="radio"
-                  name="importSeedLength"
-                  value="24"
-                  checked={seedPhraseLength === 24}
-                  onChange={() => setSeedPhraseLength(24)}
-                />
-                <span>24 words</span>
-              </label>
+            <div className="flex flex-col gap-2 sm:gap-3">
+              {[
+                {
+                  value: "standard",
+                  label: "Standard (Recommended)",
+                  description:
+                    "Compatible with Kaspium and other standard wallets",
+                },
+                {
+                  value: "legacy",
+                  label: "Legacy",
+                  description: "For compatibility with older wallets",
+                },
+              ].map((opt) => (
+                <Radio
+                  key={opt.value}
+                  as="label"
+                  value={opt.value}
+                  className="group hover:border-kas-secondary/50 flex cursor-pointer flex-col items-start gap-y-1 rounded-md border border-[var(--border-color)] bg-slate-900 p-3 transition-colors duration-200 hover:bg-slate-900/20 data-checked:border-[var(--color-kas-primary)] data-checked:bg-[var(--color-kas-primary)]/5"
+                >
+                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                    {opt.label}
+                  </span>
+                  <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)] sm:text-sm">
+                    {opt.description}
+                  </small>
+                </Radio>
+              ))}
             </div>
-            <MnemonicEntry
-              seedPhraseLength={seedPhraseLength}
-              mnemonicRef={mnemonicRef}
+          </RadioGroup>
+
+          <div className="mb-2 sm:mb-3">
+            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+              Wallet Name
+            </label>
+            <input
+              ref={nameRef}
+              type="text"
+              placeholder="My Wallet"
+              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
             />
           </div>
 
-          <div className="form-group">
-            <label>Password</label>
+          <RadioGroup
+            name="importSeedLength"
+            value={seedPhraseLength.toString() as "12" | "24"}
+            onChange={(val) => setSeedPhraseLength(val === "24" ? 24 : 12)}
+            className="mb-2 sm:mb-3"
+          >
+            <Label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+              Seed Phrase Length
+            </Label>
+            <div className="flex flex-col gap-2 sm:gap-3">
+              {["24", "12"].map((val) => (
+                <Radio
+                  key={val}
+                  as="label"
+                  value={val}
+                  className="group hover:border-kas-secondary/50 flex cursor-pointer flex-col items-start gap-y-1 rounded-md border border-[var(--border-color)] bg-slate-900 p-3 transition-colors duration-200 hover:bg-slate-900/20 data-checked:border-[var(--color-kas-primary)] data-checked:bg-[var(--color-kas-primary)]/5"
+                >
+                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                    {val} words
+                  </span>
+                </Radio>
+              ))}
+            </div>
+          </RadioGroup>
+          <MnemonicEntry
+            seedPhraseLength={seedPhraseLength}
+            mnemonicRef={mnemonicRef}
+          />
+
+          <div className="mb-2 sm:mb-3">
+            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+              Password
+            </label>
             <input
               ref={passwordRef}
               type="password"
               placeholder="Enter password"
+              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
             />
           </div>
 
