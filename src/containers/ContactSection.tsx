@@ -37,6 +37,14 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const isMobile = useIsMobile();
   const toggleSettings = useUiStore((s) => s.toggleSettings);
 
+  const uniqueContacts = [
+    ...new Map(
+      contacts
+        .filter((c) => c.address && c.address !== walletAddress)
+        .map((c) => [c.address.trim().toLowerCase(), c])
+    ).values(),
+  ];
+
   return (
     <div
       className={clsx(
@@ -86,24 +94,21 @@ export const ContactSection: FC<ContactSectionProps> = ({
         )}
       </div>
 
-      {/* Contacts list -  */}
+      {/* Contacts list */}
       <div className="flex-1 overflow-y-auto bg-[var(--primary-bg)] p-2">
-        {contacts.filter((c) => c.address && c.address !== walletAddress)
-          .length > 0
-          ? contacts
-              .filter((c) => c.address && c.address !== walletAddress)
-              .map((c) => (
-                <ContactCard
-                  key={c.address}
-                  contact={c}
-                  isSelected={c.address === openedRecipient}
-                  collapsed={contactsCollapsed} // signal to become an avatar
-                  onClick={() => {
-                    onContactClicked(c);
-                    if (isMobile) setMobileView("messages");
-                  }}
-                />
-              ))
+        {uniqueContacts.length > 0
+          ? uniqueContacts.map((c) => (
+              <ContactCard
+                key={c.address}
+                contact={c}
+                isSelected={c.address === openedRecipient}
+                collapsed={contactsCollapsed}
+                onClick={() => {
+                  onContactClicked(c);
+                  if (isMobile) setMobileView("messages");
+                }}
+              />
+            ))
           : !contactsCollapsed && (
               <div className="m-5 overflow-hidden rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
                 No Contacts Yet
