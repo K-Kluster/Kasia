@@ -682,48 +682,50 @@ export const WalletFlow = ({
       {/* Migrate wallet 'Route' */}
       {step.type === "migrate" && (
         <>
-          <h2 className="text-center text-lg font-bold">
+          <h2 className="mb-1 text-center text-lg font-bold sm:mb-3">
             Migrate Legacy Wallet
           </h2>
-          <div className="migration-info">
-            <p>
+          <div className="mb-4 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4">
+            <p className="mb-2 font-semibold text-[var(--text-primary)]">
               Migrating wallet:{" "}
-              <strong>
+              <strong className="text-[var(--accent-blue)]">
                 {wallets.find((w) => w.id === step.walletId)?.name}
               </strong>
             </p>
-            <p>
+            <p className="my-2 text-[var(--text-secondary)]">
               This will create a new wallet using the standard Kaspa derivation
               path (m/44'/111111'/0') that is compatible with Kaspium and other
               standard wallets.
             </p>
-            <div className="my-5 flex flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] p-4 text-center text-amber-300">
+            <div className="mt-5 mb-1 flex flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] p-4 text-center text-amber-300">
               <ExclamationTriangleIcon className="h-5 w-5" /> Your original
               wallet will remain unchanged. You'll need to transfer funds to the
               new wallet addresses.
             </div>
           </div>
 
-          <div className="form-group">
-            <label>New Wallet Name</label>
+          <div className="mb-2 sm:mb-3">
+            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+              New Wallet Name
+            </label>
             <input
               ref={nameRef}
               type="text"
-              placeholder={`${
-                wallets.find((w) => w.id === step.walletId)?.name
-              } (Standard)`}
-              defaultValue={`${
-                wallets.find((w) => w.id === step.walletId)?.name
-              } (Standard)`}
+              placeholder={`${wallets.find((w) => w.id === step.walletId)?.name} (Standard)`}
+              defaultValue={`${wallets.find((w) => w.id === step.walletId)?.name} (Standard)`}
+              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
             />
           </div>
 
-          <div className="form-group">
-            <label>Password</label>
+          <div className="mb-2 sm:mb-3">
+            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+              Password
+            </label>
             <input
               ref={passwordRef}
               type="password"
               placeholder="Enter your current wallet password"
+              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
             />
           </div>
 

@@ -253,7 +253,7 @@
   color: var(--accent-blue);
 }
 
-/* Migration info styles */
+/* Migration info styles
 .migration-info {
   background-color: var(--primary-bg);
   border: 1px solid var(--border-color);
@@ -269,7 +269,7 @@
 
 .migration-info strong {
   color: var(--accent-blue);
-}
+} */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
