@@ -2,6 +2,7 @@ import { FC, useMemo, useState } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
+import { AvatarHash } from "./icons/AvatarHash";
 import {
   PencilIcon,
   CheckCircleIcon,
@@ -135,23 +136,23 @@ export const ContactCard: FC<{
 
   // Collapsed w/ Avatar
   if (collapsed) {
-    const avatar =
-      contact.nickname?.trim()?.[0]?.toUpperCase() ??
-      contact.address.split(":")[1]?.[0]?.toUpperCase() ??
-      "?";
-
+    const avatarLetter = contact.nickname?.trim()?.[0]?.toUpperCase();
     return (
       <div
         className={clsx(
           "flex cursor-pointer justify-center py-2",
-          isSelected && "bg-[var(--accent-blue)]/20"
+          isSelected && "bg-kas-primary/40"
         )}
         title={displayName}
         onClick={() => onClick?.(contact)}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-blue)] text-sm font-semibold text-white">
-          {avatar}
-        </div>
+        {avatarLetter ? (
+          <div className="bg-kas-primary/40 flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold text-white">
+            {avatarLetter}
+          </div>
+        ) : (
+          <AvatarHash address={contact.address} size={32} />
+        )}
       </div>
     );
   }
