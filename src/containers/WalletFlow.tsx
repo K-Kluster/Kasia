@@ -215,7 +215,6 @@ export const WalletFlow = ({
       setError("Please enter your wallet password");
       return;
     }
-
     setError("");
     try {
       setUnlocking(true);
@@ -482,7 +481,7 @@ export const WalletFlow = ({
 
           <div className="mb-3">
             <label className="mb-3 block text-base font-semibold text-white">
-              Wallet Name
+              Password
             </label>
             <input
               ref={passwordRef}
@@ -522,7 +521,7 @@ export const WalletFlow = ({
             <button
               type="button"
               onClick={() => setRevealed(!revealed)}
-              className="mx-auto my-4 cursor-pointer rounded border border-[rgba(76,175,80,0.3)] bg-[rgba(76,175,80,0.1)] px-4 py-2 text-sm font-bold text-white"
+              className="bg-kas-primary/20 mx-auto my-4 cursor-pointer rounded border border-[rgba(76,175,80,0.3)] px-4 py-2 text-sm font-bold text-white"
             >
               Anyone with your seed phrase can access your wallet
               <div className="my-1 font-semibold text-amber-300 underline">
@@ -531,15 +530,21 @@ export const WalletFlow = ({
             </button>
 
             <div
-              className={`mnemonic-phrase mb-[15px] grid w-full grid-cols-3 gap-[10px] p-[15px] transition-all duration-300 ease-linear ${
+              className={`mb-3.5 grid w-full grid-cols-3 gap-2.5 p-2 transition-all duration-300 ease-linear ${
                 revealed
                   ? "pointer-events-auto filter-none select-text"
                   : "pointer-events-none blur-[8px] filter select-none"
               }`}
             >
               {step.mnemonic!.phrase.split(" ").map((word, i) => (
-                <span key={i} className="mnemonic-word">
-                  <span className="word-number font-bold">{i + 1}.</span> {word}
+                <span
+                  key={i}
+                  className="text-kas-secondary flex flex-col items-center rounded bg-gray-800 p-2 font-mono text-sm sm:text-base"
+                >
+                  <span className="text-text-secondary text-xs font-bold">
+                    {i + 1}
+                  </span>
+                  <span className="w-full text-center">{word}</span>
                 </span>
               ))}
             </div>
@@ -735,8 +740,8 @@ export const WalletFlow = ({
             />
           </div>
 
-          <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+          <div className="mb-3">
+            <label className="mb-3 block text-base font-semibold text-white">
               Password
             </label>
             <input
@@ -808,11 +813,15 @@ export const WalletFlow = ({
               <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
                 <Button
                   onClick={onUnlockWallet}
-                  disabled={unlocking}
+                  disabled={unlocking || !isConnected}
                   variant="primary"
+                  title={
+                    !isConnected ? "Waiting for network connection…" : undefined
+                  }
                 >
                   Unlock
                 </Button>
+
                 <Button
                   onClick={() => onStepChange("home")}
                   disabled={unlocking}

@@ -74,7 +74,11 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
         });
       }
 
-      set({ isConnecting: true, connectionError: undefined });
+      set({
+        isConnecting: true,
+        isConnected: false,
+        connectionError: undefined,
+      });
 
       try {
         await kaspaClient.connect();

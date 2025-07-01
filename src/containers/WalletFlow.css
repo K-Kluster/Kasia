@@ -85,28 +85,6 @@
   opacity: 0.9;
 }
 
-.mnemonic-word-input {
-  width: 100%;
-  padding: 8px;
-  background-color: #1a1f2e;
-  border: 1px solid #2a3042;
-  border-radius: 4px;
-  font-size: 14px;
-  color: white;
-  transition: all 0.2s ease;
-}
-
-.mnemonic-word-input:focus {
-  outline: none;
-  border-color: #3a4156;
-  background-color: #1e2436;
-}
-
-.mnemonic-word-input::placeholder {
-  color: #8f95a3;
-  font-size: 12px;
-}
-
 .show-phrase-toggle {
   display: flex;
   align-items: center;
@@ -130,21 +108,6 @@
   font-size: 14px;
   cursor: pointer;
   user-select: none;
-}
-
-.mnemonic-word {
-  font-family: monospace;
-  font-size: 14px;
-  padding: 8px;
-  background-color: #2a3042;
-  border-radius: 4px;
-  color: #4caf50;
-}
-
-.word-number {
-  color: #8f95a3;
-  margin-right: 5px;
-  font-size: 12px;
 }
 
 .radio-option {
