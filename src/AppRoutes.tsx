@@ -1,4 +1,3 @@
-// src/AppRoutes.tsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
@@ -8,6 +7,7 @@ import { OneLiner } from "./OneLiner";
 import { SettingsPage } from "./SettingsPage";
 import type { NetworkType } from "./types/all";
 import type { Step } from "./containers/WalletFlow";
+import { useWalletStore } from "./store/wallet.store";
 
 type WalletFlowRouteConfig = {
   path: string | undefined;
@@ -31,46 +31,56 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   network,
   isConnected,
   onNetworkChange,
-}) => (
-  <Routes>
-    <Route element={<RootLayout />}>
-      {/* Home */}
-      <Route
-        index
-        element={
-          <WalletFlow
-            initialStep="home"
-            selectedNetwork={network}
-            onNetworkChange={onNetworkChange}
-            isConnected={isConnected}
-          />
-        }
-      />
+}) => {
+  const { unlockedWallet, selectedWalletId } = useWalletStore();
 
-      <Route path="wallet">
-        {/* index for /wallet */}
-        <Route index element={<Navigate to="/" replace />} />
-        {walletFlowRoutes.map(({ path, initialStep }) => (
-          <Route
-            key={path!}
-            path={path!}
-            element={
-              <WalletFlow
-                initialStep={initialStep}
-                selectedNetwork={network}
-                onNetworkChange={onNetworkChange}
-                isConnected={isConnected}
-              />
-            }
-          />
-        ))}
-      </Route>
+  return (
+    <Routes>
+      <Route element={<RootLayout />}>
+        {/* Home */}
+        <Route
+          index
+          element={
+            <WalletFlow
+              initialStep="home"
+              selectedNetwork={network}
+              onNetworkChange={onNetworkChange}
+              isConnected={isConnected}
+            />
+          }
+        />
 
-      {/* Main Oneliner once you are unlocked */}
-      <Route element={<RequireUnlockedWallet />}>
-        <Route path=":walletId" element={<OneLiner />} />
+        <Route path="wallet">
+          {/* index for /wallet */}
+          <Route index element={<Navigate to="/" replace />} />
+          {walletFlowRoutes.map(({ path, initialStep }) => (
+            <Route
+              key={path!}
+              path={path!}
+              element={
+                initialStep === "unlock" &&
+                unlockedWallet &&
+                selectedWalletId ? (
+                  <Navigate to={`/${selectedWalletId}`} replace />
+                ) : (
+                  <WalletFlow
+                    initialStep={initialStep}
+                    selectedNetwork={network}
+                    onNetworkChange={onNetworkChange}
+                    isConnected={isConnected}
+                  />
+                )
+              }
+            />
+          ))}
+        </Route>
+
+        {/* Main Oneliner once you are unlocked */}
+        <Route element={<RequireUnlockedWallet />}>
+          <Route path=":walletId" element={<OneLiner />} />
+        </Route>
+        <Route path="settings-network" element={<SettingsPage />} />
       </Route>
-      <Route path="settings-network" element={<SettingsPage />} />
-    </Route>
-  </Routes>
-);
+    </Routes>
+  );
+};
