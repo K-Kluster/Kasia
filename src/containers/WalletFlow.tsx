@@ -215,7 +215,6 @@ export const WalletFlow = ({
       setError("Please enter your wallet password");
       return;
     }
-
     setError("");
     try {
       setUnlocking(true);
@@ -814,11 +813,15 @@ export const WalletFlow = ({
               <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
                 <Button
                   onClick={onUnlockWallet}
-                  disabled={unlocking}
+                  disabled={unlocking || !isConnected}
                   variant="primary"
+                  title={
+                    !isConnected ? "Waiting for network connection…" : undefined
+                  }
                 >
                   Unlock
                 </Button>
+
                 <Button
                   onClick={() => onStepChange("home")}
                   disabled={unlocking}
