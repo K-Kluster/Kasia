@@ -1,3 +1,5 @@
+import { FeeSource } from "kaspa-wasm";
+
 export type Message = {
   transactionId: string;
   senderAddress: string;
@@ -119,4 +121,18 @@ export interface VerboseData3 {
   mergeSetBluesHashes: string[];
   mergeSetRedsHashes: never[];
   isChainBlock: boolean;
+}
+
+export interface FeeBucket {
+  label: string;
+  description: string;
+  amount: bigint;
+  feerate?: number; // Fee rate in sompi per gram (from network)
+  estimatedSeconds?: number; // Estimated confirmation time
+}
+
+export interface PriorityFeeConfig {
+  amount: bigint;
+  source: FeeSource;
+  feerate?: number; // Store the fee rate used for calculation
 }

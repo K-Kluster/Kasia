@@ -56,23 +56,16 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
     <>
       {/* Modal Darkness */}
       <div
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 z-40 bg-black/50"
         onClick={() => setSettingsOpen(false)}
       />
 
       {/* Draw type thing */}
-      <aside
-        className="
-    fixed inset-y-0 left-0 z-50
-    w-full max-w-xs
-    bg-[var(--primary-bg)] shadow-xl
-    flex flex-col
-  "
-      >
-        <header className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
+      <aside className="fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col bg-[var(--primary-bg)] shadow-xl">
+        <header className="flex items-center justify-between border-b border-[var(--border-color)] p-4">
           <button
             onClick={() => setSettingsOpen(false)}
-            className="p-2 cursor-pointer"
+            className="cursor-pointer p-2"
             aria-label="Close menu"
           >
             <ChevronLeftIcon className="h-6 w-6 text-white" />
@@ -81,7 +74,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
             <img
               src="/kasia-logo.png"
               alt="Kasia Logo"
-              className="w-[50px] h-[50px] object-contain -mr-6"
+              className="-mr-6 h-[50px] w-[50px] object-contain"
             />
             <div className="ml-4 text-lg font-semibold text-[var(--text-primary)]">
               Kasia
@@ -89,21 +82,21 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
           </div>
         </header>
 
-        <ul className="flex flex-col flex-1 overflow-auto divide-y divide-gray-700">
+        <ul className="flex flex-1 flex-col divide-y divide-gray-700 overflow-auto">
           <li
             onClick={() => {
               openModal("address");
             }}
             className={clsx(
-              "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
-              { "opacity-50 pointer-events-none": !address }
+              "flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700",
+              { "pointer-events-none opacity-50": !address }
             )}
           >
             <UserIcon className="h-5 w-5 text-white" />
-            <span className="flex-1 text-white text-sm">
+            <span className="flex-1 text-sm text-white">
               Show Address
               {!address && (
-                <ArrowPathIcon className="animate-spin h-5 w-5 ml-2 text-gray-500" />
+                <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
               )}
             </span>
           </li>
@@ -113,39 +106,39 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               openModal("walletInfo");
             }}
             className={clsx(
-              "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
-              { "opacity-50 pointer-events-none": !address }
+              "flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700",
+              { "pointer-events-none opacity-50": !address }
             )}
           >
             <InformationCircleIcon className="h-5 w-5 text-white" />
-            <span className="flex-1 text-white text-sm flex items-center">
+            <span className="flex flex-1 items-center text-sm text-white">
               Wallet Info
               {!address && (
-                <ArrowPathIcon className="animate-spin h-5 w-5 ml-2 text-gray-500" />
+                <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
               )}
             </span>
           </li>
 
           <li
             onClick={() => setActionsOpen((v) => !v)}
-            className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
+            className="flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700"
           >
             {actionsOpen ? (
               <ChevronDownIcon className="h-5 w-5 text-white" />
             ) : (
               <ChevronRightIcon className="h-5 w-5 text-white" />
             )}
-            <span className="text-white text-sm">Actions</span>
+            <span className="text-sm text-white">Actions</span>
           </li>
 
           {actionsOpen && (
-            <ul className="ml-4 text-sm font-semibold text-center">
+            <ul className="ml-4 text-center text-sm font-semibold">
               <li
                 onClick={() => {
                   openModal("withdraw");
                   setActionsOpen(false);
                 }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
                 Withdraw Funds
               </li>
@@ -154,9 +147,9 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   openModal("utxo-compound");
                   setActionsOpen(false);
                 }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
-                <span className="text-white text-sm">Compound UTXOs</span>
+                <span className="text-sm text-white">Compound UTXOs</span>
               </li>
               {msgStore.isLoaded && (
                 <li
@@ -164,7 +157,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                     openModal("backup");
                     setActionsOpen(false);
                   }}
-                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                  className="cursor-pointer px-4 py-3 hover:bg-gray-700"
                 >
                   Import / Export Messages
                 </li>
@@ -172,7 +165,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
 
               <li
                 onClick={clearHistory}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
                 Delete All Messages
               </li>
@@ -182,27 +175,23 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   openModal("seed");
                   setActionsOpen(false);
                 }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
                 View Seed Phrase
               </li>
             </ul>
           )}
 
-          <li className="block sm:hidden px-4 py-3">
+          <li className="block px-4 py-3 sm:hidden">
             <FeeBuckets inline={false} />
           </li>
 
           <li
             onClick={onCloseWallet}
-            className="
-               mt-auto
-               flex items-center gap-2
-               px-4 py-3 hover:bg-gray-700 cursor-pointer
-             "
+            className="mt-auto flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700"
           >
             <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
-            <span className="text-red-500 text-base">Close Wallet</span>
+            <span className="text-base text-red-500">Close Wallet</span>
           </li>
         </ul>
       </aside>

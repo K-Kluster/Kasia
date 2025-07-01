@@ -40,18 +40,18 @@ export const ContactSection: FC<ContactSectionProps> = ({
   return (
     <div
       className={clsx(
-        "bg-[var(--primary-bg)] border-r border-[var(--border-color)] flex flex-col transition-all duration-200",
+        "flex flex-col border-r border-[var(--border-color)] bg-[var(--primary-bg)] transition-all duration-200",
         contactsCollapsed ? collapsedW : "w-full sm:w-[200px] md:w-[280px]",
         mobileView === "messages" && "hidden sm:flex"
       )}
     >
       {/* header */}
-      <div className="px-4 py-4 border-b border-[var(--border-color)] flex justify-between items-center bg-[var(--secondary-bg)] h-[60px]">
+      <div className="flex h-[60px] items-center justify-between border-b border-[var(--border-color)] bg-[var(--secondary-bg)] px-4 py-4">
         {/* Chevron on desktop - we dont need for mobile */}
         {!isMobile ? (
           <button
             aria-label="toggle contacts pane"
-            className="hidden sm:inline-flex cursor-pointer transition-transform hover:scale-110"
+            className="hidden cursor-pointer transition-transform hover:scale-110 sm:inline-flex"
             onClick={() => {
               if (isMobile) return;
               setContactsCollapsed(!contactsCollapsed);
@@ -64,20 +64,20 @@ export const ContactSection: FC<ContactSectionProps> = ({
         ) : (
           <button
             onClick={toggleSettings}
-            className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
+            className="rounded p-2 hover:bg-[var(--accent-blue)]/20 focus:outline-none"
             aria-label="Settings"
           >
-            <Bars3Icon className="h-8 w-8 text-kas-primary animate-pulse" />
+            <Bars3Icon className="text-kas-primary h-8 w-8 animate-pulse" />
           </button>
         )}
         {!contactsCollapsed && (
           <>
-            <span className="font-bold ml-2 flex-1 truncate">
+            <span className="ml-2 flex-1 truncate font-bold">
               Conversations
             </span>
             <button
               aria-label="new chat"
-              className="text-kas-secondary hover:scale-110"
+              className="text-kas-secondary cursor-pointer hover:scale-110"
               onClick={onNewChatClicked}
             >
               <PlusIcon className="size-8" />
@@ -87,7 +87,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
       </div>
 
       {/* Contacts list -  */}
-      <div className="flex-1 overflow-y-auto p-2 bg-[var(--primary-bg)]">
+      <div className="flex-1 overflow-y-auto bg-[var(--primary-bg)] p-2">
         {contacts.filter((c) => c.address && c.address !== walletAddress)
           .length > 0
           ? contacts
@@ -105,7 +105,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
                 />
               ))
           : !contactsCollapsed && (
-              <div className="text-center text-[var(--text-secondary)] overflow-hidden py-10 px-5 italic bg-[rgba(0,0,0,0.2)] rounded-[12px] m-5">
+              <div className="m-5 overflow-hidden rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
                 No Contacts Yet
               </div>
             )}

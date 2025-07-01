@@ -1,6 +1,6 @@
-import React, { FC, useMemo, useState, useEffect, useRef, Ref } from "react";
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
+import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { Square2StackIcon } from "@heroicons/react/24/outline";
+import { toast } from "../utils/toast";
 
 interface KaspaAddressProps {
   address: string | { toString: () => string };
@@ -51,6 +51,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   const handleCopy = () => {
     const asString = typeof address === "string" ? address : address.toString();
     navigator.clipboard.writeText(asString).then(() => {});
+    toast.info("Address copied");
   };
 
   return (
@@ -63,32 +64,23 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           {typeof address === "string" ? address : address.toString()}
         </span>
       ) : (
-        <span className="align-middle inline-block leading-normal">
+        <span className="inline-block align-middle leading-normal">
           {firstSubPart}
           <span
             onClick={handleToggle}
-            className="px-0.5 text-blue-500 hover:underline cursor-pointer text-xl"
+            className="cursor-pointer px-0.5 text-xl text-blue-500 hover:underline"
           >
             ...
           </span>
           {secondSubPart}
         </span>
       )}
-      <Popover className="relative ml-2">
-        <PopoverButton
-          onClick={handleCopy}
-          className="focus:outline-none cursor-pointer block mt-auto"
-        >
-          <Square2StackIcon className="size-5 text-white hover:opacity-80" />
-        </PopoverButton>
-
-        <PopoverPanel
-          transition
-          className="z-50 w-18 mt-2 absolute rounded shadow-lg bg-bg-primary border-bg-secondary border transition duration-200 ease-out data-closed:scale-95 data-closed:opacity-0"
-        >
-          <p className="text-sm text-center p-2 text-white">Copied!</p>
-        </PopoverPanel>
-      </Popover>
+      <button
+        onClick={handleCopy}
+        className="mt-auto ml-2 block cursor-pointer focus:outline-none"
+      >
+        <Square2StackIcon className="size-5 text-white hover:opacity-80" />
+      </button>
     </span>
   );
 };

@@ -29,7 +29,7 @@ export const DecryptionCacheDebug: FC = () => {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 right-4 bg-gray-800 text-white px-3 py-2 rounded-md text-sm opacity-50 hover:opacity-100 transition-opacity"
+        className="fixed right-4 bottom-4 rounded-md bg-gray-800 px-3 py-2 text-sm text-white opacity-50 transition-opacity hover:opacity-100"
         title="Show decryption cache debug info"
       >
         Cache Debug
@@ -38,14 +38,14 @@ export const DecryptionCacheDebug: FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white border border-gray-300 rounded-lg shadow-lg p-4 max-w-xs">
-      <div className="flex items-center justify-between mb-3">
+    <div className="fixed right-4 bottom-4 max-w-xs rounded-lg border border-gray-300 bg-white p-4 shadow-lg">
+      <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-800">
           Decryption Cache
         </h3>
         <button
           onClick={() => setIsVisible(false)}
-          className="text-gray-500 hover:text-gray-700 text-lg leading-none"
+          className="text-lg leading-none text-gray-500 hover:text-gray-700"
           title="Hide debug info"
         >
           ×
@@ -65,14 +65,14 @@ export const DecryptionCacheDebug: FC = () => {
         </div>
       </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-200">
+      <div className="mt-3 border-t border-gray-200 pt-3">
         <button
           onClick={handleClearCache}
           className={clsx(
-            "w-full px-3 py-2 text-sm rounded-md transition-colors",
+            "w-full rounded-md px-3 py-2 text-sm transition-colors",
             stats.size > 0
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+              ? "bg-red-500 text-white hover:bg-red-600"
+              : "cursor-not-allowed bg-gray-200 text-gray-500"
           )}
           disabled={stats.size === 0}
           title={

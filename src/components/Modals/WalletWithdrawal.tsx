@@ -2,13 +2,14 @@ import { ChangeEvent, FC, useCallback, useState } from "react";
 import { createWithdrawTransaction } from "../../service/account-service";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
+import { Button } from "../Common/Button";
+import { toast } from "../../utils/toast";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 
 export const WalletWithdrawal: FC = () => {
   const [withdrawAddress, setWithdrawAddress] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [withdrawError, setWithdrawError] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   const [amountInputError, setAmountInputError] = useState<string | null>(null);
@@ -71,11 +72,13 @@ export const WalletWithdrawal: FC = () => {
     }
 
     try {
-      setWithdrawError("");
       setIsSending(true);
 
       if (!withdrawAddress || !withdrawAmount) {
-        throw new Error("Please enter both address and amount");
+        throw new Error("Please enter both Address and Amount");
+      }
+      if (!withdrawAddress.toLowerCase().startsWith("kaspa")) {
+        throw new Error("Address must be of type Kaspa");
       }
 
       const amount = kaspaToSompi(withdrawAmount);
@@ -103,7 +106,7 @@ export const WalletWithdrawal: FC = () => {
       setWithdrawAddress("");
       setWithdrawAmount("");
     } catch (error) {
-      setWithdrawError(
+      toast.error(
         error instanceof Error ? error.message : "Failed to send transaction"
       );
     } finally {
@@ -113,51 +116,45 @@ export const WalletWithdrawal: FC = () => {
 
   return (
     <>
-      <h4 className="font-semibold text-lg">Withdraw KAS</h4>
+      <h4 className="text-lg font-semibold">Withdraw KAS</h4>
       <div className="mt-2">
         <textarea
           value={withdrawAddress}
           onChange={(e) => setWithdrawAddress(e.target.value)}
           placeholder="Enter Kaspa address"
           rows={2}
-          className="w-full p-2 mb-2 bg-black/30 border border-white/20 rounded-md text-white resize-none break-words whitespace-pre-wrap"
+          className="mb-2 w-full resize-none rounded-md border border-white/20 bg-black/30 p-2 break-words whitespace-pre-wrap text-white"
         />
 
-        <div className="flex gap-2 items-center">
+        <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <input
               type="text"
               value={withdrawAmount}
               onChange={inputAmountUpdated}
               placeholder="Amount (KAS)"
-              className="w-full p-2 pl-2 pr-14 bg-black/30 border border-white/10 rounded-md text-white box-border"
+              className="box-border w-full rounded-md border border-white/10 bg-black/30 pr-14 pl-2 text-white"
             />
             <button
               type="button"
               onClick={handleMaxClick}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-600 font-semibold text-sm cursor-pointer"
+              className="absolute top-1/2 right-2 -translate-y-1/2 transform cursor-pointer text-sm font-semibold text-blue-500 hover:text-blue-600"
             >
               Max
             </button>
           </div>
-          <button
+          <Button
             onClick={handleWithdraw}
             disabled={isSending || amountInputError !== null}
-            className={`px-4 py-2 bg-blue-500 text-white rounded-md cursor-pointer transition-opacity duration-200 ${
-              isSending || amountInputError ? "opacity-70" : "opacity-100"
-            }`}
+            variant="primary"
+            className="!w-fit !py-2.5"
           >
             {isSending ? "Sending..." : "Send"}
-          </button>
+          </Button>
         </div>
-        {withdrawError && (
-          <div className="text-red-500 mt-2 text-sm text-center">
-            {withdrawError}
-          </div>
-        )}
 
         {amountInputError && (
-          <div className="text-red-500 mt-2 text-sm text-center">
+          <div className="mt-2 text-center text-sm text-red-500">
             {amountInputError}
           </div>
         )}

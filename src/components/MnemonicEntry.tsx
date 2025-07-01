@@ -41,18 +41,18 @@ export const MnemonicEntry = ({
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const inputEl = e.target as HTMLInputElement;
     const allInputs = inputEl.parentElement?.querySelectorAll("input") ?? [];
-    const words = Array.from(allInputs).map(
-      (inp) => (inp as HTMLInputElement).value
+    const words = Array.from(allInputs).map((inp) =>
+      (inp as HTMLInputElement).value.trim()
     );
     if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ");
   };
 
   return (
     <div>
-      <label className="block mb-1 font-medium text-[var(--text-primary)]">
+      <label className="mb-1 block font-medium text-[var(--text-primary)]">
         Mnemonic Phrase
       </label>
-      <div className="mnemonic-input-grid grid grid-cols-3 md:grid-cols-6 gap-2 mb-2">
+      <div className="mnemonic-input-grid mb-2 grid grid-cols-3 gap-2 md:grid-cols-6">
         {Array.from({ length: seedPhraseLength }, (_, i) => {
           const visible = focusedIndex === i;
           return (
@@ -61,10 +61,10 @@ export const MnemonicEntry = ({
               type={visible ? "text" : "password"}
               placeholder={`Word ${i + 1}`}
               className={clsx(
-                "w-full p-2 rounded",
-                "bg-[var(--primary-bg)] border border-[var(--border-color)]",
+                "w-full rounded p-2",
+                "border border-[var(--border-color)] bg-[var(--primary-bg)]",
                 "text-[var(--text-primary)]",
-                "focus:outline-none focus:border-[var(--accent-blue)]",
+                "focus:border-[var(--accent-blue)] focus:outline-none",
                 "placeholder:text-sm"
               )}
               onFocus={() => setFocusedIndex(i)}

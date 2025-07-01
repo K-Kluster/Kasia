@@ -2,7 +2,8 @@
 import { FC, useState, useEffect, useCallback } from "react";
 import { toDataURL } from "qrcode";
 import { DocumentDuplicateIcon, QrCodeIcon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
+import { Button } from "../Common/Button";
+import { toast } from "../../utils/toast";
 
 type AddressSectionProps = {
   address?: string;
@@ -11,7 +12,6 @@ type AddressSectionProps = {
 export const WalletAddressSection: FC<AddressSectionProps> = ({
   address = "",
 }) => {
-  const [copyNotification, setCopyNotification] = useState("");
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeURL, setQRCodeURL] = useState<string | null>(null);
 
@@ -27,18 +27,16 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
 
   const handleCopyAddress = useCallback(async () => {
     if (!address) {
-      setCopyNotification("No address available");
+      toast.error("No address available");
       console.log("No address to copy");
-      setTimeout(() => setCopyNotification(""), 3000);
       return;
     }
     if (navigator.clipboard && window.isSecureContext) {
       try {
         console.log("Using modern clipboard API");
         await navigator.clipboard.writeText(address);
-        setCopyNotification("Address copied to clipboard");
         console.log("Address copied using modern clipboard API");
-        setTimeout(() => setCopyNotification(""), 3000);
+        toast.info("Address copied to clipboard");
         return;
       } catch (error) {
         console.log("Modern clipboard API failed:", error);
@@ -55,13 +53,11 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
       textarea.select();
       document.execCommand("copy");
       document.body.removeChild(textarea);
-      setCopyNotification("Address copied to clipboard");
+      toast.info("Address copied to clipboard");
       console.log("Fallback copy successful");
     } catch {
-      setCopyNotification("Copy failed");
+      toast.error("Copy failed");
       console.log("Fallback copy failed");
-    } finally {
-      setTimeout(() => setCopyNotification(""), 3000);
     }
   }, [address]);
 
@@ -75,11 +71,11 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
     <div className="relative">
       <div className="mb-2">
         <strong>Address:</strong>
-        <div className="flex flex-col sm:flex-row gap-2 items-center my-1 address-actions">
+        <div className="address-actions my-1 flex flex-col items-center gap-2 sm:flex-row">
           <div className="flex">
             <span
               id="wallet-address"
-              className="cursor-pointer px-3 py-2 rounded-md transition-colors select-all bg-black/30 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-mono text-[13px] break-all leading-[1.4] w-full flex items-center"
+              className="flex w-full cursor-pointer items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-[13px] leading-[1.4] break-all text-white transition-colors select-all hover:border-white/20 hover:bg-white/10"
               onClick={() => {
                 console.log("Address text selected");
                 // Select the text when clicked
@@ -98,8 +94,8 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               {address}
             </span>
           </div>
-          <div className="flex gap-2 items-center w-full sm:w-auto justify-between sm:justify-start">
-            <button
+          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+            <Button
               onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -108,43 +104,38 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               }}
               title="Copy address to clipboard"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200 cursor-pointer"
+              variant="primary"
+              className="flex h-16 w-full items-center justify-center p-0"
             >
-              <DocumentDuplicateIcon className="w-5 h-5" />
-            </button>
-            <button
+              <DocumentDuplicateIcon className="h-7 w-7 sm:h-5 sm:w-5" />
+            </Button>
+            <Button
               onClick={toggleQRCode}
               title="Show QR code"
               type="button"
-              className="bg-blue-500 hover:bg-blue-600 active:bg-blue-700 focus:outline focus:outline-blue-300 border border-blue-500 text-white rounded flex items-center justify-center w-full sm:w-12 h-12 shadow transition-all duration-200 cursor-pointer"
+              variant="primary"
+              className="flex h-16 w-full items-center justify-center p-0"
             >
-              <QrCodeIcon className="w-5 h-5" />
-            </button>
+              <QrCodeIcon className="h-7 w-7 sm:h-5 sm:w-5" />
+            </Button>
           </div>
         </div>
-        <div
-          className={clsx(
-            "select-none absolute top-full left-0 bg-green-600 text-white px-3 py-2 rounded text-sm z-[1000] whitespace-nowrap transition-opacity duration-300",
-            copyNotification ? "opacity-100" : "opacity-0"
-          )}
-        >
-          {copyNotification}
-        </div>
+
         {showQRCode && qrCodeURL && (
-          <div className="mt-2 p-4 bg-black/30 border border-white/10 rounded-lg flex flex-col items-center transition-opacity duration-300 w-full sm:w-auto">
-            <h4 className="text-white text-center mb-4">QR Code for Address</h4>
+          <div className="mt-2 flex w-full flex-col items-center rounded-lg border border-white/10 bg-black/30 p-4 transition-opacity duration-300 sm:w-auto">
+            <h4 className="mb-4 text-center text-white">QR Code for Address</h4>
             <div className="flex flex-col items-center gap-4">
               <img
                 src={qrCodeURL}
                 alt="QR Code for wallet address"
-                className="bg-white p-2 rounded-lg max-w-[200px] h-auto"
+                className="h-auto max-w-[200px] rounded-lg bg-white p-2"
                 onLoad={() => console.log("QR code image loaded successfully")}
                 onError={(e) => {
                   console.error("QR code image failed to load:", e);
                   console.log("Failed URL:", qrCodeURL);
                 }}
               />
-              <p className="text-white/70 text-center text-sm">
+              <p className="text-center text-sm text-white/70">
                 Scan to get wallet address
               </p>
             </div>

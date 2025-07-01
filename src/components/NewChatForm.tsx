@@ -12,6 +12,8 @@ import styles from "../components/NewChatForm.module.css";
 import { knsIntegrationService_getDomainResolution } from "../service/integrations/kns-integration-service";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { KaspaAddress } from "./KaspaAddress";
+import { Textarea } from "@headlessui/react";
+import { Button } from "./Common/Button";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -54,11 +56,14 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     }
   }, [recipientInputValue]);
 
-  const useRecipientInputRef = useCallback((node: HTMLInputElement | null) => {
-    if (node) {
-      node.focus();
-    }
-  }, []);
+  const useRecipientInputRef = useCallback(
+    (node: HTMLTextAreaElement | null) => {
+      if (node) {
+        node.focus();
+      }
+    },
+    []
+  );
 
   // Handle escape key to close
   useEffect(() => {
@@ -304,7 +309,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       resolvedRecipientAddress
     ) {
       recipientDisplay = (
-        <div className="inline mb-2">
+        <div className="mb-2 inline">
           <span>{recipientInputValue}</span>
           <div className="flex justify-start break-all">
             <KaspaAddress address={resolvedRecipientAddress} />
@@ -317,8 +322,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
     return (
       <>
-        <h3 className={styles.title}>Confirm Handshake</h3>
-        <div className="text-white/80 text-sm mb-5 leading-normal">
+        <h3 className="m-0 mb-5 text-[1.2rem] text-white">Confirm Handshake</h3>
+        <div className="mb-5 text-sm leading-normal text-white/80">
           <p>
             <strong>Recipient:</strong>
             <div className="flex justify-start break-all">
@@ -350,23 +355,23 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           )}
           <p>This will initiate a handshake conversation. Continue?</p>
         </div>
-        <div className={styles["form-actions"]}>
-          <button
-            type="button"
-            onClick={() => setShowConfirmation(false)}
-            disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-500 hover:bg-gray-600 active:bg-gray-700 border border-gray-500 text-white"
-          >
-            Back
-          </button>
-          <button
+        <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
+          <Button
             type="button"
             onClick={confirmHandshake}
             disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-blue-300 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-500 hover:bg-blue-600 active:bg-blue-700 border border-blue-500 text-white"
+            variant="primary"
           >
             {isLoading ? "Sending..." : "Confirm & Send"}
-          </button>
+          </Button>
+          <Button
+            type="button"
+            onClick={() => setShowConfirmation(false)}
+            disabled={isLoading}
+            variant="secondary"
+          >
+            Back
+          </Button>
         </div>
       </>
     );
@@ -374,16 +379,21 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   return (
     <>
-      <h3 className={styles.title}>Start New Conversation</h3>
+      <h3 className="mb-5 text-base font-semibold text-white">
+        Start New Conversation
+      </h3>
       <form onSubmit={handleSubmit}>
-        <div className={styles["form-group"]}>
-          <label className={styles.label} htmlFor="recipientAddress">
+        <div className={"mb-5"}>
+          <label
+            className="mb-[5px] block text-[14px] font-bold text-white"
+            htmlFor="recipientAddress"
+          >
             Recipient Address
           </label>
-          <input
+          <Textarea
             ref={useRecipientInputRef}
-            className={styles.input}
-            type="text"
+            className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
+            rows={2}
             id="recipientAddress"
             value={recipientInputValue}
             onChange={(e) => setRecipientInputValue(e.target.value)}
@@ -422,8 +432,11 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           )}
         </div>
 
-        <div className={styles["form-group"]}>
-          <label className={styles.label} htmlFor="handshakeAmount">
+        <div className={"mb-5"}>
+          <label
+            className="mb-[5px] block text-[14px] font-bold text-white"
+            htmlFor="handshakeAmount"
+          >
             Handshake Amount (KAS)
           </label>
           <input
@@ -475,22 +488,14 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         </div>
 
         {error && <div className={styles["error-message"]}>{error}</div>}
-        <div className={styles["form-actions"]}>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-500 hover:bg-gray-600 active:bg-gray-700 border border-gray-500 text-white cursor-pointer"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full sm:w-fit h-12 px-5 py-2 text-sm font-bold flex items-center justify-center rounded shadow transition-all duration-200 focus:outline focus:outline-gray-300 disabled:opacity-50 disabled:cursor-not-allowed bg-[#2196f3] hover:bg-[#1976d2] text-white cursor-pointer"
-          >
+
+        <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
+          <Button type="submit" disabled={isLoading} variant="primary">
             {isLoading ? "Initiating..." : "Start Chat"}
-          </button>
+          </Button>
+          <Button onClick={onClose} disabled={isLoading} variant="secondary">
+            Cancel
+          </Button>
         </div>
       </form>
     </>

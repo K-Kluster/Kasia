@@ -2,10 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { NetworkSelector } from "./containers/NetworkSelector";
 import { useNetworkStore } from "./store/network.store";
 import { NetworkType } from "./types/all";
-import clsx from "clsx";
-import { Link } from "react-router";
-import { ArrowLeftIcon } from "@heroicons/react/24/solid";
-import { useIsMobile } from "./utils/useIsMobile";
+import { Button } from "./components/Common/Button";
+import { useNavigate } from "react-router";
 
 export const SettingsPage: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -13,6 +11,7 @@ export const SettingsPage: React.FC = () => {
   const isConnected = useNetworkStore((state) => state.isConnected);
   const isConnecting = useNetworkStore((state) => state.isConnecting);
   const connect = useNetworkStore((state) => state.connect);
+  const navigate = useNavigate();
 
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
@@ -22,8 +21,6 @@ export const SettingsPage: React.FC = () => {
       localStorage.getItem("`kasia_node_url_${initialNetwork}`") ??
       ""
   );
-
-  const isMobile = useIsMobile();
 
   // Network connection effect
   useEffect(() => {
@@ -68,10 +65,10 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="app">
-      <div className="px-1 sm:px-8 py-4 bg-[var(--primary-bg)]">
+      <div className="bg-[var(--primary-bg)] px-1 py-4 sm:px-8">
         <div className="flex items-center gap-4">
-          <div className="max-w-[600px] relative mx-auto my-8 p-8 bg-[var(--secondary-bg)] rounded-lg border border-[var(--border-color)]">
-            <div className="grow flex items-center justify-center mb-1">
+          <div className="relative mx-auto my-8 max-w-[600px] rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg)] p-8">
+            <div className="mb-1 flex grow items-center justify-center">
               <NetworkSelector
                 selectedNetwork={selectedNetwork}
                 onNetworkChange={onNetworkChange}
@@ -79,48 +76,43 @@ export const SettingsPage: React.FC = () => {
               />
             </div>
 
-            <h2 className="text-center my-8 text-[var(--text-primary)] text-[1.5rem] font-semibold">
+            <h2 className="my-8 text-center text-[1.5rem] font-semibold text-[var(--text-primary)]">
               Settings
             </h2>
 
-            <label htmlFor="node-url" className="block mb-4">
+            <label htmlFor="node-url" className="mb-4 block">
               Force using a node url for the selected network
             </label>
-            <div className="flex flex-col items-end gap-6">
+            <div className="flex w-full flex-col items-stretch gap-6">
               <input
                 type="text"
                 id="node-url"
                 value={nodeUrl}
                 onChange={(e) => setNodeUrl(e.target.value)}
-                className="w-full flex-grow p-2 border border-[var(--border-color)] rounded bg-[var(--input-bg)] text-[var(--text-primary)]"
+                className="w-full flex-grow rounded border border-[var(--border-color)] bg-[var(--input-bg)] p-2 text-[var(--text-primary)]"
                 placeholder="wss://your-own-node-url.com"
               />
-              <button
-                onClick={handleSaveNodeUrl}
-                className={clsx(
-                  "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/90 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer",
-                  isConnecting && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                Save
-              </button>
+              <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
+                <Button
+                  onClick={handleSaveNodeUrl}
+                  variant="primary"
+                  disabled={isConnecting}
+                >
+                  Save
+                </Button>
+                <Button onClick={() => navigate("/")} variant="secondary">
+                  Go Back
+                </Button>
+              </div>
             </div>
             {connectionError && (
-              <div className="text-red-500 mt-4">{connectionError}</div>
+              <div className="mt-4 text-red-500">{connectionError}</div>
             )}
             {connectionSuccess && (
               <div className="text-success mt-4">
                 Successfully connected to the node!
               </div>
             )}
-            <div className="flex justify-end mt-16">
-              <Link to="/">
-                <button className="leading-8  bg-[var(--primary-bg)] hover:opacity-80 text-white text-sm font-bold py-2 px-4 rounded cursor-pointer">
-                  <ArrowLeftIcon className="size-6 font-bold inline-block mr-2" />
-                  Go Back
-                </button>
-              </Link>
-            </div>
           </div>
         </div>
       </div>

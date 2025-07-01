@@ -143,13 +143,13 @@ export const ContactCard: FC<{
     return (
       <div
         className={clsx(
-          "flex justify-center py-2 cursor-pointer",
+          "flex cursor-pointer justify-center py-2",
           isSelected && "bg-[var(--accent-blue)]/20"
         )}
         title={displayName}
         onClick={() => onClick?.(contact)}
       >
-        <div className="w-8 h-8 rounded-full bg-[var(--accent-blue)] text-white flex items-center justify-center text-sm font-semibold">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-blue)] text-sm font-semibold text-white">
           {avatar}
         </div>
       </div>
@@ -160,7 +160,7 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "p-3 rounded-lg cursor-pointer transition-all duration-200 mb-2 bg-[var(--secondary-bg)] border",
+        "mb-2 cursor-pointer rounded-lg border bg-[var(--secondary-bg)] p-3 transition-all duration-200",
         {
           "border-[var(--accent-blue)]": isSelected,
           "border-transparent": !isSelected,
@@ -168,9 +168,9 @@ export const ContactCard: FC<{
       )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
     >
-      <div className="font-semibold text-base mb-2">
+      <div className="mb-2 text-base font-semibold">
         {isEditingNickname ? (
-          <div className="w-full flex flex-col md:flex-row md:items-center md:gap-2">
+          <div className="flex w-full flex-col md:flex-row md:items-center md:gap-2">
             <input
               type="text"
               value={tempNickname}
@@ -180,28 +180,28 @@ export const ContactCard: FC<{
                 if (e.key === "Escape") handleNicknameCancel();
               }}
               autoFocus
-              placeholder="Enter nickname..."
-              className="flex-1 rounded-sm text-xs h-5 leading-none"
+              placeholder={contact?.address}
+              className="h-5 flex-1 rounded-sm text-xs leading-none"
             />
-            <div className="flex justify-between md:justify-start gap-2 mt-2 md:mt-0 w-full md:w-auto">
+            <div className="mt-2 flex w-full justify-between gap-2 md:mt-0 md:w-auto md:justify-start">
               <button
                 onClick={handleNicknameSave}
-                className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
+                className="flex w-full cursor-pointer items-center justify-center rounded-sm bg-green-500 p-0.5 hover:bg-gray-600 md:w-fit"
               >
-                <CheckCircleIcon className="h-5 w-5 text-green-500 fill-current" />
+                <CheckCircleIcon className="h-5 w-5 fill-current text-gray-300" />
               </button>
               <button
                 onClick={handleNicknameCancel}
-                className="p-0.5 rounded-sm cursor-pointer hover:bg-gray-100"
+                className="flex w-full cursor-pointer items-center justify-center rounded-sm bg-red-500 p-0.5 text-white hover:bg-gray-600 md:w-fit"
               >
-                <XCircleIcon className="h-5 w-5 text-red-500 fill-current" />
+                <XCircleIcon className="h-5 w-5 fill-current text-gray-300" />
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-1 w-full justify-between">
+          <div className="flex w-full items-center justify-between gap-1">
             <span
-              className={`break-all truncate max-w-full ${
+              className={`max-w-full truncate break-all ${
                 contact.nickname?.trim() ? "cursor-help" : "cursor-default"
               }`}
               title={
@@ -218,9 +218,9 @@ export const ContactCard: FC<{
                 setIsEditingNickname(true);
               }}
               title="Edit nickname"
-              className="bg-transparent border-0 cursor-pointer opacity-60 hover:opacity-100 text-xs"
+              className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
             >
-              <PencilIcon className="h-4 w-4" />
+              <PencilIcon className="h-5 w-5 md:h-4 md:w-4" />
             </button>
           </div>
         )}

@@ -20,6 +20,9 @@ import {
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
 import clsx from "clsx";
+import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
+import { PriorityFeeConfig } from "../types/all";
+import { FeeSource } from "kaspa-wasm";
 
 type SendMessageFormProps = unknown;
 
@@ -43,6 +46,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   const [isEstimating, setIsEstimating] = useState(false);
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [priorityFee, setPriorityFee] = useState<PriorityFeeConfig>({
+    amount: BigInt(0),
+    source: FeeSource.SenderPays,
+  });
 
   const messageStore = useMessagingStore();
 
@@ -73,12 +80,18 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       console.log("Estimating fee for message:", {
         length: message.length,
         openedRecipient,
+        priorityFee: {
+          amount: priorityFee.amount.toString(),
+          feerate: priorityFee.feerate || "none",
+          source: priorityFee.source,
+        },
       });
 
       setIsEstimating(true);
       const estimate = await walletStore.estimateSendMessageFees(
         message,
-        new Address(openedRecipient)
+        new Address(openedRecipient),
+        priorityFee
       );
 
       console.log("Fee estimate received:", estimate);
@@ -89,9 +102,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       setIsEstimating(false);
       setFeeEstimate(null);
     }
-  }, [walletStore, message, openedRecipient]);
+  }, [walletStore, message, openedRecipient, priorityFee]);
 
-  // Use effect to trigger fee estimation when message or recipient changes
+  // Use effect to trigger fee estimation when message, recipient, or priority fee changes
   useEffect(() => {
     const delayEstimation = setTimeout(() => {
       if (openedRecipient && message) {
@@ -101,7 +114,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     }, 500);
 
     return () => clearTimeout(delayEstimation);
-  }, [message, openedRecipient, estimateFee]);
+  }, [message, openedRecipient, priorityFee, estimateFee]);
 
   const onSendClicked = useCallback(async () => {
     const recipient = openedRecipient;
@@ -180,6 +193,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         console.log("Sending message with conversation context:", {
           openedRecipient,
           theirAlias: existingConversation.theirAlias,
+          priorityFee: priorityFee.amount.toString(),
         });
 
         if (!walletStore.accountService) {
@@ -192,15 +206,20 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           message: messageToSend,
           password: walletStore.unlockedWallet.password,
           theirAlias: existingConversation.theirAlias,
+          priorityFee: priorityFee,
         });
       } else {
         // If no active conversation or no alias, use regular sending
-        console.log("No active conversation found, sending regular message");
-        txId = await walletStore.sendMessage(
-          messageToSend,
-          new Address(recipient),
-          walletStore.unlockedWallet.password
+        console.log(
+          "No active conversation found, sending regular message with priority fee:",
+          priorityFee.amount.toString()
         );
+        txId = await walletStore.sendMessage({
+          message: messageToSend,
+          toAddress: new Address(recipient),
+          password: walletStore.unlockedWallet.password,
+          priorityFee,
+        });
       }
 
       console.log("Message sent! Transaction response:", txId);
@@ -239,7 +258,14 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [messageStore, walletStore, message, openedRecipient, feeEstimate]);
+  }, [
+    messageStore,
+    walletStore,
+    message,
+    openedRecipient,
+    feeEstimate,
+    priorityFee,
+  ]);
 
   const onMessageInputKeyPressed = useCallback(
     (e: KeyboardEvent) => {
@@ -322,12 +348,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
   };
 
   return (
-    <div className="flex-col gap-8 relative">
+    <div className="relative flex-col gap-8">
       {openedRecipient && message && (
-        <div className="absolute right-0 -top-7.5">
+        <div className="absolute -top-7.5 right-4 flex items-center gap-2">
           <div
             className={clsx(
-              "inline-block bg-white/10 text-xs mr-5 py-1 px-3 rounded-md text-right border transition-opacity duration-300 ease-out text-gray-400",
+              "inline-block rounded-md border bg-white/10 px-3 py-1 text-right text-xs text-gray-400 transition-opacity duration-300 ease-out",
               feeEstimate != null && getFeeClasses(feeEstimate)
             )}
           >
@@ -339,14 +365,20 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                 ? `Estimated fee: ${formatKasAmount(feeEstimate)} KAS`
                 : `Calculating fee…`}
           </div>
+
+          <PriorityFeeSelector
+            currentFee={priorityFee}
+            onFeeChange={setPriorityFee}
+            className="mr-0 sm:mr-2"
+          />
         </div>
       )}
-      <div className=" flex items-center gap-2 bg-[var(--primary-bg)] rounded-lg p-1 border border-[var(--border-color)]">
+      <div className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-1">
         <Textarea
           ref={messageInputRef}
           rows={1}
           placeholder="Type your message..."
-          className="peer resize-none overflow-y-auto bg-transparent border-none text-[var(--text-primary)] p-2 text-[0.9em] outline-none flex-1"
+          className="peer flex-1 resize-none overflow-y-auto border-none bg-transparent p-2 text-[0.9em] text-[var(--text-primary)] outline-none"
           value={message}
           onChange={(e) => setMessage(e.currentTarget.value)}
           onInput={(e) => {
@@ -375,7 +407,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
         <Popover className="relative">
           {({ close }) => (
             <>
-              <PopoverButton className="peer p-2 hover:bg-white/5 rounded">
+              <PopoverButton className="peer rounded p-2 hover:bg-white/5">
                 <PlusIcon className="size-5" />
               </PopoverButton>
               <Transition
@@ -386,19 +418,24 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
                 leaveFrom="opacity-100 translate-y-0"
                 leaveTo="opacity-0 translate-y-1"
               >
-                <PopoverPanel className="absolute bottom-full mb-2 right-0 flex flex-col gap-2 bg-[var(--secondary-bg)] p-2 rounded shadow-lg">
+                <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
                   <button
                     onClick={() => {
                       openFileDialog();
                       close();
                     }}
-                    className="p-2 rounded hover:bg-white/5 flex items-center gap-2"
+                    className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
                     disabled={isUploading}
                   >
-                    <PaperClipIcon className="size-5 m-2" />
+                    <PaperClipIcon className="m-2 size-5" />
                   </button>
 
-                  {openedRecipient && <SendPayment address={openedRecipient} />}
+                  {openedRecipient && (
+                    <SendPayment
+                      address={openedRecipient}
+                      onPaymentSent={close}
+                    />
+                  )}
                 </PopoverPanel>
               </Transition>
             </>
@@ -407,10 +444,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
         <button
           onClick={onSendClicked}
-          className="cursor-pointer flex items-center justify-center text-kas-primary hover:text-kas-secondary overflow-hidden w-0 peer-focus:w-6 transition-width duration-200 ease-out mr-2"
+          className={clsx(
+            "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
+            message.length > 0 ? "mr-2 w-6 cursor-pointer" : "w-0"
+          )}
           aria-label="Send"
         >
-          <PaperAirplaneIcon className="w-6 h-6" />
+          <PaperAirplaneIcon className="h-6 w-6" />
         </button>
       </div>
     </div>

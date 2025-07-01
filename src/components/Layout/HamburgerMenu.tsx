@@ -53,7 +53,7 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
   return (
     <>
       <div
-        className="absolute right-0 top-full mt-2 w-56 bg-[var(--primary-bg)] border-1 border-gray-500 rounded shadow-lg z-10"
+        className="absolute top-full right-0 z-10 mt-2 w-56 rounded border-1 border-gray-500 bg-[var(--primary-bg)] shadow-lg"
         onMouseLeave={onCloseMenu}
         onClick={(e) => e.stopPropagation()}
       >
@@ -66,15 +66,15 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
               onCloseMenu();
             }}
             className={clsx(
-              "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
-              { "opacity-50 pointer-events-none": !address }
+              "flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700",
+              { "pointer-events-none opacity-50": !address }
             )}
           >
             <UserIcon className="h-5 w-5 text-white" />
-            <span className="text-white text-sm flex items-center">
+            <span className="flex items-center text-sm text-white">
               Show Address
               {!address && (
-                <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
+                <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
               )}
             </span>
           </li>
@@ -87,30 +87,30 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
               onCloseMenu();
             }}
             className={clsx(
-              "flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer",
-              { "opacity-50 pointer-events-none": !address }
+              "flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700",
+              { "pointer-events-none opacity-50": !address }
             )}
           >
             <InformationCircleIcon className="h-5 w-5 text-white" />
-            <span className="text-white text-sm flex items-center">
+            <span className="flex items-center text-sm text-white">
               Wallet Info
               {!address && (
-                <ArrowPathIcon className="animate-spin h-5 w-5 text-gray-500 ml-2" />
+                <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
               )}
             </span>
           </li>
 
           {/* Show Feebuckets on mobile Item */}
-          <li className="block sm:hidden px-4 py-3">
+          <li className="block px-4 py-3 sm:hidden">
             <FeeBuckets inline={false} />
           </li>
 
           {/* Show Action List Sub Items */}
           <li
-            className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
+            className="flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700"
             onClick={() => setActionsMenuOpen(!actionsMenuOpen)}
           >
-            <span className="text-white text-sm flex items-center gap-2">
+            <span className="flex items-center gap-2 text-sm text-white">
               {actionsMenuOpen ? (
                 <ChevronDownIcon className="h-5 w-5 text-white" />
               ) : (
@@ -121,7 +121,7 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
           </li>
 
           {actionsMenuOpen && (
-            <ul className="pl-0 text-sm font-semibold text-center ml-2">
+            <ul className="ml-2 pl-0 text-center text-sm font-semibold">
               {/* Show Fund Withdraw Item */}
               <li
                 onClick={() => {
@@ -130,9 +130,9 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
                   setSettingsOpen(false);
                   onCloseMenu();
                 }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
-                <span className="text-white text-sm">Withdraw Funds</span>
+                <span className="text-sm text-white">Withdraw Funds</span>
               </li>
               {/* Compound messages Item */}
               <li
@@ -141,9 +141,9 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
                   setActionsMenuOpen(false);
                   onCloseMenu();
                 }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
-                <span className="text-white text-sm">Compound UTXOs</span>
+                <span className="text-sm text-white">Compound UTXOs</span>
               </li>
               {/* Show IO messages Item */}
               {messageStore.isLoaded && (
@@ -154,9 +154,9 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
                     setSettingsOpen(false);
                     onCloseMenu();
                   }}
-                  className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                  className="cursor-pointer px-4 py-3 hover:bg-gray-700"
                 >
-                  <span className="text-white text-sm">
+                  <span className="text-sm text-white">
                     Import / Export <br /> Messages
                   </span>
                 </li>
@@ -165,9 +165,9 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
               {/* Show Delete All item */}
               <li
                 onClick={onClearHistory}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
-                <span className="text-white text-sm">Delete All Messages</span>
+                <span className="text-sm text-white">Delete All Messages</span>
               </li>
 
               {/* Show Seed extract Item */}
@@ -178,9 +178,9 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
                   setSettingsOpen(false);
                   onCloseMenu();
                 }}
-                className="px-4 py-3 hover:bg-gray-700 cursor-pointer"
+                className="cursor-pointer px-4 py-3 hover:bg-gray-700"
               >
-                <span className="text-white text-sm">View Seed Phrase</span>
+                <span className="text-sm text-white">View Seed Phrase</span>
               </li>
             </ul>
           )}
@@ -188,10 +188,10 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
           {/* Show close wallet Item */}
           <li
             onClick={onCloseWallet}
-            className="flex items-center gap-2 px-4 py-3 hover:bg-gray-700 cursor-pointer"
+            className="flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700"
           >
             <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
-            <span className="text-red-500 text-sm">Close Wallet</span>
+            <span className="text-sm text-red-500">Close Wallet</span>
           </li>
         </ul>
       </div>

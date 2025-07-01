@@ -21,12 +21,12 @@ export const Header: FC<Props> = ({
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
   return (
-    <div className="text-center px-8 py-1 border-b border-[var(--border-color)] relative flex items-center justify-between bg-[var(--secondary-bg)]">
+    <div className="relative flex items-center justify-between border-b border-[var(--border-color)] bg-[var(--secondary-bg)] px-8 py-1 text-center">
       <div className="flex items-center gap-2">
         <img
           src="/kasia-logo.png"
           alt="Kasia Logo"
-          className="w-[60px] h-[60px] object-contain -mr-6"
+          className="-mr-6 h-[60px] w-[60px] object-contain"
         />
         <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
           Kasia
@@ -34,17 +34,17 @@ export const Header: FC<Props> = ({
       </div>
 
       {isWalletReady && (
-        <div ref={menuRef} className="relative flex items-center gap-2">
-          <div className="hidden sm:block">
+        <div ref={menuRef} className="group relative flex items-center gap-2">
+          <div className="scale-95 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100">
             <FeeBuckets inline />
           </div>
 
           <button
             onClick={toggleSettings}
-            className="p-2 rounded hover:bg-[var(--accent-blue)]/20 focus:outline-none"
+            className="rounded p-2 hover:bg-[var(--accent-blue)]/20 focus:outline-none"
             aria-label="Settings"
           >
-            <Bars3Icon className="h-8 w-8 text-kas-primary animate-pulse" />
+            <Bars3Icon className="text-kas-primary h-8 w-8 animate-pulse" />
           </button>
 
           <MenuHamburger

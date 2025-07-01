@@ -18,6 +18,16 @@ import {
   WalletBalance,
 } from "../types/wallet.type";
 import { TransactionId } from "../types/transactions";
+import { PriorityFeeConfig } from "../types/all";
+import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
+
+export interface WalletStoreSendMessageArgs {
+  message: string;
+  toAddress: Address;
+  password: string;
+  customAmount?: bigint;
+  priorityFee?: PriorityFeeConfig;
+}
 
 type WalletState = {
   wallets: {
@@ -34,6 +44,13 @@ type WalletState = {
   isAccountServiceRunning: boolean;
   accountService: AccountService | null;
   selectedNetwork: NetworkType;
+  feeEstimate: {
+    estimate?: {
+      lowBuckets?: Array<{ feerate: number; estimatedSeconds: number }>;
+      normalBuckets?: Array<{ feerate: number; estimatedSeconds: number }>;
+      priorityBucket?: { feerate: number; estimatedSeconds: number };
+    };
+  } | null;
 
   // wallet management
   loadWallets: () => void;
@@ -51,6 +68,11 @@ type WalletState = {
   ) => Promise<UnlockedWallet | null>;
   lock: () => void;
 
+  // fee estimate management
+  fetchFeeEstimates: () => Promise<void>;
+  startFeeEstimatePolling: () => void;
+  stopFeeEstimatePolling: () => void;
+
   // migration functionality
   migrateLegacyWallet: (
     walletId: string,
@@ -61,12 +83,7 @@ type WalletState = {
   // wallet operations
   start: (client: KaspaClient) => Promise<{ receiveAddress: Address }>;
   stop: () => void;
-  sendMessage: (
-    message: string,
-    toAddress: Address,
-    password: string,
-    customAmount?: bigint
-  ) => Promise<TransactionId>;
+  sendMessage: (args: WalletStoreSendMessageArgs) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
     preEncryptedHex: string,
     toAddress: Address,
@@ -76,7 +93,8 @@ type WalletState = {
 
   estimateSendMessageFees: (
     message: string,
-    toAddress: Address
+    toAddress: Address,
+    priorityFee?: PriorityFeeConfig
   ) => Promise<GeneratorSummary>;
 
   // Actions
@@ -85,6 +103,7 @@ type WalletState = {
 };
 
 let _accountService: AccountService | null = null;
+let _feeEstimateInterval: NodeJS.Timeout | null = null;
 
 export const useWalletStore = create<WalletState>((set, get) => {
   const _walletStorage = new WalletStorage();
@@ -99,6 +118,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
     isAccountServiceRunning: false,
     accountService: null,
     selectedNetwork: import.meta.env.VITE_DEFAULT_KASPA_NETWORK ?? "mainnet",
+    feeEstimate: null,
 
     loadWallets: () => {
       const wallets = _walletStorage.getWalletList();
@@ -130,6 +150,66 @@ export const useWalletStore = create<WalletState>((set, get) => {
       get().loadWallets();
       if (get().selectedWalletId === walletId) {
         get().lock();
+      }
+    },
+
+    fetchFeeEstimates: async () => {
+      const state = get();
+      if (!state.rpcClient?.rpc) return;
+
+      try {
+        // For testing network congestion, uncomment this mock data
+        // and comment out the real RPC call below
+        /*
+        const mockCongestion = {
+          estimate: {
+            priorityBucket: {
+              feerate: 3, // 3x base rate
+              estimatedSeconds: 0.005,
+            },
+            normalBuckets: [
+              {
+                feerate: 2, // 2x base rate
+                estimatedSeconds: 0.01,
+              },
+            ],
+            lowBuckets: [
+              {
+                feerate: 1, // Base rate
+                estimatedSeconds: 0.02,
+              },
+            ],
+          },
+        };
+        set({ feeEstimate: mockCongestion });
+        return;
+        */
+        const result = await state.rpcClient.rpc.getFeeEstimate();
+        set({ feeEstimate: result });
+      } catch (err) {
+        console.error("Failed to fetch fee estimates:", err);
+      }
+    },
+
+    startFeeEstimatePolling: () => {
+      // Clear any existing interval
+      if (_feeEstimateInterval) {
+        clearInterval(_feeEstimateInterval);
+      }
+
+      // Initial fetch
+      get().fetchFeeEstimates();
+
+      // Set up polling
+      _feeEstimateInterval = setInterval(() => {
+        get().fetchFeeEstimates();
+      }, FEE_ESTIMATE_POLLING_INTERVAL_IN_MS);
+    },
+
+    stopFeeEstimatePolling: () => {
+      if (_feeEstimateInterval) {
+        clearInterval(_feeEstimateInterval);
+        _feeEstimateInterval = null;
       }
     },
 
@@ -365,6 +445,9 @@ export const useWalletStore = create<WalletState>((set, get) => {
         accountService: _accountService,
       });
 
+      // Start fee polling when wallet starts
+      get().startFeeEstimatePolling();
+
       return { receiveAddress: _accountService.receiveAddress! };
     },
 
@@ -374,6 +457,9 @@ export const useWalletStore = create<WalletState>((set, get) => {
         _accountService = null;
       }
 
+      // Stop fee polling when wallet stops
+      get().stopFeeEstimatePolling();
+
       set({
         rpcClient: null,
         address: null,
@@ -381,7 +467,11 @@ export const useWalletStore = create<WalletState>((set, get) => {
       });
     },
 
-    estimateSendMessageFees: async (message: string, toAddress: Address) => {
+    estimateSendMessageFees: async (
+      message: string,
+      toAddress: Address,
+      priorityFee?: PriorityFeeConfig
+    ) => {
       const state = get();
       if (!state.unlockedWallet || !state.accountService) {
         throw new Error("Wallet not unlocked or account service not running");
@@ -390,15 +480,17 @@ export const useWalletStore = create<WalletState>((set, get) => {
       return state.accountService.estimateSendMessageFees({
         message,
         toAddress,
+        priorityFee,
       });
     },
 
-    sendMessage: async (
-      message: string,
-      toAddress: Address,
-      password: string,
-      customAmount?: bigint
-    ) => {
+    sendMessage: async ({
+      message,
+      toAddress,
+      password,
+      customAmount,
+      priorityFee,
+    }: WalletStoreSendMessageArgs) => {
       const state = get();
       if (!state.unlockedWallet || !state.accountService) {
         throw new Error("Wallet not unlocked or account service not running");
@@ -424,6 +516,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
             toAddress,
             password,
             amount: customAmount,
+            priorityFee,
           });
         }
 
@@ -444,6 +537,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
           toAddress,
           password,
           amount: customAmount,
+          priorityFee,
         });
       } catch (error) {
         console.error("Error sending message:", error);

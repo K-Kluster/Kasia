@@ -6,6 +6,9 @@ on:
       - staging
       - master
 
+env:
+  HUSKY: 0
+
 jobs:
   build-cipher-wasm:
     runs-on: ubuntu-latest
