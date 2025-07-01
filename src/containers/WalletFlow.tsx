@@ -482,7 +482,7 @@ export const WalletFlow = ({
 
           <div className="mb-3">
             <label className="mb-3 block text-base font-semibold text-white">
-              Wallet Name
+              Password
             </label>
             <input
               ref={passwordRef}
@@ -735,8 +735,8 @@ export const WalletFlow = ({
             />
           </div>
 
-          <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+          <div className="mb-3">
+            <label className="mb-3 block text-base font-semibold text-white">
               Password
             </label>
             <input
