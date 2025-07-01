@@ -2,6 +2,7 @@ import { FC, useMemo, useState } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
+import { AvatarHash } from "./icons/AvatarHash";
 import {
   PencilIcon,
   CheckCircleIcon,
@@ -135,22 +136,41 @@ export const ContactCard: FC<{
 
   // Collapsed w/ Avatar
   if (collapsed) {
-    const avatar =
-      contact.nickname?.trim()?.[0]?.toUpperCase() ??
-      contact.address.split(":")[1]?.[0]?.toUpperCase() ??
-      "?";
+    const avatarLetter = contact.nickname?.trim()?.[0]?.toUpperCase();
 
     return (
       <div
-        className={clsx(
-          "flex cursor-pointer justify-center py-2",
-          isSelected && "bg-[var(--accent-blue)]/20"
-        )}
+        className="relative flex cursor-pointer justify-center py-2"
         title={displayName}
         onClick={() => onClick?.(contact)}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-blue)] text-sm font-semibold text-white">
-          {avatar}
+        <div className="relative h-8 w-8">
+          {/* hash */}
+          <AvatarHash
+            address={contact.address}
+            size={32}
+            selected={isSelected}
+            className={clsx({ "opacity-60": !!avatarLetter })}
+          />
+
+          {/* letter */}
+          {avatarLetter && (
+            <span
+              className={clsx(
+                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%+1px)]",
+                "pointer-events-none select-none",
+                "flex h-8 w-8 items-center justify-center",
+                "rounded-full text-base leading-none font-bold tracking-wide text-gray-200"
+              )}
+            >
+              {avatarLetter}
+            </span>
+          )}
+
+          {/* ring hugging the avatar, only when selected */}
+          {isSelected && (
+            <div className="ring-kas-secondary pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 blur-sm filter" />
+          )}
         </div>
       </div>
     );
