@@ -1366,6 +1366,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             messageType = "handshake";
             isHandshake = true;
             try {
+              console.log({ decryptedContent });
               const handshakeData = JSON.parse(decryptedContent);
               if (handshakeData.isResponse) {
                 await this.updateMonitoredConversations();
