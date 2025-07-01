@@ -444,7 +444,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
         <button
           onClick={onSendClicked}
-          className="text-kas-primary hover:text-kas-secondary transition-width mr-2 flex w-0 cursor-pointer items-center justify-center overflow-hidden duration-200 ease-out peer-focus:w-6"
+          className={clsx(
+            "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
+            message.length > 0 ? "mr-2 w-6 cursor-pointer" : "w-0"
+          )}
           aria-label="Send"
         >
           <PaperAirplaneIcon className="h-6 w-6" />
