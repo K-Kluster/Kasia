@@ -12,12 +12,12 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
 
   const [firstSubPart, secondSubPart] = useMemo(() => {
     const asString = typeof address === "string" ? address : address.toString();
-
     if (asString.length < 10) {
       return [asString, ""];
     }
 
     const indexOfColon = asString.indexOf(":");
+
     // keep the prefix, can be either kaspa or kaspatest
     const prefix = asString.slice(0, indexOfColon);
 
@@ -53,7 +53,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
     navigator.clipboard.writeText(asString).then(() => {});
     toast.info("Address copied");
   };
-
   return (
     <span
       ref={addressRef}
@@ -76,6 +75,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
         </span>
       )}
       <button
+        type="button"
         onClick={handleCopy}
         className="mt-auto ml-2 block cursor-pointer focus:outline-none"
       >

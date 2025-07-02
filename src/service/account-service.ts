@@ -633,7 +633,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               amount: paymentAmount,
               payload: paymentTransaction.payload,
             };
-
             const messagingStore = useMessagingStore.getState();
             if (messagingStore) {
               const myAddress = this.receiveAddress.toString();
