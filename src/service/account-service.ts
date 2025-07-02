@@ -308,11 +308,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const txId = tx.transaction_id;
         if (!txId || this.processedMessageIds.has(txId)) continue;
 
-        console.log({
-          isForUs: this.isTransactionForUs(tx),
-          isMessage: this.isMessageTransaction(tx),
-          tx,
-        });
         // Check if this is a message transaction and involves our address
         if (this.isMessageTransaction(tx) && this.isTransactionForUs(tx)) {
           await this.processMessageTransaction(
@@ -382,6 +377,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Set up block subscription with optimized message handling
       console.log("Setting up block subscription...");
       await this.rpcClient.subscribeToBlockAdded(
+        // JUSTIFICATION: Type is correct, wasm bindgen is not reflect it correctly
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         this.processBlockEvent.bind(this)
       );
       console.log("Successfully subscribed to block events");
@@ -1676,14 +1674,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   }
 
   private async processBlockEvent(event: BlockAddedData) {
-    console.log(
-      JSON.parse(
-        JSON.stringify(
-          event,
-          (key, value) => (typeof value === "bigint" ? value.toString() : value) // return everything else unchanged
-        )
-      )
-    );
+    /**
+     * WARNING: if this function signature changes, it also has to be changed in the
+     * `subscribeToBlockAdded` function in in this file, we added ts-ignore.
+     * TODO: fix this at another level
+     */
     try {
       const blockTime =
         Number(event?.data?.block.header?.timestamp) || Date.now();
