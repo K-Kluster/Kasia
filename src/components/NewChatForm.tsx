@@ -317,7 +317,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         </div>
       );
     } else {
-      recipientDisplay = knsRecipientAddress;
+      recipientDisplay = <KaspaAddress address={knsRecipientAddress} />;
     }
 
     return (
@@ -327,7 +327,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           <p>
             <strong>Recipient:</strong>
             <div className="flex justify-start break-all">
-              <KaspaAddress address={recipientDisplay} />
+              {recipientDisplay}
             </div>
           </p>
           {detectedRecipientInputValueFormat === "kns" &&
