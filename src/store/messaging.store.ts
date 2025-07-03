@@ -498,18 +498,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         localStorage.getItem("kaspa_messages_by_wallet") || "{}"
       );
 
-      // Create backup object with metadata
-      const backup = {
-        version: "1.0",
-        timestamp: Date.now(),
-        type: "kaspa-messages-backup",
-        data: messagesMap,
-        conversations: {
-          active: g().conversationManager?.getActiveConversations() || [],
-          pending: g().conversationManager?.getPendingConversations() || [],
-        },
-      };
-
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
@@ -528,7 +516,28 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Using network type:", networkType);
 
       const receiveAddress = receiveKey.toAddress(networkType);
-      console.log("Using receive address:", receiveAddress.toString());
+      const walletAddress = receiveAddress.toString();
+      console.log("Using receive address:", walletAddress);
+
+      // Export nicknames for this wallet
+      const nicknameStorageKey = `contact_nicknames_${walletAddress}`;
+      const nicknames = JSON.parse(
+        localStorage.getItem(nicknameStorageKey) || "{}"
+      );
+      console.log("Exporting nicknames:", nicknames);
+
+      // Create backup object with metadata
+      const backup = {
+        version: "1.0",
+        timestamp: Date.now(),
+        type: "kaspa-messages-backup",
+        data: messagesMap,
+        nicknames: nicknames,
+        conversations: {
+          active: g().conversationManager?.getActiveConversations() || [],
+          pending: g().conversationManager?.getPendingConversations() || [],
+        },
+      };
 
       console.log("Converting backup to string...");
       const backupStr = JSON.stringify(backup);
@@ -645,6 +654,27 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const receiveAddress = privateKey.toAddress(networkType);
       const currentAddress = receiveAddress.toString();
       console.log("Using receive address:", currentAddress);
+
+      // Restore nicknames if they exist in the backup
+      if (decryptedData.nicknames) {
+        console.log("Restoring nicknames...");
+        const nicknameStorageKey = `contact_nicknames_${currentAddress}`;
+        const existingNicknames = JSON.parse(
+          localStorage.getItem(nicknameStorageKey) || "{}"
+        );
+
+        // Merge existing nicknames with backup nicknames (backup takes precedence)
+        const mergedNicknames = {
+          ...existingNicknames,
+          ...decryptedData.nicknames,
+        };
+
+        localStorage.setItem(
+          nicknameStorageKey,
+          JSON.stringify(mergedNicknames)
+        );
+        console.log("Nicknames restored:", mergedNicknames);
+      }
 
       // Restore conversations if they exist in the backup
       if (decryptedData.conversations) {
