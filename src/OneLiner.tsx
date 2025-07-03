@@ -66,6 +66,7 @@ export const OneLiner: FC = () => {
       uiStore.setSettingsOpen(false);
       closeAllModals();
 
+      setMessageClientStarted(false);
       messageStore.setIsLoaded(false);
       messageStore.setOpenedRecipient(null);
       messageStore.setIsCreatingNewChat(false);
@@ -153,13 +154,6 @@ export const OneLiner: FC = () => {
     },
     [messageStore, walletStore.address]
   );
-
-  // if we disconnect or something including or other than a graceful close, still kill the messaging client
-  useEffect(() => {
-    if (!isWalletReady || !walletStore.unlockedWallet) {
-      setMessageClientStarted(false);
-    }
-  }, [isWalletReady, walletStore.unlockedWallet]);
 
   return (
     <>

@@ -221,17 +221,13 @@ export const useWalletStore = create<WalletState>((set, get) => {
         if (!currentRpcClient) {
           throw new Error("RPC client not initialized");
         }
-
         wallet.client = currentRpcClient;
         set({ unlockedWallet: wallet });
-
         _accountService = new AccountService(currentRpcClient, wallet);
         _accountService.setPassword(password);
-
         // Connect the account service to the messaging store
         const messagingStore = useMessagingStore.getState();
         messagingStore.connectAccountService(_accountService);
-
         // Set up event listeners
         _accountService.on("balance", (balance) => {
           set({ balance });

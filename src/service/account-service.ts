@@ -633,7 +633,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               amount: paymentAmount,
               payload: paymentTransaction.payload,
             };
-
             const messagingStore = useMessagingStore.getState();
             if (messagingStore) {
               const myAddress = this.receiveAddress.toString();
@@ -1366,6 +1365,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             messageType = "handshake";
             isHandshake = true;
             try {
+              console.log({ decryptedContent });
               const handshakeData = JSON.parse(decryptedContent);
               if (handshakeData.isResponse) {
                 await this.updateMonitoredConversations();

@@ -23,6 +23,11 @@ import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
+import { useModals } from "../context/ModalContext";
+import { Modal } from "../components/Common/modal";
+import { Button } from "../components/Common/Button";
+import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
 type SendMessageFormProps = unknown;
 
@@ -50,6 +55,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     amount: BigInt(0),
     source: FeeSource.SenderPays,
   });
+
+  const { isOpen, closeModal, openModal } = useModals();
 
   const messageStore = useMessagingStore();
 
@@ -116,7 +123,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     return () => clearTimeout(delayEstimation);
   }, [message, openedRecipient, priorityFee, estimateFee]);
 
-  const onSendClicked = useCallback(async () => {
+  const sendMessage = useCallback(async () => {
     const recipient = openedRecipient;
     if (!walletStore.address) {
       toast.error("Unexpected error: No selected address.");
@@ -267,14 +274,20 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     priorityFee,
   ]);
 
-  const onMessageInputKeyPressed = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Enter") {
-        onSendClicked();
-      }
-    },
-    [onSendClicked]
-  );
+  const onSendClicked = useCallback(async () => {
+    // Check if we have an active conversation with this recipient
+    const activeConversations = messageStore.getActiveConversations();
+    const existingConversation = activeConversations.find(
+      (conv) => conv.kaspaAddress === openedRecipient
+    );
+
+    if (existingConversation) {
+      return sendMessage();
+    }
+
+    // If no active conversation, display a warning modal
+    openModal("warn-costy-send-message");
+  }, [messageStore, openModal, openedRecipient, sendMessage]);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -453,6 +466,40 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           <PaperAirplaneIcon className="h-6 w-6" />
         </button>
       </div>
+
+      {isOpen("warn-costy-send-message") && (
+        <Modal onClose={() => closeModal("warn-costy-send-message")}>
+          <div className="flex flex-col items-center justify-center gap-8">
+            <h2 className="text-lg text-yellow-400">
+              <ExclamationTriangleIcon className="mr-2 inline size-6 text-yellow-400" />
+              Your Correspondent hasn't answered yet
+            </h2>
+
+            <p className="text-center">
+              Sending this message will carry an{" "}
+              <span className="font-bold">extra cost of 0.2 KAS</span>, that
+              will be sent to your correspondent. Are you sure you want to send
+              it?
+            </p>
+            <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
+              <InformationCircleIcon className="mr-2 size-10 text-white" />
+              <p className="">
+                This is occuring because your correspondent hasn't accepted the
+                handshake yet.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => {
+                closeModal("warn-costy-send-message");
+                sendMessage();
+              }}
+            >
+              Send anyway
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

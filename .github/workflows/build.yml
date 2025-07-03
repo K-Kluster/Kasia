@@ -479,7 +479,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-windows
-          path: ./src-tauri/target/release/bundle/nsis/kasia_0.1.0_x64-setup.exe
+          path: ./src-tauri/target/release/bundle/nsis/
           retention-days: 1
 
   # @TODO: waiting for Apple Developer Program membership to build iOS app
