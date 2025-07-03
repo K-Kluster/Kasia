@@ -498,31 +498,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         localStorage.getItem("kaspa_messages_by_wallet") || "{}"
       );
 
-      // Get wallet address from store
-      const walletStore = useWalletStore.getState();
-      const walletAddress = walletStore.address?.toString();
-      if (!walletAddress) {
-        throw new Error("No wallet address available");
-      }
-
-      // Get nicknames from wallet-specific storage
-      const nicknameKey = `contact_nicknames_${walletAddress}`;
-      const nicknames = JSON.parse(localStorage.getItem(nicknameKey) || "{}");
-
-      // Create backup object with metadata
-      const backup = {
-        version: "1.0",
-        timestamp: Date.now(),
-        type: "kaspa-messages-backup",
-        data: messagesMap,
-        conversations: {
-          active: g().conversationManager?.getActiveConversations() || [],
-          pending: g().conversationManager?.getPendingConversations() || [],
-        },
-        nicknames,
-        walletAddress, // Store wallet address for nickname restoration
-      };
-
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
@@ -541,7 +516,28 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Using network type:", networkType);
 
       const receiveAddress = receiveKey.toAddress(networkType);
-      console.log("Using receive address:", receiveAddress.toString());
+      const walletAddress = receiveAddress.toString();
+      console.log("Using receive address:", walletAddress);
+
+      // Export nicknames for this wallet
+      const nicknameStorageKey = `contact_nicknames_${walletAddress}`;
+      const nicknames = JSON.parse(
+        localStorage.getItem(nicknameStorageKey) || "{}"
+      );
+      console.log("Exporting nicknames:", nicknames);
+
+      // Create backup object with metadata
+      const backup = {
+        version: "1.0",
+        timestamp: Date.now(),
+        type: "kaspa-messages-backup",
+        data: messagesMap,
+        nicknames: nicknames,
+        conversations: {
+          active: g().conversationManager?.getActiveConversations() || [],
+          pending: g().conversationManager?.getPendingConversations() || [],
+        },
+      };
 
       console.log("Converting backup to string...");
       const backupStr = JSON.stringify(backup);
@@ -646,80 +642,102 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         JSON.stringify(mergedMessages)
       );
 
-      // Merge and save nicknames if they exist in the backup
-      if (decryptedData.nicknames && decryptedData.walletAddress) {
+      // Get network type and current address first
+      let networkType = NetworkType.Mainnet; // Default to mainnet
+      const addresses = Object.keys(mergedMessages);
+      if (addresses.length > 0) {
+        networkType = getNetworkTypeFromAddress(addresses[0]);
+      }
+      console.log("Using network type:", networkType);
+
+      // Get the current address from the private key using detected network type
+      const receiveAddress = privateKey.toAddress(networkType);
+      const currentAddress = receiveAddress.toString();
+      console.log("Using receive address:", currentAddress);
+
+      // Restore nicknames if they exist in the backup
+      if (decryptedData.nicknames) {
         console.log("Restoring nicknames...");
-        const nicknameKey = `contact_nicknames_${decryptedData.walletAddress}`;
+        const nicknameStorageKey = `contact_nicknames_${currentAddress}`;
         const existingNicknames = JSON.parse(
-          localStorage.getItem(nicknameKey) || "{}"
+          localStorage.getItem(nicknameStorageKey) || "{}"
         );
+
+        // Merge existing nicknames with backup nicknames (backup takes precedence)
         const mergedNicknames = {
           ...existingNicknames,
           ...decryptedData.nicknames,
         };
-        localStorage.setItem(nicknameKey, JSON.stringify(mergedNicknames));
+
+        localStorage.setItem(
+          nicknameStorageKey,
+          JSON.stringify(mergedNicknames)
+        );
+        console.log("Nicknames restored:", mergedNicknames);
       }
 
-      // Get network type and current address first
-      const walletStore = useWalletStore.getState();
-      const walletAddress = walletStore.address?.toString();
-      if (!walletAddress) {
-        throw new Error("No wallet address available");
-      }
+      // Restore conversations if they exist in the backup
+      if (decryptedData.conversations) {
+        console.log("Restoring conversations...");
+        const { active = [], pending = [] } = decryptedData.conversations;
 
-      // Reinitialize conversation manager to load restored conversations
-      g().initializeConversationManager(walletAddress);
-
-      // Load all messages for the current wallet
-      const messages = g().loadMessages(walletAddress);
-
-      // Update contacts with nicknames
-      const nicknameKey = `contact_nicknames_${walletAddress}`;
-      const nicknames = JSON.parse(localStorage.getItem(nicknameKey) || "{}");
-
-      // Create contacts from messages and add nicknames
-      const contactsMap = new Map();
-      messages.forEach((message) => {
-        const otherParty =
-          message.senderAddress === walletAddress
-            ? message.recipientAddress
-            : message.senderAddress;
-
-        if (!contactsMap.has(otherParty)) {
-          contactsMap.set(otherParty, {
-            address: otherParty,
-            nickname: nicknames[otherParty] || "",
-            lastMessage: message,
-            messages: [message],
-          });
-        } else {
-          const contact = contactsMap.get(otherParty);
-          contact.messages.push(message);
-          if (message.timestamp > contact.lastMessage.timestamp) {
-            contact.lastMessage = message;
-          }
+        // Initialize conversation manager if needed
+        if (!g().conversationManager) {
+          g().initializeConversationManager(currentAddress);
         }
-      });
 
-      // Sort contacts by most recent message
-      const sortedContacts = Array.from(contactsMap.values()).sort(
-        (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+        // Type guard to validate conversation objects
+        const isValidConversation = (
+          conv: Conversation
+        ): conv is Conversation => {
+          return (
+            typeof conv === "object" &&
+            typeof conv.conversationId === "string" &&
+            typeof conv.myAlias === "string" &&
+            (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
+            typeof conv.kaspaAddress === "string" &&
+            ["pending", "active", "rejected"].includes(conv.status) &&
+            typeof conv.createdAt === "number" &&
+            typeof conv.lastActivity === "number" &&
+            typeof conv.initiatedByMe === "boolean"
+          );
+        };
+
+        // Restore active conversations
+        active.forEach((conv: ActiveConversation) => {
+          if (isValidConversation(conv)) {
+            g().conversationManager?.restoreConversation(conv);
+          } else {
+            console.error("Invalid conversation object in backup:", conv);
+          }
+        });
+
+        // Restore pending conversations
+        pending.forEach((conv: PendingConversation) => {
+          if (isValidConversation(conv)) {
+            g().conversationManager?.restoreConversation(conv);
+          } else {
+            console.error("Invalid conversation object in backup:", conv);
+          }
+        });
+      }
+
+      // Reload messages using the current address
+      g().loadMessages(currentAddress);
+
+      // Set flag to trigger API fetching after next account service start
+      localStorage.setItem("kasia_fetch_api_on_start", "true");
+
+      console.log("Import completed successfully");
+      console.log(
+        "Set flag to fetch API messages on next wallet service start"
       );
-
-      // Update store state
-      set({
-        contacts: sortedContacts,
-        messages,
-        isLoaded: true,
-      });
-
-      // Refresh UI for currently opened recipient if any
-      g().refreshMessagesOnOpenedRecipient();
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
-      throw new Error(`Failed to import backup: ${errorMessage}`);
+      if (error instanceof Error) {
+        throw new Error(`Failed to import messages: ${error.message}`);
+      }
+      throw new Error("Failed to import messages: Unknown error");
     }
   },
   connectAccountService: (accountService) => {
