@@ -1,38 +1,3 @@
-.amount-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  font-size: 13px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #ffffff;
-  font-family: monospace;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
-  box-sizing: border-box;
-  line-height: 1.4;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.amount-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.amount-input:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.amount-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
 .amount-buttons {
   display: flex;
   gap: 8px;

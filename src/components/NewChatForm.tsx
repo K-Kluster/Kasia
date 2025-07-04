@@ -440,7 +440,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             Handshake Amount (KAS)
           </label>
           <input
-            className={styles["amount-input"]}
+            className="mb-2 box-border flex h-10 w-full items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-1.5 text-white placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none"
             type="text"
             id="handshakeAmount"
             value={handshakeAmount}
