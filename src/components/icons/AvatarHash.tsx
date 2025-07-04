@@ -4,7 +4,7 @@ import clsx from "clsx";
 const palette = ["#49EACB", "#70C7BA", "#9CA3AF", "#1F2937"];
 const MIN_SEG = 2,
   MAX_SEG = 14,
-  STATIC_SEG = 8,
+  STATIC_SEG = 4,
   CYCLE = 2000,
   SEGMENTS = 16;
 
@@ -15,14 +15,19 @@ export const AvatarHash: FC<{
   selected?: boolean;
 }> = ({ address, size = 32, className, selected = false }) => {
   const [segments, setSegments] = useState(STATIC_SEG);
-  const raf = useRef<number>();
+  const raf = useRef<number | null>(null);
 
   /* animate number of active pairs when selected */
   useEffect(() => {
-    if (!selected) return setSegments(STATIC_SEG);
+    if (!selected) {
+      setSegments(STATIC_SEG);
+      if (raf.current !== null) cancelAnimationFrame(raf.current);
+      return;
+    }
+
     const t0 = performance.now();
     const loop = (t: number) => {
-      const phase = ((t - t0) % (CYCLE * 2)) / CYCLE; // 0-2
+      const phase = ((t - t0) % (CYCLE * 2)) / CYCLE;
       setSegments(
         Math.round(
           phase < 1
@@ -33,7 +38,10 @@ export const AvatarHash: FC<{
       raf.current = requestAnimationFrame(loop);
     };
     raf.current = requestAnimationFrame(loop);
-    return () => raf.current && cancelAnimationFrame(raf.current);
+
+    return () => {
+      if (raf.current !== null) cancelAnimationFrame(raf.current);
+    };
   }, [selected]);
 
   /* deterministic 32-bit hash */
@@ -44,6 +52,9 @@ export const AvatarHash: FC<{
     return h >>> 0;
   }, [address]);
 
+  // rotation offset so different hashes shift the ring
+  const angleOffset = useMemo(() => (hash / 0xffffffff) * 2 * Math.PI, [hash]);
+
   const c = size / 2,
     rDot = size * 0.09,
     rRing = c - rDot,
@@ -53,10 +64,10 @@ export const AvatarHash: FC<{
   const base = useMemo(
     () =>
       Array.from({ length: SEGMENTS }, (_, i) => {
-        const θ = start + (2 * Math.PI * i) / SEGMENTS;
+        const θ = start + angleOffset + (2 * Math.PI * i) / SEGMENTS;
         return { cx: c + rRing * Math.cos(θ), cy: c + rRing * Math.sin(θ) };
       }),
-    [c, rRing]
+    [c, rRing, angleOffset]
   );
 
   return (

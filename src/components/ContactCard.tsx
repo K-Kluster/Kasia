@@ -180,7 +180,7 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "group hover:border-kas-secondary/50 mb-2 cursor-pointer rounded-lg border bg-slate-900 p-3 transition-all duration-200 hover:bg-slate-900/20",
+        "group hover:border-kas-secondary/50 bg-bg-secondary mb-2 cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
         {
           "border-[var(--color-kas-primary)] bg-[var(--color-kas-primary)]/5":
             isSelected,
@@ -223,7 +223,7 @@ export const ContactCard: FC<{
           <div className="flex w-full items-center justify-between gap-1">
             <span
               className={clsx(
-                "max-w-full truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
+                "max-w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
                 {
                   "cursor-help": contact.nickname?.trim(),
                   "cursor-default": !contact.nickname?.trim(),
