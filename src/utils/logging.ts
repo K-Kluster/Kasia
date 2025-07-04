@@ -1,3 +1,4 @@
+import { warn, debug, trace, info, error } from "@tauri-apps/plugin-log";
 const levelToUse = import.meta.env.VITE_LOG_LEVEL ?? "info";
 
 const levels = ["info", "warn", "error", "silent"];
@@ -12,13 +13,19 @@ const originalConsole = {
 
 // Overwrite console methods
 console.log = (...args: unknown[]) => {
-  if (indexToUse <= levels.indexOf("info")) originalConsole.log(...args);
+  if (indexToUse <= levels.indexOf("info")) {
+    originalConsole.log(...args);
+  }
 };
 
 console.warn = (...args: unknown[]) => {
-  if (indexToUse <= levels.indexOf("warn")) originalConsole.warn(...args);
+  if (indexToUse <= levels.indexOf("warn")) {
+    originalConsole.warn(...args);
+  }
 };
 
 console.error = (...args: unknown[]) => {
-  if (indexToUse <= levels.indexOf("error")) originalConsole.error(...args);
+  if (indexToUse <= levels.indexOf("error")) {
+    originalConsole.error(...args);
+  }
 };
