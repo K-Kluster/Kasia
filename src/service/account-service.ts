@@ -6,7 +6,6 @@ import {
   Generator,
   PaymentOutput,
   UtxoEntry,
-  ITransaction,
   PendingTransaction,
   GeneratorSummary,
   FeeSource,
@@ -1248,6 +1247,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     blockHash: string,
     blockTime: number
   ) {
+    if (!this.receiveAddress) {
+      console.warn("Receive address is not set");
+      return;
+    }
+
     try {
       const txId = txData.transactionId;
       if (!txId) {
@@ -1256,7 +1260,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-      if (DecryptionCache.hasFailed(txId)) {
+      if (DecryptionCache.hasFailed(this.receiveAddress.toString(), txId)) {
         if (process.env.NODE_ENV === "development") {
           console.debug(`Real-time: Skipping known failed decryption: ${txId}`);
         }
@@ -1400,7 +1404,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             messageType = "handshake";
             isHandshake = true;
             try {
-              console.log({ decryptedContent });
               const handshakeData = JSON.parse(decryptedContent);
               if (handshakeData.isResponse) {
                 await this.updateMonitoredConversations();
@@ -1450,14 +1453,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         // 🚀 OPTIMIZATION: Mark decryption result in cache
         if (decryptionSuccess) {
-          DecryptionCache.markSuccess(txId);
+          DecryptionCache.markSuccess(this.receiveAddress.toString(), txId);
           if (process.env.NODE_ENV === "development") {
             console.debug(
               `Real-time: Successful decryption for ${txId} - removed from failed cache if present`
             );
           }
         } else {
-          DecryptionCache.markFailed(txId);
+          DecryptionCache.markFailed(this.receiveAddress.toString(), txId);
           if (process.env.NODE_ENV === "development") {
             console.debug(
               `Real-time: Failed decryption for ${txId} - marked as failed in cache`
@@ -1511,46 +1514,26 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     // Helper function to extract address from output
     const getOutputAddress = (output: ExplorerOutput): string | null => {
-      if (output?.script_public_key_address) {
-        return output.script_public_key_address;
-      }
-      return null;
+      // For API transactions, we only need to check script_public_key_address
+      return output?.script_public_key_address || null;
     };
 
     // Check if this is a message transaction
     const isMessageTx = this.isMessageTransaction(tx);
     if (!isMessageTx) return false;
 
-    // For message transactions, check both outputs
-    const messageAmount = BigInt(20000000); // 0.2 KAS
-
-    // Find message output and change output
-    let messageOutput = null;
-    let changeOutput = null;
-
+    // For message transactions, check if any output involves our address
+    // Don't assume specific amounts - handshakes can use any amount
     if (tx.outputs) {
       for (const output of tx.outputs) {
-        const value =
-          typeof output.amount === "bigint"
-            ? output.amount
-            : BigInt(output.amount || 0);
-        if (value === messageAmount) {
-          messageOutput = output;
-        } else {
-          changeOutput = output;
+        const address = getOutputAddress(output);
+        if (address === ourAddress) {
+          return true; // We're involved if we're either sender or recipient
         }
       }
     }
 
-    // Get addresses from outputs
-    const messageAddress = messageOutput
-      ? getOutputAddress(messageOutput)
-      : null;
-    const changeAddress = changeOutput ? getOutputAddress(changeOutput) : null;
-
-    // We're involved if we're either the recipient (message output)
-    // or the sender (change output)
-    return messageAddress === ourAddress || changeAddress === ourAddress;
+    return false;
   }
 
   public async sendMessageWithContext(sendMessage: SendMessageWithContextArgs) {
