@@ -140,7 +140,7 @@ export const OneLiner: FC = () => {
       }
     };
     startMessageClient();
-  }, [isWalletReady, messageStore]);
+  }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
   const onContactClicked = useCallback(
     (contact: Contact) => {
