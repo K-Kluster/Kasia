@@ -35,7 +35,8 @@ const JSON_WRAP_LEN = // we need this to gauge how much we space we need beyond 
 export async function prepareFileForUpload(
   file: File,
   maxSize: number,
-  compressOptions: CompressImageOptions = {}
+  compressOptions: CompressImageOptions = {},
+  onStatus?: (status: string) => void
 ): Promise<PrepareFileResult> {
   const rawTarget = Math.floor(((maxSize - JSON_WRAP_LEN) * 3) / 4);
 
@@ -47,10 +48,13 @@ export async function prepareFileForUpload(
       error: `File too large. Please keep files under ${maxSize / 1024}KB to ensure it fits in a Kaspa transaction.`,
     };
 
-  const candidate =
-    file.size > rawTarget
-      ? await compressImageToFit(file, rawTarget, compressOptions)
-      : file;
+  let candidate: File | null = file;
+  let wasCompressed = false;
+  if (file.size > rawTarget) {
+    onStatus?.("Large Image - Compressing...");
+    candidate = await compressImageToFit(file, rawTarget, compressOptions);
+    wasCompressed = !!candidate && candidate !== file;
+  }
 
   if (!candidate)
     return {
@@ -68,12 +72,17 @@ export async function prepareFileForUpload(
     });
 
     const byteLen = new Blob([fileMessage]).size;
-    return byteLen > maxSize
-      ? {
-          error:
-            "Encoded file data too large for a Kaspa transaction. Please use a smaller file.",
-        }
-      : { fileMessage, file: candidate };
+    if (byteLen > maxSize) {
+      return {
+        error:
+          "Encoded file data too large for a Kaspa transaction. Please use a smaller file.",
+      };
+    } else {
+      if (wasCompressed) {
+        onStatus?.("Compression Successful");
+      }
+      return { fileMessage, file: candidate };
+    }
   } catch (e) {
     return {
       error: `Failed to read file: ${e instanceof Error ? e.message : "Unknown error"}`,

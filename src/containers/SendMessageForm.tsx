@@ -300,7 +300,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     setIsUploading(true);
     const { fileMessage, error } = await prepareFileForUpload(
       file,
-      MAX_PAYLOAD_SIZE //due to base64 encoding overhead
+      MAX_PAYLOAD_SIZE,
+      {},
+      (status) => toast.info(status)
     );
     setIsUploading(false);
 
