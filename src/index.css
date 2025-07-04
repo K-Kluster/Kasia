@@ -29,6 +29,18 @@
       opacity: 1;
     }
   }
+
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 input {
@@ -151,13 +163,6 @@ h1 {
   border-radius: 3px;
 }
 
-.highlight {
-  background-color: #e1f5fe;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: bold;
-}
-
 .address {
   word-break: break-all;
   background-color: var(--secondary-bg);
@@ -200,39 +205,6 @@ h1 {
   margin-bottom: 4px;
 }
 
-.utxo-container {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
-}
-
-.utxo-entry {
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 15px;
-  margin-bottom: 15px;
-  background-color: #fff;
-}
-
-.utxo-entry:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.tx-details > div {
-  margin: 8px 0;
-}
-
-.script-content {
-  word-break: break-all;
-  background-color: #f8f9fa;
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #e0e0e0;
-  margin-top: 5px;
-}
-
 .error {
   background-color: #ffebee;
   color: #c62828;
@@ -247,61 +219,12 @@ h1 {
   text-decoration: underline;
 }
 
-.info-message {
-  background-color: var(--secondary-bg);
-  border-radius: 8px;
-  padding: 15px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  margin-bottom: 20px;
-  border: 1px solid var(--border-color);
-  font-size: 0.9em;
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 300px;
-  z-index: 10;
-}
-
-.info-message h3 {
-  font-size: 1em;
-  margin: 0 0 10px 0;
-  color: var(--text-secondary);
-}
-
-.info-message p {
-  margin: 5px 0;
-  font-size: 0.85em;
-}
-
 .utxo-count {
   background-color: var(--accent-blue);
   padding: 2px 8px;
   border-radius: 12px;
   font-weight: bold;
   color: var(--text-primary);
-}
-
-.data-container {
-  display: block;
-  margin-top: 20px;
-}
-
-.message-input-section {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--secondary-bg);
-}
-
-.recipient-input {
-  background-color: var(--primary-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.9em;
-  outline: none;
-  transition: all 0.2s;
-  height: 36px;
 }
 
 .message {
@@ -328,44 +251,6 @@ h1 {
   font-size: 0.7em;
   color: var(--text-secondary);
   margin-top: 4px;
-}
-
-.tx-label {
-  user-select: none;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.tx-value {
-  user-select: all;
-}
-
-.wallet-info-container {
-  position: static;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.wallet-info-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.wallet-info-button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: background-color 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.wallet-info-button:hover {
-  background-color: rgba(59, 130, 246, 0.9);
 }
 
 .fee-rate-inline {
@@ -406,71 +291,6 @@ h1 {
   color: var(--accent-green);
   font-weight: 600;
   font-family: monospace;
-}
-
-.close-button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--text-secondary);
-  padding: 5px 10px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.close-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.file-upload-button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  width: 36px;
-}
-
-.file-upload-button:hover {
-  background-color: var(--accent-blue-hover);
-}
-
-.file-upload-button:disabled {
-  background-color: var(--disabled-color);
-  cursor: not-allowed;
 }
 
 .file-message {
@@ -523,51 +343,4 @@ h1 {
   border-radius: 8px;
   margin-top: 8px;
   display: block;
-}
-
-.backup-button,
-.import-button {
-  background-color: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.85em;
-  height: 32px;
-  margin: 0 4px;
-  display: inline-flex;
-  align-items: center;
-  transition: background-color 0.2s;
-}
-
-.backup-button:hover,
-.import-button:hover {
-  background-color: rgba(59, 130, 246, 0.9);
-}
-
-.import-button {
-  position: relative;
-  overflow: hidden;
-}
-
-.import-button input[type="file"] {
-  position: absolute;
-  top: 0;
-  left: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.header-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
 }
