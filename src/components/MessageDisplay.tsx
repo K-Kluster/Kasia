@@ -7,6 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
+import { PaperClipIcon } from "@heroicons/react/24/solid";
 import clsx from "clsx";
 
 type MessageDisplayProps = {
@@ -285,11 +286,12 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return (
         <div className="file-message">
           <div className="file-info">
-            📎 {fileData.name} ({Math.round(fileData.size / 1024)}
+            <PaperClipIcon className="h-4 w-4" /> {fileData.name} (
+            {Math.round(fileData.size / 1024)}
             KB)
           </div>
           <button
-            className="download-button"
+            className="mt-1 cursor-pointer rounded border border-[rgba(59,130,246,0.3)] bg-[rgba(59,130,246,0.2)] px-3 py-1 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[rgba(59,130,246,0.3)]"
             onClick={() => {
               const link = document.createElement("a");
               link.href = fileData.content;
@@ -320,11 +322,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         return (
           <div key={`file-${transactionId}`} className="file-message">
             <div className="file-info">
-              📎 {parsedContent.name} (
+              <PaperClipIcon className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>
             <button
-              className="download-button"
+              className="mt-1 cursor-pointer rounded border border-[rgba(59,130,246,0.3)] bg-[rgba(59,130,246,0.2)] px-3 py-1 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[rgba(59,130,246,0.3)]"
               onClick={() => {
                 const link = document.createElement("a");
                 link.href = parsedContent.content;

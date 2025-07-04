@@ -256,10 +256,10 @@ export const ContactCard: FC<{
           </div>
         )}
       </div>
-      <div className="text-xs wrap-break-word text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)]">
+      <div className="overflow-hidden text-sm text-ellipsis whitespace-nowrap text-[var(--text-secondary)]">
         {preview}
       </div>
-      <div className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)]">
+      <div className="mt-1 text-xs text-[var(--text-secondary)]">
         {timestamp}
       </div>
     </div>
