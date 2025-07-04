@@ -36,13 +36,16 @@ export const ContactCard: FC<{
 
       // If it's a file message
       if (message.content.startsWith("[File:")) {
+        // only consider the file name, not the whole content
         return message.content;
       }
 
       // For regular messages, try to decode if it's encrypted
       if (message.content.startsWith("ciph_msg:")) {
         const decoded = decodePayload(message.content);
-        return decoded || "Encrypted message";
+        return decoded
+          ? decoded.slice(0, 40) + (message.content.length > 40 ? "..." : "")
+          : "Encrypted message";
       }
 
       // Check if it's a payment message
@@ -55,8 +58,11 @@ export const ContactCard: FC<{
         // Not a payment message, continue with normal handling
       }
 
-      // Plain text content
-      return message.content;
+      // Plain text content, take the 20 first characters
+      return (
+        message.content.slice(0, 40) +
+        (message.content.length > 40 ? "..." : "")
+      );
     }
 
     // Fallback to payload if no content
@@ -250,7 +256,7 @@ export const ContactCard: FC<{
           </div>
         )}
       </div>
-      <div className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)]">
+      <div className="text-xs wrap-break-word text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)]">
         {preview}
       </div>
       <div className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)]">
