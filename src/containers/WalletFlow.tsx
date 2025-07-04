@@ -768,6 +768,13 @@ export const WalletFlow = ({
       {/* Unlock wallet 'Route' */}
       {step.type === "unlock" && (
         <>
+          <div inert className="mb-4 flex w-full justify-center opacity-70">
+            <NetworkSelector
+              selectedNetwork={selectedNetwork}
+              onNetworkChange={onNetworkChange}
+              isConnected={isConnected}
+            />
+          </div>
           <h2 className="text-center text-lg font-bold">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
