@@ -1,4 +1,4 @@
-import { FC, useMemo, useEffect, useRef } from "react";
+import { FC, useMemo } from "react";
 import { NetworkType } from "../types/all";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { getDisplayableNetworkFromNetworkString } from "../utils/network-display";

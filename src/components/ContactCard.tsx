@@ -2,6 +2,7 @@ import { FC, useMemo, useState } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
+import { AvatarHash } from "./icons/AvatarHash";
 import {
   PencilIcon,
   CheckCircleIcon,
@@ -35,13 +36,16 @@ export const ContactCard: FC<{
 
       // If it's a file message
       if (message.content.startsWith("[File:")) {
+        // only consider the file name, not the whole content
         return message.content;
       }
 
       // For regular messages, try to decode if it's encrypted
       if (message.content.startsWith("ciph_msg:")) {
         const decoded = decodePayload(message.content);
-        return decoded || "Encrypted message";
+        return decoded
+          ? decoded.slice(0, 40) + (message.content.length > 40 ? "..." : "")
+          : "Encrypted message";
       }
 
       // Check if it's a payment message
@@ -54,8 +58,11 @@ export const ContactCard: FC<{
         // Not a payment message, continue with normal handling
       }
 
-      // Plain text content
-      return message.content;
+      // Plain text content, take the 20 first characters
+      return (
+        message.content.slice(0, 40) +
+        (message.content.length > 40 ? "..." : "")
+      );
     }
 
     // Fallback to payload if no content
@@ -135,22 +142,41 @@ export const ContactCard: FC<{
 
   // Collapsed w/ Avatar
   if (collapsed) {
-    const avatar =
-      contact.nickname?.trim()?.[0]?.toUpperCase() ??
-      contact.address.split(":")[1]?.[0]?.toUpperCase() ??
-      "?";
+    const avatarLetter = contact.nickname?.trim()?.[0]?.toUpperCase();
 
     return (
       <div
-        className={clsx(
-          "flex cursor-pointer justify-center py-2",
-          isSelected && "bg-[var(--accent-blue)]/20"
-        )}
+        className="relative flex cursor-pointer justify-center py-2"
         title={displayName}
         onClick={() => onClick?.(contact)}
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-blue)] text-sm font-semibold text-white">
-          {avatar}
+        <div className="relative h-8 w-8">
+          {/* hash */}
+          <AvatarHash
+            address={contact.address}
+            size={32}
+            selected={isSelected}
+            className={clsx({ "opacity-60": !!avatarLetter })}
+          />
+
+          {/* letter */}
+          {avatarLetter && (
+            <span
+              className={clsx(
+                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%+1px)]",
+                "pointer-events-none select-none",
+                "flex h-8 w-8 items-center justify-center",
+                "rounded-full text-base leading-none font-bold tracking-wide text-gray-200"
+              )}
+            >
+              {avatarLetter}
+            </span>
+          )}
+
+          {/* ring hugging the avatar, only when selected */}
+          {isSelected && (
+            <div className="ring-kas-secondary pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 blur-sm filter" />
+          )}
         </div>
       </div>
     );
@@ -160,10 +186,11 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "mb-2 cursor-pointer rounded-lg border bg-[var(--secondary-bg)] p-3 transition-all duration-200",
+        "group hover:border-kas-secondary/50 bg-bg-secondary mb-2 cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
         {
-          "border-[var(--accent-blue)]": isSelected,
-          "border-transparent": !isSelected,
+          "border-[var(--color-kas-primary)] bg-[var(--color-kas-primary)]/5":
+            isSelected,
+          "border-[var(--border-color)]": !isSelected,
         }
       )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
@@ -201,9 +228,13 @@ export const ContactCard: FC<{
         ) : (
           <div className="flex w-full items-center justify-between gap-1">
             <span
-              className={`max-w-full truncate break-all ${
-                contact.nickname?.trim() ? "cursor-help" : "cursor-default"
-              }`}
+              className={clsx(
+                "max-w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
+                {
+                  "cursor-help": contact.nickname?.trim(),
+                  "cursor-default": !contact.nickname?.trim(),
+                }
+              )}
               title={
                 contact.nickname?.trim()
                   ? `Address: ${shortAddress}`
