@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -30,6 +30,8 @@ import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { MAX_PAYLOAD_SIZE } from "../config/constants";
+import { prepareFileForUpload } from "../utils/upload-file-handler";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -300,69 +302,27 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Kaspa transaction payload size needs to be limited to ensure it fits in a transaction
-    // Base64 encoding increases size by ~33%, so we need to account for that
-    // Also need to leave room for other transaction data
-    const maxSize = 10 * 1024; // 10KB max for any file type to ensure it fits in transaction payload
-    if (file.size > maxSize) {
-      toast.error(
-        `File too large. Please keep files under ${
-          maxSize / 1024
-        }KB to ensure it fits in a Kaspa transaction.`
-      );
+    setIsUploading(true);
+    const { fileMessage, error } = await prepareFileForUpload(
+      file,
+      MAX_PAYLOAD_SIZE,
+      {},
+      (status) => toast.info(status)
+    );
+    setIsUploading(false);
+
+    if (error) {
+      toast.error(error);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-
-    setIsUploading(true);
-    try {
-      // Read file as base64
-      const reader = new FileReader();
-      const base64Content = await new Promise<string>((resolve, reject) => {
-        reader.onload = (e) => {
-          const result = e.target?.result;
-          if (typeof result === "string") {
-            resolve(result);
-          } else {
-            reject(new Error("Failed to read file as base64"));
-          }
-        };
-        reader.onerror = (e) => reject(e);
-        reader.readAsDataURL(file);
-      });
-
-      // Format the message with file metadata
-      const fileMessage = JSON.stringify({
-        type: "file",
-        name: file.name,
-        size: file.size,
-        mimeType: file.type,
-        content: base64Content,
-      });
-
-      // Verify the total message size will fit in a transaction
-      if (fileMessage.length > maxSize) {
-        throw new Error(
-          `Encoded file data too large for a Kaspa transaction. Please use a smaller file.`
-        );
-      }
-
-      // Set the message content
+    if (fileMessage) {
       setMessage(fileMessage);
       if (messageInputRef.current) {
         messageInputRef.current.value = `[File: ${file.name}]`;
       }
-    } catch (error) {
-      console.error("Error reading file:", error);
-      toast.error(
-        "Failed to read file: " +
-          (error instanceof Error ? error.message : "Unknown error")
-      );
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
