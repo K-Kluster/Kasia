@@ -215,8 +215,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private async _fetchTransactionDetails(txId: string) {
-    const maxRetries = 10; // Increased to 10 attempts
+  private async _fetchTransactionDetails(txId: string, maxRetries = 10) {
     const retryDelay = 2000; // Changed to 2 seconds between retries
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -325,7 +324,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               transactionId: tx.transaction_id,
             },
             tx.block_hash[0],
-            Number(tx.block_time)
+            Number(tx.block_time),
+            1
           );
         }
       }
@@ -1245,7 +1245,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       payload: string;
     },
     blockHash: string,
-    blockTime: number
+    blockTime: number,
+    maxRetries = 10
   ) {
     if (!this.receiveAddress) {
       console.warn("Receive address is not set");
@@ -1276,7 +1277,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         if (prevTxId && typeof prevOutputIndex === "number") {
           try {
-            const prevTx = await this._fetchTransactionDetails(prevTxId);
+            const prevTx = await this._fetchTransactionDetails(
+              prevTxId,
+              maxRetries
+            );
             if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
               const output = prevTx.outputs[prevOutputIndex];
               senderAddress = output.verboseData?.scriptPublicKeyAddress;
@@ -1694,7 +1698,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
 
           try {
-            // Process message transaction silently
             await this.processMessageTransaction(
               {
                 inputs: tx.inputs.map((i) => ({
