@@ -127,6 +127,14 @@ body {
   text-decoration: underline;
 }
 
+.utxo-count {
+  background-color: var(--accent-blue);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
 .message {
   position: relative;
   background-color: var(--secondary-bg);
@@ -137,6 +145,20 @@ body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
+}
+
+.contact-preview {
+  font-size: 0.8em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contact-time {
+  font-size: 0.7em;
+  color: var(--text-secondary);
+  margin-top: 4px;
 }
 
 .fee-rate-inline {
