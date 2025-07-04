@@ -51,7 +51,7 @@ export const TrustMessage: FC = () => {
         >
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#B6B6B6]">
             <KasIcon
-              className="h-4 w-4"
+              className="h-6 w-6 scale-120"
               circleClassName="fill-white"
               kClassName="fill-[#B6B6B6]"
             />
