@@ -1,5 +1,5 @@
-import { FC, useRef } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { FC, useRef, useEffect } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useWalletStore } from "../../store/wallet.store";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { Header } from "../Layout/Header";
@@ -7,6 +7,7 @@ import { SlideOutMenu } from "../Layout/SlideOutMenu";
 import { ModalProvider } from "../../context/ModalContext";
 import { ToastContainer } from "../Common/ToastContainer";
 import { useUiStore } from "../../store/ui.store";
+import { toast } from "../../utils/toast";
 
 export const RootLayout: FC = () => {
   const walletStore = useWalletStore();
@@ -17,6 +18,7 @@ export const RootLayout: FC = () => {
 
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleCloseWallet = () => {
     // close settings panel
@@ -25,6 +27,11 @@ export const RootLayout: FC = () => {
     // navigate home
     navigate("/");
   };
+
+  // when navigation changes, remove ALL toast notifications
+  useEffect(() => {
+    toast.removeAll();
+  }, [location]);
 
   return (
     <ModalProvider>
