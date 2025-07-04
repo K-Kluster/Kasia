@@ -137,6 +137,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private monitoredAddresses: Map<string, string> = new Map(); // Store address -> alias mappings
   private readonly MESSAGE_PREFIX_HEX = "636970685f6d73673a"; // "ciph_msg:" in hex
   private readonly MAX_PROCESSED_MESSAGES = 1000; // Prevent unlimited growth
+  private oldTransactionCache = new Set<string>(); // Store txIds that are confirmed too old
 
   // Add password field
   private password: string | null = null;
@@ -215,59 +216,45 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private async _fetchTransactionDetails(txId: string, maxRetries = 10) {
-    const retryDelay = 2000; // Changed to 2 seconds between retries
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        const baseUrl =
-          this.networkId === "mainnet"
-            ? "https://api.kaspa.org"
-            : "https://api-tn10.kaspa.org";
-        const response = await fetch(
-          `${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=no`
-        );
-
-        if (response.status === 404) {
-          console.log(
-            `Transaction ${txId} not yet available in API (attempt ${
-              attempt + 1
-            }/${maxRetries}), retrying in 2 seconds...`
-          );
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
-          continue;
-        }
-
-        if (!response.ok) {
-          throw new Error(
-            `Failed to fetch transaction details: ${response.statusText}`
-          );
-        }
-
-        const result = await response.json();
-        console.log(
-          `Successfully fetched transaction details for ${txId} on attempt ${
-            attempt + 1
-          }`
-        );
-        return result;
-      } catch (error) {
-        if (attempt === maxRetries - 1) {
-          console.error(
-            `Error fetching transaction details for ${txId} after ${maxRetries} attempts:`,
-            error
-          );
-          return null;
-        }
-        console.log(
-          `Attempt ${
-            attempt + 1
-          }/${maxRetries} failed, retrying in 2 seconds...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      }
+  private async _fetchTransactionDetails(txId: string) {
+    // Skip known old transactions immediately
+    if (this.oldTransactionCache.has(txId)) {
+      return null;
     }
-    return null;
+
+    try {
+      const baseUrl =
+        this.networkId === "mainnet"
+          ? "https://api.kaspa.org"
+          : "https://api-tn10.kaspa.org";
+      const response = await fetch(
+        `${baseUrl}/transactions/${txId}?inputs=true&outputs=true&resolve_previous_outpoints=no`
+      );
+
+      if (response.status === 404) {
+        // Mark as old and skip future attempts
+        this.oldTransactionCache.add(txId);
+        if (this.oldTransactionCache.size > 1000) {
+          // Prevent unlimited growth
+          const oldestTx = this.oldTransactionCache.values().next().value;
+          this.oldTransactionCache.delete(oldestTx);
+        }
+        return null;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch transaction details: ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log(`Successfully fetched transaction details for ${txId}`);
+      return result;
+    } catch (error) {
+      console.error(`Error fetching transaction details for ${txId}:`, error);
+      return null;
+    }
   }
 
   private async fetchHistoricalMessages() {
@@ -294,45 +281,77 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       const data = await response.json();
-      const transactions: ExplorerTransaction[] = data || [];
-
+      // Handle both possible API response formats
+      const transactions = Array.isArray(data) ? data : data.transactions || [];
       console.log(`Found ${transactions.length} historical transactions`);
 
-      // Update monitored conversations BEFORE processing messages
-      await this.updateMonitoredConversations();
+      // Process transactions in background
+      this.processHistoricalTransactions(transactions).catch((error) => {
+        console.error("Error processing historical transactions:", error);
+      });
 
-      // Process each transaction
-      for (const tx of transactions) {
-        const txId = tx.transaction_id;
-        if (!txId || this.processedMessageIds.has(txId)) continue;
-
-        // Check if this is a message transaction and involves our address
-        if (this.isMessageTransaction(tx) && this.isTransactionForUs(tx)) {
-          await this.processMessageTransaction(
-            {
-              inputs: tx.inputs.map((i) => ({
-                previousOutpoint: {
-                  index: Number(i.previous_outpoint_index),
-                  transactionId: i.previous_outpoint_hash,
-                },
-              })),
-              outputs: tx.outputs.map((o) => ({
-                scriptPublicKeyAddress: o.script_public_key_address,
-                value: o.amount,
-              })),
-              payload: tx.payload,
-              transactionId: tx.transaction_id,
-            },
-            tx.block_hash[0],
-            Number(tx.block_time),
-            1
-          );
-        }
-      }
-
-      console.log("Historical message fetch complete");
+      // Return immediately to allow wallet access
+      return;
     } catch (error) {
       console.error("Error fetching historical messages:", error);
+      // Don't throw - allow wallet to continue functioning even if history fetch fails
+      return;
+    }
+  }
+
+  private async processHistoricalTransactions(
+    transactions: ExplorerTransaction[]
+  ) {
+    for (const tx of transactions) {
+      try {
+        const txId = tx.transaction_id;
+        if (!txId || this.processedMessageIds.has(txId)) {
+          continue;
+        }
+
+        // Check if this is a message transaction for us
+        if (!this.isTransactionForUs(tx)) {
+          continue;
+        }
+
+        // Process the message transaction with required arguments
+        await this.processMessageTransaction(
+          {
+            inputs: tx.inputs.map((i) => ({
+              previousOutpoint: {
+                index: Number(i.previous_outpoint_index),
+                transactionId: i.previous_outpoint_hash,
+              },
+            })),
+            outputs: tx.outputs.map((o) => ({
+              scriptPublicKeyAddress: o.script_public_key_address,
+              value: o.amount,
+            })),
+            payload: tx.payload,
+            transactionId: txId,
+          },
+          tx.block_hash[0],
+          Number(tx.block_time),
+          1
+        );
+
+        // Add to processed set
+        this.processedMessageIds.add(txId);
+        if (this.processedMessageIds.size > this.MAX_PROCESSED_MESSAGES) {
+          // Remove oldest message ID to prevent unlimited growth
+          const oldestId = this.processedMessageIds.values().next().value;
+          if (oldestId) {
+            this.processedMessageIds.delete(oldestId);
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error processing historical transaction ${tx.transaction_id}:`,
+          error
+        );
+        // Continue processing other transactions even if one fails
+        continue;
+      }
     }
   }
 
