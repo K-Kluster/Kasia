@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
-import "./WalletFlow.css";
 import { Radio, RadioGroup, Label } from "@headlessui/react";
 import { NetworkSelector } from "./NetworkSelector";
 import { NetworkType } from "../types/all";
@@ -56,7 +55,9 @@ export const WalletFlow = ({
 
   const { wallet } = useParams<{ wallet: string }>();
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; id: number } | null>(
+    null
+  );
   const [isMounted, setIsMounted] = useState(false);
   const [seedPhraseLength, setSeedPhraseLength] = useState<12 | 24>(24); // Default to 24 words
   const [derivationType, setDerivationType] =
@@ -97,6 +98,11 @@ export const WalletFlow = ({
     loadWallets();
     return () => setIsMounted(false);
   }, [loadWallets]);
+
+  useEffect(() => {
+    if (!error) return;
+    toast.error(error.message);
+  }, [error]);
 
   if (!isMounted) return null;
 
@@ -146,7 +152,7 @@ export const WalletFlow = ({
 
   const onCreateWallet = async () => {
     if (!nameRef.current?.value || !passwordRef.current?.value) {
-      setError("Please enter a name and password");
+      setError({ message: "Please enter a name and password", id: Date.now() });
       return;
     }
     try {
@@ -164,7 +170,10 @@ export const WalletFlow = ({
 
       const pw = passwordRef.current!.value;
       if (!disablePasswordRequirements && pw.length < PASSWORD_MIN_LENGTH) {
-        setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+        setError({
+          message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+          id: Date.now(),
+        });
         return;
       }
 
@@ -177,7 +186,10 @@ export const WalletFlow = ({
       setStep({ type: "seed", walletId: id, mnemonic });
     } catch (err) {
       console.error("Wallet creation error:", err);
-      setError(err instanceof Error ? err.message : "Failed to create wallet");
+      setError({
+        message: err instanceof Error ? err.message : "Failed to create wallet",
+        id: Date.now(),
+      });
     } finally {
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
@@ -189,12 +201,15 @@ export const WalletFlow = ({
       !mnemonicRef.current?.value ||
       !passwordRef.current?.value
     ) {
-      setError("Please enter all fields");
+      setError({ message: "Please enter all fields", id: Date.now() });
       return;
     }
     const pw = passwordRef.current!.value;
     if (!disablePasswordRequirements && pw.length < PASSWORD_MIN_LENGTH) {
-      setError(`Password must be at least ${PASSWORD_MIN_LENGTH} characters`);
+      setError({
+        message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+        id: Date.now(),
+      });
       return;
     }
     try {
@@ -202,7 +217,10 @@ export const WalletFlow = ({
       await createWallet(nameRef.current.value, mnemonic, pw, derivationType);
       setStep({ type: "success" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid mnemonic");
+      setError({
+        message: err instanceof Error ? err.message : "Invalid mnemonic",
+        id: Date.now(),
+      });
     } finally {
       if (mnemonicRef.current.value) mnemonicRef.current.value = "";
       if (passwordRef.current?.value) passwordRef.current.value = "";
@@ -212,28 +230,29 @@ export const WalletFlow = ({
   const onUnlockWallet = async () => {
     const pass = passwordRef.current?.value;
     if (!selectedWalletId || !pass) {
-      setError("Please enter your wallet password");
+      setError({
+        message: "Please enter your wallet password",
+        id: Date.now(),
+      });
       return;
     }
-    setError("");
+    setError(null);
     try {
       setUnlocking(true);
       await unlock(selectedWalletId, pass);
       onStepChange("unlocked", selectedWalletId);
     } catch (err) {
       console.error("Unlock error:", err);
-      // Clear the password field and focus it
       if (passwordRef.current) {
         passwordRef.current.value = "";
         passwordRef.current.focus();
       }
-      // Show user-friendly error message
       const msg =
         err instanceof Error &&
         err.message.toLowerCase().includes("invalid password")
           ? "Incorrect password. Please try again."
           : "Failed to unlock wallet. Please try again.";
-      setError(msg);
+      setError({ message: msg, id: Date.now() });
     } finally {
       setUnlocking(false);
     }
@@ -245,7 +264,7 @@ export const WalletFlow = ({
       !passwordRef.current?.value ||
       !nameRef.current?.value
     ) {
-      setError("Please enter all required fields");
+      setError({ message: "Please enter all required fields", id: Date.now() });
       return;
     }
     try {
@@ -256,7 +275,11 @@ export const WalletFlow = ({
       );
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to migrate wallet");
+      setError({
+        message:
+          err instanceof Error ? err.message : "Failed to migrate wallet",
+        id: Date.now(),
+      });
     } finally {
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
@@ -491,8 +514,6 @@ export const WalletFlow = ({
             />
           </div>
 
-          {error && <div className="error">{error}</div>}
-
           <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button onClick={onCreateWallet} variant="primary">
               Create
@@ -673,8 +694,6 @@ export const WalletFlow = ({
             />
           </div>
 
-          {error && <div className="error">{error}</div>}
-
           <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button onClick={onImportWallet} variant="primary">
               Create
@@ -752,8 +771,6 @@ export const WalletFlow = ({
             />
           </div>
 
-          {error && <div className="error">{error}</div>}
-
           <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button onClick={onMigrateWallet} variant="primary">
               Create
@@ -768,6 +785,13 @@ export const WalletFlow = ({
       {/* Unlock wallet 'Route' */}
       {step.type === "unlock" && (
         <>
+          <div inert className="mb-4 flex w-full justify-center opacity-70">
+            <NetworkSelector
+              selectedNetwork={selectedNetwork}
+              onNetworkChange={onNetworkChange}
+              isConnected={isConnected}
+            />
+          </div>
           <h2 className="text-center text-lg font-bold">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
@@ -807,8 +831,6 @@ export const WalletFlow = ({
                   disabled={unlocking}
                 />
               </div>
-
-              {error && <div className="error">{error}</div>}
 
               <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
                 <Button

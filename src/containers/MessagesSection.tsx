@@ -49,6 +49,8 @@ export const MessageSection: FC<{
     return { lastOutgoing: lastOut, lastIncoming: lastIn };
   }, [messageStore.messagesOnOpenedRecipient, address]);
 
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (boxState !== "filtered" || !openedRecipient) return;
     const contact = contacts.find((c) => c.address === openedRecipient);
@@ -88,6 +90,24 @@ export const MessageSection: FC<{
       })
       .catch(() => {});
   }, [boxState, openedRecipient, contacts]);
+
+  // scroll when child calls eg. the chat expansion has collpased
+  const scrollToBottom = () => {
+    const el = messagesScrollRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    }
+  };
+
+  // scroll if the conversation is open or box state changes
+  useEffect(() => {
+    if (boxState === "filtered" && messagesScrollRef.current) {
+      messagesScrollRef.current.scrollTo({
+        top: messagesScrollRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messageStore.messagesOnOpenedRecipient, boxState]);
 
   // Helper to format old domain nickname
   function formatOldDomainNickname(domain: string) {
@@ -256,9 +276,7 @@ export const MessageSection: FC<{
 
           <div
             className="flex-1 overflow-x-hidden overflow-y-auto bg-[var(--primary-bg)] bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[length:20px_20px] p-4"
-            ref={(el) => {
-              if (el) el.scrollTop = el.scrollHeight;
-            }}
+            ref={messagesScrollRef}
           >
             {messageStore.messagesOnOpenedRecipient.length ? (
               messageStore.messagesOnOpenedRecipient.map((msg, idx) => {
@@ -283,7 +301,7 @@ export const MessageSection: FC<{
             )}
           </div>
 
-          <SendMessageForm />
+          <SendMessageForm onExpand={scrollToBottom} />
         </>
       )}
     </div>
