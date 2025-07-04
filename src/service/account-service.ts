@@ -207,8 +207,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private async _fetchTransactionDetails(txId: string) {
-    const maxRetries = 10; // Increased to 10 attempts
+  private async _fetchTransactionDetails(txId: string, maxRetries = 10) {
     const retryDelay = 2000; // Changed to 2 seconds between retries
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -1212,7 +1211,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private async processMessageTransaction(
     tx: any,
     blockHash: string,
-    blockTime: number
+    blockTime: number,
+    maxRetries = 10
   ) {
     try {
       const txId = tx.verboseData?.transactionId;
@@ -1238,7 +1238,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         if (prevTxId && typeof prevOutputIndex === "number") {
           try {
-            const prevTx = await this._fetchTransactionDetails(prevTxId);
+            const prevTx = await this._fetchTransactionDetails(
+              prevTxId,
+              maxRetries
+            );
             if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
               const output = prevTx.outputs[prevOutputIndex];
               senderAddress = output.verboseData?.scriptPublicKeyAddress;
