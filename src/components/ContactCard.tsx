@@ -225,8 +225,12 @@ export const ContactCard: FC<{
           </div>
         )}
       </div>
-      <div className="contact-preview">{preview}</div>
-      <div className="contact-time">{timestamp}</div>
+      <div className="overflow-hidden text-sm text-ellipsis whitespace-nowrap text-[var(--text-secondary)]">
+        {preview}
+      </div>
+      <div className="mt-1 text-xs text-[var(--text-secondary)]">
+        {timestamp}
+      </div>
     </div>
   );
 };
