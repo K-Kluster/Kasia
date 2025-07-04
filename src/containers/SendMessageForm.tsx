@@ -16,6 +16,8 @@ import {
   PaperClipIcon,
   PaperAirplaneIcon,
   PlusIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
@@ -29,7 +31,9 @@ import { Button } from "../components/Common/Button";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
-type SendMessageFormProps = unknown;
+type SendMessageFormProps = {
+  onExpand?: () => void;
+};
 
 // Arbritary fee levels to colour the fee indicator in chat
 const FEE_LEVELS = [
@@ -44,7 +48,7 @@ function getFeeClasses(fee: number) {
   return FEE_LEVELS.find(({ limit }) => fee <= limit)!.classes;
 }
 
-export const SendMessageForm: FC<SendMessageFormProps> = () => {
+export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
   const walletStore = useWalletStore();
   const [feeEstimate, setFeeEstimate] = useState<number | null>(null);
@@ -56,6 +60,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
     source: FeeSource.SenderPays,
   });
 
+  const [isExpanded, setIsExpanded] = useState(false);
   const { isOpen, closeModal, openModal } = useModals();
 
   const messageStore = useMessagingStore();
@@ -228,7 +233,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           priorityFee,
         });
       }
-
+      setIsExpanded(false);
       console.log("Message sent! Transaction response:", txId);
 
       // Create the message object for storage
@@ -362,6 +367,40 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
 
   return (
     <div className="relative flex-col gap-8">
+      {/* Chevron expand/collapse that sorta sits above the textarea */}
+      <div className="absolute -top-4 left-1/2 z-10 hidden -translate-x-1/2 sm:block">
+        {!isExpanded ? (
+          <button
+            type="button"
+            className="flex cursor-pointer items-center justify-center rounded-full p-1 transition-colors duration-150 hover:bg-white/10"
+            onClick={() => {
+              setIsExpanded(true);
+              if (messageInputRef.current) {
+                messageInputRef.current.style.height = "144px";
+              }
+              if (onExpand) onExpand();
+            }}
+          >
+            <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="flex cursor-pointer items-center justify-center rounded-full p-1 transition-colors duration-150 hover:bg-white/10"
+            onClick={() => {
+              setIsExpanded(false);
+              if (messageInputRef.current) {
+                messageInputRef.current.style.height = "auto";
+                const t = messageInputRef.current;
+                t.style.height = "auto";
+                t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
+              }
+            }}
+          >
+            <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+          </button>
+        )}
+      </div>
       {openedRecipient && message && (
         <div className="absolute -top-7.5 right-4 flex items-center gap-2">
           <div
@@ -389,15 +428,19 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
       <div className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-1">
         <Textarea
           ref={messageInputRef}
-          rows={1}
+          rows={isExpanded ? 6 : 1}
           placeholder="Type your message..."
           className="peer flex-1 resize-none overflow-y-auto border-none bg-transparent p-2 text-[0.9em] text-[var(--text-primary)] outline-none"
           value={message}
           onChange={(e) => setMessage(e.currentTarget.value)}
           onInput={(e) => {
             const t = e.currentTarget;
-            t.style.height = "auto";
-            t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
+            if (!isExpanded) {
+              t.style.height = "auto";
+              t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
+            } else {
+              t.style.height = "144px";
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -408,6 +451,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = () => {
           autoComplete="off"
           spellCheck="false"
           data-form-type="other"
+          style={isExpanded ? { height: "144px" } : {}}
         />
 
         <input
