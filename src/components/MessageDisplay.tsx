@@ -279,7 +279,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           <img
             src={fileData.content}
             alt={fileData.name}
-            className="message-image"
+            className="mt-2 block max-w-full rounded-lg"
           />
         );
       }
@@ -315,7 +315,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
               key={`img-${transactionId}`}
               src={parsedContent.content}
               alt={parsedContent.name}
-              className="message-image"
+              className="mt-2 block max-w-full rounded-lg"
             />
           );
         }
