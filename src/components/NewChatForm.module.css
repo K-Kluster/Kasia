@@ -112,21 +112,6 @@
   line-height: 1.4;
 }
 
-.confirmation-details {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-.confirmation-details p {
-  margin: 5px 0;
-}
-
-.confirmation-details strong {
-  color: white;
-}
-
 .error-message {
   background: rgba(255, 68, 68, 0.1);
   color: #ff4444;
@@ -135,13 +120,6 @@
   border: 1px solid rgba(255, 68, 68, 0.3);
   margin-bottom: 15px;
   font-size: 14px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
 }
 
 .button {
@@ -165,16 +143,6 @@
 .button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.cancel-button {
-  composes: button;
-  background: #666;
-  color: white;
-}
-
-.cancel-button:hover:not(:disabled) {
-  background: #555;
 }
 
 .submit-button {
