@@ -100,14 +100,19 @@ export const OneLiner: FC = () => {
       )
         return;
       try {
-        // Start the wallet and get the receive address
-        const { receiveAddress } = await walletStore.start(
-          networkStore.kaspaClient
-        );
+        const receiveAddress =
+          walletStore.unlockedWallet.publicKeyGenerator.receiveAddress(
+            networkStore.network,
+            0
+          );
+
         const receiveAddressStr = receiveAddress.toString();
 
         // Initialize conversation manager
         messageStore.initializeConversationManager(receiveAddressStr);
+
+        // Start the wallet and get the receive address
+        await walletStore.start(networkStore.kaspaClient);
 
         // Load existing messages
         messageStore.loadMessages(receiveAddressStr);
@@ -140,7 +145,7 @@ export const OneLiner: FC = () => {
       }
     };
     startMessageClient();
-  }, [isWalletReady, messageStore]);
+  }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
   const onContactClicked = useCallback(
     (contact: Contact) => {

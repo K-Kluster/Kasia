@@ -21,21 +21,6 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.download-button {
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 0.9em;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.download-button:hover {
-  background-color: #357abd;
-}
-
 .outgoing .file-message {
   background-color: rgba(74, 144, 226, 0.1);
 }
