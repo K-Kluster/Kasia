@@ -543,7 +543,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     try {
       // Use a modified generator that sends to recipient but includes payload
       const generator =
-        this._getGeneratorForPaymentWithMessage(paymentTransaction);
+        await this._getGeneratorForPaymentWithMessage(paymentTransaction);
 
       console.log("Generating payment transaction...");
       const pendingTransaction: PendingTransaction | null =
@@ -1154,7 +1154,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private _getGeneratorForPaymentWithMessage(
+  private async _getGeneratorForPaymentWithMessage(
     transaction: CreatePaymentWithMessageArgs
   ) {
     if (!this.isStarted) {
@@ -1163,15 +1163,47 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     console.log("Using destination address:", transaction.address.toString());
 
+    const generateSummary = await this.estimateTransaction({
+      address: transaction.address,
+      amount: transaction.amount,
+      payload: transaction.payload,
+      priorityFee: transaction.priorityFee,
+    });
+
+    const estimatedFees = generateSummary.fees;
+
+    const matureBalance = this.context.balance?.mature ?? 0n;
+
+    const isFullBalance = transaction.amount + estimatedFees >= matureBalance;
+
+    console.log("is full balance?:", {
+      requestedAmount: transaction.amount.toString(),
+      matureBalance: this.context.balance?.mature.toString(),
+      isFullBalance,
+    });
+
+    // if thats the case, use destination as change address and ReceiverPays fees
+    const changeAddress = isFullBalance
+      ? new Address(transaction.address.toString())
+      : this.receiveAddress!;
+
+    // use ReceiverPays for full balance to avoid insufficient funds
+    const priorityFee = isFullBalance
+      ? {
+          amount: BigInt(0),
+          source: FeeSource.ReceiverPays,
+        }
+      : transaction.priorityFee || {
+          amount: BigInt(0),
+          source: FeeSource.SenderPays,
+        };
+
     return new Generator({
-      changeAddress: this.receiveAddress!,
+      changeAddress,
       entries: this.context,
       outputs: [new PaymentOutput(transaction.address, transaction.amount)],
       networkId: this.networkId,
-      priorityFee: transaction.priorityFee || {
-        amount: BigInt(1000), // 0.00001 KAS
-        source: FeeSource.SenderPays,
-      },
+      priorityFee,
       payload: transaction.payload,
     });
   }
@@ -1244,7 +1276,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             );
             if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
               const output = prevTx.outputs[prevOutputIndex];
-              senderAddress = output.verboseData?.scriptPublicKeyAddress;
+              senderAddress = output.script_public_key_address;
             }
           } catch (error) {
             console.error("Error getting sender address:", error);
