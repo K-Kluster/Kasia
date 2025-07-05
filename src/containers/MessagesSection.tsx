@@ -305,7 +305,7 @@ export const MessageSection: FC<{
         </>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="hidden">
         {address && <FetchApiMessages address={address.toString()} />}
       </div>
     </div>
