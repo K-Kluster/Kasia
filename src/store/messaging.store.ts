@@ -329,10 +329,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Process handshake if we're the recipient or if this is a response to our handshake
         if (
-          message.recipientAddress === walletAddress ||
-          handshakePayload.recipientAddress === walletAddress ||
+          message.recipientAddress === walletAddress || // received handshake
+          handshakePayload.recipientAddress === walletAddress || // legacy safety
           (handshakePayload.isResponse &&
-            message.senderAddress === handshakePayload.recipientAddress)
+            message.senderAddress === walletAddress) // our own response
         ) {
           console.log("Processing handshake message:", {
             senderAddress: message.senderAddress,

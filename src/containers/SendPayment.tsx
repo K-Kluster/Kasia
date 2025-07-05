@@ -302,7 +302,7 @@ export const SendPayment: FC<{
                     <button
                       type="button"
                       onClick={handleMaxPayClick}
-                      className="border-kas-primary absolute top-1/2 right-2 -translate-y-1/2 transform rounded-sm border px-1 py-0.5 text-xs font-medium text-[#70C7BA] hover:opacity-80"
+                      className="border-kas-primary absolute top-1/2 right-2 -translate-y-1/2 transform cursor-pointer rounded-sm border px-1 py-0.5 text-xs font-medium text-[#70C7BA] hover:opacity-80"
                     >
                       Max
                     </button>
@@ -318,13 +318,14 @@ export const SendPayment: FC<{
                   onClick={handleSendPayment}
                   disabled={isSendingPayment || !payAmount}
                   className={clsx(
-                    "h-10 w-full rounded-md px-4 py-2 text-sm font-medium transition duration-200 md:w-auto",
+                    "h-10 w-full rounded-md px-4 py-2 text-sm font-medium transition duration-200",
                     "bg-[#70C7BA] text-white hover:bg-[#5fb5a3] focus:ring-2 focus:ring-[#70C7BA] focus:outline-none",
+                    "self-center md:w-auto md:self-auto",
                     {
                       "cursor-not-allowed opacity-50":
                         isSendingPayment || !payAmount,
-                    },
-                    "self-center md:self-auto"
+                      "cursor-pointer": payAmount && !isSendingPayment,
+                    }
                   )}
                 >
                   {isSendingPayment ? "Sending…" : "Send KAS"}

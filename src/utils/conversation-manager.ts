@@ -170,14 +170,35 @@ export class ConversationManager {
         return this.processNewHandshake(payload, senderAddress);
       }
 
-      // if sending address is different, drop the message
-      if (existingConversation.kaspaAddress !== senderAddress) {
+      // If the stored address and the observed sender address differ **and** both are known,
+      // treat it as a real mismatch and ignore the message. However, it is quite common that
+      // the very first message arrives before we can resolve the real sender address, in which
+      // case we temporarily store "Unknown". We should not reject the handshake in such cases.
+
+      if (
+        existingConversation.kaspaAddress !== senderAddress &&
+        existingConversation.kaspaAddress !== "Unknown" &&
+        senderAddress !== "Unknown"
+      ) {
         this.events?.onError?.(
           new Error(
             `Handshake address mismatch: ${existingConversation.kaspaAddress} !== ${senderAddress}`
           )
         );
         return;
+      }
+
+      // If we previously stored an "Unknown" sender address but now have the real one,
+      // update the conversation and our internal address mapping so that future look-ups work.
+      if (
+        existingConversation.kaspaAddress === "Unknown" &&
+        senderAddress !== "Unknown"
+      ) {
+        existingConversation.kaspaAddress = senderAddress;
+        this.addressToConversation.set(
+          senderAddress,
+          existingConversation.conversationId
+        );
       }
 
       // regardless of the current conversation state, update the conversation with the new alias if it's different
@@ -194,9 +215,11 @@ export class ConversationManager {
 
         existingConversation.status = "active";
       } else {
-        // request from someone that has clear their cache, need to offer the possibility to accept the conversation again (rebound)
-        existingConversation.status = "pending";
-        existingConversation.initiatedByMe = false;
+        // New request – peer likely lost its cache ⇒ let the user respond again
+        if (existingConversation.status !== "active") {
+          existingConversation.status = "pending";
+          existingConversation.initiatedByMe = false;
+        }
       }
 
       // update last activity
@@ -593,18 +616,26 @@ export class ConversationManager {
    * @param conversation The conversation to validate
    * @returns boolean indicating if the conversation is valid
    */
-  private isValidConversation(conversation: any): conversation is Conversation {
+  private isValidConversation(
+    conversation: unknown
+  ): conversation is Conversation {
+    if (typeof conversation !== "object" || conversation === null) {
+      return false;
+    }
+
+    const conv = conversation as Partial<Conversation>;
+
     return (
-      typeof conversation === "object" &&
-      typeof conversation.conversationId === "string" &&
-      typeof conversation.myAlias === "string" &&
-      (conversation.theirAlias === null ||
-        typeof conversation.theirAlias === "string") &&
-      typeof conversation.kaspaAddress === "string" &&
-      ["pending", "active", "rejected"].includes(conversation.status) &&
-      typeof conversation.createdAt === "number" &&
-      typeof conversation.lastActivity === "number" &&
-      typeof conversation.initiatedByMe === "boolean"
+      typeof conv.conversationId === "string" &&
+      typeof conv.myAlias === "string" &&
+      (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
+      typeof conv.kaspaAddress === "string" &&
+      ["pending", "active", "rejected"].includes(
+        conv.status as Conversation["status"]
+      ) &&
+      typeof conv.createdAt === "number" &&
+      typeof conv.lastActivity === "number" &&
+      typeof conv.initiatedByMe === "boolean"
     );
   }
 }
