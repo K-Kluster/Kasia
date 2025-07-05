@@ -37,3 +37,39 @@ export interface ExplorerOutput {
   script_public_key_address: string;
   script_public_key_type: string;
 }
+
+// Type guards and helper functions for ITransaction | ExplorerTransaction
+import { ITransaction } from "kaspa-wasm";
+
+export function isExplorerTransaction(
+  tx: ITransaction | ExplorerTransaction
+): tx is ExplorerTransaction {
+  return "transaction_id" in tx && "block_hash" in tx;
+}
+
+export function isITransaction(
+  tx: ITransaction | ExplorerTransaction
+): tx is ITransaction {
+  return "verboseData" in tx && !("transaction_id" in tx);
+}
+
+// Helper functions for consistent access
+export function getTransactionId(
+  tx: ITransaction | ExplorerTransaction
+): string | undefined {
+  return isExplorerTransaction(tx)
+    ? tx.transaction_id
+    : tx.verboseData?.transactionId;
+}
+
+export function getTransactionPayload(
+  tx: ITransaction | ExplorerTransaction
+): string {
+  return tx.payload;
+}
+
+export function getBlockTime(tx: ITransaction | ExplorerTransaction): number {
+  return isExplorerTransaction(tx)
+    ? tx.block_time
+    : Number(tx.verboseData?.blockTime);
+}

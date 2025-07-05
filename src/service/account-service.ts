@@ -29,6 +29,11 @@ import {
   ExplorerOutput,
   ExplorerTransaction,
   TransactionId,
+  getTransactionId,
+  getTransactionPayload,
+  getBlockTime,
+  isExplorerTransaction,
+  isITransaction,
 } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
@@ -1225,12 +1230,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   }
 
   private async processMessageTransaction(
-    // TODO: the real type of this is ITransaction | ExplorerTransaction
-    // Need to find a proper way of processing both of them
-    // Previously in the PR, we were using an intermediate interface and both callers were casting to it
-    // But we could also use a type guard to check if the transaction is of type ITransaction or ExplorerTransaction
-    // and then process it accordingly
-    tx: any,
+    tx: ITransaction | ExplorerTransaction,
     blockHash: string,
     blockTime: number,
     maxRetries = 10
@@ -1243,7 +1243,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         );
       const stringWalletAddress = walletAddress.toString();
 
-      const txId = tx.verboseData?.transactionId;
+      const txId = getTransactionId(tx);
       if (!txId) {
         console.warn("Transaction ID is missing in real-time processing");
         return;
@@ -1259,7 +1259,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Get sender address from transaction inputs
       let senderAddress = null;
-      if (tx.inputs && tx.inputs.length > 0) {
+      if (isITransaction(tx) && tx.inputs && tx.inputs.length > 0) {
         const input = tx.inputs[0];
         const prevTxId = input.previousOutpoint?.transactionId;
         const prevOutputIndex = input.previousOutpoint?.index;
@@ -1278,21 +1278,36 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             console.error("Error getting sender address:", error);
           }
         }
+      } else if (
+        isExplorerTransaction(tx) &&
+        tx.inputs &&
+        tx.inputs.length > 0
+      ) {
+        senderAddress = tx.inputs[0].previous_outpoint_address;
       }
 
       // If we still don't have a sender address, use the change output address
       if (!senderAddress && tx.outputs && tx.outputs.length > 1) {
-        senderAddress = tx.outputs[1].verboseData?.scriptPublicKeyAddress;
+        if (isITransaction(tx)) {
+          senderAddress = tx.outputs[1].verboseData?.scriptPublicKeyAddress;
+        } else {
+          senderAddress = tx.outputs[1].script_public_key_address;
+        }
       }
 
       // Get the recipient address from the outputs
       let recipientAddress = null;
       if (tx.outputs && tx.outputs.length > 0) {
-        recipientAddress = tx.outputs[0].verboseData?.scriptPublicKeyAddress;
+        if (isITransaction(tx)) {
+          recipientAddress = tx.outputs[0].verboseData?.scriptPublicKeyAddress;
+        } else {
+          recipientAddress = tx.outputs[0].script_public_key_address;
+        }
       }
 
       // Process the message
-      if (!tx.payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
+      const payload = getTransactionPayload(tx);
+      if (!payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
         return;
       }
 
@@ -1380,7 +1395,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         try {
           const privateKey = privateKeyGenerator.receiveKey(0);
-          const txId = tx.verboseData?.transactionId;
+          const txId = getTransactionId(tx);
           if (!txId) {
             throw new Error("Transaction ID is missing");
           }
@@ -1414,7 +1429,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         if (!decryptionSuccess) {
           try {
             const privateKey = privateKeyGenerator.changeKey(0);
-            const txId = tx.verboseData?.transactionId;
+            const txId = getTransactionId(tx);
             if (!txId) {
               throw new Error("Transaction ID is missing");
             }
