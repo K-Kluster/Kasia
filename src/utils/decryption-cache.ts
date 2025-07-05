@@ -12,10 +12,8 @@ interface CacheEntry {
 }
 
 interface CacheData {
-  [key: string]: {
-    entries: CacheEntry[];
-    version: number;
-  };
+  entries: CacheEntry[];
+  version: number;
 }
 
 export class DecryptionCache {
@@ -26,7 +24,7 @@ export class DecryptionCache {
   /**
    * Initialize the cache from localStorage
    */
-  private static initCache(walletAddress: string): Set<string> {
+  private static initCache(): Set<string> {
     if (this.cache !== null) return this.cache;
 
     try {
@@ -34,7 +32,7 @@ export class DecryptionCache {
       if (stored) {
         const data = JSON.parse(stored) as CacheData;
         // Load all entries (no expiry needed)
-        const validEntries = data?.[walletAddress]?.entries || [];
+        const validEntries = data.entries || [];
 
         this.cache = new Set(validEntries.map((e: CacheEntry) => e.txId));
       } else {
@@ -51,53 +49,43 @@ export class DecryptionCache {
   /**
    * Check if a transaction ID has failed decryption before
    */
-  static hasFailed(walletAddress: string, txId: string): boolean {
-    const cache = this.initCache(walletAddress);
+  static hasFailed(txId: string): boolean {
+    const cache = this.initCache();
     return cache.has(txId);
   }
 
   /**
    * Mark a transaction ID as failed decryption
    */
-  static markFailed(walletAddress: string, txId: string): void {
-    const cache = this.initCache(walletAddress);
+  static markFailed(txId: string): void {
+    const cache = this.initCache();
     cache.add(txId);
-    this.persistCache(walletAddress);
+    this.persistCache();
   }
 
   /**
    * Remove a transaction ID from failed cache (if successful later)
    */
-  static markSuccess(walletAddress: string, txId: string): void {
-    const cache = this.initCache(walletAddress);
+  static markSuccess(txId: string): void {
+    const cache = this.initCache();
     if (cache.delete(txId)) {
-      this.persistCache(walletAddress);
+      this.persistCache();
     }
   }
 
   /**
    * Clear the entire cache
    */
-  static clear(walletAddress: string): void {
+  static clear(): void {
     this.cache = new Set();
-
-    const data = localStorage.getItem(this.CACHE_KEY);
-    if (data) {
-      try {
-        const parsedData: CacheData = JSON.parse(data);
-        delete parsedData[walletAddress];
-        localStorage.setItem(this.CACHE_KEY, JSON.stringify(parsedData));
-      } catch (error) {
-        console.warn("Failed to clear decryption cache:", error);
-      }
-    }
+    localStorage.removeItem(this.CACHE_KEY);
   }
 
   /**
    * Get cache statistics for debugging/monitoring
    */
-  static getStats(walletAddress: string): { size: number } {
-    const cache = this.initCache(walletAddress);
+  static getStats(): { size: number } {
+    const cache = this.initCache();
     return {
       size: cache.size,
     };
@@ -106,30 +94,17 @@ export class DecryptionCache {
   /**
    * Persist cache to localStorage with timestamps
    */
-  private static persistCache(walletAddress: string): void {
+  private static persistCache(): void {
     if (!this.cache) return;
 
     try {
-      const cachedDataString = localStorage.getItem(this.CACHE_KEY);
-
-      let cachedData: CacheData = {};
-      if (cachedDataString) {
-        cachedData = JSON.parse(cachedDataString);
-      }
-
-      const thisWalletData = {
+      const data = {
         entries: Array.from(this.cache).map((txId) => ({
           txId,
           timestamp: Date.now(),
         })),
         version: 1, // For future cache format migrations
       };
-
-      const data = {
-        ...cachedData,
-        [walletAddress]: thisWalletData,
-      };
-
       localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
     } catch (error) {
       console.warn("Failed to persist decryption cache:", error);

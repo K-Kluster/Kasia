@@ -6,6 +6,7 @@ import {
   Generator,
   PaymentOutput,
   UtxoEntry,
+  ITransaction,
   PendingTransaction,
   GeneratorSummary,
   FeeSource,
@@ -16,18 +17,9 @@ import { KaspaClient } from "../utils/all-in-one";
 import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
-import {
-  BlockAddedData,
-  Output,
-  PriorityFeeConfig,
-  Transaction,
-} from "../types/all";
+import { PriorityFeeConfig } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
-import {
-  ExplorerOutput,
-  ExplorerTransaction,
-  TransactionId,
-} from "../types/transactions";
+import { TransactionId } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -294,7 +286,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       const data = await response.json();
-      const transactions: ExplorerTransaction[] = data || [];
+      const transactions = data.transactions || [];
 
       console.log(`Found ${transactions.length} historical transactions`);
 
@@ -303,30 +295,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Process each transaction
       for (const tx of transactions) {
-        const txId = tx.transaction_id;
+        const txId = tx.transactionId;
         if (!txId || this.processedMessageIds.has(txId)) continue;
 
         // Check if this is a message transaction and involves our address
         if (this.isMessageTransaction(tx) && this.isTransactionForUs(tx)) {
-          await this.processMessageTransaction(
-            {
-              inputs: tx.inputs.map((i) => ({
-                previousOutpoint: {
-                  index: Number(i.previous_outpoint_index),
-                  transactionId: i.previous_outpoint_hash,
-                },
-              })),
-              outputs: tx.outputs.map((o) => ({
-                scriptPublicKeyAddress: o.script_public_key_address,
-                value: o.amount,
-              })),
-              payload: tx.payload,
-              transactionId: tx.transaction_id,
-            },
-            tx.block_hash[0],
-            Number(tx.block_time),
-            1
-          );
+          await this.processMessageTransaction(tx, txId, Number(tx.blockTime));
         }
       }
 
@@ -376,9 +350,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Set up block subscription with optimized message handling
       console.log("Setting up block subscription...");
       await this.rpcClient.subscribeToBlockAdded(
-        // JUSTIFICATION: Type is correct, wasm bindgen is not reflect it correctly
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         this.processBlockEvent.bind(this)
       );
       console.log("Successfully subscribed to block events");
@@ -1233,35 +1204,25 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private isMessageTransaction(tx: Transaction | ExplorerTransaction): boolean {
+  private isMessageTransaction(tx: ITransaction): boolean {
     return tx?.payload?.startsWith(this.MESSAGE_PREFIX_HEX) ?? false;
   }
 
   private async processMessageTransaction(
-    txData: {
-      transactionId: string;
-      inputs: { previousOutpoint: { transactionId: string; index: number } }[];
-      outputs: { scriptPublicKeyAddress: string; value: number }[];
-      payload: string;
-    },
+    tx: any,
     blockHash: string,
     blockTime: number,
     maxRetries = 10
   ) {
-    if (!this.receiveAddress) {
-      console.warn("Receive address is not set");
-      return;
-    }
-
     try {
-      const txId = txData.transactionId;
+      const txId = tx.verboseData?.transactionId;
       if (!txId) {
         console.warn("Transaction ID is missing in real-time processing");
         return;
       }
 
       // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-      if (DecryptionCache.hasFailed(this.receiveAddress.toString(), txId)) {
+      if (DecryptionCache.hasFailed(txId)) {
         if (process.env.NODE_ENV === "development") {
           console.debug(`Real-time: Skipping known failed decryption: ${txId}`);
         }
@@ -1270,8 +1231,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Get sender address from transaction inputs
       let senderAddress = null;
-      if (txData.inputs && txData.inputs.length > 0) {
-        const input = txData.inputs[0];
+      if (tx.inputs && tx.inputs.length > 0) {
+        const input = tx.inputs[0];
         const prevTxId = input.previousOutpoint?.transactionId;
         const prevOutputIndex = input.previousOutpoint?.index;
 
@@ -1292,18 +1253,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       // If we still don't have a sender address, use the change output address
-      if (!senderAddress && txData.outputs && txData.outputs.length > 1) {
-        senderAddress = txData.outputs[1].scriptPublicKeyAddress;
+      if (!senderAddress && tx.outputs && tx.outputs.length > 1) {
+        senderAddress = tx.outputs[1].verboseData?.scriptPublicKeyAddress;
       }
 
       // Get the recipient address from the outputs
       let recipientAddress = null;
-      if (txData.outputs && txData.outputs.length > 0) {
-        recipientAddress = txData.outputs[0].scriptPublicKeyAddress;
+      if (tx.outputs && tx.outputs.length > 0) {
+        recipientAddress = tx.outputs[0].verboseData?.scriptPublicKeyAddress;
       }
 
       // Process the message
-      if (!txData.payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
+      if (!tx.payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
         return;
       }
 
@@ -1313,9 +1274,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      const messageHex = txData.payload.substring(
-        this.MESSAGE_PREFIX_HEX.length
-      );
+      const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
       const handshakePrefix = "313a68616e647368616b653a";
       const commPrefix = "313a636f6d6d3a";
       const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
@@ -1393,6 +1352,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         try {
           const privateKey = privateKeyGenerator.receiveKey(0);
+          const txId = tx.verboseData?.transactionId;
           if (!txId) {
             throw new Error("Transaction ID is missing");
           }
@@ -1408,6 +1368,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             messageType = "handshake";
             isHandshake = true;
             try {
+              console.log({ decryptedContent });
               const handshakeData = JSON.parse(decryptedContent);
               if (handshakeData.isResponse) {
                 await this.updateMonitoredConversations();
@@ -1425,6 +1386,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         if (!decryptionSuccess) {
           try {
             const privateKey = privateKeyGenerator.changeKey(0);
+            const txId = tx.verboseData?.transactionId;
             if (!txId) {
               throw new Error("Transaction ID is missing");
             }
@@ -1457,14 +1419,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         // 🚀 OPTIMIZATION: Mark decryption result in cache
         if (decryptionSuccess) {
-          DecryptionCache.markSuccess(this.receiveAddress.toString(), txId);
+          DecryptionCache.markSuccess(txId);
           if (process.env.NODE_ENV === "development") {
             console.debug(
               `Real-time: Successful decryption for ${txId} - removed from failed cache if present`
             );
           }
         } else {
-          DecryptionCache.markFailed(this.receiveAddress.toString(), txId);
+          DecryptionCache.markFailed(txId);
           if (process.env.NODE_ENV === "development") {
             console.debug(
               `Real-time: Failed decryption for ${txId} - marked as failed in cache`
@@ -1482,8 +1444,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             recipientAddress: recipientAddress || "Unknown",
             timestamp: blockTime,
             content: decryptedContent,
-            amount: Number(txData.outputs[0].value) / 100000000,
-            payload: txData.payload,
+            amount: Number(tx.outputs[0].value) / 100000000,
+            payload: tx.payload,
           };
 
           if (this.receiveAddress) {
@@ -1506,38 +1468,72 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
     } catch (error) {
       console.error(
-        `Error processing message transaction ${txData.transactionId}:`,
+        `Error processing message transaction ${tx.verboseData?.transactionId}:`,
         error
       );
     }
   }
 
-  private isTransactionForUs(tx: ExplorerTransaction): boolean {
+  private isTransactionForUs(tx: ITransaction): boolean {
     if (!this.receiveAddress) return false;
     const ourAddress = this.receiveAddress.toString();
 
     // Helper function to extract address from output
-    const getOutputAddress = (output: ExplorerOutput): string | null => {
-      // For API transactions, we only need to check script_public_key_address
-      return output?.script_public_key_address || null;
+    const getOutputAddress = (output: any): string | null => {
+      if (output?.scriptPublicKey?.verboseData?.scriptPublicKeyAddress) {
+        return output.scriptPublicKey.verboseData.scriptPublicKeyAddress;
+      }
+      if (output?.verboseData?.scriptPublicKeyAddress) {
+        return output.verboseData.scriptPublicKeyAddress;
+      }
+      if (output?.scriptPublicKeyAddress) {
+        return output.scriptPublicKeyAddress;
+      }
+      return null;
     };
 
     // Check if this is a message transaction
     const isMessageTx = this.isMessageTransaction(tx);
     if (!isMessageTx) return false;
 
-    // For message transactions, check if any output involves our address
-    // Don't assume specific amounts - handshakes can use any amount
+    // For message transactions, check both outputs
+    const messageAmount = BigInt(20000000); // 0.2 KAS
+
+    // Find message output and change output
+    let messageOutput = null;
+    let changeOutput = null;
+
     if (tx.outputs) {
       for (const output of tx.outputs) {
+        const value =
+          typeof output.value === "bigint"
+            ? output.value
+            : BigInt(output.value || 0);
         const address = getOutputAddress(output);
-        if (address === ourAddress) {
-          return true; // We're involved if we're either sender or recipient
+
+        if (value === messageAmount) {
+          messageOutput = output;
+        } else {
+          changeOutput = output;
         }
       }
     }
 
-    return false;
+    // Get addresses from outputs
+    const messageAddress = messageOutput
+      ? getOutputAddress(messageOutput)
+      : null;
+    const changeAddress = changeOutput ? getOutputAddress(changeOutput) : null;
+
+    // We're involved if we're either the recipient (message output)
+    // or the sender (change output)
+    return messageAddress === ourAddress || changeAddress === ourAddress;
+  }
+
+  private stringifyWithBigInt(obj: any): string {
+    return JSON.stringify(obj, (_, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    );
   }
 
   public async sendMessageWithContext(sendMessage: SendMessageWithContextArgs) {
@@ -1645,6 +1641,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const conversationManager = messagingStore?.conversationManager;
 
       if (!conversationManager) return;
+
       // Update our monitored conversations
       this.monitoredConversations.clear();
       this.monitoredAddresses.clear();
@@ -1660,21 +1657,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private async processBlockEvent(event: BlockAddedData) {
-    /**
-     * WARNING: if this function signature changes, it also has to be changed in the
-     * `subscribeToBlockAdded` function in in this file, we added ts-ignore.
-     * TODO: fix this at another level
-     */
+  private async processBlockEvent(event: any) {
     try {
       const blockTime =
-        Number(event?.data?.block.header?.timestamp) || Date.now();
+        Number(event?.data?.block?.header?.timestamp) || Date.now();
       const blockHash = event?.data?.block?.header?.hash;
       const transactions = event?.data?.block?.transactions || [];
 
       // Process transactions silently
-      const txOutputsMap = new Map<string, Output[]>();
-      transactions.forEach((tx) => {
+      const txOutputsMap = new Map<string, any[]>();
+      transactions.forEach((tx: any) => {
         if (tx.outputs && tx.verboseData?.transactionId) {
           txOutputsMap.set(tx.verboseData.transactionId, tx.outputs);
         }
@@ -1698,24 +1690,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
 
           try {
-            await this.processMessageTransaction(
-              {
-                inputs: tx.inputs.map((i) => ({
-                  previousOutpoint: {
-                    index: i.previousOutpoint.index,
-                    transactionId: i.previousOutpoint.transactionId,
-                  },
-                })),
-                outputs: tx.outputs.map((o) => ({
-                  scriptPublicKeyAddress: o.script_public_key_address ?? "",
-                  value: Number(o.value),
-                })),
-                payload: tx.payload,
-                transactionId: txId,
-              },
-              blockHash,
-              blockTime
-            );
+            // Process message transaction silently
+            await this.processMessageTransaction(tx, blockHash, blockTime);
           } catch (error) {
             if (process.env.NODE_ENV === "development") {
               console.debug("Error processing message transaction:", error);

@@ -151,7 +151,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             }
 
             // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-            if (DecryptionCache.hasFailed(currentAddress, tx.transaction_id)) {
+            if (DecryptionCache.hasFailed(tx.transaction_id)) {
               console.log(
                 `API Messages: Skipping known failed decryption: ${tx.transaction_id}`
               );
@@ -509,7 +509,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
                 // 🚀 OPTIMIZATION: Mark decryption result in cache
                 if (!decryptionSuccess) {
-                  DecryptionCache.markFailed(currentAddress, tx.transaction_id);
+                  DecryptionCache.markFailed(tx.transaction_id);
                   console.log(
                     `API Messages: Could not decrypt message for transaction ${
                       tx.transaction_id
@@ -521,10 +521,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   );
                   decryptedContent = "[Could not decrypt message]";
                 } else {
-                  DecryptionCache.markSuccess(
-                    currentAddress,
-                    tx.transaction_id
-                  );
+                  DecryptionCache.markSuccess(tx.transaction_id);
                   console.log(
                     `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex} - removed from failed cache if present`
                   );

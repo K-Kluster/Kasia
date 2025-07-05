@@ -19,7 +19,6 @@
     "@headlessui/react": "^2.2.1",
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.3",
-    "@tauri-apps/plugin-log": "^2.6.0",
     "@types/uuid": "^10.0.0",
     "cipher": "file:cipher-wasm",
     "clsx": "^2.1.1",

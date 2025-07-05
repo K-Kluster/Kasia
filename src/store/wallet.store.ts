@@ -223,6 +223,103 @@ export const useWalletStore = create<WalletState>((set, get) => {
         }
         wallet.client = currentRpcClient;
         set({ unlockedWallet: wallet });
+        _accountService = new AccountService(currentRpcClient, wallet);
+        _accountService.setPassword(password);
+        // Connect the account service to the messaging store
+        const messagingStore = useMessagingStore.getState();
+        messagingStore.connectAccountService(_accountService);
+        // Set up event listeners
+        _accountService.on("balance", (balance) => {
+          set({ balance });
+        });
+
+        _accountService.on("utxosChanged", async () => {
+          // Balance updates handled by balance event
+        });
+
+        _accountService.on("transactionReceived", async (txDetails) => {
+          if (txDetails.payload?.startsWith("636970685f6d73673a")) {
+            const messageOutput = txDetails.outputs.find(
+              (output: { amount: number }) => output.amount === 10000000
+            );
+            const recipientAddress =
+              messageOutput?.script_public_key_address || "Unknown";
+
+            let senderAddress = "Unknown";
+            if (txDetails.outputs && txDetails.outputs.length > 1) {
+              const changeOutput = txDetails.outputs.find(
+                (output: {
+                  amount: number;
+                  script_public_key_address: string;
+                }) =>
+                  output.script_public_key_address !== recipientAddress &&
+                  output.amount !== 10000000
+              );
+              if (changeOutput) {
+                senderAddress = changeOutput.script_public_key_address;
+              }
+            }
+
+            const myAddress = _accountService?.receiveAddress?.toString() || "";
+
+            if (senderAddress === myAddress) {
+              return;
+            }
+
+            const messageData = {
+              transactionId: txDetails.transaction_id,
+              senderAddress: senderAddress,
+              recipientAddress: recipientAddress,
+              timestamp: txDetails.block_time,
+              payload: txDetails.payload,
+              amount: messageOutput?.amount || 0,
+              content: "[New message - click refresh to decrypt]",
+            };
+
+            if (myAddress) {
+              messagingStore.storeMessage(messageData, myAddress);
+              messagingStore.loadMessages(myAddress);
+
+              if (
+                messagingStore.openedRecipient ===
+                (senderAddress === myAddress ? recipientAddress : senderAddress)
+              ) {
+                messagingStore.refreshMessagesOnOpenedRecipient();
+              }
+            }
+          }
+        });
+
+        await _accountService.start();
+
+        const initialBalance = await _accountService.context.balance;
+        if (initialBalance) {
+          const matureUtxos = _accountService.context.getMatureRange(
+            0,
+            _accountService.context.matureLength
+          );
+          const pendingUtxos = _accountService.context.getPending();
+
+          set({
+            balance: {
+              mature: initialBalance.mature,
+              pending: initialBalance.pending,
+              outgoing: initialBalance.outgoing,
+              matureDisplay: sompiToKaspaString(initialBalance.mature),
+              pendingDisplay: sompiToKaspaString(initialBalance.pending),
+              outgoingDisplay: sompiToKaspaString(initialBalance.outgoing),
+              matureUtxoCount: matureUtxos.length,
+              pendingUtxoCount: pendingUtxos.length,
+            },
+          });
+        }
+
+        set({
+          rpcClient: currentRpcClient,
+          address: _accountService.receiveAddress,
+          isAccountServiceRunning: true,
+          accountService: _accountService,
+        });
 
         return wallet;
       } catch (error) {
@@ -253,10 +350,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
       _accountService = new AccountService(client, unlockedWallet);
       _accountService.setPassword(unlockedWallet.password);
-      // Connect the account service to the messaging store
-      const messagingStore = useMessagingStore.getState();
-      messagingStore.connectAccountService(_accountService);
-      // Set up event listeners
+
       _accountService.on("balance", (balance) => {
         set({ balance });
       });
@@ -301,6 +395,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
             content: "[New message - click refresh to decrypt]",
           };
 
+          const messagingStore = useMessagingStore.getState();
           if (myAddress) {
             messagingStore.storeMessage(messageData, myAddress);
             messagingStore.loadMessages(myAddress);
@@ -331,8 +426,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
             pending: initialBalance.pending,
             outgoing: initialBalance.outgoing,
             matureDisplay: sompiToKaspaString(initialBalance.mature),
-            pendingDisplay: sompiToKaspaString(initialBalance.pending),
             outgoingDisplay: sompiToKaspaString(initialBalance.outgoing),
+            pendingDisplay: sompiToKaspaString(initialBalance.pending),
             matureUtxoCount: matureUtxos.length,
             pendingUtxoCount: pendingUtxos.length,
           },
@@ -341,10 +436,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
       set({
         rpcClient: client,
-        address: unlockedWallet.publicKeyGenerator.receiveAddress(
-          client.networkId,
-          0
-        ),
+        address: _accountService.receiveAddress,
         isAccountServiceRunning: true,
         accountService: _accountService,
       });
@@ -352,12 +444,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       // Start fee polling when wallet starts
       get().startFeeEstimatePolling();
 
-      return {
-        receiveAddress: unlockedWallet.publicKeyGenerator.receiveAddress(
-          client.networkId,
-          0
-        ),
-      };
+      return { receiveAddress: _accountService.receiveAddress! };
     },
 
     stop: () => {
