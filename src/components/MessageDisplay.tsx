@@ -190,7 +190,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
               </div>
               <div className="flex-1">
                 {hasMessage && (
-                  <div className="mb-1 text-sm font-medium text-white drop-shadow-sm">
+                  <div className="mb-1 text-sm font-medium break-all text-white drop-shadow-sm">
                     {paymentPayload.message}
                   </div>
                 )}
