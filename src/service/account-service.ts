@@ -1163,15 +1163,36 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     console.log("Using destination address:", transaction.address.toString());
 
+    // check if the funds being sent are full balance
+    const isFullBalance = transaction.amount === this.context.balance?.mature;
+    console.log("Full balance check:", {
+      requestedAmount: transaction.amount.toString(),
+      matureBalance: this.context.balance?.mature.toString(),
+      isFullBalance,
+    });
+
+    // if thats the case, use destination as change address and ReceiverPays fees
+    const changeAddress = isFullBalance
+      ? new Address(transaction.address.toString())
+      : this.receiveAddress!;
+
+    // use ReceiverPays for full balance to avoid insufficient funds
+    const priorityFee = isFullBalance
+      ? {
+          amount: BigInt(0),
+          source: FeeSource.ReceiverPays,
+        }
+      : transaction.priorityFee || {
+          amount: BigInt(1000),
+          source: FeeSource.SenderPays,
+        };
+
     return new Generator({
-      changeAddress: this.receiveAddress!,
+      changeAddress,
       entries: this.context,
       outputs: [new PaymentOutput(transaction.address, transaction.amount)],
       networkId: this.networkId,
-      priorityFee: transaction.priorityFee || {
-        amount: BigInt(1000), // 0.00001 KAS
-        source: FeeSource.SenderPays,
-      },
+      priorityFee,
       payload: transaction.payload,
     });
   }
