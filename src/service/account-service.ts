@@ -12,14 +12,24 @@ import {
   FeeSource,
   sompiToKaspaString,
   kaspaToSompi,
+  ITransactionOutput,
 } from "kaspa-wasm";
 import { KaspaClient } from "../utils/all-in-one";
 import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
-import { PriorityFeeConfig } from "../types/all";
+import {
+  BlockAddedData,
+  Output,
+  PriorityFeeConfig,
+  Transaction,
+} from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
-import { TransactionId } from "../types/transactions";
+import {
+  ExplorerOutput,
+  ExplorerTransaction,
+  TransactionId,
+} from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -286,7 +296,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       const data = await response.json();
-      const transactions = data.transactions || [];
+      const transactions: ExplorerTransaction[] = data || [];
 
       console.log(`Found ${transactions.length} historical transactions`);
 
@@ -295,12 +305,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Process each transaction
       for (const tx of transactions) {
-        const txId = tx.transactionId;
+        const txId = tx.transaction_id;
         if (!txId || this.processedMessageIds.has(txId)) continue;
 
         // Check if this is a message transaction and involves our address
-        if (this.isMessageTransaction(tx) && this.isTransactionForUs(tx)) {
-          await this.processMessageTransaction(tx, txId, Number(tx.blockTime));
+        if (
+          this.isMessageOrHandshakeTransaction(tx) &&
+          this.isTransactionForUs(tx)
+        ) {
+          console.log(`Processing historical message transaction: ${txId}`);
+          await this.processMessageTransaction(tx, txId, Number(tx.block_time));
         }
       }
 
@@ -1204,11 +1218,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private isMessageTransaction(tx: ITransaction): boolean {
+  private isMessageOrHandshakeTransaction(
+    tx: ITransaction | ExplorerTransaction
+  ): boolean {
     return tx?.payload?.startsWith(this.MESSAGE_PREFIX_HEX) ?? false;
   }
 
   private async processMessageTransaction(
+    // TODO: the real type of this is ITransaction | ExplorerTransaction
+    // Need to find a proper way of processing both of them
+    // Previously in the PR, we were using an intermediate interface and both callers were casting to it
+    // But we could also use a type guard to check if the transaction is of type ITransaction or ExplorerTransaction
+    // and then process it accordingly
     tx: any,
     blockHash: string,
     blockTime: number,
@@ -1478,66 +1499,32 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private isTransactionForUs(tx: ITransaction): boolean {
+  private isTransactionForUs(tx: ExplorerTransaction): boolean {
     if (!this.receiveAddress) return false;
     const ourAddress = this.receiveAddress.toString();
 
     // Helper function to extract address from output
-    const getOutputAddress = (output: any): string | null => {
-      if (output?.scriptPublicKey?.verboseData?.scriptPublicKeyAddress) {
-        return output.scriptPublicKey.verboseData.scriptPublicKeyAddress;
-      }
-      if (output?.verboseData?.scriptPublicKeyAddress) {
-        return output.verboseData.scriptPublicKeyAddress;
-      }
-      if (output?.scriptPublicKeyAddress) {
-        return output.scriptPublicKeyAddress;
-      }
-      return null;
+    const getOutputAddress = (output: ExplorerOutput): string | null => {
+      // For API transactions, we only need to check script_public_key_address
+      return output?.script_public_key_address || null;
     };
 
     // Check if this is a message transaction
-    const isMessageTx = this.isMessageTransaction(tx);
+    const isMessageTx = this.isMessageOrHandshakeTransaction(tx);
     if (!isMessageTx) return false;
 
-    // For message transactions, check both outputs
-    const messageAmount = BigInt(20000000); // 0.2 KAS
-
-    // Find message output and change output
-    let messageOutput = null;
-    let changeOutput = null;
-
+    // For message transactions, check if any output involves our address
+    // Don't assume specific amounts - handshakes can use any amount
     if (tx.outputs) {
       for (const output of tx.outputs) {
-        const value =
-          typeof output.value === "bigint"
-            ? output.value
-            : BigInt(output.value || 0);
         const address = getOutputAddress(output);
-
-        if (value === messageAmount) {
-          messageOutput = output;
-        } else {
-          changeOutput = output;
+        if (address === ourAddress) {
+          return true; // We're involved if we're either sender or recipient
         }
       }
     }
 
-    // Get addresses from outputs
-    const messageAddress = messageOutput
-      ? getOutputAddress(messageOutput)
-      : null;
-    const changeAddress = changeOutput ? getOutputAddress(changeOutput) : null;
-
-    // We're involved if we're either the recipient (message output)
-    // or the sender (change output)
-    return messageAddress === ourAddress || changeAddress === ourAddress;
-  }
-
-  private stringifyWithBigInt(obj: any): string {
-    return JSON.stringify(obj, (_, value) =>
-      typeof value === "bigint" ? value.toString() : value
-    );
+    return false;
   }
 
   public async sendMessageWithContext(sendMessage: SendMessageWithContextArgs) {
@@ -1661,7 +1648,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private async processBlockEvent(event: any) {
+  private async processBlockEvent(event: BlockAddedData) {
     try {
       const blockTime =
         Number(event?.data?.block?.header?.timestamp) || Date.now();
@@ -1669,8 +1656,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const transactions = event?.data?.block?.transactions || [];
 
       // Process transactions silently
-      const txOutputsMap = new Map<string, any[]>();
-      transactions.forEach((tx: any) => {
+      const txOutputsMap = new Map<string, ITransactionOutput[]>();
+      transactions.forEach((tx) => {
         if (tx.outputs && tx.verboseData?.transactionId) {
           txOutputsMap.set(tx.verboseData.transactionId, tx.outputs);
         }
@@ -1682,7 +1669,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const txId = tx.verboseData?.transactionId;
         if (!txId || this.processedMessageIds.has(txId)) continue;
 
-        if (this.isMessageTransaction(tx)) {
+        if (this.isMessageOrHandshakeTransaction(tx)) {
           // mark the txId as processed to avoid duplicate processing
           this.processedMessageIds.add(txId);
           if (this.processedMessageIds.size > this.MAX_PROCESSED_MESSAGES) {
