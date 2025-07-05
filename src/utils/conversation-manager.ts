@@ -216,8 +216,10 @@ export class ConversationManager {
         existingConversation.status = "active";
       } else {
         // New request – peer likely lost its cache ⇒ let the user respond again
-        existingConversation.status = "pending";
-        existingConversation.initiatedByMe = false;
+        if (existingConversation.status !== "active") {
+          existingConversation.status = "pending";
+          existingConversation.initiatedByMe = false;
+        }
       }
 
       // update last activity
