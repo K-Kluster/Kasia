@@ -11,12 +11,12 @@ export function ToastContainer() {
   const { toasts, remove } = useToastStore();
 
   return (
-    <div className="fixed top-16 right-4 z-60 space-y-2 sm:top-4">
+    <div className="sm:5/6 fixed top-16 right-4 z-60 max-w-1/2 space-y-2 break-all sm:top-4">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           className={clsx(
-            "animate-fade-in flex items-center gap-2 rounded-xl px-2 py-1 text-sm shadow-lg sm:px-4 sm:py-3",
+            "animate-fade-in flex items-center gap-2 rounded-xl px-2 py-1 text-sm break-words shadow-lg sm:px-4 sm:py-3",
             {
               "bg-green-100/80 text-green-900": toast.type === "success",
               "bg-red-100/80 text-red-900": toast.type === "error",

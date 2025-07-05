@@ -304,6 +304,10 @@ export const MessageSection: FC<{
           <SendMessageForm onExpand={scrollToBottom} />
         </>
       )}
+
+      <div className="flex items-center gap-3">
+        {address && <FetchApiMessages address={address.toString()} />}
+      </div>
     </div>
   );
 };
