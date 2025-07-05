@@ -1215,6 +1215,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     maxRetries = 10
   ) {
     try {
+      const walletAddress =
+        this.unlockedWallet.publicKeyGenerator.receiveAddress(
+          this.networkId,
+          0
+        );
+      const stringWalletAddress = walletAddress.toString();
+
       const txId = tx.verboseData?.transactionId;
       if (!txId) {
         console.warn("Transaction ID is missing in real-time processing");
@@ -1222,7 +1229,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-      if (DecryptionCache.hasFailed(txId)) {
+      if (DecryptionCache.hasFailed(stringWalletAddress, txId)) {
         if (process.env.NODE_ENV === "development") {
           console.debug(`Real-time: Skipping known failed decryption: ${txId}`);
         }
@@ -1419,14 +1426,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
         // 🚀 OPTIMIZATION: Mark decryption result in cache
         if (decryptionSuccess) {
-          DecryptionCache.markSuccess(txId);
+          DecryptionCache.markSuccess(stringWalletAddress, txId);
           if (process.env.NODE_ENV === "development") {
             console.debug(
               `Real-time: Successful decryption for ${txId} - removed from failed cache if present`
             );
           }
         } else {
-          DecryptionCache.markFailed(txId);
+          DecryptionCache.markFailed(stringWalletAddress, txId);
           if (process.env.NODE_ENV === "development") {
             console.debug(
               `Real-time: Failed decryption for ${txId} - marked as failed in cache`
@@ -1448,13 +1455,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             payload: tx.payload,
           };
 
-          if (this.receiveAddress) {
-            const messagingStore = useMessagingStore.getState();
-            if (messagingStore) {
-              const myAddress = this.receiveAddress.toString();
-              messagingStore.storeMessage(message, myAddress);
-              messagingStore.loadMessages(myAddress);
-            }
+          const messagingStore = useMessagingStore.getState();
+          if (messagingStore) {
+            messagingStore.storeMessage(message, stringWalletAddress);
+            messagingStore.loadMessages(stringWalletAddress);
           }
 
           if (isHandshake) {
