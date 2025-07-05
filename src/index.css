@@ -197,10 +197,3 @@ body {
 .message.outgoing .file-message {
   background-color: rgba(255, 255, 255, 0.1);
 }
-
-.message-image {
-  max-width: 100%;
-  border-radius: 8px;
-  margin-top: 8px;
-  display: block;
-}

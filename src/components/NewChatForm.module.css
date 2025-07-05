@@ -1,38 +1,3 @@
-.amount-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  font-size: 13px;
-  background: rgba(0, 0, 0, 0.3);
-  color: #ffffff;
-  font-family: monospace;
-  transition:
-    background-color 0.2s,
-    border-color 0.2s;
-  box-sizing: border-box;
-  line-height: 1.4;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.amount-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.amount-input:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.amount-input:focus {
-  outline: none;
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
 .amount-buttons {
   display: flex;
   gap: 8px;
@@ -112,21 +77,6 @@
   line-height: 1.4;
 }
 
-.confirmation-details {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.5;
-}
-
-.confirmation-details p {
-  margin: 5px 0;
-}
-
-.confirmation-details strong {
-  color: white;
-}
-
 .error-message {
   background: rgba(255, 68, 68, 0.1);
   color: #ff4444;
@@ -135,13 +85,6 @@
   border: 1px solid rgba(255, 68, 68, 0.3);
   margin-bottom: 15px;
   font-size: 14px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
 }
 
 .button {
@@ -165,16 +108,6 @@
 .button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.cancel-button {
-  composes: button;
-  background: #666;
-  color: white;
-}
-
-.cancel-button:hover:not(:disabled) {
-  background: #555;
 }
 
 .submit-button {

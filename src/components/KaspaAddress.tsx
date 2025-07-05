@@ -1,6 +1,7 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { Square2StackIcon } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
+import { useIsMobile } from "../utils/useIsMobile";
 
 interface KaspaAddressProps {
   address: string | { toString: () => string };
@@ -9,6 +10,7 @@ interface KaspaAddressProps {
 export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   const [isFullAddress, setIsFullAddress] = useState(false);
   const addressRef = useRef<HTMLSpanElement>(null);
+  const isMobile = useIsMobile();
 
   const [firstSubPart, secondSubPart] = useMemo(() => {
     const asString = typeof address === "string" ? address : address.toString();
@@ -67,7 +69,8 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           {firstSubPart}
           <span
             onClick={handleToggle}
-            className="cursor-pointer px-0.5 text-xl text-blue-500 hover:underline"
+            className="cursor-pointer px-0.5 text-xl text-blue-500 hover:underline max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+            inert={isMobile ? true : undefined}
           >
             ...
           </span>
