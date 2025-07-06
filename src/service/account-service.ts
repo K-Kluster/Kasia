@@ -70,7 +70,7 @@ type AccountServiceEvents = {
     pendingUtxoCount: number;
   }) => void;
   utxosChanged: (utxos: UtxoEntry[]) => void;
-  transactionReceived: (transaction: any) => void;
+  transactionReceived: (transaction: unknown) => void;
   messageReceived: (message: DecodedMessage) => void;
 };
 
@@ -369,9 +369,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Set up block subscription with optimized message handling
       console.log("Setting up block subscription...");
       await this.rpcClient.subscribeToBlockAdded((event) => {
-        // Fire and forget so we adhere to the expected (event) => void signature
-        // The RPC layer delivers an `IBlockAdded` object; our handler expects the richer `BlockAddedData` shape
-        // which is effectively compatible. Cast to avoid a structural-type mismatch without runtime cost.
+        // Fire-and-forget; callback signature remains (event) => void
         void this.processBlockEvent(event as unknown as BlockAddedData);
       });
       console.log("Successfully subscribed to block events");

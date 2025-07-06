@@ -172,13 +172,11 @@ export class ConversationManager {
           payload.isResponse &&
           existingConversationById.status === "pending"
         ) {
-          this.events?.onHandshakeCompleted?.(existingConversationById);
-          // Safely promote the pending conversation to active without directly mutating through the narrowed PendingConversation type
-          this.updateConversation({
-            conversationId: existingConversationById.conversationId,
-            status: "active",
-          });
+          // Promote the existing pending conversation to active *in-place* so any listeners that hold the original object see the change immediately.
+          (existingConversationById as unknown as ActiveConversation).status =
+            "active";
           this.saveConversation(existingConversationById);
+          this.events?.onHandshakeCompleted?.(existingConversationById);
         }
         return; // ⬅ nothing else to do
       }
