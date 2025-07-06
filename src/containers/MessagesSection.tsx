@@ -304,6 +304,10 @@ export const MessageSection: FC<{
           <SendMessageForm onExpand={scrollToBottom} />
         </>
       )}
+
+      <div className="hidden">
+        {address && <FetchApiMessages address={address.toString()} />}
+      </div>
     </div>
   );
 };

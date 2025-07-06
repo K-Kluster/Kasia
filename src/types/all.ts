@@ -1,4 +1,4 @@
-import { FeeSource } from "kaspa-wasm";
+import { FeeSource, ITransaction } from "kaspa-wasm";
 
 export type Message = {
   transactionId: string;
@@ -39,7 +39,7 @@ interface Data {
 
 interface Block {
   header: Header;
-  transactions: Transaction[];
+  transactions: ITransaction[];
   verboseData: VerboseData3;
 }
 

@@ -1,14 +1,18 @@
 import { FC, useState, useEffect } from "react";
 import { DecryptionCache } from "../../utils/decryption-cache";
 import clsx from "clsx";
+import { useWalletStore } from "../../store/wallet.store";
 
 export const DecryptionCacheDebug: FC = () => {
   const [stats, setStats] = useState({ size: 0 });
   const [isVisible, setIsVisible] = useState(false);
+  const address = useWalletStore((s) => s.address);
 
   useEffect(() => {
+    if (!address) return;
+
     const updateStats = () => {
-      setStats(DecryptionCache.getStats());
+      setStats(DecryptionCache.getStats(address.toString()));
     };
 
     // Update stats initially
@@ -18,11 +22,12 @@ export const DecryptionCacheDebug: FC = () => {
     const interval = setInterval(updateStats, 5000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [address]);
 
   const handleClearCache = () => {
-    DecryptionCache.clear();
-    setStats(DecryptionCache.getStats());
+    if (!address) return;
+    DecryptionCache.clear(address.toString());
+    setStats(DecryptionCache.getStats(address.toString()));
   };
 
   if (!isVisible) {

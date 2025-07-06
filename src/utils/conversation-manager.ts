@@ -160,50 +160,38 @@ export class ConversationManager {
       const payload = this.parseHandshakePayload(payloadString);
       this.validateHandshakePayload(payload);
 
-      const existingConversation =
-        this.identifyConversationByConversationIdOrAddress(
-          payload.conversationId,
-          senderAddress
-        );
+      // STEP 1 – look up strictly by conversationId only
+      const existingConversationById = this.conversations.get(
+        payload.conversationId
+      );
 
-      if (!existingConversation) {
+      if (existingConversationById) {
+        // ------- this is a replay of a message we already handled -------
+        // keep the guard so we don't downgrade on refresh
+        if (
+          payload.isResponse &&
+          existingConversationById.status === "pending"
+        ) {
+          this.events?.onHandshakeCompleted?.(existingConversationById);
+          existingConversationById.status = "active";
+          this.saveConversation(existingConversationById);
+        }
+        return; // ⬅ nothing else to do
+      }
+
+      // STEP 2 – we didn't find that ID, but do we know the address?
+      const existingByAddress =
+        this.addressToConversation.get(senderAddress) &&
+        this.conversations.get(this.addressToConversation.get(senderAddress)!);
+
+      if (existingByAddress && !payload.isResponse) {
+        // ---------- peer lost cache & is initiating again ----------
+        // create a *new* pending conversation linked to the new ID
         return this.processNewHandshake(payload, senderAddress);
       }
 
-      // if sending address is different, drop the message
-      if (existingConversation.kaspaAddress !== senderAddress) {
-        this.events?.onError?.(
-          new Error(
-            `Handshake address mismatch: ${existingConversation.kaspaAddress} !== ${senderAddress}`
-          )
-        );
-        return;
-      }
-
-      // regardless of the current conversation state, update the conversation with the new alias if it's different
-      if (existingConversation.theirAlias !== payload.alias) {
-        existingConversation.theirAlias = payload.alias;
-      }
-
-      // set conversation as active if it's a response
-      if (payload.isResponse) {
-        // if our state wasn't active, notify
-        if (existingConversation.status === "pending") {
-          this.events?.onHandshakeCompleted?.(existingConversation);
-        }
-
-        existingConversation.status = "active";
-      } else {
-        // request from someone that has clear their cache, need to offer the possibility to accept the conversation again (rebound)
-        existingConversation.status = "pending";
-        existingConversation.initiatedByMe = false;
-      }
-
-      // update last activity
-      existingConversation.lastActivity = Date.now();
-
-      // persist the conversation
-      this.saveConversation(existingConversation);
+      // STEP 3 – completely unknown (first contact ever)
+      return this.processNewHandshake(payload, senderAddress);
     } catch (error) {
       this.events?.onError?.(error);
       throw error;
@@ -593,18 +581,26 @@ export class ConversationManager {
    * @param conversation The conversation to validate
    * @returns boolean indicating if the conversation is valid
    */
-  private isValidConversation(conversation: any): conversation is Conversation {
+  private isValidConversation(
+    conversation: unknown
+  ): conversation is Conversation {
+    if (typeof conversation !== "object" || conversation === null) {
+      return false;
+    }
+
+    const conv = conversation as Partial<Conversation>;
+
     return (
-      typeof conversation === "object" &&
-      typeof conversation.conversationId === "string" &&
-      typeof conversation.myAlias === "string" &&
-      (conversation.theirAlias === null ||
-        typeof conversation.theirAlias === "string") &&
-      typeof conversation.kaspaAddress === "string" &&
-      ["pending", "active", "rejected"].includes(conversation.status) &&
-      typeof conversation.createdAt === "number" &&
-      typeof conversation.lastActivity === "number" &&
-      typeof conversation.initiatedByMe === "boolean"
+      typeof conv.conversationId === "string" &&
+      typeof conv.myAlias === "string" &&
+      (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
+      typeof conv.kaspaAddress === "string" &&
+      ["pending", "active", "rejected"].includes(
+        conv.status as Conversation["status"]
+      ) &&
+      typeof conv.createdAt === "number" &&
+      typeof conv.lastActivity === "number" &&
+      typeof conv.initiatedByMe === "boolean"
     );
   }
 }
