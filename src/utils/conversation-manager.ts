@@ -160,73 +160,38 @@ export class ConversationManager {
       const payload = this.parseHandshakePayload(payloadString);
       this.validateHandshakePayload(payload);
 
-      const existingConversation =
-        this.identifyConversationByConversationIdOrAddress(
-          payload.conversationId,
-          senderAddress
-        );
+      // STEP 1 – look up strictly by conversationId only
+      const existingConversationById = this.conversations.get(
+        payload.conversationId
+      );
 
-      if (!existingConversation) {
+      if (existingConversationById) {
+        // ------- this is a replay of a message we already handled -------
+        // keep the guard so we don't downgrade on refresh
+        if (
+          payload.isResponse &&
+          existingConversationById.status === "pending"
+        ) {
+          this.events?.onHandshakeCompleted?.(existingConversationById);
+          existingConversationById.status = "active";
+          this.saveConversation(existingConversationById);
+        }
+        return; // ⬅ nothing else to do
+      }
+
+      // STEP 2 – we didn't find that ID, but do we know the address?
+      const existingByAddress =
+        this.addressToConversation.get(senderAddress) &&
+        this.conversations.get(this.addressToConversation.get(senderAddress)!);
+
+      if (existingByAddress && !payload.isResponse) {
+        // ---------- peer lost cache & is initiating again ----------
+        // create a *new* pending conversation linked to the new ID
         return this.processNewHandshake(payload, senderAddress);
       }
 
-      // If the stored address and the observed sender address differ **and** both are known,
-      // treat it as a real mismatch and ignore the message. However, it is quite common that
-      // the very first message arrives before we can resolve the real sender address, in which
-      // case we temporarily store "Unknown". We should not reject the handshake in such cases.
-
-      if (
-        existingConversation.kaspaAddress !== senderAddress &&
-        existingConversation.kaspaAddress !== "Unknown" &&
-        senderAddress !== "Unknown"
-      ) {
-        this.events?.onError?.(
-          new Error(
-            `Handshake address mismatch: ${existingConversation.kaspaAddress} !== ${senderAddress}`
-          )
-        );
-        return;
-      }
-
-      // If we previously stored an "Unknown" sender address but now have the real one,
-      // update the conversation and our internal address mapping so that future look-ups work.
-      if (
-        existingConversation.kaspaAddress === "Unknown" &&
-        senderAddress !== "Unknown"
-      ) {
-        existingConversation.kaspaAddress = senderAddress;
-        this.addressToConversation.set(
-          senderAddress,
-          existingConversation.conversationId
-        );
-      }
-
-      // regardless of the current conversation state, update the conversation with the new alias if it's different
-      if (existingConversation.theirAlias !== payload.alias) {
-        existingConversation.theirAlias = payload.alias;
-      }
-
-      // set conversation as active if it's a response
-      if (payload.isResponse) {
-        // if our state wasn't active, notify
-        if (existingConversation.status === "pending") {
-          this.events?.onHandshakeCompleted?.(existingConversation);
-        }
-
-        existingConversation.status = "active";
-      } else {
-        // New request – peer likely lost its cache ⇒ let the user respond again
-        if (existingConversation.status !== "active") {
-          existingConversation.status = "pending";
-          existingConversation.initiatedByMe = false;
-        }
-      }
-
-      // update last activity
-      existingConversation.lastActivity = Date.now();
-
-      // persist the conversation
-      this.saveConversation(existingConversation);
+      // STEP 3 – completely unknown (first contact ever)
+      return this.processNewHandshake(payload, senderAddress);
     } catch (error) {
       this.events?.onError?.(error);
       throw error;
