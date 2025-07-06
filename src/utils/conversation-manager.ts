@@ -173,7 +173,11 @@ export class ConversationManager {
           existingConversationById.status === "pending"
         ) {
           this.events?.onHandshakeCompleted?.(existingConversationById);
-          existingConversationById.status = "active";
+          // Safely promote the pending conversation to active without directly mutating through the narrowed PendingConversation type
+          this.updateConversation({
+            conversationId: existingConversationById.conversationId,
+            status: "active",
+          });
           this.saveConversation(existingConversationById);
         }
         return; // ⬅ nothing else to do
