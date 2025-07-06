@@ -5,7 +5,7 @@ import { ArrowPathIcon } from "@heroicons/react/24/solid";
 export const SplashScreen: FC = () => {
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-6 p-4 sm:p-0">
-      <img src="/kasia-logo.png" alt="Kasia Logo" className="h-32 w-32" />
+      <img src="/kasia-logo.png" alt="Kasia Logo" className="h-40 w-40" />
       <div className="flex flex-col items-center gap-4">
         <h1 className="mt-4 text-center text-4xl font-bold">
           Kasia: Encrypted Messaging Platform

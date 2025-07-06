@@ -28,7 +28,7 @@ export const Header: FC<Props> = ({
           alt="Kasia Logo"
           className="-mr-6 h-[60px] w-[60px] object-contain"
         />
-        <div className="ml-4 text-2xl font-semibold text-[var(--text-primary)]">
+        <div className="ml-3 text-2xl font-semibold text-[var(--text-primary)]">
           Kasia
         </div>
       </div>
