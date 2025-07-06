@@ -1573,7 +1573,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             recipientAddress: recipientAddress || "Unknown",
             timestamp: blockTime,
             content: decryptedContent,
-            amount: Number(tx.outputs[0].value) / 100000000,
+            amount:
+              Number(
+                isITransaction(tx) ? tx.outputs[0].value : tx.outputs[0].amount
+              ) / 100000000,
             payload: tx.payload,
           };
 
@@ -1594,7 +1597,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
     } catch (error) {
       console.error(
-        `Error processing message transaction ${tx.verboseData?.transactionId}:`,
+        `Error processing message transaction ${getTransactionId(tx)}:`,
         error
       );
     }
