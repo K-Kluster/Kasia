@@ -17,7 +17,7 @@ import {
   UnlockedWallet,
   WalletBalance,
 } from "../types/wallet.type";
-import { TransactionId } from "../types/transactions";
+import { TransactionId, ExplorerTransaction } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
 
@@ -237,7 +237,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
           // Balance updates handled by balance event
         });
 
-        _accountService.on("transactionReceived", async (txDetails) => {
+        _accountService.on("transactionReceived", async (raw) => {
+          const txDetails = raw as ExplorerTransaction;
           if (txDetails.payload?.startsWith("636970685f6d73673a")) {
             const messageOutput = txDetails.outputs.find(
               (output: { amount: number }) => output.amount === 10000000
@@ -359,7 +360,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
         // Balance updates handled by balance event
       });
 
-      _accountService.on("transactionReceived", async (txDetails) => {
+      _accountService.on("transactionReceived", async (raw) => {
+        const txDetails = raw as ExplorerTransaction;
         if (txDetails.payload?.startsWith("636970685f6d73673a")) {
           const messageOutput = txDetails.outputs.find(
             (output: { amount: number }) => output.amount === 10000000
