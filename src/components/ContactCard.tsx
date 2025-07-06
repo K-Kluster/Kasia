@@ -52,7 +52,7 @@ export const ContactCard: FC<{
       try {
         const parsed = JSON.parse(message.content);
         if (parsed.type === "payment") {
-          return parsed.message || "Payment sent";
+          return parsed.message?.trim() || "Payment";
         }
       } catch (e) {
         // Not a payment message, continue with normal handling
