@@ -606,6 +606,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       console.log(`Payment with message submitted with ID: ${txId}`);
 
+      // Reset the context to trigger immediate balance update
+      await this.context.clear();
+      await this.context.trackAddresses([this.receiveAddress!]);
+
       // Create a message record for the sender to show they sent this payment
       if (this.receiveAddress) {
         try {
