@@ -392,11 +392,13 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           </label>
           <Textarea
             ref={useRecipientInputRef}
-            className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
+            className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white lowercase placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
             rows={2}
             id="recipientAddress"
             value={recipientInputValue}
-            onChange={(e) => setRecipientInputValue(e.target.value)}
+            onChange={(e) =>
+              setRecipientInputValue(e.target.value.toLowerCase())
+            }
             placeholder="Kaspa address or Kns domain"
             disabled={isLoading}
             required
