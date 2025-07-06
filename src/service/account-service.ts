@@ -1299,6 +1299,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         if (prevTxId && typeof prevOutputIndex === "number") {
           try {
             const prevTx = await this._fetchTransactionDetails(
+              // this returns an explorer transaction
               prevTxId,
               maxRetries
             );
@@ -1337,6 +1338,41 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       }
 
+      // If we still don't have a sender address, try to fetch it from the previous transaction
+      if (
+        !senderAddress &&
+        isExplorerTransaction(tx) &&
+        tx.inputs &&
+        tx.inputs.length > 0
+      ) {
+        // Try all inputs to find a valid sender address
+        for (let i = 0; i < tx.inputs.length; i++) {
+          const input = tx.inputs[i];
+          // previous_outpoint_hash
+          const prevTxId = input.previous_outpoint_hash;
+          const prevOutputIndex = parseInt(input.previous_outpoint_index);
+
+          if (prevTxId && !isNaN(prevOutputIndex)) {
+            try {
+              const prevTx = await this._fetchTransactionDetails(
+                prevTxId,
+                maxRetries
+              );
+              if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
+                const output = prevTx.outputs[prevOutputIndex];
+                senderAddress = output.script_public_key_address;
+                break;
+              }
+            } catch (error) {
+              console.error(
+                "Error getting sender address from previous transaction:",
+                error
+              );
+            }
+          }
+        }
+      }
+
       // Process the message
       const payload = getTransactionPayload(tx);
       if (!payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
@@ -1350,6 +1386,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
+
       const handshakePrefix = "313a68616e647368616b653a";
       const commPrefix = "313a636f6d6d3a";
       const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
@@ -1443,8 +1480,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             messageType = "handshake";
             isHandshake = true;
             try {
-              console.log({ decryptedContent });
-              const handshakeData = JSON.parse(decryptedContent);
+              // extract the JSON part
+              let jsonContent = decryptedContent;
+              if (decryptedContent.includes("ciph_msg:1:handshake:")) {
+                jsonContent = decryptedContent.split(
+                  "ciph_msg:1:handshake:"
+                )[1];
+              }
+              const handshakeData = JSON.parse(jsonContent);
               if (handshakeData.isResponse) {
                 await this.updateMonitoredConversations();
               }
@@ -1477,7 +1520,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               messageType = "handshake";
               isHandshake = true;
               try {
-                const handshakeData = JSON.parse(decryptedContent);
+                // extract the JSON part
+                let jsonContent = decryptedContent;
+                if (decryptedContent.includes("ciph_msg:1:handshake:")) {
+                  jsonContent = decryptedContent.split(
+                    "ciph_msg:1:handshake:"
+                  )[1];
+                }
+                const handshakeData = JSON.parse(jsonContent);
                 if (handshakeData.isResponse) {
                   await this.updateMonitoredConversations();
                 }
