@@ -70,7 +70,7 @@ type AccountServiceEvents = {
     pendingUtxoCount: number;
   }) => void;
   utxosChanged: (utxos: UtxoEntry[]) => void;
-  transactionReceived: (transaction: unknown) => void;
+  transactionReceived: (transaction: any) => void;
   messageReceived: (message: DecodedMessage) => void;
 };
 

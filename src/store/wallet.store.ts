@@ -237,7 +237,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
           // Balance updates handled by balance event
         });
 
-        _accountService.on("transactionReceived", async (txDetails) => {
+        _accountService.on("transactionReceived", async (raw) => {
+          const txDetails = raw as ExplorerTransaction;
           if (txDetails.payload?.startsWith("636970685f6d73673a")) {
             const messageOutput = txDetails.outputs.find(
               (output: { amount: number }) => output.amount === 10000000
@@ -359,7 +360,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
         // Balance updates handled by balance event
       });
 
-      _accountService.on("transactionReceived", async (txDetails) => {
+      _accountService.on("transactionReceived", async (raw) => {
+        const txDetails = raw as ExplorerTransaction;
         if (txDetails.payload?.startsWith("636970685f6d73673a")) {
           const messageOutput = txDetails.outputs.find(
             (output: { amount: number }) => output.amount === 10000000
