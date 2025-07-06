@@ -9,7 +9,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/solid";
 import { useMessagingStore } from "../../store/messaging.store";
-import { useModals } from "../../context/ModalContext";
+
 import clsx from "clsx";
 import { useUiStore } from "../../store/ui.store";
 
@@ -29,7 +29,7 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
 
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const messageStore = useMessagingStore();
-  const { openModal } = useModals();
+  const { openModal } = useUiStore();
 
   useEffect(() => {
     if (!open) {

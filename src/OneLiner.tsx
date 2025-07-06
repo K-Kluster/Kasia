@@ -10,7 +10,6 @@ import { ArrowPathIcon } from "@heroicons/react/24/solid";
 import { useNetworkStore } from "./store/network.store";
 import { ContactSection } from "./containers/ContactSection";
 import { useIsMobile } from "./utils/useIsMobile";
-import { useModals } from "./context/ModalContext";
 import { Modal } from "./components/Common/modal";
 import { WalletAddressSection } from "./components/Modals/WalletAddressSection";
 import { WalletWithdrawal } from "./components/Modals/WalletWithdrawal";
@@ -36,7 +35,7 @@ export const OneLiner: FC = () => {
   const walletStore = useWalletStore();
 
   const isMobile = useIsMobile();
-  const { isOpen, closeModal, closeAllModals } = useModals();
+  const { isOpen, closeModal, closeAllModals } = useUiStore();
 
   useEffect(() => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);

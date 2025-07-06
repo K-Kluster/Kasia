@@ -4,7 +4,7 @@ import { useWalletStore } from "../../store/wallet.store";
 import { useIsMobile } from "../../utils/useIsMobile";
 import { Header } from "../Layout/Header";
 import { SlideOutMenu } from "../Layout/SlideOutMenu";
-import { ModalProvider } from "../../context/ModalContext";
+
 import { ToastContainer } from "../Common/ToastContainer";
 import { useUiStore } from "../../store/ui.store";
 import { toast } from "../../utils/toast";
@@ -34,7 +34,7 @@ export const RootLayout: FC = () => {
   }, [location]);
 
   return (
-    <ModalProvider>
+    <>
       <ToastContainer />
 
       {/* desktop header */}
@@ -57,6 +57,6 @@ export const RootLayout: FC = () => {
       )}
 
       <Outlet />
-    </ModalProvider>
+    </>
   );
 };

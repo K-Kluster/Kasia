@@ -8,7 +8,7 @@ export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
   children,
 }) => (
   <div
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    className="modalFadeIn fixed inset-0 z-50 flex items-center justify-center bg-black/50"
     onClick={onClose}
   >
     <div

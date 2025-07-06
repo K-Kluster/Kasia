@@ -25,7 +25,7 @@ import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
-import { useModals } from "../context/ModalContext";
+import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
 import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
@@ -63,7 +63,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const { isOpen, closeModal, openModal } = useModals();
+  const { isOpen, closeModal, openModal } = useUiStore();
 
   const messageStore = useMessagingStore();
 

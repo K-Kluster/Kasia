@@ -10,7 +10,7 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/solid";
 import { useMessagingStore } from "../../store/messaging.store";
-import { useModals } from "../../context/ModalContext";
+
 import { FeeBuckets } from "../FeeBuckets";
 import { useUiStore } from "../../store/ui.store";
 
@@ -30,7 +30,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
 
   const msgStore = useMessagingStore();
   const [actionsOpen, setActionsOpen] = useState(false);
-  const { openModal } = useModals();
+  const { openModal } = useUiStore();
 
   useEffect(() => {
     if (!open) {
