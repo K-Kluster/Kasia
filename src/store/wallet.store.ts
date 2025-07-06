@@ -17,7 +17,7 @@ import {
   UnlockedWallet,
   WalletBalance,
 } from "../types/wallet.type";
-import { TransactionId } from "../types/transactions";
+import { TransactionId, ExplorerTransaction } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
 
