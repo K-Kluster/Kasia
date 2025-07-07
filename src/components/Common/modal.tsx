@@ -1,14 +1,19 @@
 import { FC, ReactNode } from "react";
 import { XMarkIcon } from "@heroicons/react/24/solid";
+import clsx from "clsx";
 
 // Basic modal component to standardise the look
 // Pass in your children - this just provides the bare minimum
-export const Modal: FC<{ onClose: () => void; children: ReactNode }> = ({
-  onClose,
-  children,
-}) => (
+export const Modal: FC<{
+  onClose: () => void;
+  children: ReactNode;
+  className?: string;
+}> = ({ onClose, children, className }) => (
   <div
-    className="modalFadeIn fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    className={clsx(
+      "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
+      className
+    )}
     onClick={onClose}
   >
     <div

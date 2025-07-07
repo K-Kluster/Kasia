@@ -4,6 +4,7 @@ import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
+import { QrScanner } from "../QrScanner";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 
@@ -118,14 +119,20 @@ export const WalletWithdrawal: FC = () => {
     <>
       <h4 className="text-lg font-semibold">Withdraw KAS</h4>
       <div className="mt-2">
-        <textarea
-          value={withdrawAddress}
-          onChange={(e) => setWithdrawAddress(e.target.value)}
-          placeholder="Enter Kaspa address"
-          rows={2}
-          className="mb-2 w-full resize-none rounded-md border border-white/20 bg-black/30 p-2 break-words whitespace-pre-wrap text-white"
-        />
-
+        <div className="flex items-center gap-2">
+          <textarea
+            value={withdrawAddress}
+            onChange={(e) => setWithdrawAddress(e.target.value)}
+            placeholder="Enter Kaspa address"
+            rows={3}
+            className="mb-2 w-full resize-none rounded-md border border-white/20 bg-black/30 p-2 break-words whitespace-pre-wrap text-white"
+          />
+          <QrScanner
+            onScan={(data: string) => {
+              setWithdrawAddress(data.toLowerCase());
+            }}
+          />
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <input
