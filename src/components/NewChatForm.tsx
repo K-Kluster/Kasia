@@ -278,7 +278,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       // Initiate handshake with custom amount
 
       await messageStore.initiateHandshake(knsRecipientAddress, amountSompi);
-      messageStore.setOpenedRecipient(recipientInputValue);
+      messageStore.setOpenedRecipient(knsRecipientAddress);
 
       if (
         detectedRecipientInputValueFormat === "kns" &&

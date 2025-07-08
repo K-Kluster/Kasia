@@ -2,33 +2,40 @@ import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { Square2StackIcon } from "@heroicons/react/24/outline";
 import { toast } from "../utils/toast";
 import { useIsMobile } from "../utils/useIsMobile";
+import { useMessagingStore } from "../store/messaging.store";
 
 interface KaspaAddressProps {
   address: string | { toString: () => string };
 }
 
 export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
+  const NICKNAME_SHORT_LENGTH = 20;
   const [isFullAddress, setIsFullAddress] = useState(false);
   const addressRef = useRef<HTMLSpanElement>(null);
-  const isMobile = useIsMobile();
+
+  const addressStr = typeof address === "string" ? address : address.toString();
+  const contact = useMessagingStore((s) =>
+    s.contacts.find((c) => c.address === addressStr)
+  );
+  const nickname =
+    contact && typeof contact.nickname === "string" && contact.nickname.trim()
+      ? contact.nickname.trim()
+      : "";
+
+  const displayString = nickname || addressStr;
+  const isNickname = !!nickname;
 
   const [firstSubPart, secondSubPart] = useMemo(() => {
-    const asString = typeof address === "string" ? address : address.toString();
-    if (asString.length < 10) {
-      return [asString, ""];
+    const indexOfColon = addressStr.indexOf(":");
+    if (indexOfColon === -1) {
+      return [addressStr, ""];
     }
-
-    const indexOfColon = asString.indexOf(":");
-
-    // keep the prefix, can be either kaspa or kaspatest
-    const prefix = asString.slice(0, indexOfColon);
-
-    // shorten the address to the first 5 and last 5 characters
+    const prefix = addressStr.slice(0, indexOfColon);
     return [
-      `${prefix}:${asString.slice(indexOfColon + 1, indexOfColon + 6)}`,
-      `${asString.slice(-5)}`,
+      `${prefix}:${addressStr.slice(indexOfColon + 1, indexOfColon + 6)}`,
+      addressStr.slice(-5),
     ];
-  }, [address]);
+  }, [addressStr]);
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -51,30 +58,56 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   };
 
   const handleCopy = () => {
-    const asString = typeof address === "string" ? address : address.toString();
-    navigator.clipboard.writeText(asString).then(() => {});
+    navigator.clipboard.writeText(addressStr).then(() => {});
     toast.info("Address copied");
   };
+
+  const isMobile = useIsMobile();
+
+  const isLongNickname =
+    isNickname && displayString.length > NICKNAME_SHORT_LENGTH;
+
   return (
     <span
       ref={addressRef}
       className="flex items-center justify-center align-middle"
     >
-      {isFullAddress ? (
-        <span className="">
-          {typeof address === "string" ? address : address.toString()}
-        </span>
-      ) : (
-        <span className="inline-block align-middle leading-normal">
-          {firstSubPart}
+      {isFullAddress || (nickname && !isLongNickname) ? (
+        <span className="">{displayString}</span>
+      ) : isLongNickname ? (
+        <span>
+          {displayString.slice(0, NICKNAME_SHORT_LENGTH - 3)}
           <span
-            onClick={handleToggle}
-            className="cursor-pointer px-0.5 text-xl text-blue-500 hover:underline max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+            onClick={isMobile ? undefined : handleToggle}
+            className={
+              isMobile
+                ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+                : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
+            }
             inert={isMobile ? true : undefined}
           >
             ...
           </span>
-          {secondSubPart}
+        </span>
+      ) : (
+        <span>
+          {firstSubPart}
+          {secondSubPart ? (
+            <>
+              <span
+                onClick={isMobile ? undefined : handleToggle}
+                className={
+                  isMobile
+                    ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+                    : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
+                }
+                inert={isMobile ? true : undefined}
+              >
+                ...
+              </span>
+              {secondSubPart}
+            </>
+          ) : null}
         </span>
       )}
       <button
