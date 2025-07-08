@@ -1,4 +1,4 @@
-import { FC, useMemo, useState } from "react";
+import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/all-in-one";
 import { useMessagingStore } from "../store/messaging.store";
@@ -19,6 +19,8 @@ export const ContactCard: FC<{
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState(contact.nickname || "");
   const messagingStore = useMessagingStore();
+  const [showNewMsgAlert, setNewMsgAlert] = useState(false);
+  const prevMessageId = useRef<string | undefined>(undefined);
 
   // Use the store selector to get the latest message for this contact
   const lastMessage = useMessagingStore((s) =>
@@ -131,6 +133,27 @@ export const ContactCard: FC<{
     setIsEditingNickname(false);
   };
 
+  useEffect(() => {
+    if (
+      !isSelected &&
+      lastMessage?.transactionId &&
+      prevMessageId.current !== undefined && // Only trigger if not first render
+      prevMessageId.current !== lastMessage.transactionId
+    ) {
+      setNewMsgAlert(true);
+      const timeout = setTimeout(() => setNewMsgAlert(false), 5000);
+      prevMessageId.current = lastMessage.transactionId;
+      return () => clearTimeout(timeout);
+    }
+    prevMessageId.current = lastMessage?.transactionId;
+  }, [lastMessage?.transactionId, isSelected]);
+
+  useEffect(() => {
+    if (isSelected && showNewMsgAlert) {
+      setNewMsgAlert(false);
+    }
+  }, [isSelected, showNewMsgAlert]);
+
   if (!contact?.address) {
     return null;
   }
@@ -149,9 +172,11 @@ export const ContactCard: FC<{
             address={contact.address}
             size={32}
             selected={isSelected}
-            className={clsx({ "opacity-60": !!avatarLetter })}
+            className={clsx(
+              { "opacity-60": !!avatarLetter },
+              showNewMsgAlert && "animate-spin opacity-90"
+            )}
           />
-
           {/* letter */}
           {avatarLetter && (
             <span
@@ -165,10 +190,9 @@ export const ContactCard: FC<{
               {avatarLetter}
             </span>
           )}
-
           {/* ring hugging the avatar, only when selected */}
           {isSelected && (
-            <div className="ring-kas-secondary pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 blur-sm filter" />
+            <div className="ring-kas-secondary pointer-events-none absolute inset-0 rounded-full ring-2" />
           )}
         </div>
       </div>
@@ -179,15 +203,23 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "group hover:border-kas-secondary/50 bg-bg-secondary mb-2 cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
+        "group bg-bg-secondary relative mb-2 cursor-pointer overflow-hidden rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
         {
           "border-[var(--color-kas-primary)] bg-[var(--color-kas-primary)]/5":
             isSelected,
-          "border-[var(--border-color)]": !isSelected,
+          "border-[var(--border-color)]": !isSelected && !showNewMsgAlert,
+          "border-kas-secondary": showNewMsgAlert,
         }
       )}
       onClick={() => !isEditingNickname && onClick?.(contact)}
     >
+      {/* Internal border overlay for alert */}
+      {showNewMsgAlert && (
+        <div
+          className="border-kas-secondary pointer-events-none absolute inset-0 rounded-lg border-2 transition-all duration-300"
+          style={{ zIndex: 1 }}
+        />
+      )}
       <div className="mb-2 text-base font-semibold">
         {isEditingNickname ? (
           <div className="flex w-full flex-col md:flex-row md:items-center md:gap-2">
@@ -250,7 +282,14 @@ export const ContactCard: FC<{
         )}
       </div>
       <div className="overflow-hidden text-sm text-ellipsis whitespace-nowrap text-[var(--text-secondary)]">
-        {preview}
+        <span
+          className={clsx(
+            "relative transition-colors duration-300",
+            showNewMsgAlert && "text-kas-secondary animate-pulse"
+          )}
+        >
+          {preview}
+        </span>
       </div>
       <div className="mt-1 text-xs text-[var(--text-secondary)]">
         {timestamp}
