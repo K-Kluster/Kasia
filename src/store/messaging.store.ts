@@ -88,6 +88,7 @@ interface MessagingState {
   // Nickname management
   setContactNickname: (address: string, nickname: string) => void;
   removeContactNickname: (address: string) => void;
+  getLastMessageForContact: (contactAddress: string) => Message | null;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -1034,5 +1035,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
   removeContactNickname: (address: string) => {
     g().setContactNickname(address, "");
+  },
+  getLastMessageForContact: (contactAddress: string) => {
+    const messages = g().messages;
+    const relevant = messages.filter(
+      (msg) =>
+        msg.senderAddress === contactAddress ||
+        msg.recipientAddress === contactAddress
+    );
+    return relevant.length
+      ? relevant.reduce((a, b) => (a.timestamp > b.timestamp ? a : b))
+      : null;
   },
 }));

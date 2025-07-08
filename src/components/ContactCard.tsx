@@ -20,37 +20,44 @@ export const ContactCard: FC<{
   const [tempNickname, setTempNickname] = useState(contact.nickname || "");
   const messagingStore = useMessagingStore();
 
-  const preview = useMemo(() => {
-    if (!contact?.lastMessage) return "";
+  // Use the store selector to get the latest message for this contact
+  const lastMessage = useMessagingStore((s) =>
+    s.getLastMessageForContact(contact.address)
+  );
 
-    const message = contact.lastMessage;
+  // get last message preview
+  const preview = useMemo(() => {
+    if (!lastMessage) return "";
+
+    const { content, payload } = lastMessage;
+
     // Handle different message types
-    if (message.content) {
+    if (content) {
       // If it's a handshake message
       if (
-        message.content.includes("Handshake completed") ||
-        message.content.includes("handshake")
+        content.includes("Handshake completed") ||
+        content.includes("handshake")
       ) {
         return "Handshake completed";
       }
 
       // If it's a file message
-      if (message.content.startsWith("[File:")) {
+      if (content.startsWith("[File:")) {
         // only consider the file name, not the whole content
-        return message.content;
+        return content;
       }
 
       // For regular messages, try to decode if it's encrypted
-      if (message.content.startsWith("ciph_msg:")) {
-        const decoded = decodePayload(message.content);
+      if (content.startsWith("ciph_msg:")) {
+        const decoded = decodePayload(content);
         return decoded
-          ? decoded.slice(0, 40) + (message.content.length > 40 ? "..." : "")
+          ? decoded.slice(0, 40) + (content.length > 40 ? "..." : "")
           : "Encrypted message";
       }
 
       // Check if it's a payment message
       try {
-        const parsed = JSON.parse(message.content);
+        const parsed = JSON.parse(content);
         if (parsed.type === "payment") {
           return parsed.message?.trim() || "Payment";
         }
@@ -58,41 +65,35 @@ export const ContactCard: FC<{
         // Not a payment message, continue with normal handling
       }
 
-      // Plain text content, take the 20 first characters
-      return (
-        message.content.slice(0, 40) +
-        (message.content.length > 40 ? "..." : "")
-      );
+      // Plain text content, take the first 40 characters
+      return content.slice(0, 40) + (content.length > 40 ? "..." : "");
     }
 
     // Fallback to payload if no content
-    if (message.payload) {
-      if (message.payload.includes("handshake")) {
+    if (payload) {
+      if (payload.includes("handshake")) {
         return "Handshake message";
       }
 
-      const decoded = decodePayload(message.payload);
+      const decoded = decodePayload(payload);
       return decoded || "Encrypted message";
     }
 
     return "No message content";
-  }, [contact?.lastMessage]);
+  }, [lastMessage]);
 
   const timestamp = useMemo(() => {
-    if (!contact?.lastMessage?.timestamp) return "";
-    return new Date(contact.lastMessage.timestamp).toLocaleString();
-  }, [contact?.lastMessage?.timestamp]);
+    if (!lastMessage?.timestamp) return "";
+    return new Date(lastMessage.timestamp).toLocaleString();
+  }, [lastMessage?.timestamp]);
 
   const shortAddress = useMemo(() => {
     if (!contact?.address) return "Unknown";
     const addr = contact.address;
-
-    // If address is "Unknown", try to extract a better name from the message content
     if (addr === "Unknown") {
-      // Try to extract alias from handshake messages
-      if (contact.lastMessage?.payload?.includes("handshake")) {
+      if (lastMessage?.payload?.includes("handshake")) {
         try {
-          const handshakeMatch = contact.lastMessage.payload.match(
+          const handshakeMatch = lastMessage.payload.match(
             /ciph_msg:1:handshake:(.+)/
           );
           if (handshakeMatch) {
@@ -102,26 +103,21 @@ export const ContactCard: FC<{
             }
           }
         } catch (e) {
-          // Ignore parsing errors
+          // Ignore parsing errors for handshake alias extraction
         }
       }
       return "Unknown Contact";
     }
-
-    // For valid Kaspa addresses, show truncated version
     if (addr.startsWith("kaspa:") || addr.startsWith("kaspatest:")) {
       return `${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}`;
     }
-
     return addr;
-  }, [contact?.address, contact?.lastMessage?.payload]);
+  }, [contact?.address, lastMessage?.payload]);
 
   const displayName = useMemo(() => {
-    // If nickname exists, show ONLY the nickname
     if (contact.nickname?.trim()) {
       return contact.nickname;
     }
-    // Otherwise show the address/alias (unchanged)
     return shortAddress;
   }, [contact?.nickname, shortAddress]);
 
@@ -135,15 +131,12 @@ export const ContactCard: FC<{
     setIsEditingNickname(false);
   };
 
-  // Don't render if we don't have a valid contact
   if (!contact?.address) {
     return null;
   }
 
-  // Collapsed w/ Avatar
   if (collapsed) {
     const avatarLetter = contact.nickname?.trim()?.[0]?.toUpperCase();
-
     return (
       <div
         className="relative flex cursor-pointer justify-center py-2"
