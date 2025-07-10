@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
 import { WalletFlow } from "./containers/WalletFlow";
 import { RequireUnlockedWallet } from "./containers/RequireUnlockedWallet";
-import { OneLiner } from "./OneLiner";
 import { SettingsPage } from "./SettingsPage";
 import type { NetworkType } from "./types/all";
 import type { Step } from "./containers/WalletFlow";
