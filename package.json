@@ -23,6 +23,7 @@
     "cipher": "file:cipher-wasm",
     "clsx": "^2.1.1",
     "eventemitter3": "^5.0.1",
+    "jsqr": "^1.4.0",
     "kaspa-wasm": "file:wasm",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",

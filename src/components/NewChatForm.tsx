@@ -14,6 +14,7 @@ import { unknownErrorToErrorLike } from "../utils/errors";
 import { KaspaAddress } from "./KaspaAddress";
 import { Textarea } from "@headlessui/react";
 import { Button } from "./Common/Button";
+import { QrScanner } from "./QrScanner";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -278,7 +279,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       // Initiate handshake with custom amount
 
       await messageStore.initiateHandshake(knsRecipientAddress, amountSompi);
-      messageStore.setOpenedRecipient(recipientInputValue);
+      messageStore.setOpenedRecipient(knsRecipientAddress);
 
       if (
         detectedRecipientInputValueFormat === "kns" &&
@@ -390,20 +391,27 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           >
             Recipient Address
           </label>
-          <Textarea
-            ref={useRecipientInputRef}
-            className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white lowercase placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
-            rows={2}
-            id="recipientAddress"
-            value={recipientInputValue}
-            onChange={(e) =>
-              setRecipientInputValue(e.target.value.toLowerCase())
-            }
-            placeholder="Kaspa address or Kns domain"
-            disabled={isLoading}
-            required
-            autoComplete="off"
-          />
+          <div className="flex items-center gap-2">
+            <Textarea
+              ref={useRecipientInputRef}
+              className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white lowercase placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
+              rows={3}
+              id="recipientAddress"
+              value={recipientInputValue}
+              onChange={(e) =>
+                setRecipientInputValue(e.target.value.toLowerCase())
+              }
+              placeholder="Kaspa address or Kns domain"
+              disabled={isLoading}
+              required
+              autoComplete="off"
+            />
+            <QrScanner
+              onScan={(data: string) => {
+                setRecipientInputValue(data.toLowerCase());
+              }}
+            />
+          </div>
           {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
             <div className={styles["checking-text"]}>
               Resolving KNS domain...

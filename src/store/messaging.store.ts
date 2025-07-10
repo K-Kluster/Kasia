@@ -97,6 +97,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   openedRecipient: null,
   contacts: [],
   messages: [],
+
   messagesOnOpenedRecipient: [],
   handshakes: [],
   addContacts: (contacts) => {

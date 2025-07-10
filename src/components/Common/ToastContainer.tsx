@@ -11,7 +11,7 @@ export function ToastContainer() {
   const { toasts, remove } = useToastStore();
 
   return (
-    <div className="sm:5/6 fixed top-16 right-4 z-60 max-w-1/2 space-y-2 break-all sm:top-4">
+    <div className="fixed top-16 right-4 z-60 max-w-5/6 space-y-2 break-all sm:top-4 sm:max-w-1/2">
       {toasts.map((toast) => (
         <div
           key={toast.id}
