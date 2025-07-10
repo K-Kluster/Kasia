@@ -8,3 +8,22 @@ export function formatKasAmount(amount: number, isSompi: boolean = false) {
     maximumFractionDigits: 8,
   });
 }
+
+export function decodePayload(hex: string) {
+  try {
+    if (!hex) return "No payload";
+    // Convert hex to text
+    const text = hex
+      .match(/.{1,2}/g)
+      ?.map((byte) => String.fromCharCode(parseInt(byte, 16)))
+      .join("");
+    // Check if the text is printable ASCII
+    if (/^[\x20-\x7E]*$/.test(text ?? "N/A")) {
+      return text;
+    }
+    return `Hex: ${hex}`;
+  } catch (e) {
+    console.error("Error decoding payload:", e);
+    return `Hex: ${hex}`;
+  }
+}

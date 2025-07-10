@@ -14,16 +14,11 @@ import {
   kaspaToSompi,
   ITransactionOutput,
 } from "kaspa-wasm";
-import { KaspaClient } from "../utils/all-in-one";
+import { KaspaClient } from "../utils/kaspa-client";
 import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
-import {
-  BlockAddedData,
-  Output,
-  PriorityFeeConfig,
-  Transaction,
-} from "../types/all";
+import { BlockAddedData, PriorityFeeConfig } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
   ExplorerOutput,
@@ -31,7 +26,6 @@ import {
   TransactionId,
   getTransactionId,
   getTransactionPayload,
-  getBlockTime,
   isExplorerTransaction,
   isITransaction,
 } from "../types/transactions";
@@ -1386,7 +1380,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       try {
         this.ensurePasswordSet();
-      } catch (error) {
+      } catch {
         return;
       }
 

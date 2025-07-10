@@ -1,4 +1,4 @@
-import { KaspaClient } from "src/utils/all-in-one";
+import { KaspaClient } from "src/utils/kaspa-client";
 import { PublicKeyGenerator } from "wasm/kaspa";
 
 export type Wallet = {

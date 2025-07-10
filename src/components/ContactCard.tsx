@@ -1,6 +1,6 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { Contact } from "../types/all";
-import { decodePayload } from "../utils/all-in-one";
+import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
 import { AvatarHash } from "./icons/AvatarHash";
 import {
@@ -65,6 +65,7 @@ export const ContactCard: FC<{
         }
       } catch (e) {
         // Not a payment message, continue with normal handling
+        void e;
       }
 
       // Plain text content, take the first 40 characters
@@ -106,6 +107,7 @@ export const ContactCard: FC<{
           }
         } catch (e) {
           // Ignore parsing errors for handshake alias extraction
+          void e;
         }
       }
       return "Unknown Contact";

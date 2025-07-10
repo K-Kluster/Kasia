@@ -1,6 +1,6 @@
 import { FC, useState, useEffect, useRef } from "react";
 import { Message as MessageType } from "../types/all";
-import { decodePayload } from "../utils/all-in-one";
+import { decodePayload } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
@@ -76,6 +76,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         }
       } catch (e) {
         // Not JSON, continue checking
+        void e;
       }
     }
 
@@ -341,13 +342,13 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       }
     } catch (e) {
       // Not a JSON message, render as text
+      void e;
     }
 
     return messageToRender;
   };
 
   const [decryptedContent, setDecryptedContent] = useState<string>("");
-  const [decryptionError, setDecryptionError] = useState<string>("");
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
   const [decryptionAttempted, setDecryptionAttempted] =
     useState<boolean>(false);
@@ -362,7 +363,6 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       // If we already have decrypted content from the account service, use that
       if (content) {
         setDecryptedContent(content);
-        setDecryptionError("");
         setDecryptionAttempted(true);
         return;
       }
@@ -408,7 +408,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
               privateKey.toString(),
               transactionId || `${senderAddress}-${timestamp}`
             );
-          } catch (receiveErr) {
+          } catch {
             // Try with change key as fallback
             try {
               const changeKey = privateKeyGenerator.changeKey(0);
@@ -417,7 +417,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
                 changeKey.toString(),
                 transactionId || `${senderAddress}-${timestamp}`
               );
-            } catch (changeErr) {
+            } catch {
               throw new Error(
                 "Failed to decrypt with both receive and change keys"
               );
@@ -426,22 +426,15 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
           if (mounted.current && decrypted) {
             setDecryptedContent(decrypted);
-            setDecryptionError("");
           }
         } else {
           const decoded = decodePayload(payload);
           if (mounted.current) {
             setDecryptedContent(decoded || "");
-            setDecryptionError("");
           }
         }
       } catch (error) {
         console.error("Error decrypting message:", error);
-        if (mounted.current) {
-          setDecryptionError(
-            error instanceof Error ? error.message : "Unknown error"
-          );
-        }
       } finally {
         if (mounted.current) {
           setIsDecrypting(false);

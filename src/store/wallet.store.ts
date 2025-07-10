@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { KaspaClient } from "../utils/all-in-one";
+import { KaspaClient } from "../utils/kaspa-client";
 import { WalletStorage } from "../utils/wallet-storage";
 import {
   Address,

@@ -1,5 +1,4 @@
 import { formatKasAmount } from "./format";
-import { Transaction } from "../types/all";
 
 // Helper function to calculate minimum required amount based on message length
 export function amountFromMessage(message: string) {

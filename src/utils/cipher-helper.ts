@@ -1,6 +1,5 @@
 import {
   decrypt_message,
-  decrypt_message_with_bytes,
   decrypt_with_secret_key,
   debug_can_decrypt,
   EncryptedMessage,
@@ -18,6 +17,7 @@ export class CipherHelper {
   /**
    * Safe log function that only logs in debug mode
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static log(...args: any[]): void {
     if (CipherHelper.DEBUG) {
       console.log(...args);
@@ -27,6 +27,7 @@ export class CipherHelper {
   /**
    * Error log function that only logs critical errors in production
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static error(...args: any[]): void {
     if (
       args[0]?.includes(
@@ -127,10 +128,6 @@ export class CipherHelper {
 
     // Method 2: Try different message parsing
     try {
-      // Parse the message manually
-      const { nonce, ephemeralPublicKey, ciphertext } =
-        CipherHelper.parseMessageComponents(encryptedHex);
-
       // Create message using the constructor provided by the WASM module
       const encryptedMessage = new EncryptedMessage(encryptedHex);
       const privateKey = new PrivateKey(privateKeyHex);
@@ -177,47 +174,6 @@ export class CipherHelper {
       .map((err, i) => `Method ${i + 1}: ${err.message || err}`)
       .join("; ");
     throw new Error(`All decryption methods failed: ${errorDetails}`);
-  }
-
-  /**
-   * Parse an encrypted message hex string into components
-   *
-   * @param encryptedHex - The hexadecimal string of the encrypted message
-   * @returns Object with nonce, ephemeralPublicKey and ciphertext as hex strings
-   */
-  static parseMessageComponents(encryptedHex: string): {
-    nonce: string;
-    ephemeralPublicKey: string;
-    ciphertext: string;
-  } {
-    if (!encryptedHex || encryptedHex.length < 24) {
-      throw new Error("Invalid message format: too short or empty");
-    }
-
-    const nonce = encryptedHex.substring(0, 24);
-
-    // Check if the key starts with 02 or 03 (compressed SEC1 format)
-    const keyStart = encryptedHex.substring(24, 26);
-    let epkEnd;
-    if (keyStart === "02" || keyStart === "03") {
-      // It's a compressed key, should be 33 bytes (66 hex chars)
-      epkEnd = Math.min(24 + 66, encryptedHex.length);
-      if (CipherHelper.DEBUG) {
-        console.log("Detected compressed SEC1 format public key");
-      }
-    } else {
-      // Use standard 32 bytes (64 hex chars) as fallback
-      epkEnd = Math.min(24 + 64, encryptedHex.length);
-    }
-
-    const ephemeralPublicKey = encryptedHex.substring(24, epkEnd);
-    const ciphertext = encryptedHex.substring(epkEnd);
-
-    return {
-      nonce,
-      ephemeralPublicKey,
-      ciphertext,
-    };
   }
 
   /**

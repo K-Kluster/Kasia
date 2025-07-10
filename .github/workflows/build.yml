@@ -35,7 +35,7 @@ jobs:
       - name: Upload Cipher Wasm artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cipher-wasm-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: cipher-wasm-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: cipher-wasm
           retention-days: 90
           overwrite: true
@@ -55,7 +55,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'cipher-wasm-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              name: 'cipher-wasm-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
               sort: 'created',
               order: 'desc',
             });
@@ -64,7 +64,7 @@ jobs:
       - name: Restore Cipher Wasm artifact
         uses: actions/download-artifact@v4
         with:
-          name: cipher-wasm-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: cipher-wasm-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: cipher-wasm
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-cipher-wasm-artifact.outputs.result }}
@@ -93,13 +93,13 @@ jobs:
 
       - name: Install dependencies & Build Kasia
         env:
-          MODE: ${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          MODE: ${{ github.ref_name == 'master' && 'production' || 'staging' }}
         run: npm install && npm run build:$MODE
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: dist
 
   build-android-app:
@@ -166,7 +166,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
               sort: 'created',
               order: 'desc',
             });
@@ -175,7 +175,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -232,7 +232,7 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-android-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-android-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.apk
 
   build-macos-intel-app:
@@ -257,7 +257,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
               sort: 'created',
               order: 'desc',
             });
@@ -266,7 +266,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -290,7 +290,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-intel-macos
+          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-intel-macos
           path: ./src-tauri/target/release/bundle
           retention-days: 1
 
@@ -316,7 +316,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
               sort: 'created',
               order: 'desc',
             });
@@ -325,7 +325,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -349,7 +349,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-arm-macos
+          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-arm-macos
           path: ./src-tauri/target/release/bundle
           retention-days: 1
 
@@ -380,7 +380,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
               sort: 'created',
               order: 'desc',
             });
@@ -389,7 +389,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -419,7 +419,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-linux
+          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-linux
           path: ./tmp/
           retention-days: 1
 
@@ -445,7 +445,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
               sort: 'created',
               order: 'desc',
             });
@@ -454,7 +454,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -478,7 +478,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'main' && 'production' || 'staging' }}-windows
+          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-windows
           path: ./src-tauri/target/release/bundle/nsis/
           retention-days: 1
 
@@ -517,7 +517,7 @@ jobs:
   #             owner: context.repo.owner,
   #             repo: context.repo.repo,
   #             per_page: 100,
-  #             name: 'kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}',
+  #             name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
   #             sort: 'created',
   #             order: 'desc',
   #           });
@@ -526,7 +526,7 @@ jobs:
   #     - name: Restore Web App artifact
   #       uses: actions/download-artifact@v4
   #       with:
-  #         name: kasia-build-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+  #         name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
   #         path: dist
   #         github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
   #         run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -584,5 +584,5 @@ jobs:
   #     - name: Upload IPA Artifact
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: kasia-ios-${{ github.ref_name == 'main' && 'production' || 'staging' }}
+  #         name: kasia-ios-${{ github.ref_name == 'master' && 'production' || 'staging' }}
   #         path: ./src-tauri/gen/ios/app/build/Release-iphoneos/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.ipa

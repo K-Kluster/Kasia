@@ -1,4 +1,3 @@
-import { FC } from "react";
 import { useWalletStore } from "../../store/wallet.store";
 
 export const WalletInfo = () => {

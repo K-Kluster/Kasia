@@ -4,12 +4,12 @@ import { useMessagingStore } from "../store/messaging.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
-import "./FetchApiMessages.css";
 import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { toast } from "../utils/toast";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {
@@ -18,7 +18,6 @@ type FetchApiMessagesProps = {
 
 export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const walletStore = useWalletStore();
   const unlockedWallet = useWalletStore((s) => s.unlockedWallet);
   const messagingStore = useMessagingStore();
@@ -62,7 +61,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
   const fetchAndProcessMessages = async () => {
     setLoading(true);
-    setError(null);
+    toast.removeAll();
 
     if (!walletStore.unlockedWallet || !walletStore.unlockedWallet.password) {
       return;
@@ -581,7 +580,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       console.log("API Messages: Fetch and process completed successfully");
     } catch (err) {
       console.error("API Messages: Error fetching and processing:", err);
-      setError(`Error fetching messages: ${(err as Error).message}`);
+      toast.error(`Error fetching messages: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -596,9 +595,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
           "flex w-full cursor-pointer items-center justify-center gap-2 rounded-md px-4 py-2",
           { "cursor-not-allowed": loading }
         )}
-        title={
-          error ? `Error: ${error}` : "Fetch latest messages from blockDAG"
-        }
+        title={"Fetch latest messages from blockDAG"}
       >
         {loading ? (
           <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
@@ -606,7 +603,6 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
           <ArrowPathIcon className="h-6 w-6 text-[#49EACB] hover:scale-110" />
         )}
       </button>
-      {error && <div className="api-error-tooltip">{error}</div>}
     </div>
   );
 };

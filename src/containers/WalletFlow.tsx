@@ -125,7 +125,7 @@ export const WalletFlow = ({
         navigate(`/wallet/migrate/${walletId ?? ""}`);
         break;
       case "unlocked":
-        console.log("Navigated to Oneliner");
+        console.log("Navigated to Messaging container");
         break;
       default:
         return;

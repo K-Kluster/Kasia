@@ -64,6 +64,7 @@ interface MessagingState {
   refreshMessagesOnOpenedRecipient: () => void;
   setIsCreatingNewChat: (isCreatingNewChat: boolean) => void;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   connectAccountService: (accountService: any) => void;
 
   conversationManager: ConversationManager | null;
@@ -414,6 +415,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           }
         } catch (e) {
           // Not a file message, ignore
+          void e;
         }
       }
       // Add new message
@@ -744,6 +746,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   connectAccountService: (accountService) => {
     // Make the store available globally for the account service
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).messagingStore = g();
 
     // Listen for new messages from the account service
