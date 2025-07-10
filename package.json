@@ -31,6 +31,7 @@
     "react-router": "^7.5.0",
     "react-router-dom": "^7.6.0",
     "uuid": "^11.1.0",
+    "vite-plugin-pwa": "^1.0.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
