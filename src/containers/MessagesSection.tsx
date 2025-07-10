@@ -269,9 +269,11 @@ export const MessageSection: FC<{
               <KaspaAddress address={openedRecipient ?? ""} />
             </h3>
 
-            <div className="flex items-center gap-3">
-              {address && <FetchApiMessages address={address.toString()} />}
-            </div>
+            {openedRecipient && (
+              <div className="flex items-center gap-3">
+                {address && <FetchApiMessages address={address.toString()} />}
+              </div>
+            )}
           </div>
 
           <div

@@ -44,7 +44,7 @@ export const HandshakeResponse: React.FC<{
           <p className="my-1 font-semibold text-[var(--text-secondary)]">
             Handshake received from:
           </p>
-          <p className="my-1 ml-2 text-[var(--text-primary)]">
+          <p className="my-1 ml-2 break-all text-[var(--text-primary)]">
             {conversation.kaspaAddress}
           </p>
           <p className="my-1 font-semibold text-[var(--text-secondary)]">

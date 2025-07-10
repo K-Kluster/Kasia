@@ -9,6 +9,7 @@ import { ContactCard } from "../components/ContactCard";
 import { Contact } from "../types/all";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
+import { useMessagingStore } from "../store/messaging.store";
 
 interface ContactSectionProps {
   contacts: Contact[];
