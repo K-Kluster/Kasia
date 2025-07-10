@@ -46,8 +46,8 @@ export const CryptoDebugger: FC = () => {
       addLog(`Message encrypted successfully: ${hex.substring(0, 20)}...`);
 
       return hex;
-    } catch (err: any) {
-      const errorMsg = `Encryption error: ${err.message || err}`;
+    } catch (err) {
+      const errorMsg = `Encryption error: ${err}`;
       setError(errorMsg);
       addLog(errorMsg);
       return null;
@@ -88,8 +88,8 @@ export const CryptoDebugger: FC = () => {
 
       setDecryptedMessage(decrypted);
       addLog(`Decryption successful: "${decrypted}"`);
-    } catch (err: any) {
-      const errorMsg = `Decryption error: ${err.message || err}`;
+    } catch (err) {
+      const errorMsg = `Decryption error: ${err}`;
       setError(errorMsg);
       addLog(errorMsg);
     }

@@ -17,6 +17,7 @@ export class CipherHelper {
   /**
    * Safe log function that only logs in debug mode
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static log(...args: any[]): void {
     if (CipherHelper.DEBUG) {
       console.log(...args);
@@ -26,6 +27,7 @@ export class CipherHelper {
   /**
    * Error log function that only logs critical errors in production
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static error(...args: any[]): void {
     if (
       args[0]?.includes(
