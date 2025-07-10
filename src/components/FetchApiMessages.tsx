@@ -4,13 +4,12 @@ import { useMessagingStore } from "../store/messaging.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
-import "./FetchApiMessages.css";
 import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { ArrowPathIcon } from "@heroicons/react/24/solid";
-import { toast } from "src/utils/toast";
+import { toast } from "../utils/toast";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {

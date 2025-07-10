@@ -1,6 +1,5 @@
 import {
   decrypt_message,
-  decrypt_message_with_bytes,
   decrypt_with_secret_key,
   debug_can_decrypt,
   EncryptedMessage,
