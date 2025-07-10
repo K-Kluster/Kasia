@@ -358,7 +358,7 @@ export class ConversationManager {
     const jsonPart = parts.slice(3).join(":"); // Handle colons in JSON
     try {
       return JSON.parse(jsonPart);
-    } catch (error) {
+    } catch {
       throw new Error("Invalid handshake JSON payload");
     }
   }

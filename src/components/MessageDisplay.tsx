@@ -76,6 +76,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         }
       } catch (e) {
         // Not JSON, continue checking
+        void e;
       }
     }
 
@@ -341,6 +342,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       }
     } catch (e) {
       // Not a JSON message, render as text
+      void e;
     }
 
     return messageToRender;

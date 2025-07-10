@@ -413,6 +413,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           }
         } catch (e) {
           // Not a file message, ignore
+          void e;
         }
       }
       // Add new message

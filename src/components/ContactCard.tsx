@@ -65,6 +65,7 @@ export const ContactCard: FC<{
         }
       } catch (e) {
         // Not a payment message, continue with normal handling
+        void e;
       }
 
       // Plain text content, take the first 40 characters
@@ -106,6 +107,7 @@ export const ContactCard: FC<{
           }
         } catch (e) {
           // Ignore parsing errors for handshake alias extraction
+          void e;
         }
       }
       return "Unknown Contact";
