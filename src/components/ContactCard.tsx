@@ -1,6 +1,6 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { Contact } from "../types/all";
-import { decodePayload } from "../utils/all-in-one";
+import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
 import { AvatarHash } from "./icons/AvatarHash";
 import {

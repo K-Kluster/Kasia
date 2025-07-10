@@ -1,6 +1,6 @@
 import { FC, useState, useEffect, useRef } from "react";
 import { Message as MessageType } from "../types/all";
-import { decodePayload } from "../utils/all-in-one";
+import { decodePayload } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { CipherHelper } from "../utils/cipher-helper";
