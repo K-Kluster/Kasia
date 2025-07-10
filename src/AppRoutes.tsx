@@ -3,11 +3,11 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
 import { WalletFlow } from "./containers/WalletFlow";
 import { RequireUnlockedWallet } from "./containers/RequireUnlockedWallet";
-import { MessengerContainer } from "./containers/MessengerContainer";
 import { SettingsPage } from "./SettingsPage";
 import type { NetworkType } from "./types/all";
 import type { Step } from "./containers/WalletFlow";
 import { useWalletStore } from "./store/wallet.store";
+import { MessengerContainer } from "./containers/MessengerContainer";
 
 type WalletFlowRouteConfig = {
   path: string | undefined;
