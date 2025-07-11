@@ -1,28 +1,17 @@
 import { FC, useState, useMemo } from "react";
 import {
-  ChevronLeftIcon,
-  PlusIcon,
   Bars3Icon,
   MagnifyingGlassIcon,
+  PlusIcon,
   XMarkIcon,
-  ArrowLongLeftIcon,
-  Bars3BottomLeftIcon,
-  InformationCircleIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  UserIcon,
-  ArrowPathIcon,
-  CreditCardIcon,
 } from "@heroicons/react/24/solid";
-import { PanelLeftOpen, Settings } from "lucide-react";
 import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
 import { Contact } from "../types/all";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { useMessagingStore } from "../store/messaging.store";
-import { useWalletStore } from "../store/wallet.store";
-import { SettingsModal } from "../components/Modals/SettingsModal";
+import { MenuContainer } from "./MenuContainer";
 
 interface ContactSectionProps {
   contacts: Contact[];
@@ -50,52 +39,38 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const collapsedW = "w-14";
   const isMobile = useIsMobile();
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
-  const openModal = useUiStore((s) => s.openModal);
   const messageStore = useMessagingStore();
-  const lockWallet = useWalletStore((s) => s.lock);
   const [searchQuery, setSearchQuery] = useState("");
-  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Search through all messages and contacts
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return contacts;
+    const q = searchQuery.toLowerCase();
+    const matches = new Map<string, Contact>();
 
-    const query = searchQuery.toLowerCase();
-    const allMessages = messageStore.messages;
-
-    // Search through messages and find unique contacts that match
-    const matchingContacts = new Map<string, Contact>();
-
-    allMessages.forEach((message) => {
-      const messageContent = message.content?.toLowerCase() || "";
-      const messagePayload = message.payload?.toLowerCase() || "";
-
-      if (messageContent.includes(query) || messagePayload.includes(query)) {
-        // Find the contact for this message
-        const otherParty =
+    messageStore.messages.forEach((message) => {
+      const text =
+        `${message.content ?? ""} ${message.payload ?? ""}`.toLowerCase();
+      if (text.includes(q)) {
+        const addr =
           message.senderAddress === walletAddress
             ? message.recipientAddress
             : message.senderAddress;
-
-        const contact = contacts.find((c) => c.address === otherParty);
-        if (contact && !matchingContacts.has(contact.address)) {
-          matchingContacts.set(contact.address, contact);
-        }
+        const c = contacts.find((cc) => cc.address === addr);
+        if (c) matches.set(c.address, c);
       }
     });
 
-    // Also search through contact nicknames and addresses
     contacts.forEach((contact) => {
-      const nickname = contact.nickname?.toLowerCase() || "";
-      const address = contact.address.toLowerCase();
-
-      if (nickname.includes(query) || address.includes(query)) {
-        matchingContacts.set(contact.address, contact);
+      if (
+        contact.nickname?.toLowerCase().includes(q) ||
+        contact.address.toLowerCase().includes(q)
+      ) {
+        matches.set(contact.address, contact);
       }
     });
 
-    return Array.from(matchingContacts.values());
+    return [...matches.values()];
   }, [searchQuery, contacts, messageStore.messages, walletAddress]);
 
   const uniqueContacts = [
@@ -106,25 +81,14 @@ export const ContactSection: FC<ContactSectionProps> = ({
     ).values(),
   ];
 
-  const onClearHistory = () => {
-    if (!walletAddress) return;
-    if (
-      confirm(
-        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
-      )
-    ) {
-      messageStore.flushWalletHistory(walletAddress);
-    }
-  };
-
-  const finalClassName = clsx(
+  const containerCls = clsx(
     "flex flex-col bg-bg-primary transition-all duration-200",
     contactsCollapsed ? collapsedW : "w-full sm:w-[200px] md:w-[280px]",
-    isMobile && mobileView === "messages" ? "hidden" : ""
+    isMobile && mobileView === "messages" && "hidden"
   );
 
   return (
-    <div className={finalClassName}>
+    <div className={containerCls}>
       {/* header */}
       <div className="bg-secondary-bg flex h-[60px] items-center justify-between px-4 py-4">
         {/* Search bar and new chat button */}
@@ -183,15 +147,15 @@ export const ContactSection: FC<ContactSectionProps> = ({
 
       {/* Contacts list */}
       <div className="bg-secondary-bg flex-1 overflow-y-auto">
-        {uniqueContacts.length > 0
-          ? uniqueContacts.map((c) => (
+        {uniqueContacts.length
+          ? uniqueContacts.map((contact) => (
               <ContactCard
-                key={c.address}
-                contact={c}
-                isSelected={c.address === openedRecipient}
+                key={contact.address}
+                contact={contact}
+                isSelected={contact.address === openedRecipient}
                 collapsed={contactsCollapsed}
                 onClick={() => {
-                  onContactClicked(c);
+                  onContactClicked(contact);
                   if (isMobile) setMobileView("messages");
                 }}
               />
@@ -203,212 +167,14 @@ export const ContactSection: FC<ContactSectionProps> = ({
             )}
       </div>
 
-      {/* Bottom controls - only show on desktop */}
+      {/* Bottom controls (desktop only) */}
       {!isMobile && (
-        <div className="border-primary-border bg-secondary-bg border-t p-2">
-          <div
-            className={clsx(
-              "flex gap-2",
-              contactsCollapsed
-                ? "flex-col items-center"
-                : "flex-row items-center"
-            )}
-          >
-            <button
-              aria-label="toggle contacts pane"
-              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 transition-colors"
-              onClick={() => setContactsCollapsed(!contactsCollapsed)}
-            >
-              <PanelLeftOpen
-                className={clsx(contactsCollapsed && "rotate-180", "size-5")}
-              />
-            </button>
-            <div
-              className={clsx(
-                "relative",
-                contactsCollapsed
-                  ? "flex flex-col items-center gap-2"
-                  : "flex items-center gap-2"
-              )}
-            >
-              {/* Wallet Icon and Menu */}
-              <div
-                className="relative"
-                onMouseEnter={() => {
-                  if (!isMobile) {
-                    setWalletMenuOpen(true);
-                    setSettingsOpen(false);
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (!isMobile) setWalletMenuOpen(false);
-                }}
-              >
-                <button
-                  onClick={() => {
-                    if (isMobile) {
-                      setWalletMenuOpen((v) => !v);
-                      setSettingsOpen(false);
-                    }
-                  }}
-                  className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 focus:outline-none"
-                  aria-label="Wallet Operations"
-                >
-                  <CreditCardIcon className="h-5 w-5" />
-                </button>
-                {walletMenuOpen && (
-                  <>
-                    {/* Invisible bridge to prevent menu from closing when moving mouse up */}
-                    <div
-                      className="absolute bottom-full left-0 z-10 h-2 w-56"
-                      onMouseEnter={() => {
-                        if (!isMobile) setWalletMenuOpen(true);
-                      }}
-                    />
-                    <div
-                      className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-lg"
-                      onClick={(e) => e.stopPropagation()}
-                      onMouseEnter={() => {
-                        if (!isMobile) setWalletMenuOpen(true);
-                      }}
-                      onMouseLeave={() => {
-                        if (!isMobile) setWalletMenuOpen(false);
-                      }}
-                    >
-                      <ul className="divide-primary-border divide-y">
-                        {/* Show Address Item */}
-                        <li
-                          onClick={() => {
-                            openModal("address");
-                            setWalletMenuOpen(false);
-                          }}
-                          className={clsx(
-                            "hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3",
-                            { "pointer-events-none opacity-50": !walletAddress }
-                          )}
-                        >
-                          <UserIcon className="h-5 w-5" />
-                          <span className="flex items-center text-sm">
-                            Show Address
-                            {!walletAddress && (
-                              <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
-                            )}
-                          </span>
-                        </li>
-                        {/* Wallet Info Item */}
-                        <li
-                          onClick={() => {
-                            openModal("walletInfo");
-                            setWalletMenuOpen(false);
-                          }}
-                          className={clsx(
-                            "hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3",
-                            { "pointer-events-none opacity-50": !walletAddress }
-                          )}
-                        >
-                          <InformationCircleIcon className="h-5 w-5" />
-                          <span className="flex items-center text-sm">
-                            Wallet Info
-                            {!walletAddress && (
-                              <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
-                            )}
-                          </span>
-                        </li>
-                        {/* Withdraw Funds */}
-                        <li
-                          onClick={() => {
-                            openModal("withdraw");
-                            setWalletMenuOpen(false);
-                          }}
-                          className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                        >
-                          <span className="text-sm">Withdraw Funds</span>
-                        </li>
-                        {/* Compound UTXOs */}
-                        <li
-                          onClick={() => {
-                            openModal("utxo-compound");
-                            setWalletMenuOpen(false);
-                          }}
-                          className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                        >
-                          <span className="text-sm">Compound UTXOs</span>
-                        </li>
-                        {/* Import / Export Messages */}
-                        {messageStore.isLoaded && (
-                          <li
-                            onClick={() => {
-                              openModal("backup");
-                              setWalletMenuOpen(false);
-                            }}
-                            className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                          >
-                            <span className="text-sm">
-                              Import / Export <br /> Messages
-                            </span>
-                          </li>
-                        )}
-                        {/* Delete All Messages */}
-                        <li
-                          onClick={onClearHistory}
-                          className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                        >
-                          <span className="text-sm">Delete All Messages</span>
-                        </li>
-                        {/* View Seed Phrase */}
-                        <li
-                          onClick={() => {
-                            openModal("seed");
-                            setWalletMenuOpen(false);
-                          }}
-                          className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                        >
-                          <span className="text-sm">View Seed Phrase</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </>
-                )}
-              </div>
-              {/* Settings Icon and Modal */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowSettingsModal(true)}
-                  className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 focus:outline-none"
-                  aria-label="Settings"
-                >
-                  <Settings className="h-5 w-5" />
-                </button>
-                <SettingsModal
-                  isOpen={showSettingsModal}
-                  onClose={() => setShowSettingsModal(false)}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Close wallet button in separate row */}
-          <div
-            className={clsx(
-              "mt-2",
-              contactsCollapsed ? "flex justify-center" : "flex items-center"
-            )}
-          >
-            <button
-              onClick={lockWallet}
-              className={clsx(
-                "hover:bg-primary-bg/50 flex cursor-pointer items-center gap-2 rounded p-2 transition-colors focus:outline-none",
-                contactsCollapsed ? "flex-col" : "flex-row"
-              )}
-              aria-label="Sign out"
-            >
-              <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
-              {!contactsCollapsed && (
-                <span className="text-sm text-red-500">Sign out</span>
-              )}
-            </button>
-          </div>
-        </div>
+        <MenuContainer
+          contactsCollapsed={contactsCollapsed}
+          setContactsCollapsed={setContactsCollapsed}
+          isMobile={isMobile}
+          walletAddress={walletAddress}
+        />
       )}
     </div>
   );
