@@ -1,11 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import "./HandshakeManager.css";
 import { HandshakeState, PendingConversation } from "../types/messaging.types";
 
 const HandshakeManager: React.FC = () => {
   const messagingStore = useMessagingStore();
-  const pendingConversations = messagingStore.getPendingConversations();
+  const [pendingConversations, setPendingConversations] = useState<
+    PendingConversation[]
+  >([]);
+
+  useEffect(() => {
+    const loadPendingConversations = async () => {
+      const conversations = await messagingStore.getPendingConversations();
+      setPendingConversations(conversations);
+    };
+    loadPendingConversations();
+  }, [messagingStore]);
 
   const handleAcceptHandshake = async (
     pendingConversation: PendingConversation

@@ -1,9 +1,9 @@
 import { useMessagingStore } from "../store/messaging.store";
 
-export function inspectConversations() {
+export async function inspectConversations() {
   const messagingStore = useMessagingStore.getState();
-  const activeConversations = messagingStore.getActiveConversations();
-  const pendingConversations = messagingStore.getPendingConversations();
+  const activeConversations = await messagingStore.getActiveConversations();
+  const pendingConversations = await messagingStore.getPendingConversations();
 
   console.log("=== ACTIVE CONVERSATIONS ===");
   activeConversations.forEach((conv) => {

@@ -47,12 +47,12 @@ interface MessagingState {
   messages: Message[];
   messagesOnOpenedRecipient: Message[];
   handshakes: HandshakeState[];
-  addMessages: (messages: Message[]) => void;
-  flushWalletHistory: (address: string) => void;
-  addContacts: (contacts: Contact[]) => void;
-  loadMessages: (address: string) => Message[];
-  setIsLoaded: (isLoaded: boolean) => void;
-  storeMessage: (message: Message, walletAddress: string) => void;
+  addMessages: (messages: Message[]) => Promise<void>;
+  flushWalletHistory: (address: string) => Promise<void>;
+  addContacts: (contacts: Contact[]) => Promise<void>;
+  loadMessages: (address: string) => Promise<Message[]>;
+  setIsLoaded: (isLoaded: boolean) => Promise<void>;
+  storeMessage: (message: Message, walletAddress: string) => Promise<void>;
   exportMessages: (wallet: UnlockedWallet, password: string) => Promise<Blob>;
   importMessages: (
     file: File,
@@ -61,15 +61,15 @@ interface MessagingState {
   ) => Promise<void>;
 
   openedRecipient: string | null;
-  setOpenedRecipient: (contact: string | null) => void;
-  refreshMessagesOnOpenedRecipient: () => void;
-  setIsCreatingNewChat: (isCreatingNewChat: boolean) => void;
+  setOpenedRecipient: (contact: string | null) => Promise<void>;
+  refreshMessagesOnOpenedRecipient: () => Promise<void>;
+  setIsCreatingNewChat: (isCreatingNewChat: boolean) => Promise<void>;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  connectAccountService: (accountService: any) => void;
+  connectAccountService: (accountService: any) => Promise<void>;
 
   conversationManager: ConversationManager | null;
-  initializeConversationManager: (address: string) => void;
+  initializeConversationManager: (address: string) => Promise<void>;
   initiateHandshake: (
     recipientAddress: string,
     customAmount?: bigint
@@ -81,8 +81,8 @@ interface MessagingState {
     senderAddress: string,
     payload: string
   ) => Promise<unknown>;
-  getActiveConversations: () => Conversation[];
-  getPendingConversations: () => PendingConversation[];
+  getActiveConversations: () => Promise<Conversation[]>;
+  getPendingConversations: () => Promise<PendingConversation[]>;
 
   // New function to manually respond to a handshake
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
@@ -90,7 +90,7 @@ interface MessagingState {
   // Nickname management
   setContactNickname: (address: string, nickname: string) => Promise<void>;
   removeContactNickname: (address: string) => Promise<void>;
-  getLastMessageForContact: (contactAddress: string) => Message | null;
+  getLastMessageForContact: (contactAddress: string) => Promise<Message | null>;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -102,84 +102,68 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
   messagesOnOpenedRecipient: [],
   handshakes: [],
-  addContacts: (contacts) => {
+  addContacts: async (contacts) => {
     const fullContacts = [...g().contacts, ...contacts];
     fullContacts.sort(
       (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
     );
     set({ contacts: [...g().contacts, ...contacts] });
   },
-  addMessages: (messages) => {
+  addMessages: async (messages) => {
+    const walletStoreAdd = useWalletStore.getState();
+    const walletAddressAdd = walletStoreAdd.address?.toString();
+    if (!walletAddressAdd) return;
+    // Write each message to IndexedDB
+    for (const message of messages) {
+      await databaseService.saveMessage(message, walletAddressAdd);
+    }
+    // After successful writes, update in-memory state
     const fullMessages = [...g().messages, ...messages];
     fullMessages.sort((a, b) => a.timestamp - b.timestamp);
-
     set({ messages: fullMessages });
 
     // Update contacts with new messages
     const state = g();
-    const walletStore = useWalletStore.getState();
-    const walletAddress = walletStore.address?.toString();
+    messages.forEach((message) => {
+      const otherParty =
+        message.senderAddress === walletAddressAdd
+          ? message.recipientAddress
+          : message.senderAddress;
 
-    if (walletAddress) {
-      messages.forEach((message) => {
-        const otherParty =
-          message.senderAddress === walletAddress
-            ? message.recipientAddress
-            : message.senderAddress;
+      // Update existing contact if found
+      const existingContactIndex = state.contacts.findIndex(
+        (c) => c.address === otherParty
+      );
 
-        // Update existing contact if found
-        const existingContactIndex = state.contacts.findIndex(
-          (c) => c.address === otherParty
-        );
+      if (existingContactIndex !== -1) {
+        const existingContact = state.contacts[existingContactIndex];
+        // Only update if this message is newer than the current lastMessage
+        if (message.timestamp > existingContact.lastMessage.timestamp) {
+          const updatedContacts = [...state.contacts];
+          updatedContacts[existingContactIndex] = {
+            ...existingContact,
+            lastMessage: message,
+            messages: [...existingContact.messages, message].sort(
+              (a, b) => a.timestamp - b.timestamp
+            ),
+          };
 
-        if (existingContactIndex !== -1) {
-          const existingContact = state.contacts[existingContactIndex];
-          // Only update if this message is newer than the current lastMessage
-          if (message.timestamp > existingContact.lastMessage.timestamp) {
-            const updatedContacts = [...state.contacts];
-            updatedContacts[existingContactIndex] = {
-              ...existingContact,
-              lastMessage: message,
-              messages: [...existingContact.messages, message].sort(
-                (a, b) => a.timestamp - b.timestamp
-              ),
-            };
+          // Sort contacts by most recent message timestamp
+          const sortedContacts = updatedContacts.sort(
+            (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+          );
 
-            // Sort contacts by most recent message timestamp
-            const sortedContacts = updatedContacts.sort(
-              (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
-            );
-
-            set({ contacts: sortedContacts });
-          }
+          set({ contacts: sortedContacts });
         }
-      });
-    }
+      }
+    });
 
-    g().refreshMessagesOnOpenedRecipient();
+    await g().refreshMessagesOnOpenedRecipient();
   },
-  flushWalletHistory: (address: string) => {
-    // 1. Clear wallet messages from localStorage
-    const messagesOnWallet = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
-
-    delete messagesOnWallet[address];
-
-    localStorage.setItem(
-      "kaspa_messages_by_wallet",
-      JSON.stringify(messagesOnWallet)
-    );
-
-    // 2. Clear nickname mappings for this wallet
-    const nicknameKey = `contact_nicknames_${address}`;
-    localStorage.removeItem(nicknameKey);
-
-    // 3. Clear conversation manager data for this wallet
-    const conversationKey = `encrypted_conversations_${address}`;
-    localStorage.removeItem(conversationKey);
-
-    // 4. Reset all UI state immediately
+  flushWalletHistory: async (address) => {
+    // 1. Clear wallet data from IndexedDB
+    await databaseService.clearWalletData(address);
+    // 2. Reset all UI state immediately
     set({
       contacts: [],
       messages: [],
@@ -188,25 +172,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       openedRecipient: null,
       isCreatingNewChat: false,
     });
-
-    // 5. Clear and reinitialize conversation manager
+    // 3. Clear and reinitialize conversation manager
     const manager = g().conversationManager;
     if (manager) {
-      // Reinitialize fresh conversation manager
-      g().initializeConversationManager(address);
+      await g().initializeConversationManager(address);
     }
-
-    console.log("Complete history clear completed - all data wiped");
-  },
-  loadMessages: (address): Message[] => {
-    const messages: Record<string, Message[]> = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
+    console.log(
+      "Complete history clear completed - all data wiped from IndexedDB"
     );
-
+  },
+  loadMessages: async (address): Promise<Message[]> => {
+    // Load messages from IndexedDB instead of localStorage
+    const messages = await databaseService.getMessagesByWallet(address);
     const contacts = new Map();
 
     // Process messages and organize by conversation
-    messages[address]?.forEach((msg) => {
+    messages.forEach((msg) => {
       // Ensure fileData is properly loaded if it exists
       if (msg.fileData) {
         msg.content = `[File: ${msg.fileData.name}]`;
@@ -278,9 +259,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       );
     });
 
-    // Load saved nicknames
-    const storageKey = `contact_nicknames_${address}`;
-    const savedNicknames = JSON.parse(localStorage.getItem(storageKey) || "{}");
+    // Load saved nicknames from IndexedDB
+    const savedNicknames = await databaseService.getAllNicknames(address);
 
     // Update state with sorted contacts and messages
     const sortedContacts = [...contacts.values()]
@@ -292,17 +272,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     set({
       contacts: sortedContacts,
-      messages: (messages[address] || []).sort(
+      messages: messages.sort(
         (a: Message, b: Message) => a.timestamp - b.timestamp
       ),
     });
 
     // Refresh the currently opened conversation
-    g().refreshMessagesOnOpenedRecipient();
+    await g().refreshMessagesOnOpenedRecipient();
 
     return g().messages;
   },
-  storeMessage: (message: Message, walletAddress: string) => {
+  storeMessage: async (message, walletAddress) => {
+    const walletStoreMsg = useWalletStore.getState();
+    const walletAddressMsg = walletAddress;
     const manager = g().conversationManager;
 
     // Check if this is a handshake message
@@ -318,8 +300,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Skip handshake processing if it's a self-message
         if (
-          message.senderAddress === walletAddress &&
-          message.recipientAddress === walletAddress
+          message.senderAddress === walletAddressMsg &&
+          message.recipientAddress === walletAddressMsg
         ) {
           console.log("Skipping self-handshake message");
           return;
@@ -333,10 +315,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Process handshake if we're the recipient or if this is a response to our handshake
         if (
-          message.recipientAddress === walletAddress || // received handshake
-          handshakePayload.recipientAddress === walletAddress || // legacy safety
+          message.recipientAddress === walletAddressMsg || // received handshake
+          handshakePayload.recipientAddress === walletAddressMsg || // legacy safety
           (handshakePayload.isResponse &&
-            message.senderAddress === walletAddress) // our own response
+            message.senderAddress === walletAddressMsg) // our own response
         ) {
           console.log("Processing handshake message:", {
             senderAddress: message.senderAddress,
@@ -344,7 +326,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
             isResponse: handshakePayload.isResponse,
             handshakePayload,
           });
-          g()
+          await g()
             .processHandshake(message.senderAddress, message.payload)
             .catch((error) => {
               if (error.message === "Cannot create conversation with self") {
@@ -362,7 +344,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     // If we have an active conversation, update its last activity
     if (manager) {
       const conv = manager.getConversationByAddress(
-        message.senderAddress === walletAddress
+        message.senderAddress === walletAddressMsg
           ? message.recipientAddress
           : message.senderAddress
       );
@@ -371,67 +353,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
     }
 
-    const messagesMap = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
-    if (!messagesMap[walletAddress]) {
-      messagesMap[walletAddress] = [];
-    }
-
-    // Check if we already have a message with this transaction ID
-    const existingMessageIndex = messagesMap[walletAddress].findIndex(
-      (m: Message) => m.transactionId === message.transactionId
-    );
-
-    if (existingMessageIndex !== -1) {
-      // Merge the messages, preferring non-empty values
-      const existingMessage = messagesMap[walletAddress][existingMessageIndex];
-      const mergedMessage = {
-        ...message,
-        content: message.content || existingMessage.content,
-        payload: message.payload || existingMessage.payload,
-        // Use the earliest timestamp if both exist
-        timestamp: Math.min(message.timestamp, existingMessage.timestamp),
-        // Preserve fileData if it exists in either message
-        fileData: message.fileData || existingMessage.fileData,
-        // Ensure we have both addresses
-        senderAddress: message.senderAddress || existingMessage.senderAddress,
-        recipientAddress:
-          message.recipientAddress || existingMessage.recipientAddress,
-      };
-      messagesMap[walletAddress][existingMessageIndex] = mergedMessage;
-    } else {
-      // For outgoing messages with file content, try to parse and store fileData
-      if (!message.fileData && message.content) {
-        try {
-          const parsedContent = JSON.parse(message.content);
-          if (parsedContent.type === "file") {
-            message.fileData = {
-              type: parsedContent.type,
-              name: parsedContent.name,
-              size: parsedContent.size,
-              mimeType: parsedContent.mimeType,
-              content: parsedContent.content,
-            };
-          }
-        } catch (e) {
-          // Not a file message, ignore
-          void e;
-        }
-      }
-      // Add new message
-      messagesMap[walletAddress].push(message);
-    }
-
-    localStorage.setItem(
-      "kaspa_messages_by_wallet",
-      JSON.stringify(messagesMap)
-    );
-
-    // Update contacts and conversations
+    // After all logic, write to IndexedDB
+    await databaseService.saveMessage(message, walletAddressMsg);
+    // After successful write, update in-memory state and contacts
     const state = g();
     const otherParty =
-      message.senderAddress === walletAddress
+      message.senderAddress === walletAddressMsg
         ? message.recipientAddress
         : message.senderAddress;
 
@@ -465,15 +392,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     );
     set({ contacts: sortedContacts });
   },
-  setIsLoaded: (isLoaded) => {
+  setIsLoaded: async (isLoaded) => {
     set({ isLoaded });
   },
-  setOpenedRecipient(contact) {
+  setOpenedRecipient: async (contact) => {
     set({ openedRecipient: contact });
 
-    g().refreshMessagesOnOpenedRecipient();
+    await g().refreshMessagesOnOpenedRecipient();
   },
-  refreshMessagesOnOpenedRecipient: () => {
+  refreshMessagesOnOpenedRecipient: async () => {
     const { openedRecipient, messagesOnOpenedRecipient } = g();
 
     if (!openedRecipient) {
@@ -492,44 +419,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     set({ messagesOnOpenedRecipient: messages });
   },
-  setIsCreatingNewChat: (isCreatingNewChat) => {
+  setIsCreatingNewChat: async (isCreatingNewChat) => {
     set({ isCreatingNewChat });
   },
   exportMessages: async (wallet, password) => {
     try {
       console.log("Starting message export process...");
 
-      const messagesMap = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
-
-      console.log("Getting private key generator...");
+      // Get private key generator and address
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
         wallet,
         password
       );
-
-      console.log("Getting receive key...");
       const receiveKey = privateKeyGenerator.receiveKey(0);
-
-      // Get the current network type from the first message's address
-      let networkType = NetworkType.Mainnet; // Default to mainnet
-      const addresses = Object.keys(messagesMap);
-      if (addresses.length > 0) {
-        networkType = getNetworkTypeFromAddress(addresses[0]);
-      }
-      console.log("Using network type:", networkType);
-
-      const receiveAddress = receiveKey.toAddress(networkType);
+      const receiveAddress = receiveKey.toAddress(NetworkType.Mainnet);
       const walletAddress = receiveAddress.toString();
       console.log("Using receive address:", walletAddress);
 
-      // Export nicknames for this wallet
-      const nicknameStorageKey = `contact_nicknames_${walletAddress}`;
-      const nicknames = JSON.parse(
-        localStorage.getItem(nicknameStorageKey) || "{}"
-      );
-      console.log("Exporting nicknames:", nicknames);
+      // Get messages from IndexedDB instead of localStorage
+      const messages = await databaseService.getMessagesByWallet(walletAddress);
+      console.log(`Exporting ${messages.length} messages from IndexedDB`);
+
+      // Convert messages to the expected format for export
+      const messagesMap = {
+        [walletAddress]: messages,
+      };
+
+      // Get nicknames from IndexedDB instead of localStorage
+      const nicknames = await databaseService.getAllNicknames(walletAddress);
+      console.log("Exporting nicknames from IndexedDB:", nicknames);
 
       // Create backup object with metadata
       const backup = {
@@ -539,8 +457,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         data: messagesMap,
         nicknames: nicknames,
         conversations: {
-          active: g().conversationManager?.getActiveConversations() || [],
-          pending: g().conversationManager?.getPendingConversations() || [],
+          active:
+            (await g().conversationManager?.getActiveConversations()) || [],
+          pending:
+            (await g().conversationManager?.getPendingConversations()) || [],
         },
       };
 
@@ -631,25 +551,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
 
       console.log("Merging with existing messages...");
-      // Merge with existing messages
-      const existingMessages = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
-
-      const mergedMessages = {
-        ...existingMessages,
-        ...decryptedData.data,
-      };
-
-      // Save merged messages
-      localStorage.setItem(
-        "kaspa_messages_by_wallet",
-        JSON.stringify(mergedMessages)
-      );
 
       // Get network type and current address first
       let networkType = NetworkType.Mainnet; // Default to mainnet
-      const addresses = Object.keys(mergedMessages);
+      const addresses = Object.keys(decryptedData.data);
       if (addresses.length > 0) {
         networkType = getNetworkTypeFromAddress(addresses[0]);
       }
@@ -660,13 +565,31 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const currentAddress = receiveAddress.toString();
       console.log("Using receive address:", currentAddress);
 
+      // Get existing messages from IndexedDB
+      const existingMessages =
+        await databaseService.getMessagesByWallet(currentAddress);
+      const existingMessagesMap = {
+        [currentAddress]: existingMessages,
+      };
+
+      const mergedMessages = {
+        ...existingMessagesMap,
+        ...decryptedData.data,
+      };
+
+      // Save merged messages to IndexedDB
+      for (const [address, messages] of Object.entries(mergedMessages)) {
+        for (const message of messages as Message[]) {
+          await databaseService.saveMessage(message, address);
+        }
+      }
+
       // Restore nicknames if they exist in the backup
       if (decryptedData.nicknames) {
         console.log("Restoring nicknames...");
-        const nicknameStorageKey = `contact_nicknames_${currentAddress}`;
-        const existingNicknames = JSON.parse(
-          localStorage.getItem(nicknameStorageKey) || "{}"
-        );
+        // Get existing nicknames from IndexedDB
+        const existingNicknames =
+          await databaseService.getAllNicknames(currentAddress);
 
         // Merge existing nicknames with backup nicknames (backup takes precedence)
         const mergedNicknames = {
@@ -674,11 +597,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           ...decryptedData.nicknames,
         };
 
-        localStorage.setItem(
-          nicknameStorageKey,
-          JSON.stringify(mergedNicknames)
-        );
-        console.log("Nicknames restored:", mergedNicknames);
+        // Save merged nicknames to IndexedDB
+        for (const [contactAddress, nickname] of Object.entries(
+          mergedNicknames
+        )) {
+          await databaseService.setNickname(
+            currentAddress,
+            contactAddress,
+            nickname as string
+          );
+        }
+        console.log("Nicknames restored to IndexedDB:", mergedNicknames);
       }
 
       // Restore conversations if they exist in the backup
@@ -688,7 +617,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
         // Initialize conversation manager if needed
         if (!g().conversationManager) {
-          g().initializeConversationManager(currentAddress);
+          await g().initializeConversationManager(currentAddress);
         }
 
         // Type guard to validate conversation objects
@@ -728,15 +657,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
 
       // Reload messages using the current address
-      g().loadMessages(currentAddress);
-
-      // Set flag to trigger API fetching after next account service start
-      localStorage.setItem("kasia_fetch_api_on_start", "true");
+      await g().loadMessages(currentAddress);
 
       console.log("Import completed successfully");
-      console.log(
-        "Set flag to fetch API messages on next wallet service start"
-      );
+      console.log("Messages and nicknames imported to IndexedDB");
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
       if (error instanceof Error) {
@@ -745,27 +669,27 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       throw new Error("Failed to import messages: Unknown error");
     }
   },
-  connectAccountService: (accountService) => {
+  connectAccountService: async (accountService) => {
     // Make the store available globally for the account service
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).messagingStore = g();
 
     // Listen for new messages from the account service
-    accountService.on("messageReceived", (message: Message) => {
+    accountService.on("messageReceived", async (message: Message) => {
       const state = g();
 
       // Store the message
-      state.storeMessage(message, message.senderAddress);
+      await state.storeMessage(message, message.senderAddress);
 
       // Add the message to our state
-      state.addMessages([message]);
+      await state.addMessages([message]);
 
       // Refresh the UI if this message is for the currently opened chat
       if (
         state.openedRecipient === message.senderAddress ||
         state.openedRecipient === message.recipientAddress
       ) {
-        state.refreshMessagesOnOpenedRecipient();
+        await state.refreshMessagesOnOpenedRecipient();
       }
 
       // Update contacts if needed
@@ -778,7 +702,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         (c) => c.address === otherParty
       );
       if (!existingContact) {
-        state.addContacts([
+        await state.addContacts([
           {
             address: otherParty,
             lastMessage: message,
@@ -789,7 +713,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     });
   },
   conversationManager: null,
-  initializeConversationManager: (address: string) => {
+  initializeConversationManager: async (address: string) => {
     const events: Partial<ConversationEvents> = {
       onHandshakeInitiated: (conversation) => {
         console.log("Handshake initiated:", conversation);
@@ -869,8 +793,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       };
 
       // Store the handshake message
-      g().storeMessage(message, walletStore.address.toString());
-      g().addMessages([message]);
+      await g().storeMessage(message, walletStore.address.toString());
+      await g().addMessages([message]);
 
       return { payload, conversation };
     } catch (error) {
@@ -885,11 +809,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
     return await manager.processHandshake(senderAddress, payload);
   },
-  getActiveConversations: () => {
+  getActiveConversations: async () => {
     const manager = g().conversationManager;
     return manager ? manager.getActiveConversations() : [];
   },
-  getPendingConversations: () => {
+  getPendingConversations: async () => {
     const manager = g().conversationManager;
     return manager ? manager.getPendingConversations() : [];
   },
@@ -994,8 +918,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         };
 
         // Store the handshake response message
-        g().storeMessage(message, walletStore.address.toString());
-        g().addMessages([message]);
+        await g().storeMessage(message, walletStore.address.toString());
+        await g().addMessages([message]);
 
         return txId;
       } catch (error: unknown) {
@@ -1011,10 +935,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
 
   // Nickname management functions
-  setContactNickname: async (address: string, nickname: string) => {
+  setContactNickname: async (address, nickname) => {
     const contacts = g().contacts;
     const contactIndex = contacts.findIndex((c) => c.address === address);
-
     if (contactIndex !== -1) {
       const updatedContacts = [...contacts];
       updatedContacts[contactIndex] = {
@@ -1022,20 +945,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         nickname: nickname.trim() || undefined,
       };
       set({ contacts: updatedContacts });
-
-      // Save to localStorage
+      // Save to IndexedDB as source of truth
       const walletStore = useWalletStore.getState();
       if (walletStore.address) {
-        const storageKey = `contact_nicknames_${walletStore.address.toString()}`;
-        const nicknames = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        if (nickname.trim()) {
-          nicknames[address] = nickname.trim();
-        } else {
-          delete nicknames[address];
-        }
-        localStorage.setItem(storageKey, JSON.stringify(nicknames));
-
-        // Save to IndexedDB
         await databaseService.setNickname(
           walletStore.address.toString(),
           address,
@@ -1045,10 +957,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
   },
 
-  removeContactNickname: async (address: string) => {
+  removeContactNickname: async (address) => {
+    const walletStore = useWalletStore.getState();
+    if (walletStore.address) {
+      await databaseService.removeNickname(
+        walletStore.address.toString(),
+        address
+      );
+    }
     await g().setContactNickname(address, "");
   },
-  getLastMessageForContact: (contactAddress: string) => {
+  getLastMessageForContact: async (contactAddress: string) => {
     const messages = g().messages;
     const relevant = messages.filter(
       (msg) =>

@@ -3,8 +3,8 @@ import { useWalletStore } from "../store/wallet.store";
 import React, {
   useState,
   useCallback,
-  useEffect,
   useRef,
+  useEffect,
   useMemo,
 } from "react";
 import { kaspaToSompi } from "kaspa-wasm";
@@ -208,22 +208,22 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   }, []);
 
   // Update validation to use knsRecipientAddress
-  const validateAndPrepareHandshake = useCallback(() => {
-    setError(null);
-    if (!walletStore.unlockedWallet?.password) {
-      setError("Please unlock your wallet first");
+  const validateAndPrepareHandshake = useCallback(async () => {
+    if (!knsRecipientAddress) {
+      setError("Please enter a recipient address");
       return false;
     }
     if (
       !knsRecipientAddress.startsWith("kaspa:") &&
-      !knsRecipientAddress.startsWith("kaspatest:")
+      !knsRecipientAddress.startsWith("kaspatest:") &&
+      !knsRecipientAddress.includes(".")
     ) {
       setError(
         "Invalid Kaspa address format. Must start with 'kaspa:' or 'kaspatest:' or be a valid KNS domain."
       );
       return false;
     }
-    const existingConversations = messageStore.getActiveConversations();
+    const existingConversations = await messageStore.getActiveConversations();
     const existingConv = existingConversations.find(
       (conv) => conv.kaspaAddress === knsRecipientAddress
     );
@@ -261,7 +261,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateAndPrepareHandshake()) {
+    if (!(await validateAndPrepareHandshake())) {
       return;
     }
 
