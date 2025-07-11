@@ -21,7 +21,7 @@ export function ToastContainer() {
               "bg-green-100/80 text-green-900": toast.type === "success",
               "bg-red-100/80 text-red-900": toast.type === "error",
               "bg-yellow-100/80 text-yellow-900": toast.type === "warning",
-              "bg-blue-100/70 text-gray-700": toast.type === "info",
+              "bg-blue-100 text-gray-700": toast.type === "info",
             }
           )}
         >

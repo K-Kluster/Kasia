@@ -7,17 +7,17 @@ export const TrustMessage: FC = () => {
   const [openWhy, setOpenWhy] = useState(false);
 
   return (
-    <>
+    <div className="mb-12">
       {/* trust message section */}
-      <div className="mt-6 rounded-lg border border-[#70C7BA]/20 bg-gradient-to-br from-[#70C7BA]/10 to-[#70C7BA]/5 p-2">
+      <div className="border-kas-secondary from-kas-secondary/20 to-kas-secondary/5 mt-6 rounded-2xl border bg-gradient-to-r p-2">
         <div
-          className="flex cursor-pointer items-center justify-center gap-2"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 py-1"
           onClick={() => setOpenTrust((v) => !v)}
         >
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#70C7BA]">
             <LockClosedIcon className="h-4 w-4 text-white" />
           </div>
-          <span className="text-sm font-medium text-gray-300">
+          <span className="text-secondary-text text-sm font-medium">
             Your keys, your messages
           </span>
         </div>
@@ -28,7 +28,7 @@ export const TrustMessage: FC = () => {
               We never store your private keys or have access to your messages.
               Everything is encrypted and controlled by you.
             </p>
-            <p className="break-word mx-auto w-full max-w-md text-center text-xs leading-relaxed text-gray-400">
+            <p className="break-word w-full text-center text-xs leading-relaxed text-gray-400">
               You can even run Kasia yourself!
               <a
                 href="https://github.com/K-Kluster/Kasia"
@@ -44,25 +44,25 @@ export const TrustMessage: FC = () => {
       </div>
 
       {/* why kaspa wallet section */}
-      <div className="mt-3 rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 p-2">
+      <div className="border-primary-border bg-primary-bg mt-3 rounded-2xl border p-2">
         <div
-          className="flex cursor-pointer items-center justify-center gap-2"
+          className="flex w-full cursor-pointer items-center justify-center gap-2 py-1"
           onClick={() => setOpenWhy((v) => !v)}
         >
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#B6B6B6]">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full">
             <KasIcon
-              className="h-6 w-6 scale-120"
-              circleClassName="fill-white"
-              kClassName="fill-[#B6B6B6]"
+              className="h-12 w-12 scale-180"
+              circleClassName="fill-kas-secondary"
+              kClassName="fill-[#ffffff]"
             />
           </div>
-          <span className="text-sm font-medium text-gray-300">
+          <span className="text-sm font-medium text-[var(--text-secondary)]">
             Why do I need a Kaspa wallet?
           </span>
         </div>
 
         {openWhy && (
-          <p className="break-word mx-auto w-full max-w-md text-center text-xs leading-relaxed text-gray-400">
+          <p className="break-word w-full text-center text-xs leading-relaxed text-gray-400">
             Kasia is a private messaging app that protects your privacy. Your
             Kaspa wallet acts as your secure login – no email, phone number, or
             personal details needed. Messages are encrypted and stored on the
@@ -70,6 +70,6 @@ export const TrustMessage: FC = () => {
           </p>
         )}
       </div>
-    </>
+    </div>
   );
 };

@@ -79,11 +79,12 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           {displayString.slice(0, NICKNAME_SHORT_LENGTH - 3)}
           <span
             onClick={isMobile ? undefined : handleToggle}
-            className={
-              isMobile
-                ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
-                : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
-            }
+            // className={
+            //   isMobile
+            //     ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+            //     : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
+            // }
+            className="text-kas-secondary cursor-pointer px-0.5 text-xl hover:underline max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
             inert={isMobile ? true : undefined}
           >
             ...
@@ -110,13 +111,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           ) : null}
         </span>
       )}
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="mt-auto ml-2 block cursor-pointer focus:outline-none"
-      >
-        <Square2StackIcon className="size-5 text-white hover:opacity-80" />
-      </button>
     </span>
   );
 };

@@ -2,7 +2,11 @@ import { FC, useEffect, useState } from "react";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { StoredWallet } from "../../types/wallet.type";
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/solid";
+import {
+  EyeIcon,
+  EyeSlashIcon,
+  ClipboardDocumentIcon,
+} from "@heroicons/react/24/solid";
 import clsx from "clsx";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
@@ -81,6 +85,16 @@ export const WalletSeedRetreiveDisplay: FC = () => {
     }
   };
 
+  const handleCopySeedPhrase = async () => {
+    try {
+      await navigator.clipboard.writeText(seedPhrase);
+      toast.success("Seed phrase copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy seed phrase:", error);
+      toast.error("Failed to copy seed phrase");
+    }
+  };
+
   return (
     <div className="mt-2">
       <h4 className="text-lg font-semibold">Security</h4>
@@ -136,6 +150,13 @@ export const WalletSeedRetreiveDisplay: FC = () => {
                 <EyeSlashIcon className="h-6 w-6 text-white" />
               )}
             </label>
+            <button
+              onClick={handleCopySeedPhrase}
+              className="mb-2 p-1 text-white transition-colors hover:text-amber-200"
+              title="Copy seed phrase"
+            >
+              <ClipboardDocumentIcon className="h-6 w-6" />
+            </button>
           </div>
           <div className="mt-4 flex justify-center">
             <Button

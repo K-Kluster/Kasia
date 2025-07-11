@@ -17,14 +17,14 @@ export const Modal: FC<{
     onClick={onClose}
   >
     <div
-      className="relative mx-4 w-full max-w-md rounded-lg bg-[var(--secondary-bg)] p-6"
+      className="border-primary-border bg-secondary-bg relative mx-4 w-full max-w-md rounded-2xl border p-6"
       onClick={(e) => e.stopPropagation()}
     >
       <button
         onClick={onClose}
-        className="absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110 hover:text-white"
+        className="hover:text-kas-secondary absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110"
       >
-        <XMarkIcon className="h-6 w-6 text-gray-200" />
+        <XMarkIcon className="h-6 w-6" />
       </button>
       {children}
     </div>

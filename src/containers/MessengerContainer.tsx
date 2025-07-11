@@ -18,6 +18,7 @@ import { unknownErrorToErrorLike } from "../utils/errors";
 import { useIsMobile } from "../utils/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
+import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 
 export const MessengerContainer: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,7 +47,12 @@ export const MessengerContainer: FC = () => {
     const syncToWidth = () => {
       if (isMobile) {
         if (contactsCollapsed) setContactsCollapsed(false);
-        if (!messageStore.openedRecipient) setMobileView("contacts");
+        // On mobile, show messages if there's an opened recipient, otherwise show contacts
+        if (messageStore.openedRecipient) {
+          setMobileView("messages");
+        } else {
+          setMobileView("contacts");
+        }
       } else {
         setMobileView("contacts");
       }
@@ -146,6 +152,39 @@ export const MessengerContainer: FC = () => {
     startMessageClient();
   }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
+  // Effect to restore last opened conversation after messages are loaded (desktop only)
+  useEffect(() => {
+    if (
+      !isMobile &&
+      messageStore.isLoaded &&
+      !messageStore.openedRecipient &&
+      messageStore.contacts.length > 0
+    ) {
+      const walletAddress = walletStore.address?.toString();
+      if (walletAddress) {
+        messageStore.restoreLastOpenedRecipient(walletAddress);
+      }
+    }
+  }, [
+    messageStore.isLoaded,
+    messageStore.openedRecipient,
+    messageStore.contacts.length,
+    walletStore.address,
+    messageStore,
+    isMobile,
+  ]);
+
+  // Effect to update mobile view when opened recipient changes
+  useEffect(() => {
+    if (isMobile && messageStore.isLoaded) {
+      if (messageStore.openedRecipient) {
+        setMobileView("messages");
+      } else {
+        setMobileView("contacts");
+      }
+    }
+  }, [isMobile, messageStore.openedRecipient, messageStore.isLoaded]);
+
   const onContactClicked = useCallback(
     (contact: Contact) => {
       if (!walletStore.address) {
@@ -162,11 +201,11 @@ export const MessengerContainer: FC = () => {
   return (
     <>
       {/* Main Message Section*/}
-      <div className="bg-[var(--primary-bg)] sm:px-8 sm:py-4">
-        <div className="flex items-center gap-4">
+      <div className="bg-primary-bg">
+        <div className="flex items-center">
           {isWalletReady &&
             (isWalletReady && messageStore.isLoaded ? (
-              <div className="flex h-[100vh] min-h-[300px] w-full min-w-[320px] overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--secondary-bg)] shadow-md sm:mx-auto sm:h-[85vh] sm:max-w-[1200px]">
+              <div className="flex h-[calc(100vh)] min-h-[300px] w-full overflow-hidden sm:h-[calc(100vh-68px)]">
                 <ContactSection
                   contacts={messageStore.contacts}
                   onNewChatClicked={onNewChatClicked}
@@ -183,17 +222,26 @@ export const MessengerContainer: FC = () => {
                   setMobileView={setMobileView}
                 />
               </div>
-            ) : (
+            ) : isWalletReady ? (
               <div className="flex w-full flex-col items-center text-xs">
                 {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-                <div className="relative mx-auto h-[100vh] min-h-[300px] w-full min-w-[320px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md sm:h-[85vh] sm:max-w-[1200px]">
-                  <div className="absolute inset-0 animate-pulse bg-[var(--secondary-bg)]/20" />
+                <div className="border-primary-border bg-secondary-bg relative h-[calc(100vh)] min-h-[300px] w-full overflow-hidden border-t sm:h-[calc(100vh-68px)]">
+                  <div className="bg-secondary-bg/20 absolute inset-0 animate-pulse" />
                   <div className="relative flex h-full flex-col items-center justify-center space-y-4">
                     <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                       Starting the message client...
                     </span>
                     <ArrowPathIcon className="h-14 w-14 animate-spin text-gray-500" />
                   </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-[calc(100vh)] w-full flex-col items-center justify-center">
+                <div className="text-center">
+                  <p className="mb-2 text-lg font-semibold">Wallet not ready</p>
+                  <p className="text-sm text-gray-500">
+                    Please unlock your wallet first
+                  </p>
                 </div>
               </div>
             ))}
@@ -247,6 +295,13 @@ export const MessengerContainer: FC = () => {
       {isOpen("walletInfo") && (
         <Modal onClose={() => closeModal("walletInfo")}>
           <WalletInfo />
+        </Modal>
+      )}
+
+      {/* Settings Modal */}
+      {isOpen("settings") && (
+        <Modal onClose={() => closeModal("settings")}>
+          <NetworkSettingsModal />
         </Modal>
       )}
 

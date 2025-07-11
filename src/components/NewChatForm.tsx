@@ -380,18 +380,16 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   return (
     <>
-      <h3 className="mb-5 text-base font-semibold text-white">
-        Start New Conversation
-      </h3>
+      <h3 className="mb-5 text-base font-semibold">Start New Conversation</h3>
       <form onSubmit={handleSubmit}>
         <div className={"mb-5"}>
           <label
-            className="mb-[5px] block text-[14px] font-bold text-white"
+            className="mb-[5px] block text-[14px] font-bold"
             htmlFor="recipientAddress"
           >
             Recipient Address
           </label>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Textarea
               ref={useRecipientInputRef}
               className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white lowercase placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
@@ -411,7 +409,21 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                 setRecipientInputValue(data.toLowerCase());
               }}
             />
-          </div>
+          </div> */}
+          <Textarea
+            ref={useRecipientInputRef}
+            className="border-primary-border bg-input-bg focus:border-kas-secondary box-border flex w-full resize-none items-center rounded-2xl border px-2 py-1"
+            rows={2}
+            id="recipientAddress"
+            value={recipientInputValue}
+            onChange={(e) =>
+              setRecipientInputValue(e.target.value.toLowerCase())
+            }
+            placeholder="Kaspa address or Kns domain"
+            disabled={isLoading}
+            required
+            autoComplete="off"
+          />
           {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
             <div className={styles["checking-text"]}>
               Resolving KNS domain...
@@ -444,13 +456,13 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
         <div className={"mb-5"}>
           <label
-            className="mb-[5px] block text-[14px] font-bold text-white"
+            className="mb-[5px] block text-[14px] font-bold"
             htmlFor="handshakeAmount"
           >
             Handshake Amount (KAS)
           </label>
           <input
-            className="mb-2 box-border flex h-10 w-full items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-1.5 text-white placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none"
+            className="border-primary-border bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-3xl border px-3 py-2"
             type="text"
             id="handshakeAmount"
             value={handshakeAmount}
@@ -490,7 +502,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
               1
             </button>
           </div>
-          <div className={styles["info-text"]}>
+          <div className="mt-4 text-xs text-gray-400">
             Default: 0.2 KAS. Higher amounts help recipients respond even if
             they have no KAS. This creates a better experience for newcomers to
             Kasia.

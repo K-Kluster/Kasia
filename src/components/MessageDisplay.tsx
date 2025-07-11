@@ -191,11 +191,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
               </div>
               <div className="flex-1">
                 {hasMessage && (
-                  <div className="mb-1 text-sm font-medium break-all text-white drop-shadow-sm">
+                  <div className="mb-1 text-sm font-medium break-all drop-shadow-sm">
                     {paymentPayload.message}
                   </div>
                 )}
-                <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
+                <div className="text-xs font-semibold drop-shadow-sm">
                   {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
                 </div>
               </div>
@@ -221,10 +221,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           />
         </div>
         <div className="flex-1">
-          <div className="mb-1 text-sm font-medium text-white drop-shadow-sm">
+          <div className="mb-1 text-sm font-medium drop-shadow-sm">
             Payment message
           </div>
-          <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
+          <div className="text-xs font-semibold drop-shadow-sm">
             {isOutgoing ? "Sent" : "Received"} payment
           </div>
         </div>
@@ -466,7 +466,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         className={clsx(
           "relative z-0 mb-4 max-w-[70%] cursor-pointer px-4 py-3 text-left break-words hyphens-auto",
           isOutgoing
-            ? "rounded-2xl rounded-br-none bg-[#007aff] text-white"
+            ? "bg-kas-secondary/20 border-kas-secondary rounded-2xl rounded-br-none border"
             : "rounded-2xl rounded-bl-none bg-[var(--secondary-bg)]"
         )}
       >

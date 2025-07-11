@@ -90,6 +90,9 @@ interface MessagingState {
   setContactNickname: (address: string, nickname: string) => void;
   removeContactNickname: (address: string) => void;
   getLastMessageForContact: (contactAddress: string) => Message | null;
+
+  // Last opened recipient management
+  restoreLastOpenedRecipient: (walletAddress: string) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -178,7 +181,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     const conversationKey = `encrypted_conversations_${address}`;
     localStorage.removeItem(conversationKey);
 
-    // 4. Reset all UI state immediately
+    // 4. Clear last opened recipient for this wallet
+    const lastOpenedRecipientKey = `kasia_last_opened_recipient_${address}`;
+    localStorage.removeItem(lastOpenedRecipientKey);
+
+    // 5. Reset all UI state immediately
     set({
       contacts: [],
       messages: [],
@@ -188,7 +195,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       isCreatingNewChat: false,
     });
 
-    // 5. Clear and reinitialize conversation manager
+    // 6. Clear and reinitialize conversation manager
     const manager = g().conversationManager;
     if (manager) {
       // Reinitialize fresh conversation manager
@@ -469,6 +476,20 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   setOpenedRecipient(contact) {
     set({ openedRecipient: contact });
+
+    // Save or clear the last opened recipient to localStorage for persistence
+    const walletStore = useWalletStore.getState();
+    const walletAddress = walletStore.address?.toString();
+    if (walletAddress) {
+      if (contact) {
+        localStorage.setItem(
+          `kasia_last_opened_recipient_${walletAddress}`,
+          contact
+        );
+      } else {
+        localStorage.removeItem(`kasia_last_opened_recipient_${walletAddress}`);
+      }
+    }
 
     g().refreshMessagesOnOpenedRecipient();
   },
@@ -1040,6 +1061,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   removeContactNickname: (address: string) => {
     g().setContactNickname(address, "");
   },
+
   getLastMessageForContact: (contactAddress: string) => {
     const messages = g().messages;
     const relevant = messages.filter(
@@ -1050,5 +1072,49 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     return relevant.length
       ? relevant.reduce((a, b) => (a.timestamp > b.timestamp ? a : b))
       : null;
+  },
+
+  // Last opened recipient management
+  restoreLastOpenedRecipient: (walletAddress: string) => {
+    try {
+      const lastOpenedRecipient = localStorage.getItem(
+        `kasia_last_opened_recipient_${walletAddress}`
+      );
+
+      if (lastOpenedRecipient) {
+        // Check if the contact still exists in the current contacts list
+        const state = g();
+        const contactExists = state.contacts.some(
+          (contact) => contact.address === lastOpenedRecipient
+        );
+
+        if (contactExists) {
+          set({ openedRecipient: lastOpenedRecipient });
+          g().refreshMessagesOnOpenedRecipient();
+        } else {
+          // Contact no longer exists, clear the stored value
+          localStorage.removeItem(
+            `kasia_last_opened_recipient_${walletAddress}`
+          );
+
+          // Fallback: select the first available contact
+          if (state.contacts.length > 0) {
+            const firstContact = state.contacts[0];
+            set({ openedRecipient: firstContact.address });
+            g().refreshMessagesOnOpenedRecipient();
+          }
+        }
+      } else {
+        // Fallback: select the first available contact if we have contacts
+        const state = g();
+        if (state.contacts.length > 0) {
+          const firstContact = state.contacts[0];
+          set({ openedRecipient: firstContact.address });
+          g().refreshMessagesOnOpenedRecipient();
+        }
+      }
+    } catch (error) {
+      console.error("Error restoring last opened recipient:", error);
+    }
   },
 }));

@@ -1,4 +1,4 @@
-import { FC, useRef, useEffect } from "react";
+import { FC, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useWalletStore } from "../../store/wallet.store";
 import { useIsMobile } from "../../utils/useIsMobile";
@@ -16,7 +16,6 @@ export const RootLayout: FC = () => {
   const isWalletReady = Boolean(walletStore.unlockedWallet);
   const isMobile = useIsMobile();
 
-  const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,7 +41,6 @@ export const RootLayout: FC = () => {
         <Header
           isWalletReady={isWalletReady}
           walletAddress={walletStore.address?.toString()}
-          menuRef={menuRef}
           onCloseWallet={handleCloseWallet}
         />
       )}

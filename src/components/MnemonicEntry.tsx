@@ -61,10 +61,10 @@ export const MnemonicEntry = ({
               type={visible ? "text" : "password"}
               placeholder={`Word ${i + 1}`}
               className={clsx(
-                "w-full rounded p-2",
-                "border border-[var(--border-color)] bg-[var(--primary-bg)]",
+                "w-full rounded-xl p-2",
+                "border-primary-border border bg-[var(--primary-bg)]",
                 "text-[var(--text-primary)]",
-                "focus:border-[var(--accent-blue)] focus:outline-none",
+                "focus:border-[var(--color-kas-secondary)] focus:outline-none",
                 "placeholder:text-sm"
               )}
               onFocus={() => setFocusedIndex(i)}

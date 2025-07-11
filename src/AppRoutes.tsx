@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
 import { WalletFlow } from "./containers/WalletFlow";
 import { RequireUnlockedWallet } from "./containers/RequireUnlockedWallet";
-import { SettingsPage } from "./SettingsPage";
+
 import type { NetworkType } from "./types/all";
 import type { Step } from "./containers/WalletFlow";
 import { useWalletStore } from "./store/wallet.store";
@@ -79,7 +79,6 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route element={<RequireUnlockedWallet />}>
           <Route path=":walletId" element={<MessengerContainer />} />
         </Route>
-        <Route path="settings-network" element={<SettingsPage />} />
       </Route>
     </Routes>
   );
