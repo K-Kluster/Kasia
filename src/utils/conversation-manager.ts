@@ -40,21 +40,9 @@ export class ConversationManager {
           this.currentAddress
         );
       }
-
-      // Also save to localStorage as backup during transition
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch (error) {
-      console.error("Failed to save conversations to storage:", error);
-      // Fallback to localStorage only
-      try {
-        const data = Array.from(this.conversations.values());
-        localStorage.setItem(this.storageKey, JSON.stringify(data));
-      } catch (localStorageError) {
-        console.error(
-          "Failed to save conversations to localStorage:",
-          localStorageError
-        );
-      }
+      console.error("Failed to save conversations to IndexedDB:", error);
+      throw error; // Re-throw to let calling code handle the error
     }
   }
 
