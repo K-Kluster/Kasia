@@ -8,6 +8,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { ALIAS_LENGTH } from "../config/constants";
 import { isAlias } from "./alias-validator";
+import { databaseService } from "./database";
 
 export class ConversationManager {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";
@@ -28,23 +29,81 @@ export class ConversationManager {
     return `${ConversationManager.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
   }
 
-  private saveToStorage() {
+  private async saveToStorage() {
     try {
       const data = Array.from(this.conversations.values());
+
+      // Save to IndexedDB
+      for (const conversation of data) {
+        await databaseService.saveConversation(
+          conversation,
+          this.currentAddress
+        );
+      }
+
+      // Also save to localStorage as backup during transition
       localStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch (error) {
       console.error("Failed to save conversations to storage:", error);
+      // Fallback to localStorage only
+      try {
+        const data = Array.from(this.conversations.values());
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+      } catch (localStorageError) {
+        console.error(
+          "Failed to save conversations to localStorage:",
+          localStorageError
+        );
+      }
     }
   }
 
-  private loadConversations() {
+  private async loadConversations() {
     try {
       // Clear existing data first
       this.conversations.clear();
       this.aliasToConversation.clear();
       this.addressToConversation.clear();
 
-      // Load conversations for current wallet
+      // Try to load from IndexedDB first
+      try {
+        const conversations = await databaseService.getConversationsByWallet(
+          this.currentAddress
+        );
+
+        conversations.forEach((conv) => {
+          // Only load conversations that belong to the current wallet address
+          if (
+            conv.kaspaAddress &&
+            this.isValidKaspaAddress(conv.kaspaAddress)
+          ) {
+            this.conversations.set(conv.conversationId, conv);
+            this.addressToConversation.set(
+              conv.kaspaAddress,
+              conv.conversationId
+            );
+            this.aliasToConversation.set(conv.myAlias, conv.conversationId);
+            if (conv.theirAlias) {
+              this.aliasToConversation.set(
+                conv.theirAlias,
+                conv.conversationId
+              );
+            }
+          }
+        });
+
+        console.log(
+          `Loaded ${conversations.length} conversations from IndexedDB for ${this.currentAddress}`
+        );
+        return;
+      } catch (dbError) {
+        console.warn(
+          "Failed to load conversations from IndexedDB, falling back to localStorage:",
+          dbError
+        );
+      }
+
+      // Fallback to localStorage
       const data = localStorage.getItem(this.storageKey);
       if (data) {
         const conversations = JSON.parse(data) as Conversation[];
@@ -68,6 +127,29 @@ export class ConversationManager {
             }
           }
         });
+
+        // Migrate to IndexedDB
+        try {
+          for (const conversation of conversations) {
+            if (
+              conversation.kaspaAddress &&
+              this.isValidKaspaAddress(conversation.kaspaAddress)
+            ) {
+              await databaseService.saveConversation(
+                conversation,
+                this.currentAddress
+              );
+            }
+          }
+          console.log(
+            `Migrated ${conversations.length} conversations to IndexedDB for ${this.currentAddress}`
+          );
+        } catch (migrationError) {
+          console.warn(
+            "Failed to migrate conversations to IndexedDB:",
+            migrationError
+          );
+        }
       }
     } catch (error) {
       console.error("Failed to load conversations from storage:", error);
@@ -117,7 +199,7 @@ export class ConversationManager {
 
           // Update last activity to show it's still active
           conv.lastActivity = Date.now();
-          this.saveConversation(conv);
+          await this.saveConversation(conv);
 
           // Note: Not triggering onHandshakeInitiated again since it's a retry
           return { payload, conversation: conv };
@@ -175,7 +257,7 @@ export class ConversationManager {
           // Promote the existing pending conversation to active *in-place* so any listeners that hold the original object see the change immediately.
           (existingConversationById as unknown as ActiveConversation).status =
             "active";
-          this.saveConversation(existingConversationById);
+          await this.saveConversation(existingConversationById);
           this.events?.onHandshakeCompleted?.(existingConversationById);
         }
         return; // ⬅ nothing else to do
@@ -200,7 +282,9 @@ export class ConversationManager {
     }
   }
 
-  public createHandshakeResponse(conversationId: string): string {
+  public async createHandshakeResponse(
+    conversationId: string
+  ): Promise<string> {
     const conversation = this.conversations.get(conversationId);
     if (!conversation) {
       throw new Error("Conversation not found for handshake response");
@@ -222,12 +306,12 @@ export class ConversationManager {
         status: "active",
         lastActivity: Date.now(),
       };
-      this.saveConversation(activatedConversation);
+      await this.saveConversation(activatedConversation);
       this.events?.onHandshakeCompleted?.(activatedConversation);
     } else {
       // For active conversations, just update last activity
       conversation.lastActivity = Date.now();
-      this.saveConversation(conversation);
+      await this.saveConversation(conversation);
     }
 
     const responsePayload: HandshakePayload = {
@@ -269,15 +353,15 @@ export class ConversationManager {
     );
   }
 
-  public updateLastActivity(conversationId: string): void {
+  public async updateLastActivity(conversationId: string): Promise<void> {
     const conversation = this.conversations.get(conversationId);
     if (conversation) {
       conversation.lastActivity = Date.now();
-      this.saveConversation(conversation);
+      await this.saveConversation(conversation);
     }
   }
 
-  public removeConversation(conversationId: string): boolean {
+  public async removeConversation(conversationId: string): Promise<boolean> {
     const conversation = this.conversations.get(conversationId);
     if (!conversation) return false;
 
@@ -287,11 +371,19 @@ export class ConversationManager {
     if (conversation.theirAlias) {
       this.aliasToConversation.delete(conversation.theirAlias);
     }
-    this.saveToStorage();
+
+    // Remove from IndexedDB
+    try {
+      await databaseService.deleteConversation(conversationId);
+    } catch (error) {
+      console.warn("Failed to delete conversation from IndexedDB:", error);
+    }
+
+    await this.saveToStorage();
     return true;
   }
 
-  public updateConversation(
+  public async updateConversation(
     conversation: Pick<Conversation, "conversationId"> & Partial<Conversation>
   ) {
     // Validate the conversation
@@ -341,7 +433,7 @@ export class ConversationManager {
     }
 
     // Save to storage
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   private parseHandshakePayload(payloadString: string): HandshakePayload {
@@ -441,7 +533,7 @@ export class ConversationManager {
       initiatedByMe: false,
     };
 
-    this.saveConversation(conversation);
+    await this.saveConversation(conversation);
 
     if (isMyNewAliasValid) {
       this.events?.onHandshakeCompleted?.(conversation);
@@ -470,7 +562,7 @@ export class ConversationManager {
     }
   }
 
-  private saveConversation(conversation: Conversation) {
+  private async saveConversation(conversation: Conversation) {
     this.conversations.set(conversation.conversationId, conversation);
     this.addressToConversation.set(
       conversation.kaspaAddress,
@@ -486,7 +578,7 @@ export class ConversationManager {
         conversation.conversationId
       );
     }
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   public getMonitoredConversations(): { alias: string; address: string }[] {
@@ -517,7 +609,7 @@ export class ConversationManager {
    * Restore a conversation from a backup
    * @param conversation The conversation to restore
    */
-  restoreConversation(conversation: Conversation): void {
+  async restoreConversation(conversation: Conversation): Promise<void> {
     // Validate conversation object
     if (!this.isValidConversation(conversation)) {
       console.error("Invalid conversation object:", conversation);
@@ -557,7 +649,7 @@ export class ConversationManager {
     }
 
     // Save to storage
-    this.saveToStorage();
+    await this.saveToStorage();
   }
 
   private identifyConversationByConversationIdOrAddress(

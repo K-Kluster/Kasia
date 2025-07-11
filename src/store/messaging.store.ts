@@ -16,6 +16,7 @@ import {
   PendingConversation,
 } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
+import { databaseService } from "../utils/database";
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -87,8 +88,8 @@ interface MessagingState {
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
 
   // Nickname management
-  setContactNickname: (address: string, nickname: string) => void;
-  removeContactNickname: (address: string) => void;
+  setContactNickname: (address: string, nickname: string) => Promise<void>;
+  removeContactNickname: (address: string) => Promise<void>;
   getLastMessageForContact: (contactAddress: string) => Message | null;
 }
 
@@ -1010,7 +1011,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
 
   // Nickname management functions
-  setContactNickname: (address: string, nickname: string) => {
+  setContactNickname: async (address: string, nickname: string) => {
     const contacts = g().contacts;
     const contactIndex = contacts.findIndex((c) => c.address === address);
 
@@ -1033,12 +1034,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           delete nicknames[address];
         }
         localStorage.setItem(storageKey, JSON.stringify(nicknames));
+
+        // Save to IndexedDB
+        await databaseService.setNickname(
+          walletStore.address.toString(),
+          address,
+          nickname.trim()
+        );
       }
     }
   },
 
-  removeContactNickname: (address: string) => {
-    g().setContactNickname(address, "");
+  removeContactNickname: async (address: string) => {
+    await g().setContactNickname(address, "");
   },
   getLastMessageForContact: (contactAddress: string) => {
     const messages = g().messages;

@@ -21,6 +21,29 @@ export async function boot() {
 
   console.log("Kaspa SDK initialized successfully");
 
+  // Run IndexedDB migration
+  try {
+    const { migrationService } = await import("./utils/migration");
+    const migrationResult = await migrationService.migrateFromLocalStorage();
+
+    if (migrationResult.success) {
+      console.log(
+        "IndexedDB migration completed:",
+        migrationResult.migratedItems
+      );
+      if (migrationResult.errors.length > 0) {
+        console.warn("Migration errors:", migrationResult.errors);
+      }
+      if (migrationResult.warnings.length > 0) {
+        console.warn("Migration warnings:", migrationResult.warnings);
+      }
+    } else {
+      console.error("IndexedDB migration failed:", migrationResult.errors);
+    }
+  } catch (error) {
+    console.error("Failed to run IndexedDB migration:", error);
+  }
+
   // lazy load main
   const { loadApplication } = await import("./main");
   await loadApplication(root);

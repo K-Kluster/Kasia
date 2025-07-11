@@ -150,7 +150,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             }
 
             // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-            if (DecryptionCache.hasFailed(currentAddress, tx.transaction_id)) {
+            if (
+              await DecryptionCache.hasFailed(currentAddress, tx.transaction_id)
+            ) {
               console.log(
                 `API Messages: Skipping known failed decryption: ${tx.transaction_id}`
               );
