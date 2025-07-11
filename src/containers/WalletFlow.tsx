@@ -16,8 +16,7 @@ import {
   TrashIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { useModals } from "../context/ModalContext";
+import { useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
 import { toast } from "../utils/toast";
@@ -25,6 +24,7 @@ import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../utils/useIsMobile";
 import { Modal } from "../components/Common/modal";
 import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
+import { useUiStore } from "../store/ui.store";
 
 export type Step = {
   type:
@@ -55,8 +55,9 @@ export const WalletFlow = ({
   isConnected,
 }: WalletFlowProps) => {
   const navigate = useNavigate();
-  const { openModal, isOpen, closeModal } = useModals();
-
+  const openModal = useUiStore((s) => s.openModal);
+  const isOpen = useUiStore((s) => s.isOpen);
+  const closeModal = useUiStore((s) => s.closeModal);
   const { wallet } = useParams<{ wallet: string }>();
 
   const [error, setError] = useState<{ message: string; id: number } | null>(

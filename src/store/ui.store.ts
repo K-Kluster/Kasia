@@ -8,7 +8,8 @@ export type ModalType =
   | "delete"
   | "seed"
   | "warn-costy-send-message"
-  | "utxo-compound";
+  | "utxo-compound"
+  | "settings";
 type Theme = "light" | "dark" | "system";
 
 type UiState = {

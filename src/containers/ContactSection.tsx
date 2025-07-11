@@ -22,8 +22,6 @@ import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { useModals } from "../context/ModalContext";
-import { FeeBuckets } from "../components/FeeBuckets";
 import { SettingsModal } from "../components/Modals/SettingsModal";
 
 interface ContactSectionProps {
@@ -53,12 +51,12 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const isMobile = useIsMobile();
   const toggleSettings = useUiStore((s) => s.toggleSettings);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
+  const openModal = useUiStore((s) => s.openModal);
   const messageStore = useMessagingStore();
   const lockWallet = useWalletStore((s) => s.lock);
   const [searchQuery, setSearchQuery] = useState("");
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
-  const { openModal } = useModals();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Search through all messages and contacts

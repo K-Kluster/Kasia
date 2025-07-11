@@ -3,8 +3,7 @@ import { NetworkSelector } from "../../containers/NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
 import { Button } from "../Common/Button";
-import { useModals } from "../../context/ModalContext";
-import { useIsMobile } from "../../utils/useIsMobile";
+import { useUiStore } from "../../store/ui.store";
 
 export const NetworkSettingsModal: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -12,8 +11,8 @@ export const NetworkSettingsModal: React.FC = () => {
   const isConnected = useNetworkStore((state) => state.isConnected);
   const isConnecting = useNetworkStore((state) => state.isConnecting);
   const connect = useNetworkStore((state) => state.connect);
-  const { closeModal } = useModals();
-  const isMobile = useIsMobile();
+
+  const closeModal = useUiStore((s) => s.closeModal);
 
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);

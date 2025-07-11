@@ -9,6 +9,7 @@ import { WalletInfo } from "../components/Modals/WalletInfo";
 import { WalletSeedRetreiveDisplay } from "../components/Modals/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../components/Modals/WalletWithdrawal";
 import { NewChatForm } from "../components/NewChatForm";
+import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 import { useMessagingStore } from "../store/messaging.store";
 import { useNetworkStore } from "../store/network.store";
 import { useUiStore } from "../store/ui.store";
@@ -18,7 +19,6 @@ import { unknownErrorToErrorLike } from "../utils/errors";
 import { useIsMobile } from "../utils/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
-import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 
 export const MessengerContainer: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
