@@ -1281,7 +1281,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       }
 
       // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-      if (DecryptionCache.hasFailed(stringWalletAddress, txId)) {
+      if (await DecryptionCache.hasFailed(stringWalletAddress, txId)) {
         if (process.env.NODE_ENV === "development") {
           console.debug(`Real-time: Skipping known failed decryption: ${txId}`);
         }

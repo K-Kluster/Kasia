@@ -93,7 +93,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       });
 
       // Load existing messages to avoid duplicates
-      const existingMessages = messagingStore.loadMessages(address);
+      const existingMessages = await messagingStore.loadMessages(address);
       const existingTxIds = new Set(
         existingMessages.map((msg) => msg.transactionId)
       );
@@ -150,7 +150,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             }
 
             // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-            if (DecryptionCache.hasFailed(currentAddress, tx.transaction_id)) {
+            if (
+              await DecryptionCache.hasFailed(currentAddress, tx.transaction_id)
+            ) {
               console.log(
                 `API Messages: Skipping known failed decryption: ${tx.transaction_id}`
               );
@@ -575,7 +577,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       );
 
       // Update UI with all messages
-      messagingStore.loadMessages(address);
+      await messagingStore.loadMessages(address);
 
       console.log("API Messages: Fetch and process completed successfully");
     } catch (err) {

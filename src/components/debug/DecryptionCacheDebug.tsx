@@ -11,8 +11,13 @@ export const DecryptionCacheDebug: FC = () => {
   useEffect(() => {
     if (!address) return;
 
-    const updateStats = () => {
-      setStats(DecryptionCache.getStats(address.toString()));
+    const updateStats = async () => {
+      try {
+        const stats = await DecryptionCache.getStats(address.toString());
+        setStats(stats);
+      } catch (error) {
+        console.error("Failed to get decryption cache stats:", error);
+      }
     };
 
     // Update stats initially
@@ -24,10 +29,15 @@ export const DecryptionCacheDebug: FC = () => {
     return () => clearInterval(interval);
   }, [address]);
 
-  const handleClearCache = () => {
+  const handleClearCache = async () => {
     if (!address) return;
-    DecryptionCache.clear(address.toString());
-    setStats(DecryptionCache.getStats(address.toString()));
+    try {
+      await DecryptionCache.clear(address.toString());
+      const stats = await DecryptionCache.getStats(address.toString());
+      setStats(stats);
+    } catch (error) {
+      console.error("Failed to clear decryption cache:", error);
+    }
   };
 
   if (!isVisible) {
