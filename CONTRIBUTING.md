@@ -7,9 +7,9 @@ Any contributions through pull requests are welcome as this project aims to be a
 
 ## Branches
 
-`master` is currently the default branch, and that's from where https://kasia.fyi is being sourced from. It is expected to be a stable version.
+`master` is from where https://kasia.fyi is being sourced from. It is expected to be a stable version.
 
-`staging` is where the next release is being packaged, it is expected to be unstable.
+`staging` is currently the default branch, and that's from where the next release is being packaged, it is expected to be unstable.
 
 ## Discussions
 

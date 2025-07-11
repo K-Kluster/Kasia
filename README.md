@@ -1,184 +1,89 @@
-- [How To Run Kasia Locally](#how-to-run-kasia-locally)
-  - [Getting started](#getting-started)
-  - [Install Rust](#install-rust)
-  - [Install WASM](#install-wasm)
-  - [Clone the repository](#clone-the-repository)
-  - [Build the cipher wasm package](#build-the-cipher-wasm-package)
-  - [Install Node.js](#install-nodejs)
-  - [Install Kaspa WASM Files](#install-kaspa-wasm-files)
-  - [Run Kasia Locally](#run-kasia-locally)
-- [Links](#links)
+# Kasia: Secure, Decentralized, and Fast Messaging
 
-# How To Run Kasia Locally
+<div align="center">
+  <img src="public/kasia-logo-512.png" alt="Kasia Logo" width="200"/>
+</div>
 
-## Getting started
+Kasia is an encrypted, decentralized, and fast peer-to-peer (P2P) messaging protocol and application. Built on top of Kaspa, Kasia ensures secure, private, and efficient communication without the need for a central server.
 
-Make sure you have the latest version of git downloaded - https://git-scm.com/downloads
+## Features
 
-Verify your installation by running in your terminal:
+- **Encryption**: All messages are encrypted to ensure privacy and security.
+- **Decentralization**: No central server controls the network, making it resistant to censorship and outages.
+- **Speed**: Fast message delivery thanks to the underlying Kaspa technology.
+- **Open Source**: The project is open-source, allowing anyone to review, modify, and contribute to the codebase.
 
-```
-git version
-```
+## Getting Started
 
-If you see a version number you have installed git successfully.
+Follow these steps to run Kasia locally on your machine.
 
-## Install Rust
+### Prerequisites
 
-  <details>
-  <summary>On Linux</summary>
+- **Git**: Make sure you have the latest version of Git installed. [Download Git](https://git-scm.com/downloads)
+- **Rust**: Install the Rust toolchain. [Install Rust](https://www.rust-lang.org/tools/install)
+- **Node.js**: Download and install Node.js. [Download Node.js](https://nodejs.org/en/download)
 
-1.  Install general prerequisites
+### Installation
 
-    ```bash
-    sudo apt install curl git build-essential libssl-dev pkg-config
-    ```
+1. **Clone the Repository**
 
-2.  Install Protobuf (required for gRPC)
+   ```bash
+   git clone https://github.com/K-Kluster/Kasia.git
+   cd Kasia
+   ```
 
-    ```bash
-    sudo apt install protobuf-compiler libprotobuf-dev #Required for gRPC
-    ```
+2. **Install WASM Pack**
 
-3.  Install the clang toolchain (required for RocksDB and WASM secp256k1 builds)
+   ```bash
+   cargo install wasm-pack
+   ```
 
-    ```bash
-    sudo apt-get install clang-format clang-tidy \
-    clang-tools clang clangd libc++-dev \
-    libc++1 libc++abi-dev libc++abi1 \
-    libclang-dev libclang1 liblldb-dev \
-    libllvm-ocaml-dev libomp-dev libomp5 \
-    lld lldb llvm-dev llvm-runtime \
-    llvm python3-clang
-    ```
+3. **Build the Cipher WASM Package**
 
-4.  Install the [rust toolchain](https://rustup.rs/).
+   ```bash
+   npm run wasm:build
+   ```
 
-          If you do not have a browser but only the command line interface run:
+4. **Install Kaspa WASM Files**
 
-         ```
-         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-         ```
+   - Download the [latest `kaspa-wasm32-sdk-v1.0.0.zip`](https://github.com/kaspanet/rusty-kaspa/releases) or build the WASM modules yourself.
+   - Extract the contents of `kaspa-wasm32-sdk/web/kaspa/*` into the `Kasia/wasm/` directory.
 
-           If you already have rust installed, update it by running:
+5. **Install Node.js Dependencies**
 
-         ```
-         rustup update
-         ```
+   ```bash
+   npm install
+   ```
 
-    </details>
+### Running Kasia Locally
 
-<details>
-  <summary>On Windows</summary>
-  
-  
-  
-1.Install the [rust toolchain](https://rustup.rs/)
+To start Kasia locally, run:
 
-2.If you already have rust installed, update it by running:
-
-```
-rustup update
-```
-
-   </details>
-
-   <details>
-  <summary>Building on Mac OS</summary>
-
-1.  Install Protobuf (required for gRPC)
-    ```bash
-    brew install protobuf
-    ```
-2.  Install llvm.
-
-            The default XCode installation of `llvm` does not support WASM build targets.
-
-    To build WASM on MacOS you need to install `llvm` from homebrew (at the time of writing, the llvm version for MacOS is 16.0.1).
-    `bash
-brew install llvm
-`
-
-            **NOTE:** Homebrew can use different keg installation locations depending on your configuration. For example:
-            - `/opt/homebrew/opt/llvm` -> `/opt/homebrew/Cellar/llvm/16.0.1`
-            - `/usr/local/Cellar/llvm/16.0.1`
-
-            To determine the installation location you can use `brew list llvm` command and then modify the paths below accordingly:
-            ```bash
-            % brew list llvm
-            /usr/local/Cellar/llvm/16.0.1/bin/FileCheck
-            /usr/local/Cellar/llvm/16.0.1/bin/UnicodeNameMappingGenerator
-            ...
-            ```
-            If you have `/opt/homebrew/Cellar`, then you should be able to use `/opt/homebrew/opt/llvm`.
-
-            Add the following to your `~/.zshrc` file:
-            ```bash
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-            export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
-            ```
-
-            Reload the `~/.zshrc` file
-            ```bash
-            source ~/.zshrc
-            ```
-
-3.  Install the [rust toolchain](https://rustup.rs/)
-
-    If you already have rust installed, update it by running:
-
-    ```
-    rustup update
-    ```
-
-    </details>
-
-## Install WASM
-
-```
-cargo install wasm-pack
-```
-
-## Clone the repository
-
-```
-git clone https://github.com/K-Kluster/Kasia.git
-```
-
-```
-cd Kasia
-```
-
-## Build the cipher wasm package
-
-```
-npm run wasm:build
-```
-
-## Install Node.js
-
-Download Node.js: https://nodejs.org/en/download
-
-## Install Kaspa WASM Files
-
-- Download the latest `kaspa-wasm32-sdk-v1.0.0.zip` or build the [WASM precompiled binaries](https://github.com/kaspanet/rusty-kaspa/releases) yourself.
-- Extract the contents of `kaspa-wasm32-sdk/web/kaspa` into the `Kasia/wasm` directory.
-
-## Run Kasia Locally
-
-```
-npm install
-```
-
-```
+```bash
 npm run dev
 ```
 
-Additionally, it is possible to configure variables via `.env`, simply copy the environment variable file template from `.env.dist` to `.env` and start modify them.
+You can also configure environment variables by copying the `.env.dist` file to `.env` and modifying the variables as needed. Here are some example configurations:
 
-# Links
+```bash
+# mainnet or testnet-10
+VITE_DEFAULT_KASPA_NETWORK=mainnet
+VITE_ALLOWED_KASPA_NETWORKS=mainnet,testnet-10
+VITE_DISABLE_PASSWORD_REQUIREMENTS=true
+# info, warn, error, silent
+VITE_LOG_LEVEL=info
+```
 
-- [Discord](https://discord.gg/ssB46MXzRU)
-- [X](https://x.com/kasiamessaging)
+## Contributing
+
+We welcome contributions from everyone! If you're interested in contributing to Kasia, please read our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to get started.
+
+
+## Community and Support
+
+- **Discord**: Join our community on [Discord](https://discord.gg/ssB46MXzRU)
+- **X (Twitter)**: Follow us on [X](https://x.com/kasiamessaging)
+
+## License
+
+This project is licensed under the ISC License. See the [LICENSE](LICENSE) file for details.
