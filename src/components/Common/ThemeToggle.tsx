@@ -8,7 +8,8 @@ export const ThemeToggle: FC = () => {
 
   const getButtonStyles = (buttonTheme: "light" | "dark" | "system") => {
     const isActive = theme === buttonTheme;
-    const baseStyles = "p-1.5 rounded-2xl transition-all duration-200";
+    const baseStyles =
+      "cursor-pointer p-1.5 rounded-2xl transition-all duration-200";
 
     if (isActive) {
       return `${baseStyles} shadow-sm`;

@@ -7,11 +7,7 @@ type Props = {
   onCloseWallet: () => void;
 };
 
-export const Header: FC<Props> = ({
-  isWalletReady,
-  walletAddress,
-  onCloseWallet,
-}) => {
+export const Header: FC<Props> = () => {
   return (
     <div className="border-primary-border relative left-1/2 flex w-screen -translate-x-1/2 items-center justify-between border-b bg-[var(--secondary-bg)] px-8 py-1 text-center">
       <div className="flex items-center gap-2">

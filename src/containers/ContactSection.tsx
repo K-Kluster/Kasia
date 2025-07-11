@@ -49,13 +49,11 @@ export const ContactSection: FC<ContactSectionProps> = ({
 }) => {
   const collapsedW = "w-14";
   const isMobile = useIsMobile();
-  const toggleSettings = useUiStore((s) => s.toggleSettings);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const openModal = useUiStore((s) => s.openModal);
   const messageStore = useMessagingStore();
   const lockWallet = useWalletStore((s) => s.lock);
   const [searchQuery, setSearchQuery] = useState("");
-  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -125,8 +123,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
     isMobile && mobileView === "messages" ? "hidden" : ""
   );
 
-  const isSettingsOpen = useUiStore((s) => s.isSettingsOpen);
-
   return (
     <div className={finalClassName}>
       {/* header */}
@@ -138,7 +134,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
             {isMobile && (
               <button
                 onClick={() => setSettingsOpen(true)}
-                className="hover:bg-primary-bg/50 mr-2 rounded-lg p-2 transition-colors"
+                className="hover:bg-primary-bg/50 mr-2 cursor-pointer rounded-lg p-2 transition-colors"
                 aria-label="Open menu"
               >
                 <Bars3Icon className="h-5 w-5 text-[var(--text-primary)]" />
@@ -156,7 +152,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
                   aria-label="Clear search"
                 >
                   <XMarkIcon className="h-4 w-4" />
@@ -220,7 +216,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
           >
             <button
               aria-label="toggle contacts pane"
-              className="hover:bg-primary-bg/50 rounded p-2 transition-colors"
+              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 transition-colors"
               onClick={() => setContactsCollapsed(!contactsCollapsed)}
             >
               <PanelLeftOpen
@@ -255,7 +251,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
                       setSettingsOpen(false);
                     }
                   }}
-                  className="hover:bg-primary-bg/50 rounded p-2 focus:outline-none"
+                  className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 focus:outline-none"
                   aria-label="Wallet Operations"
                 >
                   <CreditCardIcon className="h-5 w-5" />
@@ -378,7 +374,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
               <div className="relative">
                 <button
                   onClick={() => setShowSettingsModal(true)}
-                  className="hover:bg-primary-bg/50 rounded p-2 focus:outline-none"
+                  className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 focus:outline-none"
                   aria-label="Settings"
                 >
                   <Settings className="h-5 w-5" />
@@ -401,7 +397,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
             <button
               onClick={lockWallet}
               className={clsx(
-                "hover:bg-primary-bg/50 flex items-center gap-2 rounded p-2 transition-colors focus:outline-none",
+                "hover:bg-primary-bg/50 flex cursor-pointer items-center gap-2 rounded p-2 transition-colors focus:outline-none",
                 contactsCollapsed ? "flex-col" : "flex-row"
               )}
               aria-label="Sign out"

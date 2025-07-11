@@ -201,50 +201,49 @@ export const MessengerContainer: FC = () => {
   return (
     <>
       {/* Main Message Section*/}
-      <div className="bg-primary-bg">
-        <div className="flex items-center">
-          {isWalletReady &&
-            (isWalletReady && messageStore.isLoaded ? (
-              <div className="flex h-[calc(100vh)] min-h-[300px] w-full overflow-hidden sm:h-[calc(100vh-68px)]">
-                <ContactSection
-                  contacts={messageStore.contacts}
-                  onNewChatClicked={onNewChatClicked}
-                  onContactClicked={onContactClicked}
-                  openedRecipient={messageStore.openedRecipient}
-                  walletAddress={walletStore.address?.toString()}
-                  mobileView={mobileView}
-                  contactsCollapsed={contactsCollapsed}
-                  setContactsCollapsed={setContactsCollapsed}
-                  setMobileView={setMobileView}
-                />
-                <MessageSection
-                  mobileView={mobileView}
-                  setMobileView={setMobileView}
-                />
-              </div>
-            ) : isWalletReady ? (
-              <div className="flex w-full flex-col items-center text-xs">
-                {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-                <div className="border-primary-border bg-secondary-bg relative h-[calc(100vh)] min-h-[300px] w-full overflow-hidden border-t sm:h-[calc(100vh-68px)]">
-                  <div className="bg-secondary-bg/20 absolute inset-0 animate-pulse" />
-                  <div className="relative flex h-full flex-col items-center justify-center space-y-4">
-                    <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
-                      Starting the message client...
-                    </span>
-                    <ArrowPathIcon className="h-14 w-14 animate-spin text-gray-500" />
-                  </div>
+      <div className="bg-primary-bg flex items-center">
+        <div className="flex h-[100dvh] min-h-[300px] w-full overflow-hidden sm:h-[calc(100dvh-69px)]">
+          {isWalletReady && messageStore.isLoaded ? (
+            <>
+              <ContactSection
+                contacts={messageStore.contacts}
+                onNewChatClicked={onNewChatClicked}
+                onContactClicked={onContactClicked}
+                openedRecipient={messageStore.openedRecipient}
+                walletAddress={walletStore.address?.toString()}
+                mobileView={mobileView}
+                contactsCollapsed={contactsCollapsed}
+                setContactsCollapsed={setContactsCollapsed}
+                setMobileView={setMobileView}
+              />
+              <MessageSection
+                mobileView={mobileView}
+                setMobileView={setMobileView}
+              />
+            </>
+          ) : isWalletReady ? (
+            <div className="flex w-full flex-col items-center text-xs">
+              {/* If wallet is unlocked but message are not loaded, show the loading state*/}
+              <div className="border-primary-border bg-secondary-bg relative h-full w-full overflow-hidden border-t">
+                <div className="bg-secondary-bg/20 absolute inset-0 animate-pulse" />
+                <div className="relative flex h-full flex-col items-center justify-center space-y-4">
+                  <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
+                    Starting the message client...
+                  </span>
+                  <ArrowPathIcon className="h-14 w-14 animate-spin text-gray-500" />
                 </div>
               </div>
-            ) : (
-              <div className="flex h-[calc(100vh)] w-full flex-col items-center justify-center">
-                <div className="text-center">
-                  <p className="mb-2 text-lg font-semibold">Wallet not ready</p>
-                  <p className="text-sm text-gray-500">
-                    Please unlock your wallet first
-                  </p>
-                </div>
+            </div>
+          ) : (
+            <div className="flex w-full flex-col items-center justify-center">
+              <div className="text-center">
+                <p className="mb-2 text-lg font-semibold">Wallet not ready</p>
+                <p className="text-sm text-gray-500">
+                  Please unlock your wallet first
+                </p>
               </div>
-            ))}
+            </div>
+          )}
         </div>
       </div>
       {/* Global Error Section*/}
