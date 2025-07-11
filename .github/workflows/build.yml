@@ -57,7 +57,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'cipher-wasm-${{ env.SUFFIX }} ',
+              name: 'cipher-wasm-${{ env.SUFFIX }}',
               sort: 'created',
               order: 'desc',
             });

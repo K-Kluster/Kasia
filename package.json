@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:fix": "prettier --write ./src",
+    "format:check": "prettier --check ./src",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "tauri": "tauri",
     "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd ..",
