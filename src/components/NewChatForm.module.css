@@ -52,17 +52,6 @@
   font-style: italic;
 }
 
-.warning-message {
-  background: rgba(255, 193, 7, 0.1);
-  color: #ffc107;
-  padding: 8px 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 193, 7, 0.3);
-  margin-top: 5px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
 .warning-text {
   color: #ffc107;
   font-size: 13px;

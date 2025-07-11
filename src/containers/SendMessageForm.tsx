@@ -391,14 +391,14 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             ref={messageInputRef}
             rows={isExpanded ? 6 : 1}
             placeholder="Type your message..."
-            className="peer border-secondary-border bg-primary-bg flex-1 resize-none overflow-y-auto rounded-3xl border py-2 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
+            className="peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
             value={message}
             onChange={(e) => setMessage(e.currentTarget.value)}
             onInput={(e) => {
               const t = e.currentTarget;
+              t.style.height = "auto";
               if (!isExpanded) {
-                t.style.height = "auto";
-                t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
+                t.style.height = `${t.scrollHeight + 2}px`;
               } else {
                 t.style.height = "144px";
               }
@@ -412,7 +412,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             autoComplete="off"
             spellCheck="false"
             data-form-type="other"
-            style={isExpanded ? { height: "144px" } : {}}
+            style={isExpanded ? { height: "144px" } : { height: "auto" }}
           />
 
           <div className="absolute right-2 flex items-center gap-1">

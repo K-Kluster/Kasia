@@ -389,17 +389,17 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           >
             Recipient Address
           </label>
-          {/* <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <Textarea
               ref={useRecipientInputRef}
-              className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white lowercase placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
+              className="border-primary-border bg-input-bg focus:border-kas-secondary box-border flex w-full resize-none items-center rounded-2xl border px-2 py-1"
               rows={3}
               id="recipientAddress"
               value={recipientInputValue}
               onChange={(e) =>
                 setRecipientInputValue(e.target.value.toLowerCase())
               }
-              placeholder="Kaspa address or Kns domain"
+              placeholder="Kaspa address or KNS domain"
               disabled={isLoading}
               required
               autoComplete="off"
@@ -409,21 +409,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                 setRecipientInputValue(data.toLowerCase());
               }}
             />
-          </div> */}
-          <Textarea
-            ref={useRecipientInputRef}
-            className="border-primary-border bg-input-bg focus:border-kas-secondary box-border flex w-full resize-none items-center rounded-2xl border px-2 py-1"
-            rows={2}
-            id="recipientAddress"
-            value={recipientInputValue}
-            onChange={(e) =>
-              setRecipientInputValue(e.target.value.toLowerCase())
-            }
-            placeholder="Kaspa address or Kns domain"
-            disabled={isLoading}
-            required
-            autoComplete="off"
-          />
+          </div>
+
           {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
             <div className={styles["checking-text"]}>
               Resolving KNS domain...
@@ -434,7 +421,10 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             !isResolvingKns &&
             !knsError && (
               <div className="mt-2 mb-4 flex justify-start break-all">
-                <KaspaAddress address={resolvedRecipientAddress} />
+                <KaspaAddress
+                  address={resolvedRecipientAddress}
+                  copyable={true}
+                />
               </div>
             )}
           {knsError &&
@@ -450,7 +440,9 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             </div>
           )}
           {recipientWarning && (
-            <div className={styles["warning-message"]}>{recipientWarning}</div>
+            <div className="mt-1 mt-2 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4] text-yellow-400">
+              {recipientWarning}
+            </div>
           )}
         </div>
 

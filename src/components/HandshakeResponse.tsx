@@ -68,12 +68,6 @@ export const HandshakeResponse: React.FC<{
             className="h-32 w-32 object-contain opacity-60"
           />
         </div>
-    {/* <div className="bg-primary-bg border-primary-border rounded-lg border p-4">
-      <div className="p-4 pl-0 text-sm">
-        <p>Handshake received from: {conversation.kaspaAddress}</p>
-        <p>Their alias: {conversation.theirAlias}</p>
-        <p>Status: {conversation.status}</p>
-        {error && <p className="error">{error}</p>} */}
       </div>
       {!conversation.initiatedByMe && conversation.status === "pending" && (
         <button

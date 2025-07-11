@@ -202,7 +202,7 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "group border-primary-border cursor-pointer border-b p-4 transition-all duration-200",
+        "group border-primary-border relative cursor-pointer border-b p-4 transition-all duration-200",
         {
           "bg-primary-bg": isSelected,
           "hover:bg-primary-bg/50": !isSelected,
@@ -218,7 +218,7 @@ export const ContactCard: FC<{
           style={{ zIndex: 1 }}
         />
       )}
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         {/* Avatar */}
         <div className="relative flex-shrink-0">
           <div className="relative h-10 w-10">

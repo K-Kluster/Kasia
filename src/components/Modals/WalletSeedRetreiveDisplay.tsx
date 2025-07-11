@@ -152,7 +152,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
             </label>
             <button
               onClick={handleCopySeedPhrase}
-              className="mb-2 p-1 text-white transition-colors hover:text-amber-200"
+              className="mb-2 cursor-pointer p-1 text-white transition-colors hover:text-amber-200"
               title="Copy seed phrase"
             >
               <ClipboardDocumentIcon className="h-6 w-6" />

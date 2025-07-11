@@ -6,9 +6,13 @@ import { useMessagingStore } from "../store/messaging.store";
 
 interface KaspaAddressProps {
   address: string | { toString: () => string };
+  copyable?: boolean;
 }
 
-export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
+export const KaspaAddress: FC<KaspaAddressProps> = ({
+  address,
+  copyable = false,
+}) => {
   const NICKNAME_SHORT_LENGTH = 20;
   const [isFullAddress, setIsFullAddress] = useState(false);
   const addressRef = useRef<HTMLSpanElement>(null);
@@ -70,7 +74,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   return (
     <span
       ref={addressRef}
-      className="flex items-center justify-center align-middle"
+      className="flex items-center justify-center gap-1 align-middle"
     >
       {isFullAddress || (nickname && !isLongNickname) ? (
         <span className="">{displayString}</span>
@@ -79,11 +83,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           {displayString.slice(0, NICKNAME_SHORT_LENGTH - 3)}
           <span
             onClick={isMobile ? undefined : handleToggle}
-            // className={
-            //   isMobile
-            //     ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
-            //     : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
-            // }
             className="text-kas-secondary cursor-pointer px-0.5 text-xl hover:underline max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
             inert={isMobile ? true : undefined}
           >
@@ -110,6 +109,16 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
             </>
           ) : null}
         </span>
+      )}
+      {copyable && (
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="focus:ring-kas-secondary ml-1 cursor-pointer self-center rounded p-1 transition-colors hover:bg-gray-200/20 focus:ring-2 focus:outline-none"
+          title="Copy address"
+        >
+          <Square2StackIcon className="hover:text-kas-secondary h-5 w-5 align-middle text-gray-400" />
+        </button>
       )}
     </span>
   );

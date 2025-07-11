@@ -371,7 +371,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
         <button
           onClick={lockWallet}
           className={clsx(
-            "hover:bg-primary-bg/50 flex cursor-pointer items-center gap-2 rounded p-2 transition-colors focus:outline-none",
+            "hover:bg-primary-bg/50 flex w-full cursor-pointer items-center gap-2 rounded p-2 transition-colors focus:outline-none",
             contactsCollapsed ? "flex-col" : "flex-row"
           )}
           aria-label="Sign out"
