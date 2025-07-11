@@ -74,6 +74,11 @@ VITE_DISABLE_PASSWORD_REQUIREMENTS=true
 VITE_LOG_LEVEL=info
 ```
 
+## Contributing
+
+We welcome contributions from everyone! If you're interested in contributing to Kasia, please read our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to get started.
+
+
 ## Community and Support
 
 - **Discord**: Join our community on [Discord](https://discord.gg/ssB46MXzRU)
