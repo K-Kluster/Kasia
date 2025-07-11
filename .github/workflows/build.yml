@@ -5,9 +5,11 @@ on:
     branches:
       - staging
       - master
+      - chore/ci
 
 env:
   HUSKY: 0
+  SUFFIX: ${{ github.ref_name == 'master' && 'production' || 'staging' }}
 
 jobs:
   build-cipher-wasm:
@@ -21,7 +23,7 @@ jobs:
           toolchain: 1.86.0
           target: wasm32-unknown-unknown
           # key based on branch name
-          cache-shared-key: cipher-wasm-build-cache-${{ github.ref_name }}
+          cache-shared-key: cipher-wasm-build-cache-${{ env.SUFFIX }}
           cache-workspaces: ./cipher -> target
 
       - name: Build Cipher Wasm
@@ -35,7 +37,7 @@ jobs:
       - name: Upload Cipher Wasm artifact
         uses: actions/upload-artifact@v4
         with:
-          name: cipher-wasm-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: cipher-wasm-${{ env.SUFFIX }}
           path: cipher-wasm
           retention-days: 90
           overwrite: true
@@ -55,7 +57,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'cipher-wasm-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+              name: 'cipher-wasm-${{ env.SUFFIX }} ',
               sort: 'created',
               order: 'desc',
             });
@@ -64,7 +66,7 @@ jobs:
       - name: Restore Cipher Wasm artifact
         uses: actions/download-artifact@v4
         with:
-          name: cipher-wasm-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: cipher-wasm-${{ env.SUFFIX }}
           path: cipher-wasm
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-cipher-wasm-artifact.outputs.result }}
@@ -93,13 +95,13 @@ jobs:
 
       - name: Install dependencies & Build Kasia
         env:
-          MODE: ${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          MODE: ${{ env.SUFFIX }}
         run: npm install && npm run build:$MODE
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-build-${{ env.SUFFIX }}
           path: dist
 
   build-android-app:
@@ -166,7 +168,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ env.SUFFIX }} ',
               sort: 'created',
               order: 'desc',
             });
@@ -175,7 +177,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-build-${{ env.SUFFIX }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -232,7 +234,7 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-android-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-android-${{ env.SUFFIX }}
           path: ./src-tauri/gen/android/app/build/outputs/apk/universal/release/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.apk
 
   build-macos-intel-app:
@@ -257,7 +259,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ env.SUFFIX }} ',
               sort: 'created',
               order: 'desc',
             });
@@ -266,7 +268,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-build-${{ env.SUFFIX }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -290,7 +292,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-intel-macos
+          name: kasia-${{ env.SUFFIX }} -intel-macos
           path: ./src-tauri/target/release/bundle
           retention-days: 1
 
@@ -316,7 +318,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ env.SUFFIX }} ',
               sort: 'created',
               order: 'desc',
             });
@@ -325,7 +327,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-build-${{ env.SUFFIX }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -349,7 +351,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-arm-macos
+          name: kasia-${{ env.SUFFIX }} -arm-macos
           path: ./src-tauri/target/release/bundle
           retention-days: 1
 
@@ -380,7 +382,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ env.SUFFIX }} ',
               sort: 'created',
               order: 'desc',
             });
@@ -389,7 +391,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-build-${{ env.SUFFIX }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -419,7 +421,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-linux
+          name: kasia-${{ env.SUFFIX }} -linux
           path: ./tmp/
           retention-days: 1
 
@@ -445,7 +447,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
-              name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+              name: 'kasia-build-${{ env.SUFFIX }} ',
               sort: 'created',
               order: 'desc',
             });
@@ -454,7 +456,7 @@ jobs:
       - name: Restore Web App artifact
         uses: actions/download-artifact@v4
         with:
-          name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+          name: kasia-build-${{ env.SUFFIX }}
           path: dist
           github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
           run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -478,7 +480,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kasia-${{ github.ref_name == 'master' && 'production' || 'staging' }}-windows
+          name: kasia-${{ env.SUFFIX }} -windows
           path: ./src-tauri/target/release/bundle/nsis/
           retention-days: 1
 
@@ -517,7 +519,7 @@ jobs:
   #             owner: context.repo.owner,
   #             repo: context.repo.repo,
   #             per_page: 100,
-  #             name: 'kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}',
+  #             name: 'kasia-build-${{ env.SUFFIX }} ',
   #             sort: 'created',
   #             order: 'desc',
   #           });
@@ -526,7 +528,7 @@ jobs:
   #     - name: Restore Web App artifact
   #       uses: actions/download-artifact@v4
   #       with:
-  #         name: kasia-build-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+  #         name: kasia-build-${{ env.SUFFIX }}
   #         path: dist
   #         github-token: ${{ secrets.GH_PAT_READ_ACTIONS }}
   #         run-id: ${{ steps.get-web-app-artifact.outputs.result }}
@@ -584,5 +586,5 @@ jobs:
   #     - name: Upload IPA Artifact
   #       uses: actions/upload-artifact@v4
   #       with:
-  #         name: kasia-ios-${{ github.ref_name == 'master' && 'production' || 'staging' }}
+  #         name: kasia-ios-${{ env.SUFFIX }}
   #         path: ./src-tauri/gen/ios/app/build/Release-iphoneos/${{env.APP_NAME}}-${{ steps.app-version.outputs.version_string }}.ipa

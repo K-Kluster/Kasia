@@ -62,6 +62,7 @@
     "vite-plugin-sri3": "1.0.6"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.42.0"
+    "@rollup/rollup-linux-x64-gnu": "4.42.0",
+    "lightningcss-linux-x64-gnu": "1.30.1"
   }
 }
