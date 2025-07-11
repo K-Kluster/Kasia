@@ -10,12 +10,7 @@ import {
   disablePasswordRequirements,
 } from "../config/password";
 import { MnemonicEntry } from "../components/MnemonicEntry";
-import {
-  Cog6ToothIcon,
-  ExclamationTriangleIcon,
-  TrashIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
+import { Settings, AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
@@ -336,7 +331,7 @@ export const WalletFlow = ({
             onClick={() => openModal("settings")}
             className="absolute top-4 right-4 size-6 hover:cursor-pointer hover:opacity-80"
           >
-            <Cog6ToothIcon className="size-6" />
+            <Settings className="size-6" />
           </button>
           <div
             className={clsx(
@@ -370,7 +365,7 @@ export const WalletFlow = ({
                   className="absolute top-2 right-2 cursor-pointer p-1 text-red-400 hover:text-red-700"
                   title="Delete"
                 >
-                  <TrashIcon className="h-6 w-6" />
+                  <Trash2 className="h-6 w-6" />
                 </button>
 
                 <div className="flex w-full flex-col gap-1">
@@ -543,7 +538,7 @@ export const WalletFlow = ({
               Please save your mnemonic phrase securely:
             </p>
             <div className="my-2 flex flex-col items-center rounded-2xl p-2 text-center text-base text-amber-400">
-              <ExclamationTriangleIcon className="h-8 w-8" />
+              <AlertTriangle className="h-8 w-8" />
               Please keep your seed phrase safe, if you lose your seed phrase
               there is no recovery.
             </div>
@@ -749,9 +744,9 @@ export const WalletFlow = ({
               standard wallets.
             </p>
             <div className="mt-5 mb-1 flex flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] p-4 text-center text-amber-300">
-              <ExclamationTriangleIcon className="h-5 w-5" /> Your original
-              wallet will remain unchanged. You'll need to transfer funds to the
-              new wallet addresses.
+              <AlertTriangle className="h-5 w-5" /> Your original wallet will
+              remain unchanged. You'll need to transfer funds to the new wallet
+              addresses.
             </div>
           </div>
 
@@ -816,7 +811,7 @@ export const WalletFlow = ({
               <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                 Unlocking Wallet…
               </span>
-              <ArrowPathIcon className="my-2 h-14 w-14 animate-spin text-gray-500" />
+              <Loader2 className="my-2 h-14 w-14 animate-spin text-gray-500" />
             </div>
           ) : (
             <>

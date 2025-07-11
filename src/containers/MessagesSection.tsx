@@ -1,12 +1,6 @@
 import { FC, useMemo, useEffect, useState, useRef } from "react";
-import { ChevronLeftIcon } from "@heroicons/react/24/outline";
-import {
-  PencilIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  InformationCircleIcon,
-  Square2StackIcon,
-} from "@heroicons/react/24/solid";
+import { ChevronLeft } from "lucide-react";
+import { Pencil, CheckCircle, XCircle, Info, Copy } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessageDisplay } from "../components/MessageDisplay";
 import { SendMessageForm } from "./SendMessageForm";
@@ -311,10 +305,10 @@ export const MessageSection: FC<{
                 setMobileView("contacts");
                 messageStore.setOpenedRecipient(null);
               }}
-              className="mr-2 p-1 sm:hidden"
+              className="mr-2 cursor-pointer p-1 sm:hidden"
               aria-label="Back to contacts"
             >
-              <ChevronLeftIcon className="size-6" />
+              <ChevronLeft className="size-6" />
             </button>
 
             <h3 className="truncate text-base font-semibold">
@@ -338,14 +332,14 @@ export const MessageSection: FC<{
                       className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                       title="Save nickname"
                     >
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     </button>
                     <button
                       onClick={handleNicknameCancel}
                       className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                       title="Cancel editing"
                     >
-                      <XCircleIcon className="h-4 w-4 text-red-500" />
+                      <XCircle className="h-4 w-4 text-red-500" />
                     </button>
                   </div>
                   <button
@@ -355,7 +349,7 @@ export const MessageSection: FC<{
                     className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                     title="Contact info"
                   >
-                    <InformationCircleIcon className="h-4 w-4" />
+                    <Info className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleCopyAddress}
@@ -363,9 +357,9 @@ export const MessageSection: FC<{
                     title="Copy address"
                   >
                     {showCopySuccess ? (
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
-                      <Square2StackIcon className="h-4 w-4" />
+                      <Copy className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -377,7 +371,7 @@ export const MessageSection: FC<{
                     title="Edit nickname"
                     className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                   >
-                    <PencilIcon className="h-4 w-4" />
+                    <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onMouseEnter={() => setShowContactInfo(true)}
@@ -386,7 +380,7 @@ export const MessageSection: FC<{
                     className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                     title="Contact info"
                   >
-                    <InformationCircleIcon className="h-4 w-4" />
+                    <Info className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleCopyAddress}
@@ -394,9 +388,9 @@ export const MessageSection: FC<{
                     title="Copy address"
                   >
                     {showCopySuccess ? (
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
-                      <Square2StackIcon className="h-4 w-4" />
+                      <Copy className="h-4 w-4" />
                     )}
                   </button>
                 </span>
@@ -408,7 +402,7 @@ export const MessageSection: FC<{
                     title="Edit nickname"
                     className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                   >
-                    <PencilIcon className="h-4 w-4" />
+                    <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onMouseEnter={() => setShowContactInfo(true)}
@@ -417,7 +411,7 @@ export const MessageSection: FC<{
                     className="cursor-pointer border-0 bg-transparent text-xs opacity-60 hover:opacity-100"
                     title="Contact info"
                   >
-                    <InformationCircleIcon className="h-4 w-4" />
+                    <Info className="h-4 w-4" />
                   </button>
                   <button
                     onClick={handleCopyAddress}
@@ -425,9 +419,9 @@ export const MessageSection: FC<{
                     title="Copy address"
                   >
                     {showCopySuccess ? (
-                      <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     ) : (
-                      <Square2StackIcon className="h-4 w-4" />
+                      <Copy className="h-4 w-4" />
                     )}
                   </button>
                 </span>

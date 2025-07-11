@@ -1,10 +1,5 @@
 import { FC, useState, useMemo } from "react";
-import {
-  Bars3Icon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/solid";
+import { Menu, Search, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
 import { Contact } from "../types/all";
@@ -101,11 +96,11 @@ export const ContactSection: FC<ContactSectionProps> = ({
                 className="hover:bg-primary-bg/50 mr-2 cursor-pointer rounded-lg p-2 transition-colors"
                 aria-label="Open menu"
               >
-                <Bars3Icon className="h-5 w-5 text-[var(--text-primary)]" />
+                <Menu className="h-7 w-7 text-[var(--text-primary)]" />
               </button>
             )}
             <div className="relative flex-1">
-              <MagnifyingGlassIcon className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search messages..."
@@ -119,7 +114,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
                   className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
                   aria-label="Clear search"
                 >
-                  <XMarkIcon className="h-4 w-4" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
@@ -128,7 +123,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
               className="text-kas-secondary bg-kas-secondary/20 border-kas-secondary cursor-pointer rounded-full border p-1 hover:scale-110"
               onClick={onNewChatClicked}
             >
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
             </button>
           </div>
         ) : (
@@ -139,7 +134,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
               className="text-kas-secondary bg-kas-secondary/20 border-kas-secondary cursor-pointer rounded-full border p-1 hover:scale-110"
               onClick={onNewChatClicked}
             >
-              <PlusIcon className="size-4" />
+              <Plus className="size-4" />
             </button>
           </div>
         )}

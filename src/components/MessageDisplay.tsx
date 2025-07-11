@@ -7,7 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
-import { PaperClipIcon } from "@heroicons/react/24/solid";
+import { Paperclip } from "lucide-react";
 import clsx from "clsx";
 
 type MessageDisplayProps = {
@@ -184,7 +184,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
                 )}
               >
                 <KasIcon
-                  className="h-18 w-18 scale-140 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  className="h-18 w-18 scale-140 cursor-pointer drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
                   kClassName="fill-[#70C7BA]"
                 />
@@ -287,7 +287,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return (
         <div className="file-message">
           <div className="file-info">
-            <PaperClipIcon className="h-4 w-4" /> {fileData.name} (
+            <Paperclip className="h-4 w-4 cursor-pointer" /> {fileData.name} (
             {Math.round(fileData.size / 1024)}
             KB)
           </div>
@@ -323,7 +323,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         return (
           <div key={`file-${transactionId}`} className="file-message">
             <div className="file-info">
-              <PaperClipIcon className="h-4 w-4" /> {parsedContent.name} (
+              <Paperclip className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>
             <button

@@ -1,16 +1,15 @@
 import { FC, useState, useEffect, useCallback } from "react";
 import clsx from "clsx";
 import {
-  InformationCircleIcon,
-  ArrowLongLeftIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  UserIcon,
-  ArrowPathIcon,
-  CreditCardIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/solid";
+  RefreshCcw,
+  User,
+  ChevronDown,
+  ChevronRight,
+  ArrowLeft,
+  Info,
+  CreditCard,
+  X,
+} from "lucide-react";
 import { Settings } from "lucide-react";
 import { useMessagingStore } from "../../store/messaging.store";
 
@@ -83,7 +82,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
             className="cursor-pointer rounded-lg p-2 transition-colors hover:bg-gray-700"
             aria-label="Close menu"
           >
-            <XMarkIcon className="h-6 w-6 text-white" />
+            <X className="h-6 w-6 text-white" />
           </button>
         </header>
 
@@ -103,11 +102,11 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   { "pointer-events-none opacity-50": !address }
                 )}
               >
-                <UserIcon className="h-5 w-5 text-white" />
+                <User className="h-5 w-5 text-white" />
                 <span className="flex items-center text-sm text-white">
                   Show Address
                   {!address && (
-                    <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                    <RefreshCcw className="ml-2 h-5 w-5 animate-spin text-gray-500" />
                   )}
                 </span>
               </button>
@@ -121,11 +120,11 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   { "pointer-events-none opacity-50": !address }
                 )}
               >
-                <InformationCircleIcon className="h-5 w-5 text-white" />
+                <Info className="h-5 w-5 text-white" />
                 <span className="flex items-center text-sm text-white">
                   Wallet Info
                   {!address && (
-                    <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                    <RefreshCcw className="ml-2 h-5 w-5 animate-spin text-gray-500" />
                   )}
                 </span>
               </button>
@@ -137,9 +136,9 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                 >
                   {actionsOpen ? (
-                    <ChevronDownIcon className="h-5 w-5 text-white" />
+                    <ChevronDown className="h-5 w-5 text-white" />
                   ) : (
-                    <ChevronRightIcon className="h-5 w-5 text-white" />
+                    <ChevronRight className="h-5 w-5 text-white" />
                   )}
                   <span className="text-sm text-white">Actions</span>
                 </button>
@@ -153,7 +152,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       }}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCardIcon className="h-5 w-5 text-white" />
+                      <CreditCard className="h-5 w-5 text-white" />
                       <span className="text-sm text-white">Withdraw Funds</span>
                     </button>
 
@@ -164,7 +163,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       }}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCardIcon className="h-5 w-5 text-white" />
+                      <CreditCard className="h-5 w-5 text-white" />
                       <span className="text-sm text-white">Compound UTXOs</span>
                     </button>
 
@@ -176,7 +175,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                         }}
                         className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                       >
-                        <CreditCardIcon className="h-5 w-5 text-white" />
+                        <CreditCard className="h-5 w-5 text-white" />
                         <span className="text-sm text-white">
                           Import / Export Messages
                         </span>
@@ -187,7 +186,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       onClick={clearHistory}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCardIcon className="h-5 w-5 text-white" />
+                      <CreditCard className="h-5 w-5 text-white" />
                       <span className="text-sm text-white">
                         Delete All Messages
                       </span>
@@ -200,7 +199,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       }}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCardIcon className="h-5 w-5 text-white" />
+                      <CreditCard className="h-5 w-5 text-white" />
                       <span className="text-sm text-white">
                         View Seed Phrase
                       </span>
@@ -229,7 +228,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               onClick={onCloseWallet}
               className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
             >
-              <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
+              <ArrowLeft className="h-5 w-5 text-red-500" />
               <span className="text-base text-red-500">Sign out</span>
             </button>
           </div>

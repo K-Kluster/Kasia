@@ -1,6 +1,6 @@
 // WARNING: this file CANNOT use any imports from the app code, it must be a standalone file
 import { FC } from "react";
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { LoaderCircle } from "lucide-react";
 
 export const SplashScreen: FC = () => {
   return (
@@ -13,7 +13,7 @@ export const SplashScreen: FC = () => {
         <p className="mt-2 text-lg">Freedom at your fingertips.</p>
       </div>
       <div className="mt-4 flex items-center gap-2">
-        <ArrowPathIcon className="text-kas-primary h-8 w-8 animate-spin" />
+        <LoaderCircle className="text-kas-primary h-8 w-8 animate-spin" />
         Loading Kasia SDKs...
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { FC, useState } from "react";
-import { LockClosedIcon } from "@heroicons/react/24/outline";
+import { Lock } from "lucide-react";
 import { KasIcon } from "../icons/KasCoin";
 
 export const TrustMessage: FC = () => {
@@ -15,7 +15,7 @@ export const TrustMessage: FC = () => {
           onClick={() => setOpenTrust((v) => !v)}
         >
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#70C7BA]">
-            <LockClosedIcon className="h-4 w-4 text-white" />
+            <Lock className="h-4 w-4 text-white" />
           </div>
           <span className="text-secondary-text text-sm font-medium">
             Your keys, your messages

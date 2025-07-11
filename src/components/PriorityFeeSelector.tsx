@@ -1,9 +1,6 @@
 import { FC, useState, useEffect, useMemo, useCallback } from "react";
 import { Modal } from "./Common/modal";
-import {
-  ArrowsUpDownIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/outline";
+import { Info, ArrowUpDown } from "lucide-react";
 import { FeeBucket, PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import clsx from "clsx";
@@ -290,7 +287,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       <button
         onClick={() => setIsModalOpen(true)}
         className={clsx(
-          "flex items-center gap-1 text-sm font-medium",
+          "flex cursor-pointer items-center gap-1 text-sm font-medium",
           {
             "text-red-400": getCurrentBucketLabel() === "Priority",
             "text-blue-400": getCurrentBucketLabel() === "Normal",
@@ -302,7 +299,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
           className
         )}
       >
-        <ArrowsUpDownIcon className="h-4 w-4" />
+        <ArrowUpDown className="h-4 w-4" />
         <span>{getCurrentBucketLabel()}</span>
       </button>
 
@@ -311,7 +308,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
           <div className="space-y-4">
             <h3 className="mb-4 text-lg font-medium">Select Priority Fee</h3>
             <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] sm:text-sm">
-              <InformationCircleIcon className="h-5 w-5 flex-shrink-0" />
+              <Info className="h-5 w-5 flex-shrink-0" />
               <p>
                 Priority fees help your transaction get processed faster during
                 busy times. Higher fees = faster processing.

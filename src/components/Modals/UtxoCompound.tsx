@@ -1,8 +1,4 @@
-import {
-  ArrowPathIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/solid";
+import { RefreshCw, AlertTriangle, XCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { Address } from "kaspa-wasm";
 import { FC, useCallback, useEffect, useState } from "react";
@@ -189,7 +185,7 @@ export const UtxoCompound: FC = () => {
       {isHighUtxoCount && (
         <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-orange-500 bg-orange-500 p-3">
           <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
             <div className="text-sm">
               <p className="font-medium text-orange-400">
                 High UTXO Count Detected
@@ -229,7 +225,7 @@ export const UtxoCompound: FC = () => {
         {(isCompounding || pendingResult) && !compoundResult && (
           <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 text-center">
             <div className="flex items-center justify-center gap-2 text-blue-400">
-              <ArrowPathIcon className="h-5 w-5 animate-spin" />
+              <RefreshCw className="h-5 w-5 animate-spin" />
               <span className="font-medium text-white">
                 Processing compound transaction
               </span>
@@ -242,7 +238,7 @@ export const UtxoCompound: FC = () => {
       {error && (
         <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-red-500 bg-red-500 p-3">
           <div className="flex items-start gap-2">
-            <XCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
+            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
             <div className="text-sm">
               <p className="font-medium text-red-400">Error</p>
               <p className="mt-1 text-gray-300">{error}</p>

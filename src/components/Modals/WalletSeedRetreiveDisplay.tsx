@@ -2,11 +2,7 @@ import { FC, useEffect, useState } from "react";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { StoredWallet } from "../../types/wallet.type";
-import {
-  EyeIcon,
-  EyeSlashIcon,
-  ClipboardDocumentIcon,
-} from "@heroicons/react/24/solid";
+import { Eye, EyeOff, Copy } from "lucide-react";
 import clsx from "clsx";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
@@ -145,9 +141,9 @@ export const WalletSeedRetreiveDisplay: FC = () => {
             />
             <label htmlFor="toggleVisibility" className="mb-2 cursor-pointer">
               {isBlurred ? (
-                <EyeIcon className="h-6 w-6 text-white" />
+                <Eye className="h-6 w-6 text-white" />
               ) : (
-                <EyeSlashIcon className="h-6 w-6 text-white" />
+                <EyeOff className="h-6 w-6 text-white" />
               )}
             </label>
             <button
@@ -155,7 +151,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
               className="mb-2 cursor-pointer p-1 text-white transition-colors hover:text-amber-200"
               title="Copy seed phrase"
             >
-              <ClipboardDocumentIcon className="h-6 w-6" />
+              <Copy className="h-6 w-6" />
             </button>
           </div>
           <div className="mt-4 flex justify-center">

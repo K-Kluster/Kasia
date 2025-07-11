@@ -1,5 +1,5 @@
 import { FC, ReactNode } from "react";
-import { XMarkIcon } from "@heroicons/react/24/solid";
+import { X } from "lucide-react";
 import clsx from "clsx";
 
 // Basic modal component to standardise the look
@@ -24,7 +24,7 @@ export const Modal: FC<{
         onClick={onClose}
         className="hover:text-kas-secondary absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110"
       >
-        <XMarkIcon className="h-6 w-6" />
+        <X className="h-6 w-6" />
       </button>
       {children}
     </div>

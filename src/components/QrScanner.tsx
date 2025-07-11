@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import jsQR from "jsqr";
-import { CameraIcon } from "@heroicons/react/24/solid";
+import { Camera } from "lucide-react";
 import { toast } from "../utils/toast";
 import clsx from "clsx";
 import { Modal } from "./Common/modal";
@@ -22,7 +22,6 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
       setHasCamera(hasCam);
     });
   }, []);
-
   // start camera when modal opens
   useEffect(() => {
     if (!showModal) return;
@@ -128,7 +127,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
         title={hasCamera ? "Scan QR code" : "No camera available"}
         disabled={!hasCamera}
       >
-        <CameraIcon className="h-5 w-5" />
+        <Camera className="h-5 w-5" />
       </button>
       {/* need to lift the z of the modal because its usually stacked on another modal */}
       {showModal && (

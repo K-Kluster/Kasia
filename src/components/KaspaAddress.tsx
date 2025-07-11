@@ -1,5 +1,5 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
-import { Square2StackIcon } from "@heroicons/react/24/outline";
+import { Copy } from "lucide-react";
 import { toast } from "../utils/toast";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useMessagingStore } from "../store/messaging.store";
@@ -117,7 +117,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({
           className="focus:ring-kas-secondary ml-1 cursor-pointer self-center rounded p-1 transition-colors hover:bg-gray-200/20 focus:ring-2 focus:outline-none"
           title="Copy address"
         >
-          <Square2StackIcon className="hover:text-kas-secondary h-5 w-5 align-middle text-gray-400" />
+          <Copy className="hover:text-kas-secondary h-5 w-5 align-middle text-gray-400" />
         </button>
       )}
     </span>

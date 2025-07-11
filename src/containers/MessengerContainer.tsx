@@ -1,4 +1,4 @@
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { LoaderCircle } from "lucide-react";
 import { FC, useState, useEffect, useCallback } from "react";
 import { Modal } from "../components/Common/modal";
 import { ErrorCard } from "../components/ErrorCard";
@@ -225,12 +225,12 @@ export const MessengerContainer: FC = () => {
             <div className="flex w-full flex-col items-center text-xs">
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
               <div className="border-primary-border bg-secondary-bg relative h-full w-full overflow-hidden border-t">
-                <div className="bg-secondary-bg/20 absolute inset-0 animate-pulse" />
+                <div className="bg-secondary-bg/20 absolute inset-0" />
                 <div className="relative flex h-full flex-col items-center justify-center space-y-4">
                   <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                     Starting the message client...
                   </span>
-                  <ArrowPathIcon className="h-14 w-14 animate-spin text-gray-500" />
+                  <LoaderCircle className="h-14 w-14 animate-spin text-gray-500" />
                 </div>
               </div>
             </div>
@@ -256,7 +256,7 @@ export const MessengerContainer: FC = () => {
             <WalletAddressSection address={walletStore.address.toString()} />
           ) : (
             <div className="flex justify-center py-6">
-              <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
+              <LoaderCircle className="h-6 w-6 animate-spin text-gray-500" />
             </div>
           )}
         </Modal>

@@ -13,12 +13,14 @@ import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
 import {
-  PaperClipIcon,
-  PaperAirplaneIcon,
-  PlusIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+  Paperclip,
+  SendHorizonal,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
 import clsx from "clsx";
@@ -28,8 +30,6 @@ import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 
@@ -341,7 +341,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               if (onExpand) onExpand();
             }}
           >
-            <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+            <ChevronUp className="h-5 w-5 text-gray-400" />
           </button>
         ) : (
           <button
@@ -357,7 +357,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               }
             }}
           >
-            <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+            <ChevronDown className="h-5 w-5 text-gray-400" />
           </button>
         )}
       </div>
@@ -423,11 +423,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               onChange={handleFileUpload}
               accept="image/*,.txt,.json,.md"
             />
-            <Popover className="relative">
+            <Popover className="relative cursor-pointer">
               {({ close }) => (
                 <>
                   <PopoverButton className="rounded p-1 hover:bg-white/5">
-                    <PlusIcon className="size-4" />
+                    <Plus className="size-6 cursor-pointer" />
                   </PopoverButton>
                   <Transition
                     enter="transition ease-out duration-100"
@@ -446,7 +446,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                         className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
                         disabled={isUploading}
                       >
-                        <PaperClipIcon className="m-2 size-5" />
+                        <Paperclip className="m-2 size-5" />
                       </button>
 
                       {openedRecipient && (
@@ -464,12 +464,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             <button
               onClick={onSendClicked}
               className={clsx(
-                "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
+                "text-kas-primary hover:text-kas-secondary transition-width mx-2 flex items-center justify-center overflow-hidden duration-200 ease-out",
                 message.length > 0 ? "w-6 cursor-pointer" : "w-0"
               )}
               aria-label="Send"
             >
-              <PaperAirplaneIcon className="h-5 w-5" />
+              <SendHorizonal className="size-6" />
             </button>
           </div>
         </div>
@@ -479,7 +479,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         <Modal onClose={() => closeModal("warn-costy-send-message")}>
           <div className="flex flex-col items-center justify-center gap-8">
             <h2 className="text-lg text-yellow-400">
-              <ExclamationTriangleIcon className="mr-2 inline size-6 text-yellow-400" />
+              <AlertTriangle className="mr-2 inline size-6 text-yellow-400" />
               Your Correspondent hasn't answered yet
             </h2>
 
@@ -490,7 +490,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               it?
             </p>
             <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
-              <InformationCircleIcon className="mr-2 size-10 text-white" />
+              <Info className="mr-2 size-10 text-white" />
               <p className="">
                 This is occuring because your correspondent hasn't accepted the
                 handshake yet.

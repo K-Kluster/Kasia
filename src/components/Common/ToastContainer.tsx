@@ -1,10 +1,6 @@
 import { useToastStore } from "../../store/toast.store";
-import {
-  CheckCircleIcon,
-  XCircleIcon,
-  ExclamationTriangleIcon,
-  InformationCircleIcon,
-} from "@heroicons/react/24/solid";
+import { CircleCheck, Ban, TriangleAlert, Info } from "lucide-react";
+
 import clsx from "clsx";
 
 export function ToastContainer() {
@@ -26,10 +22,10 @@ export function ToastContainer() {
           )}
         >
           <span className="h-6 w-6">
-            {toast.type === "success" && <CheckCircleIcon />}
-            {toast.type === "error" && <XCircleIcon />}
-            {toast.type === "warning" && <ExclamationTriangleIcon />}
-            {toast.type === "info" && <InformationCircleIcon />}
+            {toast.type === "success" && <CircleCheck />}
+            {toast.type === "error" && <Ban />}
+            {toast.type === "warning" && <TriangleAlert />}
+            {toast.type === "info" && <Info />}
           </span>
           <span className="flex-1">{toast.message}</span>
           <button

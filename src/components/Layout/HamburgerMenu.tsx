@@ -1,13 +1,13 @@
 import { FC, useState, useEffect, useCallback } from "react";
 import { FeeBuckets } from "../FeeBuckets";
 import {
-  InformationCircleIcon,
-  ArrowLongLeftIcon,
-  ChevronRightIcon,
-  ChevronDownIcon,
-  UserIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/solid";
+  RefreshCcw,
+  User,
+  ChevronDown,
+  ChevronRight,
+  ArrowLeft,
+  Info,
+} from "lucide-react";
 import { useMessagingStore } from "../../store/messaging.store";
 
 import clsx from "clsx";
@@ -70,11 +70,11 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
               { "pointer-events-none opacity-50": !address }
             )}
           >
-            <UserIcon className="h-5 w-5 text-white" />
+            <User className="h-5 w-5 text-white" />
             <span className="flex items-center text-sm text-white">
               Show Address
               {!address && (
-                <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                <RefreshCcw className="ml-2 h-5 w-5 animate-spin text-gray-500" />
               )}
             </span>
           </li>
@@ -91,11 +91,11 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
               { "pointer-events-none opacity-50": !address }
             )}
           >
-            <InformationCircleIcon className="h-5 w-5 text-white" />
+            <Info className="h-5 w-5 text-white" />
             <span className="flex items-center text-sm text-white">
               Wallet Info
               {!address && (
-                <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                <RefreshCcw className="ml-2 h-5 w-5 animate-spin text-gray-500" />
               )}
             </span>
           </li>
@@ -112,9 +112,9 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
           >
             <span className="flex items-center gap-2 text-sm text-white">
               {actionsMenuOpen ? (
-                <ChevronDownIcon className="h-5 w-5 text-white" />
+                <ChevronDown className="h-5 w-5 text-white" />
               ) : (
-                <ChevronRightIcon className="h-5 w-5 text-white" />
+                <ChevronRight className="h-5 w-5 text-white" />
               )}
               Actions
             </span>
@@ -190,7 +190,7 @@ const MenuHamburger: FC<MenuHamburgerProps> = ({
             onClick={onCloseWallet}
             className="flex cursor-pointer items-center gap-2 px-4 py-3 hover:bg-gray-700"
           >
-            <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
+            <ArrowLeft className="h-5 w-5 text-red-500" />
             <span className="text-sm text-red-500">Close Wallet</span>
           </li>
         </ul>

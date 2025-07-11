@@ -48,8 +48,8 @@ Some guidelines and notes on where we want to take the initial (current) Kasia d
 
 ### Icons & Assets
 
-- We mostly use:
-  - **Heroicons**
+- We use:
+  - **Lucid React**
   - Some additional SVG and images for Kasia and Kaspa content
 
 ### Component Architecture

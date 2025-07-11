@@ -1,13 +1,14 @@
 import { FC, useState } from "react";
 import clsx from "clsx";
-import { PanelLeftOpen, Settings } from "lucide-react";
 import {
-  CreditCardIcon,
-  ArrowLongLeftIcon,
-  UserIcon,
-  InformationCircleIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/solid";
+  PanelLeftOpen,
+  Settings,
+  CreditCard,
+  ArrowLeft,
+  User,
+  Info,
+  Loader2,
+} from "lucide-react";
 import { SettingsModal } from "../components/Modals/SettingsModal";
 import { useUiStore } from "../store/ui.store";
 import { useWalletStore } from "../store/wallet.store";
@@ -67,7 +68,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                 className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 focus:outline-none"
                 aria-label="Wallet Operations"
               >
-                <CreditCardIcon className="h-5 w-5" />
+                <CreditCard className="h-5 w-5" />
               </button>
 
               {walletMenuOpen && (
@@ -90,11 +91,11 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           { "pointer-events-none opacity-50": !walletAddress }
                         )}
                       >
-                        <UserIcon className="h-5 w-5" />
+                        <User className="h-5 w-5" />
                         <span className="flex items-center text-sm">
                           Show Address
                           {!walletAddress && (
-                            <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                            <Loader2 className="ml-2 h-5 w-5 animate-spin text-gray-500" />
                           )}
                         </span>
                       </li>
@@ -110,11 +111,11 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           { "pointer-events-none opacity-50": !walletAddress }
                         )}
                       >
-                        <InformationCircleIcon className="h-5 w-5" />
+                        <Info className="h-5 w-5" />
                         <span className="flex items-center text-sm">
                           Wallet Info
                           {!walletAddress && (
-                            <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                            <Loader2 className="ml-2 h-5 w-5 animate-spin text-gray-500" />
                           )}
                         </span>
                       </li>
@@ -245,7 +246,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                 className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 focus:outline-none"
                 aria-label="Wallet Operations"
               >
-                <CreditCardIcon className="h-5 w-5" />
+                <CreditCard className="h-5 w-5" />
               </button>
 
               {walletMenuOpen && (
@@ -268,11 +269,11 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           { "pointer-events-none opacity-50": !walletAddress }
                         )}
                       >
-                        <UserIcon className="h-5 w-5" />
+                        <User className="h-5 w-5" />
                         <span className="flex items-center text-sm">
                           Show Address
                           {!walletAddress && (
-                            <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                            <Loader2 className="ml-2 h-5 w-5 animate-spin text-gray-500" />
                           )}
                         </span>
                       </li>
@@ -288,11 +289,11 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           { "pointer-events-none opacity-50": !walletAddress }
                         )}
                       >
-                        <InformationCircleIcon className="h-5 w-5" />
+                        <Info className="h-5 w-5" />
                         <span className="flex items-center text-sm">
                           Wallet Info
                           {!walletAddress && (
-                            <ArrowPathIcon className="ml-2 h-5 w-5 animate-spin text-gray-500" />
+                            <Loader2 className="ml-2 h-5 w-5 animate-spin text-gray-500" />
                           )}
                         </span>
                       </li>
@@ -376,7 +377,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
           )}
           aria-label="Sign out"
         >
-          <ArrowLongLeftIcon className="h-5 w-5 text-red-500" />
+          <ArrowLeft className="h-5 w-5 text-red-500" />
           {!contactsCollapsed && (
             <span className="text-sm text-red-500">Sign out</span>
           )}

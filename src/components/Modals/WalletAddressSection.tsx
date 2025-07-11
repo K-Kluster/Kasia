@@ -1,7 +1,7 @@
 // src/components/AddressSection.tsx
 import { FC, useState, useEffect, useCallback } from "react";
 import { toDataURL } from "qrcode";
-import { DocumentDuplicateIcon, QrCodeIcon } from "@heroicons/react/24/outline";
+import { File, QrCode } from "lucide-react";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
 
@@ -107,7 +107,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               variant="primary"
               className="flex h-16 w-full items-center justify-center p-0"
             >
-              <DocumentDuplicateIcon className="h-7 w-7 sm:h-5 sm:w-5" />
+              <File className="h-12 w-12 sm:h-8 sm:w-8" />
             </Button>
             <Button
               onClick={toggleQRCode}
@@ -116,7 +116,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               variant="primary"
               className="flex h-16 w-full items-center justify-center p-0"
             >
-              <QrCodeIcon className="h-7 w-7 sm:h-5 sm:w-5" />
+              <QrCode className="h-12 w-12 sm:h-8 sm:w-8" />
             </Button>
           </div>
         </div>
