@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useUiStore } from "../../store/ui.store";
+import { Modal } from "../Common/modal";
+import clsx from "clsx";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -18,7 +20,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState("account");
   const [isMobile, setIsMobile] = useState(false);
-  const { theme, setTheme, getEffectiveTheme } = useUiStore();
+  const { theme, setTheme } = useUiStore();
 
   useEffect(() => {
     const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
@@ -41,71 +43,50 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* Backdrop */}
+    <Modal onClose={onClose}>
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Modal */}
-      <div
-        className={`bg-primary-bg border-primary-border relative z-[10000] rounded-xl border shadow-lg ${
-          isMobile
-            ? "fixed right-0 bottom-0 left-0 h-[80vh] w-full overflow-hidden rounded-t-3xl rounded-b-none"
-            : "h-[500px] w-full max-w-2xl"
-        }`}
+        className={clsx("bg-primary-bg relative rounded-xl shadow-lg", {
+          "fixed right-0 bottom-0 left-0 h-[80vh] w-full overflow-hidden rounded-t-3xl rounded-b-none":
+            isMobile,
+          "h-[500px] w-full max-w-2xl": !isMobile,
+        })}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className={`bg-primary/10 hover:bg-primary/20 border-primary/60 text-primary absolute z-10 rounded-full border p-1 transition-colors ${
-            isMobile ? "top-3 right-3" : "top-4 right-4"
-          }`}
-          aria-label="Close settings"
+        <div
+          className={clsx("flex h-full", {
+            "flex-col": isMobile,
+            "flex-row": !isMobile,
+          })}
         >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-        <div className={`flex h-full ${isMobile ? "flex-col" : "flex-row"}`}>
           {/* Sidebar */}
           <div
-            className={`border-primary-border border-r p-4 ${
-              isMobile
-                ? "relative h-[80px] w-full border-r-0 border-b-0 pb-0"
-                : "w-48"
-            }`}
+            className={clsx("border-r p-4", {
+              "relative h-[80px] w-full border-r-0 border-b-0 pb-0": isMobile,
+              "w-48": !isMobile,
+            })}
           >
             <nav
-              className={
-                isMobile ? "flex space-x-4 overflow-x-auto pb-2" : "space-y-1"
-              }
+              className={clsx({
+                "flex space-x-4 overflow-x-auto pb-2": isMobile,
+                "space-y-1": !isMobile,
+              })}
             >
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors ${
-                    isMobile
-                      ? "mx-2 min-w-[80px] flex-col items-center justify-center"
-                      : "w-full"
-                  } ${
-                    activeTab === tab.id
-                      ? isMobile
-                        ? "text-primary border-primary border-b-2"
-                        : "text-primary bg-primary/10 rounded-lg"
-                      : "text-muted-foreground"
-                  }`}
+                  className={clsx(
+                    "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium transition-colors",
+                    {
+                      "mx-2 min-w-[80px] flex-col items-center justify-center":
+                        isMobile,
+                      "w-full": !isMobile,
+                      "text-primary border-primary border-b-2":
+                        isMobile && activeTab === tab.id,
+                      "text-primary bg-primary/10 rounded-lg":
+                        !isMobile && activeTab === tab.id,
+                      "text-muted-foreground": activeTab !== tab.id,
+                    }
+                  )}
                 >
                   {/* Simple icons for demo purposes */}
                   {tab.id === "account" && (
@@ -163,12 +144,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           {/* Content */}
           <div
-            className={`flex-1 overflow-y-auto p-6 ${isMobile ? "h-[calc(80vh-80px)]" : ""}`}
+            className={clsx("flex-1 overflow-y-auto p-6", {
+              "h-[calc(80vh-80px)]": isMobile,
+            })}
           >
             {activeTab === "account" && (
               <div className="mt-4 space-y-6 sm:mt-0">
                 <h3 className="mb-4 text-lg font-medium">Account</h3>
-                <div className="border-primary-border bg-secondary-bg rounded-lg border p-4">
+                <div className="bg-secondary-bg rounded-lg p-4">
                   <p className="text-muted-foreground text-sm">
                     Account settings content goes here.
                   </p>
@@ -181,7 +164,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="grid grid-cols-1 gap-4">
                   <button
                     onClick={() => setTheme("light")}
-                    className={`border-primary-border flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
+                    className={`border-primary-border flex cursor-pointer flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
                       theme === "light"
                         ? "border-primary bg-primary/5"
                         : "hover:bg-secondary-bg"
@@ -204,7 +187,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                   <button
                     onClick={() => setTheme("dark")}
-                    className={`border-primary-border flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
+                    className={`border-primary-border flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
                       theme === "dark"
                         ? "border-primary bg-primary/5"
                         : "hover:bg-secondary-bg"
@@ -227,7 +210,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                   <button
                     onClick={() => setTheme("system")}
-                    className={`border-primary-border flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
+                    className={`border-primary-border flex cursor-pointer flex-col items-center gap-2 rounded-lg border p-4 transition-colors ${
                       theme === "system"
                         ? "border-primary bg-primary/5"
                         : "hover:bg-secondary-bg"
@@ -254,7 +237,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === "security" && (
               <div className="mt-4 space-y-6 sm:mt-0">
                 <h3 className="mb-4 text-lg font-medium">Security</h3>
-                <div className="border-primary-border bg-secondary-bg rounded-lg border p-4">
+                <div className="bg-secondary-bg rounded-lg p-4">
                   <p className="text-muted-foreground text-sm">
                     Security settings content goes here.
                   </p>
@@ -264,6 +247,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
