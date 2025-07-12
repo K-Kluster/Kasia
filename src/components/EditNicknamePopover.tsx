@@ -56,7 +56,7 @@ const EditNicknameActions: FC<{
   <div className="flex flex-col gap-2">
     <button
       onClick={onSave}
-      className="bg-kas-secondary hover:bg-kas-secondary/80 flex h-10 w-full cursor-pointer items-center justify-center rounded font-bold text-white transition-colors"
+      className="bg-kas-primary hover:bg-kas-primary/80 flex h-10 w-full cursor-pointer items-center justify-center rounded font-bold text-white transition-colors"
       title="Save"
     >
       <Check className="h-5 w-5" />

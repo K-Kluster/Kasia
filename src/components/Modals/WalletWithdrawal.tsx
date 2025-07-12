@@ -140,7 +140,7 @@ export const WalletWithdrawal: FC = () => {
           <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
             <button
               onClick={handlePaste}
-              className="bg-kas-secondary/10 border-kas-secondary rounded-lg border px-1.5 py-1 transition-colors"
+              className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border px-1.5 py-1 transition-colors"
               title="Paste from clipboard"
             >
               <Clipboard size={16} />
