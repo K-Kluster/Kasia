@@ -187,7 +187,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     const contacts = new Map();
 
     // Process messages and organize by conversation
-    messages.forEach((msg) => {
+    messages.forEach((msg: Message) => {
       // Ensure fileData is properly loaded if it exists
       if (msg.fileData) {
         msg.content = `[File: ${msg.fileData.name}]`;

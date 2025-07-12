@@ -59,7 +59,7 @@ export class ConversationManager {
           this.currentAddress
         );
 
-        conversations.forEach((conv) => {
+        conversations.forEach((conv: Conversation) => {
           // Only load conversations that belong to the current wallet address
           if (
             conv.kaspaAddress &&
@@ -95,7 +95,7 @@ export class ConversationManager {
       const data = localStorage.getItem(this.storageKey);
       if (data) {
         const conversations = JSON.parse(data) as Conversation[];
-        conversations.forEach((conv) => {
+        conversations.forEach((conv: Conversation) => {
           // Only load conversations that belong to the current wallet address
           if (
             conv.kaspaAddress &&
