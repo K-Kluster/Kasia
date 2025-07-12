@@ -78,14 +78,14 @@ export const MessageBackup: React.FC = () => {
 
   return (
     <div className="mx-auto flex h-full max-w-3/4 flex-col items-center justify-center space-y-2">
-      <h4 className="text-lg font-semibold">Message Backup</h4>
+      <h4 className="mb-6 text-lg font-semibold">Message Backup</h4>
       <Button onClick={onExportMessages} variant="primary">
         Export Messages
       </Button>
       <label
         htmlFor="importInput"
         className={clsx(
-          "w-full cursor-pointer rounded-lg bg-emerald-500 px-4 py-3 text-center font-bold text-gray-100 transition-colors duration-20 hover:bg-emerald-500/70 active:bg-emerald-500/20 sm:px-6"
+          "border-primary-border bg-primary-bg hover:bg-primary-bg/50 w-full cursor-pointer rounded-3xl border px-4 py-3 text-center font-bold transition-colors duration-20 sm:px-6"
         )}
       >
         Import Messages

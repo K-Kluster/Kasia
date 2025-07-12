@@ -140,20 +140,6 @@ body {
   color: var(--accent-green);
 }
 
-.balance-info {
-  background-color: var(--primary-bg);
-  padding: 10px;
-  border-radius: 6px;
-  margin: 10px 0;
-  border: 1px solid var(--border-color);
-}
-
-.balance-info h4 {
-  margin: 0 0 8px 0;
-  color: var(--text-secondary);
-  font-size: 0.9em;
-}
-
 .balance-list {
   list-style: none;
   padding: 0;
