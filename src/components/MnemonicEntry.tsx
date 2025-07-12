@@ -49,7 +49,7 @@ export const MnemonicEntry = ({
 
   return (
     <div>
-      <label className="mb-1 block font-medium text-[var(--text-primary)]">
+      <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
         Mnemonic Phrase
       </label>
       <div className="mnemonic-input-grid mb-2 grid grid-cols-3 gap-2 md:grid-cols-6">

@@ -348,7 +348,7 @@ export const MessageSection: FC<{
                       </PopoverButton>
                       <PopoverPanel
                         anchor="bottom end"
-                        className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-lg ring-1 ring-[var(--primary-border)]"
+                        className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-2xl ring-1 shadow-(color:--kas-primary)/30 ring-[var(--primary-border)]"
                       >
                         <div className="flex flex-col">
                           <button

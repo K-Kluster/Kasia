@@ -8,6 +8,10 @@ import {
   User,
   Info,
   Loader2,
+  Download,
+  Trash2,
+  Key,
+  Wallet,
 } from "lucide-react";
 import { SettingsModal } from "../components/Modals/SettingsModal";
 import { useUiStore } from "../store/ui.store";
@@ -76,7 +80,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                   {/* spacer bridge */}
                   <div className="absolute bottom-full left-0 z-10 h-2 w-56" />
                   <div
-                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-lg"
+                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-2xl shadow-(color:--kas-primary)/30"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ul className="divide-primary-border divide-y">
@@ -126,8 +130,9 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           openModal("withdraw");
                           setWalletMenuOpen(false);
                         }}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
+                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
                       >
+                        <Wallet className="h-5 w-5" />
                         <span className="text-sm">Withdraw Funds</span>
                       </li>
 
@@ -137,32 +142,10 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           openModal("utxo-compound");
                           setWalletMenuOpen(false);
                         }}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
+                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
                       >
+                        <Wallet className="h-5 w-5" />
                         <span className="text-sm">Compound UTXOs</span>
-                      </li>
-
-                      {/* Backup */}
-                      {messageStore.isLoaded && (
-                        <li
-                          onClick={() => {
-                            openModal("backup");
-                            setWalletMenuOpen(false);
-                          }}
-                          className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                        >
-                          <span className="text-sm">
-                            Import / Export <br /> Messages
-                          </span>
-                        </li>
-                      )}
-
-                      {/* Delete */}
-                      <li
-                        onClick={onClearHistory}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                      >
-                        <span className="text-sm">Delete All Messages</span>
                       </li>
 
                       {/* Seed */}
@@ -171,8 +154,9 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           openModal("seed");
                           setWalletMenuOpen(false);
                         }}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
+                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
                       >
+                        <Key className="h-5 w-5" />
                         <span className="text-sm">View Seed Phrase</span>
                       </li>
                     </ul>
@@ -254,7 +238,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                   {/* spacer bridge */}
                   <div className="absolute bottom-full left-0 z-10 h-2 w-56" />
                   <div
-                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-lg"
+                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-2xl shadow-(color:--kas-primary)/30"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ul className="divide-primary-border divide-y">
@@ -304,8 +288,9 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           openModal("withdraw");
                           setWalletMenuOpen(false);
                         }}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
+                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
                       >
+                        <Wallet className="h-5 w-5" />
                         <span className="text-sm">Withdraw Funds</span>
                       </li>
 
@@ -315,32 +300,10 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           openModal("utxo-compound");
                           setWalletMenuOpen(false);
                         }}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
+                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
                       >
+                        <Wallet className="h-5 w-5" />
                         <span className="text-sm">Compound UTXOs</span>
-                      </li>
-
-                      {/* Backup */}
-                      {messageStore.isLoaded && (
-                        <li
-                          onClick={() => {
-                            openModal("backup");
-                            setWalletMenuOpen(false);
-                          }}
-                          className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                        >
-                          <span className="text-sm">
-                            Import / Export <br /> Messages
-                          </span>
-                        </li>
-                      )}
-
-                      {/* Delete */}
-                      <li
-                        onClick={onClearHistory}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
-                      >
-                        <span className="text-sm">Delete All Messages</span>
                       </li>
 
                       {/* Seed */}
@@ -349,8 +312,9 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           openModal("seed");
                           setWalletMenuOpen(false);
                         }}
-                        className="hover:bg-secondary-bg cursor-pointer px-4 py-3"
+                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
                       >
+                        <Key className="h-5 w-5" />
                         <span className="text-sm">View Seed Phrase</span>
                       </li>
                     </ul>

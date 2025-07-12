@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { useUiStore } from "../../store/ui.store";
+import { useMessagingStore } from "../../store/messaging.store";
+import { useWalletStore } from "../../store/wallet.store";
 import { Modal } from "../Common/modal";
 import clsx from "clsx";
-import { User, Info, Settings, Sun, Moon, Monitor } from "lucide-react";
+import {
+  User,
+  Info,
+  Settings,
+  Sun,
+  Moon,
+  Monitor,
+  Download,
+  Trash2,
+} from "lucide-react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,6 +33,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [activeTab, setActiveTab] = useState("account");
   const [isMobile, setIsMobile] = useState(false);
   const { theme, setTheme } = useUiStore();
+  const openModal = useUiStore((s) => s.openModal);
+  const messageStore = useMessagingStore();
+  const walletAddress = useWalletStore((s) => s.address);
+
+  const onClearHistory = () => {
+    if (!walletAddress) return;
+    if (
+      confirm(
+        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
+      )
+    ) {
+      messageStore.flushWalletHistory(walletAddress.toString());
+    }
+  };
 
   useEffect(() => {
     const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
@@ -116,10 +141,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === "account" && (
               <div className="mt-4 space-y-6 sm:mt-0">
                 <h3 className="mb-4 text-lg font-medium">Account</h3>
-                <div className="bg-secondary-bg rounded-lg p-4">
-                  <p className="text-muted-foreground text-sm">
-                    Account settings content goes here.
-                  </p>
+                <div className="space-y-4">
+                  {/* Import/Export Messages */}
+                  {messageStore.isLoaded && (
+                    <button
+                      onClick={() => {
+                        openModal("backup");
+                        onClose();
+                      }}
+                      className="hover:bg-secondary-bg border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors"
+                    >
+                      <Download className="h-5 w-5" />
+                      <div className="text-left">
+                        <div className="text-sm font-medium">
+                          Import / Export Messages
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          Backup or restore your message history
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Delete All Messages */}
+                  <button
+                    onClick={() => {
+                      onClearHistory();
+                      onClose();
+                    }}
+                    className="hover:bg-secondary-bg border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-lg border p-4 transition-colors"
+                  >
+                    <Trash2 className="h-5 w-5 text-red-400/50" />
+                    <div className="text-left">
+                      <div className="text-sm font-medium">
+                        Delete All Messages
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        Permanently remove all conversations and data
+                      </div>
+                    </div>
+                  </button>
                 </div>
               </div>
             )}

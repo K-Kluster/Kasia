@@ -52,7 +52,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
         {networkDisplay}
       </MenuButton>
       <MenuItems
-        className="absolute top-full left-0 z-10 min-w-[140px] border border-[var(--border-color)] bg-[var(--secondary-bg)] shadow-md"
+        className="absolute top-full left-0 z-10 min-w-[140px] rounded-sm border border-[var(--border-color)] bg-[var(--secondary-bg)] shadow-md"
         anchor="bottom"
       >
         {allowedNetworks.map((allowedNetwork) => (
@@ -61,8 +61,8 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
               onClick={() => onNetworkChange(allowedNetwork.id)}
               className={`block w-full cursor-pointer border-none bg-none px-3 py-2 text-left text-[0.8125rem] text-[var(--text-primary)] transition-colors duration-200 ${
                 selectedNetwork === allowedNetwork.id
-                  ? "bg-[var(--accent-blue)] text-white"
-                  : "hover:bg-[var(--primary-bg)]"
+                  ? "bg-[var(--kas-primary)] text-white"
+                  : "hover:bg-[var(--kas-secondary)]"
               }`}
             >
               {allowedNetwork.displayableString}

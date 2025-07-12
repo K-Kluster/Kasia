@@ -20,7 +20,7 @@ import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { StringCopy } from "../components/Common/StringCopy";
 import { Modal } from "../components/Common/modal";
-import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
+import { LockedSettingsModal } from "../components/Modals/LockedSettingsModal";
 
 export type Step = {
   type:
@@ -279,17 +279,6 @@ export const WalletFlow = ({
     navigate(`wallet/unlock/${wallet.id}`);
   };
 
-  const getDerivationTypeDisplay = (d?: WalletDerivationType) =>
-    d === "standard" ? (
-      <span className="bg-kas-secondary/20 border-kas-secondary rounded-3xl border px-2 py-1 text-xs font-medium">
-        Standard (Kaspium Compatible)
-      </span>
-    ) : (
-      <span className="rounded bg-amber-400 px-2 py-1 text-xs font-medium text-white">
-        Legacy
-      </span>
-    );
-
   const wrapperClass = clsx(
     "w-full bg-secondary-bg p-8",
     isMobile
@@ -345,7 +334,7 @@ export const WalletFlow = ({
                     e.stopPropagation();
                     onDeleteWallet(w.id);
                   }}
-                  className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-400/10 p-[2px] text-red-400/50"
+                  className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-400/10 p-[2px] text-red-400/50 hover:scale-110"
                   title="Delete"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -359,7 +348,22 @@ export const WalletFlow = ({
                     <span>
                       Created: {new Date(w.createdAt).toLocaleDateString()}
                     </span>
-                    {getDerivationTypeDisplay(w.derivationType)}
+                    <div className="ml-2">
+                      {w.derivationType === "standard" ? (
+                        <span
+                          className={clsx({
+                            "bg-kas-secondary/20 border-kas-secondary rounded-3xl border px-2 py-1 text-xs font-medium": true,
+                          })}
+                          title="Kaspium Compatible"
+                        >
+                          Standard
+                        </span>
+                      ) : (
+                        <span className="rounded bg-amber-400 px-2 py-1 text-xs font-medium text-[var(--text-primary)]">
+                          Legacy
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
                     {w.derivationType === "legacy" && (
@@ -394,7 +398,7 @@ export const WalletFlow = ({
       {/* Create wallet 'Route' */}
       {step.type === "create" && (
         <>
-          <h2 className="mb-1 text-center text-lg font-bold">
+          <h2 className="mb-3 text-center text-lg font-bold">
             Create New Wallet
           </h2>
 
@@ -427,10 +431,10 @@ export const WalletFlow = ({
                   value={opt.value}
                   className="group border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-md border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {opt.label}
                   </span>
-                  <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-sm">
+                  <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)] sm:text-sm">
                     {opt.description}
                   </small>
                 </Radio>
@@ -438,7 +442,7 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-3">
+          <div className="my-1">
             <label className="mb-3 block text-base font-semibold">
               Wallet Name
             </label>
@@ -454,9 +458,9 @@ export const WalletFlow = ({
             name="seedLength"
             value={seedPhraseLength}
             onChange={setSeedPhraseLength}
-            className="mb-3"
+            className="my-1"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Seed Phrase Length
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -489,15 +493,15 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-4">
-            <label className="mb-3 block text-base font-semibold text-white">
+          <div className="mt-1 mb-6">
+            <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Password
             </label>
             <input
               ref={passwordRef}
               type="password"
               placeholder="Enter password"
-              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
+              className="border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
             />
           </div>
 
@@ -593,7 +597,7 @@ export const WalletFlow = ({
             onChange={setDerivationType}
             className="mb-3"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="my-3 block text-base font-semibold text-[var(--text-primary)]">
               Derivation Standard
             </Label>
 
@@ -617,10 +621,10 @@ export const WalletFlow = ({
                   value={opt.value}
                   className="group hover:border-kas-secondary/50 border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-2xl border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {opt.label}
                   </span>
-                  <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-sm">
+                  <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)] sm:text-sm">
                     {opt.description}
                   </small>
                 </Radio>
@@ -629,14 +633,14 @@ export const WalletFlow = ({
           </RadioGroup>
 
           <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+            <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Wallet Name
             </label>
             <input
               ref={nameRef}
               type="text"
               placeholder="My Wallet"
-              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
+              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:outline-none"
             />
           </div>
 
@@ -646,7 +650,7 @@ export const WalletFlow = ({
             onChange={(val) => setSeedPhraseLength(val === "24" ? 24 : 12)}
             className="mb-2 sm:mb-3"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Seed Phrase Length
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -657,7 +661,7 @@ export const WalletFlow = ({
                   value={val}
                   className="group hover:border-kas-secondary/50 border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-2xl border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {val} words
                   </span>
                 </Radio>
@@ -669,7 +673,7 @@ export const WalletFlow = ({
             mnemonicRef={mnemonicRef}
           />
 
-          <div className="mb-4">
+          <div className="mb-6">
             <label className="mb-3 block text-base font-semibold">
               Password
             </label>
@@ -734,7 +738,7 @@ export const WalletFlow = ({
           </div>
 
           <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+            <label className="mb-1 block text-base font-semibold text-[var(--text-primary)] sm:mb-3">
               New Wallet Name
             </label>
             <input
@@ -747,7 +751,7 @@ export const WalletFlow = ({
           </div>
 
           <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+            <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Password
             </label>
             <input
@@ -781,8 +785,8 @@ export const WalletFlow = ({
           </div>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
-            <div className="mt-16 mb-5 mb-16 flex justify-center">
-              <div className="border-kas-secondary bg-kas-secondary/10 rounded-2xl border px-2 text-center">
+            <div className="mt-16 mb-5 flex justify-center">
+              <div className="border-kas-secondary bg-kas-secondary/10 rounded-md border px-4 py-2 text-center">
                 <span className="text-lg font-bold">
                   {wallets.find((w) => w.id === selectedWalletId)?.name}
                 </span>
@@ -846,7 +850,7 @@ export const WalletFlow = ({
       {/* rendered at wallet flow so it works on all steps, */}
       {isOpen("settings") && (
         <Modal onClose={() => closeModal("settings")}>
-          <NetworkSettingsModal />
+          <LockedSettingsModal />
         </Modal>
       )}
     </div>

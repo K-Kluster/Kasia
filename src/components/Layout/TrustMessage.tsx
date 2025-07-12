@@ -9,11 +9,11 @@ export const TrustMessage: FC = () => {
   return (
     <div className="mb-12">
       {/* trust message section */}
-      <div className="border-kas-secondary from-kas-secondary/20 to-kas-secondary/5 mt-6 rounded-2xl border bg-gradient-to-r p-2">
-        <div
-          className="flex w-full cursor-pointer items-center justify-center gap-2 py-1"
-          onClick={() => setOpenTrust((v) => !v)}
-        >
+      <div
+        className="border-kas-secondary from-kas-secondary/20 to-kas-secondary/5 mt-6 cursor-pointer rounded-2xl border bg-gradient-to-r p-2"
+        onClick={() => setOpenTrust((v) => !v)}
+      >
+        <div className="flex w-full items-center justify-center gap-2 py-1">
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#70C7BA]">
             <Lock className="h-4 w-4 text-white" />
           </div>
@@ -24,7 +24,7 @@ export const TrustMessage: FC = () => {
 
         {openTrust && (
           <>
-            <p className="break-word mb-2 w-full text-center text-xs leading-relaxed text-gray-400">
+            <p className="break-word mb-2 w-full text-center text-sm leading-relaxed text-gray-400">
               We never store your private keys or have access to your messages.
               Everything is encrypted and controlled by you.
             </p>
@@ -44,11 +44,11 @@ export const TrustMessage: FC = () => {
       </div>
 
       {/* why kaspa wallet section */}
-      <div className="border-primary-border bg-primary-bg mt-3 rounded-2xl border p-2">
-        <div
-          className="flex w-full cursor-pointer items-center justify-center gap-2 py-1"
-          onClick={() => setOpenWhy((v) => !v)}
-        >
+      <div
+        className="border-primary-border bg-primary-bg mt-3 cursor-pointer rounded-2xl border p-2"
+        onClick={() => setOpenWhy((v) => !v)}
+      >
+        <div className="flex w-full items-center justify-center gap-2 py-1">
           <div className="flex h-6 w-6 items-center justify-center rounded-full">
             <KasIcon
               className="h-12 w-12 scale-180"
@@ -62,7 +62,7 @@ export const TrustMessage: FC = () => {
         </div>
 
         {openWhy && (
-          <p className="break-word w-full text-center text-xs leading-relaxed text-gray-400">
+          <p className="break-word w-full text-center text-sm leading-relaxed text-gray-400">
             Kasia is a private messaging app that protects your privacy. Your
             Kaspa wallet acts as your secure login – no email, phone number, or
             personal details needed. Messages are encrypted and stored on the

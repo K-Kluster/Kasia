@@ -4,8 +4,9 @@ import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
 import { Button } from "../Common/Button";
 import { useUiStore } from "../../store/ui.store";
+import { ThemeToggle } from "../Common/ThemeToggle";
 
-export const NetworkSettingsModal: React.FC = () => {
+export const LockedSettingsModal: React.FC = () => {
   const networkStore = useNetworkStore();
   const selectedNetwork = useNetworkStore((state) => state.network);
   const isConnected = useNetworkStore((state) => state.isConnected);
@@ -66,6 +67,9 @@ export const NetworkSettingsModal: React.FC = () => {
 
   return (
     <div className="w-full max-w-[600px]">
+      <div className="mb-6 flex w-full justify-center md:hidden">
+        <ThemeToggle />
+      </div>
       <div className="mb-1 flex grow items-center justify-center">
         <NetworkSelector
           selectedNetwork={selectedNetwork}
