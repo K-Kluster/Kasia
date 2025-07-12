@@ -7,13 +7,14 @@ import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { KaspaAddress } from "../components/KaspaAddress";
-import { AvatarHash } from "../components/icons/AvatarHash";
 import { Contact } from "../types/all";
 import styles from "../components/NewChatForm.module.css";
 import clsx from "clsx";
 import { useIsMobile } from "../utils/useIsMobile";
 import { StringCopy } from "../components/Common/StringCopy";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
+import { EditNicknamePopover } from "../components/EditNicknamePopover";
+import { useUiStore } from "../store/ui.store";
 
 export const MessageSection: FC<{
   mobileView: "contacts" | "messages";
@@ -50,14 +51,10 @@ export const MessageSection: FC<{
   const [isEditingNickname, setIsEditingNickname] = useState(false);
   const [tempNickname, setTempNickname] = useState("");
 
-  // Contact info tooltip state
-  const [showContactInfo, setShowContactInfo] = useState(false);
-  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
-  const [isPopoverHovered, setIsPopoverHovered] = useState(false);
-  const [showContactInfoPopup, setShowContactInfoPopup] = useState(false);
-  const [showContactInfoPanel, setShowContactInfoPanel] = useState(false);
-
-  const isMenuActive = isHeaderHovered || isPopoverHovered;
+  const [isEditingInPopover, setIsEditingInPopover] = useState(false);
+  const [popoverEditValue, setPopoverEditValue] = useState(
+    currentContact?.nickname || ""
+  );
 
   // Nickname editing handlers
   const handleNicknameSave = () => {
@@ -70,11 +67,6 @@ export const MessageSection: FC<{
   const handleNicknameCancel = () => {
     setTempNickname(currentContact?.nickname || "");
     setIsEditingNickname(false);
-  };
-
-  const startEditingNickname = () => {
-    setTempNickname(currentContact?.nickname || "");
-    setIsEditingNickname(true);
   };
 
   const lastKnsCheckRef = useRef<{ nickname: string; address: string } | null>(
@@ -168,6 +160,17 @@ export const MessageSection: FC<{
   }
 
   const finalClassName = `flex flex-[2] flex-col overflow-x-hidden ${isMobile ? "" : "border-l border-primary-border"} ${isMobile && mobileView === "contacts" ? "hidden" : ""}`;
+
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
+  // reset nickname editing when popover closes
+  useEffect(() => {
+    if (!popoverOpen) setIsEditingInPopover(false);
+  }, [popoverOpen]);
+
+  const openModal = useUiStore((s) => s.openModal);
+  const contactInfoContact = useUiStore((s) => s.contactInfoContact);
+  const setContactInfoContact = useUiStore((s) => s.setContactInfoContact);
 
   return (
     <div className={finalClassName}>
@@ -321,37 +324,80 @@ export const MessageSection: FC<{
                 <KaspaAddress address={openedRecipient ?? ""} />
               )}
               <Popover className="relative">
-                <PopoverButton className="cursor-pointer rounded p-1 hover:bg-gray-200/20 focus:outline-none">
-                  <Ellipsis className="h-5 w-5" />
-                </PopoverButton>
-                <PopoverPanel
-                  anchor="bottom end"
-                  className="absolute right-0 z-10 mt-2 w-48 rounded bg-white shadow-lg ring-1 ring-black/5"
-                >
-                  <div className="flex flex-col">
-                    <StringCopy
-                      text={currentContact?.address || openedRecipient}
-                      alertText="Address Copied"
-                      titleText="Copy Address"
-                      className="flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 hover:bg-gray-100"
-                      iconClass="h-4 w-4 stroke-2"
-                    >
-                      Copy Address
-                    </StringCopy>
-                    <button
-                      onClick={startEditingNickname}
-                      className="flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 hover:bg-gray-100"
-                    >
-                      <Pencil className="h-4 w-4" /> Edit Nickname
-                    </button>
-                    <button
-                      onClick={() => setShowContactInfoPanel(true)}
-                      className="flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 hover:bg-gray-100"
-                    >
-                      <Info className="h-4 w-4" /> Contact Info
-                    </button>
-                  </div>
-                </PopoverPanel>
+                {({ open }) => {
+                  // Only update state if it actually changed, and never in render
+                  if (open !== popoverOpen) {
+                    // Use a microtask to avoid updating state during render
+                    Promise.resolve().then(() => setPopoverOpen(open));
+                  }
+                  return (
+                    <>
+                      <PopoverButton className="cursor-pointer rounded p-1 opacity-60 hover:bg-gray-200/20 focus:outline-none">
+                        <Ellipsis className="h-5 w-5" />
+                      </PopoverButton>
+                      <PopoverPanel
+                        anchor="bottom end"
+                        className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-lg ring-1 ring-[var(--primary-border)]"
+                      >
+                        <div className="flex flex-col">
+                          <StringCopy
+                            text={currentContact?.address || openedRecipient}
+                            alertText="Address Copied"
+                            titleText="Copy Address"
+                            className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2"
+                            iconClass="h-4 w-4 text-[var(--text-primary)]"
+                          >
+                            Copy Address
+                          </StringCopy>
+                          <button
+                            onClick={() => {
+                              setIsEditingInPopover(true);
+                              setPopoverEditValue(
+                                currentContact?.nickname || ""
+                              );
+                            }}
+                            className={clsx(
+                              "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]",
+                              { hidden: isEditingInPopover }
+                            )}
+                          >
+                            <Pencil className="h-4 w-4" /> Edit Nickname
+                          </button>
+                          {isEditingInPopover && (
+                            <EditNicknamePopover
+                              value={popoverEditValue}
+                              placeholder={
+                                currentContact?.nickname ||
+                                currentContact?.address ||
+                                ""
+                              }
+                              onChange={setPopoverEditValue}
+                              onSave={() => {
+                                if (currentContact) {
+                                  messageStore.setContactNickname(
+                                    currentContact.address,
+                                    popoverEditValue
+                                  );
+                                }
+                                setIsEditingInPopover(false);
+                              }}
+                              onCancel={() => setIsEditingInPopover(false)}
+                            />
+                          )}
+                          <button
+                            onClick={() => {
+                              setContactInfoContact(currentContact ?? null);
+                              openModal("contact-info-modal");
+                            }}
+                            className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]"
+                          >
+                            <Info className="h-4 w-4" /> Contact Info
+                          </button>
+                        </div>
+                      </PopoverPanel>
+                    </>
+                  );
+                }}
               </Popover>
             </h3>
 
@@ -361,181 +407,6 @@ export const MessageSection: FC<{
               </div>
             )}
           </div>
-
-          {/* Contact Info Tooltip */}
-          {showContactInfo && currentContact && (
-            <div className="bg-secondary-bg border-primary-border absolute top-[15%] left-[20%] z-50 max-w-sm rounded-lg border p-4 shadow-lg">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-10 w-10">
-                    <AvatarHash
-                      address={currentContact.address}
-                      size={40}
-                      className={clsx({
-                        "opacity-60": !!currentContact.nickname?.trim()?.[0],
-                      })}
-                    />
-                    {currentContact.nickname?.trim()?.[0]?.toUpperCase() && (
-                      <span
-                        className={clsx(
-                          "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%+1px)]",
-                          "pointer-events-none select-none",
-                          "flex h-10 w-10 items-center justify-center",
-                          "rounded-full text-sm leading-none font-bold tracking-wide text-gray-200"
-                        )}
-                      >
-                        {currentContact.nickname.trim()[0].toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-[var(--text-primary)]">
-                      {currentContact.nickname || "No nickname"}
-                    </div>
-                    <div className="text-sm text-[var(--text-secondary)]">
-                      Contact
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div>
-                    <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                      Address
-                    </div>
-                    <div className="text-sm break-all text-[var(--text-primary)]">
-                      {currentContact.address}
-                    </div>
-                  </div>
-
-                  {currentContact.nickname && (
-                    <div>
-                      <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                        Nickname
-                      </div>
-                      <div className="text-sm text-[var(--text-primary)]">
-                        {currentContact.nickname}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                      Messages
-                    </div>
-                    <div className="text-sm text-[var(--text-primary)]">
-                      {currentContact.messages?.length || 0} messages
-                    </div>
-                  </div>
-
-                  {currentContact.lastMessage && (
-                    <div>
-                      <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                        Last Message
-                      </div>
-                      <div className="text-sm text-[var(--text-primary)]">
-                        {new Date(
-                          currentContact.lastMessage.timestamp
-                        ).toLocaleString()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showContactInfoPanel && currentContact && (
-            <div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/30"
-              onClick={() => setShowContactInfoPanel(false)}
-            >
-              <div
-                className="relative w-full max-w-md rounded-lg border bg-white p-6 shadow-lg"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10">
-                      <AvatarHash
-                        address={currentContact.address}
-                        size={40}
-                        className={clsx({
-                          "opacity-60": !!currentContact.nickname?.trim()?.[0],
-                        })}
-                      />
-                      {currentContact.nickname?.trim()?.[0]?.toUpperCase() && (
-                        <span
-                          className={clsx(
-                            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%+1px)]",
-                            "pointer-events-none select-none",
-                            "flex h-10 w-10 items-center justify-center",
-                            "rounded-full text-sm leading-none font-bold tracking-wide text-gray-200"
-                          )}
-                        >
-                          {currentContact.nickname.trim()[0].toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-[var(--text-primary)]">
-                        {currentContact.nickname || "No nickname"}
-                      </div>
-                      <div className="text-sm text-[var(--text-secondary)]">
-                        Contact
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                        Address
-                      </div>
-                      <div className="text-sm break-all text-[var(--text-primary)]">
-                        {currentContact.address}
-                      </div>
-                    </div>
-                    {currentContact.nickname && (
-                      <div>
-                        <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                          Nickname
-                        </div>
-                        <div className="text-sm text-[var(--text-primary)]">
-                          {currentContact.nickname}
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                        Messages
-                      </div>
-                      <div className="text-sm text-[var(--text-primary)]">
-                        {currentContact.messages?.length || 0} messages
-                      </div>
-                    </div>
-                    {currentContact.lastMessage && (
-                      <div>
-                        <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-                          Last Message
-                        </div>
-                        <div className="text-sm text-[var(--text-primary)]">
-                          {new Date(
-                            currentContact.lastMessage.timestamp
-                          ).toLocaleString()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"
-                    onClick={() => setShowContactInfoPanel(false)}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div
             className="bg-primary-bg flex-1 overflow-x-hidden overflow-y-auto p-4"

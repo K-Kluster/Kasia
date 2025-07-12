@@ -11,10 +11,13 @@ import { WalletWithdrawal } from "../components/Modals/WalletWithdrawal";
 import { NewChatForm } from "../components/NewChatForm";
 import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 import { LoaderCircle } from "lucide-react";
+import { ContactInfoModal } from "../components/Modals/ContactInfoModal";
 
 export const ModalDisplay = () => {
   const isOpen = useUiStore((s) => s.isOpen);
   const closeModal = useUiStore((s) => s.closeModal);
+  const contactInfoContact = useUiStore((s) => s.contactInfoContact);
+  const setContactInfoContact = useUiStore((s) => s.setContactInfoContact);
   const walletStore = useWalletStore();
   const messageStore = useMessagingStore();
 
@@ -65,6 +68,22 @@ export const ModalDisplay = () => {
         <Modal onClose={() => messageStore.setIsCreatingNewChat(false)}>
           <NewChatForm
             onClose={() => messageStore.setIsCreatingNewChat(false)}
+          />
+        </Modal>
+      )}
+      {isOpen("contact-info-modal") && contactInfoContact && (
+        <Modal
+          onClose={() => {
+            closeModal("contact-info-modal");
+            setContactInfoContact(null);
+          }}
+        >
+          <ContactInfoModal
+            contact={contactInfoContact}
+            onClose={() => {
+              closeModal("contact-info-modal");
+              setContactInfoContact(null);
+            }}
           />
         </Modal>
       )}

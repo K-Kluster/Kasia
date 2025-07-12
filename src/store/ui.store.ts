@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { Contact } from "../types/all"; // adjust path as needed
 
 export type ModalType =
   | "address"
@@ -9,7 +10,8 @@ export type ModalType =
   | "seed"
   | "warn-costy-send-message"
   | "utxo-compound"
-  | "settings";
+  | "settings"
+  | "contact-info-modal";
 type Theme = "light" | "dark" | "system";
 
 type UiState = {
@@ -30,6 +32,10 @@ type UiState = {
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
   getEffectiveTheme: () => "light" | "dark";
+
+  // Contact Info Modal state
+  contactInfoContact: Contact | null;
+  setContactInfoContact: (c: Contact | null) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -116,4 +122,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
     const currentTheme = get().theme;
     return currentTheme === "system" ? getSystemTheme() : currentTheme;
   },
+
+  // Contact Info Modal state
+  contactInfoContact: null,
+  setContactInfoContact: (c) => set({ contactInfoContact: c }),
 }));
