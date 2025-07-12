@@ -83,7 +83,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       "w-full": !isMobile,
                       "text-primary border-primary border-b-2":
                         isMobile && activeTab === tab.id,
-                      "text-primary bg-primary/10 rounded-lg":
+                      "text-primary bg-secondary-bg border-primary-border rounded-lg border":
                         !isMobile && activeTab === tab.id,
                       "text-muted-foreground": activeTab !== tab.id,
                     }

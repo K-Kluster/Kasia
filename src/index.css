@@ -19,6 +19,8 @@
   --text-secondary: #94a3b8;
   --kas-primary: #70c7ba;
   --kas-secondary: #49eacb;
+  --warning-text: #fbb81a;
+  /* amber-300 */
 }
 
 /* Light Theme */
@@ -40,6 +42,8 @@
   --text-secondary: #64748b;
   --kas-primary: #70c7ba;
   --color-kas-secondary: #49eacb;
+  --text-warning: #ee8b00;
+  /* amber-600 */
 }
 
 @theme {
@@ -58,6 +62,7 @@
   --color-success: var(--success);
   --color-kas-primary: var(--kas-primary);
   --color-kas-secondary: var(--kas-secondary);
+  --color-text-warning: var(--text-warning);
 }
 
 @keyframes fade-in {

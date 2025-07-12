@@ -16,6 +16,7 @@ import { Textarea } from "@headlessui/react";
 import { Button } from "./Common/Button";
 import { QrScanner } from "./QrScanner";
 import { StringCopy } from "./Common/StringCopy";
+import { Search, X, Clipboard } from "lucide-react";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -208,6 +209,16 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     setHandshakeAmount(amount);
   }, []);
 
+  const handlePaste = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setRecipientInputValue(text.toLowerCase());
+    } catch {
+      // Handle clipboard access error silently or show a toast
+      console.warn("Failed to paste from clipboard");
+    }
+  }, []);
+
   // Update validation to use knsRecipientAddress
   const validateAndPrepareHandshake = useCallback(() => {
     setError(null);
@@ -324,8 +335,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
     return (
       <>
-        <h3 className="m-0 mb-5 text-[1.2rem] text-white">Confirm Handshake</h3>
-        <div className="mb-5 text-sm leading-normal text-white/80">
+        <h3 className="m-0 mb-5 text-[1.2rem] font-bold">Confirm Handshake</h3>
+        <div className="mb-5 text-sm leading-normal">
           <p>
             <strong>Recipient:</strong>
             <div className="flex justify-start break-all">
@@ -390,10 +401,10 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           >
             Recipient Address
           </label>
-          <div className="flex items-center gap-2">
+          <div className="relative">
             <Textarea
               ref={useRecipientInputRef}
-              className="border-primary-border bg-input-bg focus:border-kas-secondary box-border flex w-full resize-none items-center rounded-2xl border px-2 py-1"
+              className="bg-primary-bg border-primary-border focus:ring-kas-secondary/80 w-full resize-none rounded-lg border p-2 pr-24 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
               rows={3}
               id="recipientAddress"
               value={recipientInputValue}
@@ -405,11 +416,21 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
               required
               autoComplete="off"
             />
-            <QrScanner
-              onScan={(data: string) => {
-                setRecipientInputValue(data.toLowerCase());
-              }}
-            />
+            <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
+              <button
+                onClick={handlePaste}
+                className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border px-1.5 py-1 transition-colors"
+                title="Paste from clipboard"
+                disabled={isLoading}
+              >
+                <Clipboard size={16} />
+              </button>
+              <QrScanner
+                onScan={(data: string) => {
+                  setRecipientInputValue(data.toLowerCase());
+                }}
+              />
+            </div>
           </div>
 
           {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
@@ -458,7 +479,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             Handshake Amount (KAS)
           </label>
           <input
-            className="border-primary-border bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-3xl border px-3 py-2"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none"
             type="text"
             id="handshakeAmount"
             value={handshakeAmount}

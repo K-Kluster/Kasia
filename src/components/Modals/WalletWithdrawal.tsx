@@ -135,7 +135,7 @@ export const WalletWithdrawal: FC = () => {
             onChange={(e) => setWithdrawAddress(e.target.value)}
             placeholder="Enter Kaspa address"
             rows={3}
-            className="border-primary-border bg-primary-bg w-full resize-none rounded-lg border p-2 pr-24 break-words whitespace-pre-wrap"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-primary-bg w-full resize-none rounded-lg border p-2 pr-24 break-words whitespace-pre-wrap focus:ring-2 focus:outline-none"
           />
           <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
             <button
@@ -158,7 +158,7 @@ export const WalletWithdrawal: FC = () => {
             value={withdrawAmount}
             onChange={inputAmountUpdated}
             placeholder="Amount (KAS)"
-            className="border-primary-border bg-primary-bg box-border w-full rounded-lg border py-2 pr-14 pl-2"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-primary-bg box-border w-full rounded-lg border py-2 pr-14 pl-2 focus:ring-2 focus:outline-none"
           />
           <button
             type="button"

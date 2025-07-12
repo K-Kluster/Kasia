@@ -106,7 +106,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
                 placeholder="Search messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-primary-bg focus:ring-kas-secondary/50 w-full rounded-lg px-10 py-2 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
+                className="bg-primary-bg focus:ring-kas-secondary/50 border-primary-border w-full rounded-lg border px-10 py-2 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
               />
               {searchQuery && (
                 <button

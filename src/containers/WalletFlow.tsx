@@ -345,10 +345,10 @@ export const WalletFlow = ({
                     e.stopPropagation();
                     onDeleteWallet(w.id);
                   }}
-                  className="absolute top-2 right-2 cursor-pointer p-1 text-red-400 hover:text-red-700"
+                  className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-400/10 p-[2px] text-red-400/50"
                   title="Delete"
                 >
-                  <Trash2 className="h-6 w-6" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
 
                 <div className="flex w-full flex-col gap-1">
@@ -520,7 +520,7 @@ export const WalletFlow = ({
             <p className="font-semibold">
               Please save your mnemonic phrase securely:
             </p>
-            <div className="my-2 flex flex-col items-center rounded-2xl p-2 text-center text-base text-amber-400">
+            <div className="text-text-warning my-2 flex flex-col items-center rounded-2xl p-2 text-center text-base">
               <AlertTriangle className="h-8 w-8" />
               Please keep your seed phrase safe, if you lose your seed phrase
               there is no recovery.
@@ -532,7 +532,7 @@ export const WalletFlow = ({
               className="bg-kas-primary/20 border-primary-border mx-auto my-4 cursor-pointer rounded rounded-2xl border px-4 py-2 text-sm font-bold"
             >
               Anyone with your seed phrase can access your wallet
-              <div className="my-1 font-semibold text-amber-400 underline">
+              <div className="text-text-warning my-1 font-semibold underline">
                 {revealed ? "Hide seed phrase" : "Show seed phrase"}
               </div>
             </button>
@@ -779,13 +779,14 @@ export const WalletFlow = ({
               isConnected={isConnected}
             />
           </div>
-          <h2 className="text-center text-lg font-bold">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
-            <div className="border-kas-secondary bg-kas-secondary/10 mt-4 mb-5 mb-16 rounded-2xl border p-2.5 text-center">
-              <span className="font-semibold text-[var(--text-primary)]">
-                {wallets.find((w) => w.id === selectedWalletId)?.name}
-              </span>
+            <div className="mt-16 mb-5 mb-16 flex justify-center">
+              <div className="border-kas-secondary bg-kas-secondary/10 rounded-2xl border px-2 text-center">
+                <span className="text-lg font-bold">
+                  {wallets.find((w) => w.id === selectedWalletId)?.name}
+                </span>
+              </div>
             </div>
           )}
 
