@@ -75,7 +75,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
           <div className="flex">
             <span
               id="wallet-address"
-              className="flex w-full cursor-pointer items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-[13px] leading-[1.4] break-all text-white transition-colors select-all hover:border-white/20 hover:bg-white/10"
+              className="border-primary-border bg-primary-bg flex w-full cursor-pointer items-center rounded-lg border px-3 py-2 font-mono text-[13px] leading-[1.4] break-all transition-colors"
               onClick={() => {
                 console.log("Address text selected");
                 // Select the text when clicked
@@ -122,22 +122,20 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
         </div>
 
         {showQRCode && qrCodeURL && (
-          <div className="mt-2 flex w-full flex-col items-center rounded-lg border border-white/10 bg-black/30 p-4 transition-opacity duration-300 sm:w-auto">
-            <h4 className="mb-4 text-center text-white">QR Code for Address</h4>
+          <div className="border-primary-border bg-primary-bg mt-2 flex w-full flex-col items-center rounded-lg border p-4 transition-opacity duration-300 sm:w-auto">
+            <h4 className="mb-4 text-center">QR Code for Address</h4>
             <div className="flex flex-col items-center gap-4">
               <img
                 src={qrCodeURL}
                 alt="QR Code for wallet address"
-                className="h-auto max-w-[200px] rounded-lg bg-white p-2"
+                className="bg-primary-bg h-auto max-w-[200px] rounded-lg p-2"
                 onLoad={() => console.log("QR code image loaded successfully")}
                 onError={(e) => {
                   console.error("QR code image failed to load:", e);
                   console.log("Failed URL:", qrCodeURL);
                 }}
               />
-              <p className="text-center text-sm text-white/70">
-                Scan to get wallet address
-              </p>
+              <p className="text-center text-sm">Scan to get wallet address</p>
             </div>
           </div>
         )}

@@ -146,24 +146,21 @@ export const UtxoCompound: FC = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="text-center">
-        <h3 className="mb-2 text-lg font-semibold text-white">
-          Compound UTXOs
-        </h3>
-        <p className="mb-4 text-sm text-gray-300">
+        <h3 className="mb-2 text-lg font-semibold">Compound UTXOs</h3>
+        <p className="mb-4 text-sm text-gray-400">
           Combine multiple UTXOs into fewer, larger ones to optimize wallet
           performance
         </p>
       </div>
 
       {/* UTXO Information */}
-      <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4">
+      <div className="border-primary-border bg-primary-bg rounded-lg border p-4">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-gray-400">Mature UTXOs:</span>
             <div
               className={clsx("font-semibold", {
                 "text-orange-400": isHighUtxoCount,
-                "text-white": !isHighUtxoCount,
               })}
             >
               {displayBalance?.matureUtxoCount ?? "-"}
@@ -174,7 +171,7 @@ export const UtxoCompound: FC = () => {
           </div>
           <div>
             <span className="text-gray-400">Total Balance:</span>
-            <div className="font-semibold text-white">
+            <div className="font-semibold">
               {displayBalance?.matureDisplay} KAS
             </div>
           </div>
@@ -190,7 +187,7 @@ export const UtxoCompound: FC = () => {
               <p className="font-medium text-orange-400">
                 High UTXO Count Detected
               </p>
-              <p className="mt-1 text-gray-300">
+              <p className="mt-1 text-gray-400">
                 Having many UTXOs can slow down transactions and increase memory
                 usage. Compounding is recommended for optimal performance.
               </p>
@@ -200,11 +197,11 @@ export const UtxoCompound: FC = () => {
       )}
 
       {/* Information Box */}
-      <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-3">
+      <div className="border-primary-border bg-primary-bg rounded-lg border p-3">
         <div className="flex w-full items-center justify-center gap-2">
-          <p className="text-sm font-medium text-white">How it works:</p>
+          <p className="text-sm font-medium">How it works:</p>
         </div>
-        <ul className="space-y-1 text-xs text-gray-300">
+        <ul className="space-y-1 text-xs text-gray-400">
           <li>• Combines multiple small UTXOs into fewer larger ones</li>
         </ul>
       </div>
@@ -223,10 +220,10 @@ export const UtxoCompound: FC = () => {
 
         {/* Processing State */}
         {(isCompounding || pendingResult) && !compoundResult && (
-          <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 text-center">
-            <div className="flex items-center justify-center gap-2 text-blue-400">
+          <div className="border-primary-border bg-primary-bg rounded-lg border p-4 text-center">
+            <div className="text-kas-secondary flex items-center justify-center gap-2">
               <RefreshCw className="h-5 w-5 animate-spin" />
-              <span className="font-medium text-white">
+              <span className="font-medium">
                 Processing compound transaction
               </span>
             </div>
