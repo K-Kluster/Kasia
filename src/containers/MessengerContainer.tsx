@@ -1,15 +1,6 @@
 import { LoaderCircle } from "lucide-react";
 import { FC, useState, useEffect, useCallback } from "react";
-import { Modal } from "../components/Common/modal";
 import { ErrorCard } from "../components/ErrorCard";
-import { MessageBackup } from "../components/Modals/MessageBackup";
-import { UtxoCompound } from "../components/Modals/UtxoCompound";
-import { WalletAddressSection } from "../components/Modals/WalletAddressSection";
-import { WalletInfo } from "../components/Modals/WalletInfo";
-import { WalletSeedRetreiveDisplay } from "../components/Modals/WalletSeedRetreiveDisplay";
-import { WalletWithdrawal } from "../components/Modals/WalletWithdrawal";
-import { NewChatForm } from "../components/NewChatForm";
-import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 import { useMessagingStore } from "../store/messaging.store";
 import { useNetworkStore } from "../store/network.store";
 import { useUiStore } from "../store/ui.store";
@@ -36,7 +27,7 @@ export const MessengerContainer: FC = () => {
   const walletStore = useWalletStore();
 
   const isMobile = useIsMobile();
-  const { isOpen, closeModal, closeAllModals } = useUiStore();
+  const { closeAllModals } = useUiStore();
 
   useEffect(() => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);

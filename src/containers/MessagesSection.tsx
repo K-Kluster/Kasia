@@ -1,6 +1,6 @@
 import { FC, useMemo, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
-import { Pencil, Ellipsis, Info } from "lucide-react";
+import { Pencil, Ellipsis, Info, Copy, Check } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessagesList } from "../components/MessagesList";
 import { SendMessageForm } from "./SendMessageForm";
@@ -11,10 +11,10 @@ import { Contact } from "../types/all";
 import styles from "../components/NewChatForm.module.css";
 import clsx from "clsx";
 import { useIsMobile } from "../utils/useIsMobile";
-import { StringCopy } from "../components/Common/StringCopy";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { EditNicknamePopover } from "../components/EditNicknamePopover";
 import { useUiStore } from "../store/ui.store";
+import { copyToClipboard } from "../utils/copy-to-clipboard";
 
 export const MessageSection: FC<{
   mobileView: "contacts" | "messages";
@@ -169,6 +169,7 @@ export const MessageSection: FC<{
   const finalClassName = `flex flex-[2] flex-col overflow-x-hidden ${isMobile ? "" : "border-l border-primary-border"} ${isMobile && mobileView === "contacts" ? "hidden" : ""}`;
 
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
 
   // reset nickname editing when popover closes
   useEffect(() => {
@@ -350,15 +351,34 @@ export const MessageSection: FC<{
                         className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-lg ring-1 ring-[var(--primary-border)]"
                       >
                         <div className="flex flex-col">
-                          <StringCopy
-                            text={currentContact?.address || openedRecipient}
-                            alertText="Address Copied"
-                            titleText="Copy Address"
-                            className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2"
-                            iconClass="h-4 w-4 !text-[var(--text-primary)]"
+                          <button
+                            onClick={() => {
+                              copyToClipboard(
+                                currentContact?.address ??
+                                  openedRecipient ??
+                                  "",
+                                "Address Copied"
+                              );
+                              setIsCopying(true);
+                              setTimeout(() => setIsCopying(false), 1000);
+                            }}
+                            className={clsx(
+                              "flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 transition duration-300",
+                              {
+                                "bg-kas-secondary text-white": isCopying,
+                                "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg text-[var(--text-primary)]":
+                                  !isCopying,
+                              }
+                            )}
+                            title="Copy Address"
                           >
+                            {isCopying ? (
+                              <Check className="h-4 w-4 text-white" />
+                            ) : (
+                              <Copy className="h-4 w-4 text-[var(--text-primary)]" />
+                            )}
                             Copy Address
-                          </StringCopy>
+                          </button>
                           <button
                             onClick={() => {
                               setIsEditingInPopover(true);

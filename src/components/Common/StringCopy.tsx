@@ -1,7 +1,7 @@
-import { FC, useState, ReactNode } from "react";
-import { toast } from "../../utils/toast";
-import { Copy } from "lucide-react";
+import { FC, useState } from "react";
+import { Copy, Check } from "lucide-react";
 import { clsx } from "clsx";
+import { copyToClipboard } from "../../utils/copy-to-clipboard";
 
 type StringCopyProps = {
   text?: string | null;
@@ -9,7 +9,6 @@ type StringCopyProps = {
   titleText?: string;
   iconClass?: string;
   className?: string;
-  children?: ReactNode;
 };
 
 export const StringCopy: FC<StringCopyProps> = ({
@@ -18,17 +17,15 @@ export const StringCopy: FC<StringCopyProps> = ({
   titleText = "Copy text",
   className,
   iconClass = "size-5",
-  children,
 }) => {
   const [isCopied, setIsCopied] = useState(false);
 
   if (!text) return null;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(text);
-    toast.info(alertText);
+    copyToClipboard(text, alertText);
     setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 750);
+    setTimeout(() => setIsCopied(false), 1000);
   };
 
   return (
@@ -36,7 +33,7 @@ export const StringCopy: FC<StringCopyProps> = ({
       type="button"
       onClick={handleCopy}
       className={clsx(
-        "flex cursor-pointer items-center gap-2 transition-all duration-500 focus:outline-none",
+        "flex cursor-pointer items-center rounded-lg transition-all duration-300 focus:outline-none",
         className,
         {
           "bg-kas-secondary": isCopied,
@@ -46,17 +43,23 @@ export const StringCopy: FC<StringCopyProps> = ({
       )}
       title={titleText}
     >
-      <Copy
-        className={clsx(
-          "align-middle transition-colors duration-500",
-          iconClass,
-          {
-            "text-white": isCopied,
-            "hover:text-kas-secondary text-gray-400": !isCopied,
-          }
-        )}
-      />
-      {children && <span>{children}</span>}
+      {isCopied ? (
+        <Check
+          className={clsx(
+            "align-middle transition-colors duration-300",
+            iconClass,
+            "text-white"
+          )}
+        />
+      ) : (
+        <Copy
+          className={clsx(
+            "align-middle transition-colors duration-300",
+            iconClass,
+            "hover:text-kas-secondary text-text-primary"
+          )}
+        />
+      )}
     </button>
   );
 };

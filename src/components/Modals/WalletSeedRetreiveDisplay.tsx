@@ -2,10 +2,11 @@ import { FC, useEffect, useState } from "react";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { StoredWallet } from "../../types/wallet.type";
-import { Eye, EyeOff, Copy } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import clsx from "clsx";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
+import { StringCopy } from "../Common/StringCopy";
 
 export const WalletSeedRetreiveDisplay: FC = () => {
   const [password, setPassword] = useState("");
@@ -81,16 +82,6 @@ export const WalletSeedRetreiveDisplay: FC = () => {
     }
   };
 
-  const handleCopySeedPhrase = async () => {
-    try {
-      await navigator.clipboard.writeText(seedPhrase);
-      toast.success("Seed phrase copied to clipboard");
-    } catch (error) {
-      console.error("Failed to copy seed phrase:", error);
-      toast.error("Failed to copy seed phrase");
-    }
-  };
-
   return (
     <div className="mt-2">
       <h4 className="text-center text-lg font-semibold">Security</h4>
@@ -148,13 +139,13 @@ export const WalletSeedRetreiveDisplay: FC = () => {
                 <EyeOff className="h-6 w-6" />
               )}
             </label>
-            <button
-              onClick={handleCopySeedPhrase}
-              className="mb-2 cursor-pointer p-1 transition-colors hover:text-amber-300"
-              title="Copy seed phrase"
-            >
-              <Copy className="h-6 w-6" />
-            </button>
+            <StringCopy
+              text={seedPhrase}
+              alertText="Seed phrase copied to clipboard"
+              titleText="Copy seed phrase"
+              iconClass="h-6 w-6"
+              className="mb-2 p-1"
+            />
           </div>
           <div className="mt-4 flex justify-center">
             <Button

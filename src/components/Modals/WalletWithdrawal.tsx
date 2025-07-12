@@ -5,7 +5,7 @@ import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
 import { QrScanner } from "../QrScanner";
-import { QrCode, Clipboard } from "lucide-react";
+import { Clipboard } from "lucide-react";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 
@@ -72,7 +72,7 @@ export const WalletWithdrawal: FC = () => {
     try {
       const text = await navigator.clipboard.readText();
       setWithdrawAddress(text.toLowerCase());
-    } catch (error) {
+    } catch {
       toast.error("Failed to paste from clipboard");
     }
   }, []);

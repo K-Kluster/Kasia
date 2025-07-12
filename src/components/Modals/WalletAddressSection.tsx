@@ -1,7 +1,7 @@
 // src/components/AddressSection.tsx
 import { FC, useState, useEffect, useCallback } from "react";
 import { toDataURL } from "qrcode";
-import { File, QrCode } from "lucide-react";
+import { Copy, QrCode } from "lucide-react";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
 
@@ -107,7 +107,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               variant="primary"
               className="flex h-14 w-full items-center justify-center p-0"
             >
-              <File className="h-8 w-8 sm:h-6 sm:w-6" />
+              <Copy className="h-8 w-8 sm:h-6 sm:w-6" />
             </Button>
             <Button
               onClick={toggleQRCode}

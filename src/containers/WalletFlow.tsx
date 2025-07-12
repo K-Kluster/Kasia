@@ -17,9 +17,9 @@ import { TrustMessage } from "../components/Layout/TrustMessage";
 import { toast } from "../utils/toast";
 import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../utils/useIsMobile";
-import { Modal } from "../components/Common/modal";
-import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 import { useUiStore } from "../store/ui.store";
+import { copyToClipboard } from "../utils/copy-to-clipboard";
+import { StringCopy } from "../components/Common/StringCopy";
 
 export type Step = {
   type:
@@ -51,8 +51,6 @@ export const WalletFlow = ({
 }: WalletFlowProps) => {
   const navigate = useNavigate();
   const openModal = useUiStore((s) => s.openModal);
-  const isOpen = useUiStore((s) => s.isOpen);
-  const closeModal = useUiStore((s) => s.closeModal);
   const { wallet } = useParams<{ wallet: string }>();
 
   const [error, setError] = useState<{ message: string; id: number } | null>(
@@ -129,24 +127,6 @@ export const WalletFlow = ({
         break;
       default:
         return;
-    }
-  };
-
-  const handleCopy = async (): Promise<void> => {
-    const text = step.mnemonic!.phrase;
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Seed phrase copied");
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.readOnly = true;
-      textarea.style.position = "absolute";
-      textarea.style.left = "-9999px";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
     }
   };
 
@@ -574,15 +554,15 @@ export const WalletFlow = ({
               ))}
             </div>
 
-            <Button
-              type="button"
-              onClick={handleCopy}
-              disabled={!revealed}
-              variant="primary"
-              className="mx-auto mt-2 px-4 py-2 text-sm disabled:cursor-not-allowed"
-            >
-              Copy Seed Phrase
-            </Button>
+            <div className="flex justify-center">
+              <StringCopy
+                text={step.mnemonic!.phrase}
+                alertText="Seed phrase copied"
+                titleText="Copy seed phrase"
+                className="px-4 py-2 text-sm"
+                iconClass="size-8"
+              />
+            </div>
           </div>
 
           <Button

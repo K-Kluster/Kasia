@@ -427,6 +427,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                   text={resolvedRecipientAddress}
                   alertText="Address Copied"
                   titleText="Copy Address"
+                  className="ml-2"
                 />
               </div>
             )}
