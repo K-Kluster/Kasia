@@ -2,7 +2,6 @@ import { FC, useMemo, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Pencil, Ellipsis, Info } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
-import { MessageDisplay } from "../components/MessageDisplay";
 import { MessagesList } from "../components/MessagesList";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
@@ -160,6 +159,13 @@ export const MessageSection: FC<{
     return `${prefix}${truncatedPart}...${suffix}`;
   }
 
+  function truncateNickname(nickname: string, maxLength = 20) {
+    if (!nickname) return "";
+    return nickname.length > maxLength
+      ? nickname.slice(0, maxLength - 3) + "..."
+      : nickname;
+  }
+
   const finalClassName = `flex flex-[2] flex-col overflow-x-hidden ${isMobile ? "" : "border-l border-primary-border"} ${isMobile && mobileView === "contacts" ? "hidden" : ""}`;
 
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -170,7 +176,6 @@ export const MessageSection: FC<{
   }, [popoverOpen]);
 
   const openModal = useUiStore((s) => s.openModal);
-  const contactInfoContact = useUiStore((s) => s.contactInfoContact);
   const setContactInfoContact = useUiStore((s) => s.setContactInfoContact);
 
   return (
@@ -320,7 +325,11 @@ export const MessageSection: FC<{
                   className="h-6 flex-1 rounded-sm border border-gray-600 bg-transparent px-2 text-sm leading-none"
                 />
               ) : currentContact?.nickname ? (
-                <span>{currentContact.nickname}</span>
+                <span title={currentContact.nickname}>
+                  {isMobile
+                    ? truncateNickname(currentContact.nickname)
+                    : currentContact.nickname}
+                </span>
               ) : (
                 <KaspaAddress address={openedRecipient ?? ""} />
               )}
@@ -334,7 +343,7 @@ export const MessageSection: FC<{
                   return (
                     <>
                       <PopoverButton className="cursor-pointer rounded p-1 opacity-60 hover:bg-gray-200/20 focus:outline-none">
-                        <Ellipsis className="h-5 w-5" />
+                        <Ellipsis className="size-6 sm:size-5" />
                       </PopoverButton>
                       <PopoverPanel
                         anchor="bottom end"
@@ -346,7 +355,7 @@ export const MessageSection: FC<{
                             alertText="Address Copied"
                             titleText="Copy Address"
                             className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2"
-                            iconClass="h-4 w-4 text-[var(--text-primary)]"
+                            iconClass="h-4 w-4 !text-[var(--text-primary)]"
                           >
                             Copy Address
                           </StringCopy>

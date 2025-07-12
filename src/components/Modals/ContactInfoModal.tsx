@@ -35,7 +35,7 @@ export const ContactInfoModal: FC<ContactInfoModalProps> = ({ contact }) => (
           )}
         </div>
         <div>
-          <div className="font-semibold text-[var(--text-primary)]">
+          <div className="font-semibold break-all text-[var(--text-primary)]">
             {contact.nickname || "No nickname"}
           </div>
           <div className="text-sm text-[var(--text-secondary)]">Contact</div>
@@ -58,7 +58,7 @@ export const ContactInfoModal: FC<ContactInfoModalProps> = ({ contact }) => (
             <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
               Nickname
             </div>
-            <div className="text-sm text-[var(--text-primary)]">
+            <div className="text-sm break-all text-[var(--text-primary)]">
               {contact.nickname}
             </div>
           </div>

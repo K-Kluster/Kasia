@@ -267,7 +267,7 @@ export const ContactCard: FC<{
             ) : (
               <span
                 className={clsx(
-                  "max-w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
+                  "block w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
                   {
                     "cursor-help": contact.nickname?.trim(),
                     "cursor-default": !contact.nickname?.trim(),
