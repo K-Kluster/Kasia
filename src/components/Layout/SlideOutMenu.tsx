@@ -82,14 +82,14 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
             className="cursor-pointer rounded-lg p-2 transition-colors hover:bg-gray-700"
             aria-label="Close menu"
           >
-            <X className="h-6 w-6 text-white" />
+            <X className="h-6 w-6 text-[var(--text-primary)]" />
           </button>
         </header>
 
         <div className="flex flex-1 flex-col overflow-auto">
           {/* Wallet Operations Section */}
           <div className="border-primary-border border-b p-4">
-            <h3 className="mb-3 text-sm font-medium text-gray-400">
+            <h3 className="mb-3 text-sm font-medium text-[var(--text-secondary)]">
               Wallet Operations
             </h3>
             <div className="space-y-2">
@@ -102,8 +102,8 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   { "pointer-events-none opacity-50": !address }
                 )}
               >
-                <User className="h-5 w-5 text-white" />
-                <span className="flex items-center text-sm text-white">
+                <User className="h-5 w-5 text-[var(--text-primary)]" />
+                <span className="flex items-center text-sm text-[var(--text-primary)]">
                   Show Address
                   {!address && (
                     <RefreshCcw className="ml-2 h-5 w-5 animate-spin text-gray-500" />
@@ -120,8 +120,8 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   { "pointer-events-none opacity-50": !address }
                 )}
               >
-                <Info className="h-5 w-5 text-white" />
-                <span className="flex items-center text-sm text-white">
+                <Info className="h-5 w-5 text-[var(--text-primary)]" />
+                <span className="flex items-center text-sm text-[var(--text-primary)]">
                   Wallet Info
                   {!address && (
                     <RefreshCcw className="ml-2 h-5 w-5 animate-spin text-gray-500" />
@@ -136,11 +136,13 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                   className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                 >
                   {actionsOpen ? (
-                    <ChevronDown className="h-5 w-5 text-white" />
+                    <ChevronDown className="h-5 w-5 text-[var(--text-primary)]" />
                   ) : (
-                    <ChevronRight className="h-5 w-5 text-white" />
+                    <ChevronRight className="h-5 w-5 text-[var(--text-primary)]" />
                   )}
-                  <span className="text-sm text-white">Actions</span>
+                  <span className="text-sm text-[var(--text-primary)]">
+                    Actions
+                  </span>
                 </button>
 
                 {actionsOpen && (
@@ -152,8 +154,10 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       }}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCard className="h-5 w-5 text-white" />
-                      <span className="text-sm text-white">Withdraw Funds</span>
+                      <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
+                      <span className="text-sm text-[var(--text-primary)]">
+                        Withdraw Funds
+                      </span>
                     </button>
 
                     <button
@@ -163,8 +167,10 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       }}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCard className="h-5 w-5 text-white" />
-                      <span className="text-sm text-white">Compound UTXOs</span>
+                      <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
+                      <span className="text-sm text-[var(--text-primary)]">
+                        Compound UTXOs
+                      </span>
                     </button>
 
                     {msgStore.isLoaded && (
@@ -175,8 +181,8 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                         }}
                         className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                       >
-                        <CreditCard className="h-5 w-5 text-white" />
-                        <span className="text-sm text-white">
+                        <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
+                        <span className="text-sm text-[var(--text-primary)]">
                           Import / Export Messages
                         </span>
                       </button>
@@ -186,8 +192,8 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       onClick={clearHistory}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCard className="h-5 w-5 text-white" />
-                      <span className="text-sm text-white">
+                      <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
+                      <span className="text-sm text-[var(--text-primary)]">
                         Delete All Messages
                       </span>
                     </button>
@@ -199,9 +205,9 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       }}
                       className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
                     >
-                      <CreditCard className="h-5 w-5 text-white" />
-                      <span className="text-sm text-white">
-                        View Seed Phrase
+                      <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
+                      <span className="text-sm text-[var(--text-primary)]">
+                        Seed Phrase
                       </span>
                     </button>
                   </div>
@@ -221,8 +227,10 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
               onClick={() => setShowSettingsModal(true)}
               className="mb-2 flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
             >
-              <Settings className="h-5 w-5 text-white" />
-              <span className="text-sm text-white">Settings</span>
+              <Settings className="h-5 w-5 text-[var(--text-primary)]" />
+              <span className="text-sm text-[var(--text-primary)]">
+                Settings
+              </span>
             </button>
             <button
               onClick={onCloseWallet}

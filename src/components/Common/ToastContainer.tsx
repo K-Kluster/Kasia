@@ -14,14 +14,16 @@ export function ToastContainer() {
           className={clsx(
             "animate-fade-in flex items-center gap-2 rounded-xl px-2 py-1 text-sm break-words shadow-lg sm:px-4 sm:py-3",
             {
-              "bg-green-100/80 text-green-900": toast.type === "success",
-              "bg-red-100/80 text-red-900": toast.type === "error",
-              "bg-yellow-100/80 text-yellow-900": toast.type === "warning",
-              "bg-blue-100 text-gray-700": toast.type === "info",
+              "bg-[var(--accent-green)]/80 text-white":
+                toast.type === "success",
+              "bg-[var(--accent-red)]/80 text-white": toast.type === "error",
+              "bg-[var(--accent-yellow)]/80 text-white":
+                toast.type === "warning",
+              "bg-[var(--accent-blue)]/80 text-white": toast.type === "info",
             }
           )}
         >
-          <span className="h-6 w-6">
+          <span className="h-6 w-6 flex-shrink-0">
             {toast.type === "success" && <CircleCheck />}
             {toast.type === "error" && <Ban />}
             {toast.type === "warning" && <TriangleAlert />}
@@ -30,7 +32,7 @@ export function ToastContainer() {
           <span className="flex-1">{toast.message}</span>
           <button
             onClick={() => remove(toast.id)}
-            className="cursor-pointer text-lg font-bold"
+            className="flex-shrink-0 cursor-pointer text-lg font-bold transition-opacity hover:opacity-70"
           >
             ×
           </button>

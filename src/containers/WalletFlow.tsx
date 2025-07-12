@@ -18,7 +18,6 @@ import { toast } from "../utils/toast";
 import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
-import { copyToClipboard } from "../utils/copy-to-clipboard";
 import { StringCopy } from "../components/Common/StringCopy";
 
 export type Step = {
