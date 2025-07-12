@@ -15,6 +15,7 @@ import { KaspaAddress } from "./KaspaAddress";
 import { Textarea } from "@headlessui/react";
 import { Button } from "./Common/Button";
 import { QrScanner } from "./QrScanner";
+import { StringCopy } from "./Common/StringCopy";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -421,9 +422,11 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             !isResolvingKns &&
             !knsError && (
               <div className="mt-2 mb-4 flex justify-start break-all">
-                <KaspaAddress
-                  address={resolvedRecipientAddress}
-                  copyable={true}
+                <KaspaAddress address={resolvedRecipientAddress} />
+                <StringCopy
+                  text={resolvedRecipientAddress}
+                  alertText="Address Copied"
+                  titleText="Copy Address"
                 />
               </div>
             )}

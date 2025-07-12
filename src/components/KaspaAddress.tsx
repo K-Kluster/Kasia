@@ -1,6 +1,5 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
-import { Copy } from "lucide-react";
-import { toast } from "../utils/toast";
+
 import { useIsMobile } from "../utils/useIsMobile";
 import { useMessagingStore } from "../store/messaging.store";
 
@@ -9,10 +8,7 @@ interface KaspaAddressProps {
   copyable?: boolean;
 }
 
-export const KaspaAddress: FC<KaspaAddressProps> = ({
-  address,
-  copyable = false,
-}) => {
+export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   const NICKNAME_SHORT_LENGTH = 20;
   const [isFullAddress, setIsFullAddress] = useState(false);
   const addressRef = useRef<HTMLSpanElement>(null);
@@ -61,11 +57,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({
     setIsFullAddress(!isFullAddress);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(addressStr).then(() => {});
-    toast.info("Address copied");
-  };
-
   const isMobile = useIsMobile();
 
   const isLongNickname =
@@ -109,16 +100,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({
             </>
           ) : null}
         </span>
-      )}
-      {copyable && (
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="focus:ring-kas-secondary ml-1 cursor-pointer self-center rounded p-1 transition-colors hover:bg-gray-200/20 focus:ring-2 focus:outline-none"
-          title="Copy address"
-        >
-          <Copy className="hover:text-kas-secondary h-5 w-5 align-middle text-gray-400" />
-        </button>
       )}
     </span>
   );
