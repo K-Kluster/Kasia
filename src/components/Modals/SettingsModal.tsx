@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUiStore } from "../../store/ui.store";
 import { Modal } from "../Common/modal";
 import clsx from "clsx";
+import { User, Info, Settings, Sun, Moon, Monitor } from "lucide-react";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -90,49 +91,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 >
                   {/* Simple icons for demo purposes */}
                   {tab.id === "account" && (
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
+                    <User className="h-5 w-5 text-[var(--text-primary)]" />
                   )}
                   {tab.id === "theme" && (
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.95 7.05l-.71-.71M4.05 4.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                      />
-                    </svg>
+                    <Info className="h-5 w-5 text-[var(--text-primary)]" />
                   )}
                   {tab.id === "security" && (
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 11c1.657 0 3-1.343 3-3V5a3 3 0 10-6 0v3c0 1.657 1.343 3 3 3zm6 2v5a2 2 0 01-2 2H8a2 2 0 01-2-2v-5"
-                      />
-                    </svg>
+                    <Settings className="h-5 w-5 text-[var(--text-primary)]" />
                   )}
                   {tab.label}
                 </button>
@@ -170,19 +135,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         : "hover:bg-secondary-bg"
                     }`}
                   >
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.95l-.71.71M21 12h-1M4 12H3m16.95 7.05l-.71-.71M4.05 4.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                      />
-                    </svg>
+                    <Sun className="h-5 w-5 text-[var(--text-primary)]" />
                     <span className="text-sm font-medium">Light</span>
                   </button>
                   <button
@@ -193,19 +146,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         : "hover:bg-secondary-bg"
                     }`}
                   >
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                      />
-                    </svg>
+                    <Moon className="h-5 w-5 text-[var(--text-primary)]" />
                     <span className="text-sm font-medium">Dark</span>
                   </button>
                   <button
@@ -216,19 +157,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         : "hover:bg-secondary-bg"
                     }`}
                   >
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <Monitor className="h-5 w-5 text-[var(--text-primary)]" />
                     <span className="text-sm font-medium">System</span>
                   </button>
                 </div>
