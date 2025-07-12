@@ -44,13 +44,13 @@ export const WalletInfo = () => {
         <ul className="m-0 list-none p-0 text-sm">
           <li>
             <strong>Mature UTXOs:</strong>{" "}
-            <span className="rounded-xl bg-[var(--accent-blue)] px-2 font-bold text-[var(--text-primary)]">
+            <span className="rounded-xl bg-[var(--kas-secondary)] px-2 font-bold text-[var(--text-primary)]">
               {currentBalance?.matureUtxoCount ?? "-"}
             </span>
           </li>
           <li>
             <strong>Pending UTXOs:</strong>{" "}
-            <span className="rounded-xl bg-[var(--accent-blue)] px-2 font-bold text-[var(--text-primary)]">
+            <span className="rounded-xl bg-[var(--kas-secondary)] px-2 font-bold text-[var(--text-primary)]">
               {currentBalance?.pendingUtxoCount ?? "-"}
             </span>
           </li>
