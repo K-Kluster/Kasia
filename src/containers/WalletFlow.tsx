@@ -858,13 +858,6 @@ export const WalletFlow = ({
           )}
         </>
       )}
-
-      {/* Settings Modal */}
-      {isOpen("settings") && (
-        <Modal onClose={() => closeModal("settings")}>
-          <NetworkSettingsModal />
-        </Modal>
-      )}
     </div>
   );
 };

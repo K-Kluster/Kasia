@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
 import { WalletFlow } from "./containers/WalletFlow";
 import { RequireUnlockedWallet } from "./containers/RequireUnlockedWallet";
+import { ModalDisplay } from "./containers/ModalDisplay";
 
 import type { NetworkType } from "./types/all";
 import type { Step } from "./containers/WalletFlow";
@@ -77,7 +78,15 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 
         {/* Main Messenging container once you are unlocked */}
         <Route element={<RequireUnlockedWallet />}>
-          <Route path=":walletId" element={<MessengerContainer />} />
+          <Route
+            path=":walletId"
+            element={
+              <>
+                <MessengerContainer />
+                <ModalDisplay />
+              </>
+            }
+          />
         </Route>
       </Route>
     </Routes>
