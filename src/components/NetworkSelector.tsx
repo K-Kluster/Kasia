@@ -37,13 +37,17 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
 
   return (
     <Menu>
-      <MenuButton className="inline-flex min-w-[100px] cursor-pointer items-center justify-center gap-2 rounded bg-[var(--accent-blue)] px-3 py-1 text-sm font-medium text-white transition-colors duration-200">
+      <MenuButton className="inline-flex min-w-[100px] cursor-pointer items-center justify-center gap-2 rounded-3xl border border-[var(--color-kas-secondary)] bg-[var(--color-kas-secondary)]/20 px-3 py-1 text-sm font-medium transition-colors duration-200">
         <span
-          className={`inline-block h-3 w-3 rounded-full ${
+          className={`inline-block h-2 w-2 rounded-full ${
             isConnected
               ? "bg-[var(--accent-green)] shadow-[0_0_4px_var(--accent-green)]"
               : "bg-[#ef4444] shadow-[0_0_4px_#ef4444]"
           }`}
+          style={{
+            animation: "pulse-dot 2s ease-in-out infinite",
+            transformOrigin: "center",
+          }}
         />
         {networkDisplay}
       </MenuButton>

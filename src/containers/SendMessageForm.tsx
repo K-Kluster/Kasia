@@ -13,12 +13,14 @@ import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
 import {
-  PaperClipIcon,
-  PaperAirplaneIcon,
-  PlusIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+  Paperclip,
+  SendHorizonal,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  AlertTriangle,
+  Info,
+} from "lucide-react";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
 import clsx from "clsx";
@@ -28,8 +30,6 @@ import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 
@@ -326,7 +326,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   };
 
   return (
-    <div className="relative flex-col gap-8">
+    <div className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t">
       {/* Chevron expand/collapse that sorta sits above the textarea */}
       <div className="absolute -top-4 left-1/2 z-10 hidden -translate-x-1/2 sm:block">
         {!isExpanded ? (
@@ -341,7 +341,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               if (onExpand) onExpand();
             }}
           >
-            <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+            <ChevronUp className="h-5 w-5 text-gray-400" />
           </button>
         ) : (
           <button
@@ -357,7 +357,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               }
             }}
           >
-            <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+            <ChevronDown className="h-5 w-5 text-gray-400" />
           </button>
         )}
       </div>
@@ -385,97 +385,101 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           />
         </div>
       )}
-      <div className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-1">
-        <Textarea
-          ref={messageInputRef}
-          rows={isExpanded ? 6 : 1}
-          placeholder="Type your message..."
-          className="peer flex-1 resize-none overflow-y-auto border-none bg-transparent p-2 text-[0.9em] text-[var(--text-primary)] outline-none"
-          value={message}
-          onChange={(e) => setMessage(e.currentTarget.value)}
-          onInput={(e) => {
-            const t = e.currentTarget;
-            if (!isExpanded) {
+      <div className="relative mx-4 my-2 rounded-lg p-1">
+        <div className="relative flex items-center">
+          <Textarea
+            ref={messageInputRef}
+            rows={isExpanded ? 6 : 1}
+            placeholder="Type your message..."
+            className="peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
+            value={message}
+            onChange={(e) => setMessage(e.currentTarget.value)}
+            onInput={(e) => {
+              const t = e.currentTarget;
               t.style.height = "auto";
-              t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
-            } else {
-              t.style.height = "144px";
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSendClicked();
-            }
-          }}
-          autoComplete="off"
-          spellCheck="false"
-          data-form-type="other"
-          style={isExpanded ? { height: "144px" } : {}}
-        />
+              if (!isExpanded) {
+                t.style.height = `${t.scrollHeight + 2}px`;
+              } else {
+                t.style.height = "144px";
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                onSendClicked();
+              }
+            }}
+            autoComplete="off"
+            spellCheck="false"
+            data-form-type="other"
+            style={isExpanded ? { height: "144px" } : { height: "auto" }}
+          />
 
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={handleFileUpload}
-          accept="image/*,.txt,.json,.md"
-        />
-        <Popover className="relative">
-          {({ close }) => (
-            <>
-              <PopoverButton className="peer rounded p-2 hover:bg-white/5">
-                <PlusIcon className="size-5" />
-              </PopoverButton>
-              <Transition
-                enter="transition ease-out duration-100"
-                enterFrom="opacity-0 translate-y-1"
-                enterTo="opacity-100 translate-y-0"
-                leave="transition ease-in duration-75"
-                leaveFrom="opacity-100 translate-y-0"
-                leaveTo="opacity-0 translate-y-1"
-              >
-                <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
-                  <button
-                    onClick={() => {
-                      openFileDialog();
-                      close();
-                    }}
-                    className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
-                    disabled={isUploading}
+          <div className="absolute right-2 flex items-center gap-1">
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleFileUpload}
+              accept="image/*,.txt,.json,.md"
+            />
+            <Popover className="relative cursor-pointer">
+              {({ close }) => (
+                <>
+                  <PopoverButton className="rounded p-1 hover:bg-white/5">
+                    <Plus className="size-6 cursor-pointer" />
+                  </PopoverButton>
+                  <Transition
+                    enter="transition ease-out duration-100"
+                    enterFrom="opacity-0 translate-y-1"
+                    enterTo="opacity-100 translate-y-0"
+                    leave="transition ease-in duration-75"
+                    leaveFrom="opacity-100 translate-y-0"
+                    leaveTo="opacity-0 translate-y-1"
                   >
-                    <PaperClipIcon className="m-2 size-5" />
-                  </button>
+                    <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
+                      <button
+                        onClick={() => {
+                          openFileDialog();
+                          close();
+                        }}
+                        className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
+                        disabled={isUploading}
+                      >
+                        <Paperclip className="m-2 size-5" />
+                      </button>
 
-                  {openedRecipient && (
-                    <SendPayment
-                      address={openedRecipient}
-                      onPaymentSent={close}
-                    />
-                  )}
-                </PopoverPanel>
-              </Transition>
-            </>
-          )}
-        </Popover>
+                      {openedRecipient && (
+                        <SendPayment
+                          address={openedRecipient}
+                          onPaymentSent={close}
+                        />
+                      )}
+                    </PopoverPanel>
+                  </Transition>
+                </>
+              )}
+            </Popover>
 
-        <button
-          onClick={onSendClicked}
-          className={clsx(
-            "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
-            message.length > 0 ? "mr-2 w-6 cursor-pointer" : "w-0"
-          )}
-          aria-label="Send"
-        >
-          <PaperAirplaneIcon className="h-6 w-6" />
-        </button>
+            <button
+              onClick={onSendClicked}
+              className={clsx(
+                "text-kas-primary hover:text-kas-secondary transition-width mx-2 flex items-center justify-center overflow-hidden duration-200 ease-out",
+                message.length > 0 ? "w-6 cursor-pointer" : "w-0"
+              )}
+              aria-label="Send"
+            >
+              <SendHorizonal className="size-6" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {isOpen("warn-costy-send-message") && (
         <Modal onClose={() => closeModal("warn-costy-send-message")}>
           <div className="flex flex-col items-center justify-center gap-8">
             <h2 className="text-lg text-yellow-400">
-              <ExclamationTriangleIcon className="mr-2 inline size-6 text-yellow-400" />
+              <AlertTriangle className="mr-2 inline size-6 text-yellow-400" />
               Your Correspondent hasn't answered yet
             </h2>
 
@@ -486,7 +490,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               it?
             </p>
             <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
-              <InformationCircleIcon className="mr-2 size-10 text-white" />
+              <Info className="mr-2 size-10 text-white" />
               <p className="">
                 This is occuring because your correspondent hasn't accepted the
                 handshake yet.

@@ -7,7 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
-import { PaperClipIcon } from "@heroicons/react/24/solid";
+import { Paperclip } from "lucide-react";
 import clsx from "clsx";
 
 type MessageDisplayProps = {
@@ -184,18 +184,18 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
                 )}
               >
                 <KasIcon
-                  className="h-18 w-18 scale-140 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  className="h-18 w-18 scale-140 cursor-pointer drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
                   kClassName="fill-[#70C7BA]"
                 />
               </div>
               <div className="flex-1">
                 {hasMessage && (
-                  <div className="mb-1 text-sm font-medium break-all text-white drop-shadow-sm">
+                  <div className="mb-1 text-sm font-medium break-all drop-shadow-sm">
                     {paymentPayload.message}
                   </div>
                 )}
-                <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
+                <div className="text-xs font-semibold drop-shadow-sm">
                   {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
                 </div>
               </div>
@@ -221,10 +221,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           />
         </div>
         <div className="flex-1">
-          <div className="mb-1 text-sm font-medium text-white drop-shadow-sm">
+          <div className="mb-1 text-sm font-medium drop-shadow-sm">
             Payment message
           </div>
-          <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
+          <div className="text-xs font-semibold drop-shadow-sm">
             {isOutgoing ? "Sent" : "Received"} payment
           </div>
         </div>
@@ -287,7 +287,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return (
         <div className="file-message">
           <div className="file-info">
-            <PaperClipIcon className="h-4 w-4" /> {fileData.name} (
+            <Paperclip className="h-4 w-4 cursor-pointer" /> {fileData.name} (
             {Math.round(fileData.size / 1024)}
             KB)
           </div>
@@ -323,7 +323,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         return (
           <div key={`file-${transactionId}`} className="file-message">
             <div className="file-info">
-              <PaperClipIcon className="h-4 w-4" /> {parsedContent.name} (
+              <Paperclip className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>
             <button
@@ -466,7 +466,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         className={clsx(
           "relative z-0 mb-4 max-w-[70%] cursor-pointer px-4 py-3 text-left break-words hyphens-auto",
           isOutgoing
-            ? "rounded-2xl rounded-br-none bg-[#007aff] text-white"
+            ? "bg-kas-secondary/20 border-kas-secondary rounded-2xl rounded-br-none border"
             : "rounded-2xl rounded-bl-none bg-[var(--secondary-bg)]"
         )}
       >

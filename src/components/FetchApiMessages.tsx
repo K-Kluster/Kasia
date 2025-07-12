@@ -8,7 +8,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { RefreshCcw } from "lucide-react";
 import { toast } from "../utils/toast";
 import clsx from "clsx";
 
@@ -597,11 +597,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         )}
         title={"Fetch latest messages from blockDAG"}
       >
-        {loading ? (
-          <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
-        ) : (
-          <ArrowPathIcon className="h-6 w-6 text-[#49EACB] hover:scale-110" />
-        )}
+        <RefreshCcw
+          className={clsx(
+            "h-6 w-6",
+            loading
+              ? "animate-spin text-gray-500"
+              : "text-kas-primary hover:scale-110"
+          )}
+        />
       </button>
     </div>
   );

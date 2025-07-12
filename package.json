@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",
-    "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.3",
     "@types/uuid": "^10.0.0",
     "cipher": "file:cipher-wasm",
@@ -27,6 +26,7 @@
     "eventemitter3": "^5.0.1",
     "jsqr": "^1.4.0",
     "kaspa-wasm": "file:wasm",
+    "lucide-react": "^0.525.0",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
