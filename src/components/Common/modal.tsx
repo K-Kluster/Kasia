@@ -1,4 +1,4 @@
-import { FC, ReactNode } from "react";
+import { FC, ReactNode, useEffect } from "react";
 import { X } from "lucide-react";
 import clsx from "clsx";
 
@@ -8,25 +8,38 @@ export const Modal: FC<{
   onClose: () => void;
   children: ReactNode;
   className?: string;
-}> = ({ onClose, children, className }) => (
-  <div
-    className={clsx(
-      "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
-      className
-    )}
-    onClick={onClose}
-  >
+}> = ({ onClose, children, className }) => {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  return (
     <div
-      className="border-primary-border bg-secondary-bg relative mx-4 w-full max-w-2xl rounded-2xl border p-6"
-      onClick={(e) => e.stopPropagation()}
+      className={clsx(
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
+        className
+      )}
+      onClick={onClose}
     >
-      <button
-        onClick={onClose}
-        className="hover:text-kas-secondary absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110"
+      <div
+        className="border-primary-border bg-secondary-bg relative mx-4 w-full max-w-2xl rounded-2xl border p-6"
+        onClick={(e) => e.stopPropagation()}
       >
-        <X className="h-6 w-6" />
-      </button>
-      {children}
+        <button
+          onClick={onClose}
+          className="hover:text-kas-secondary absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110"
+        >
+          <X className="h-6 w-6" />
+        </button>
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};

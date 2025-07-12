@@ -105,18 +105,18 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
               title="Copy address to clipboard"
               type="button"
               variant="primary"
-              className="flex h-16 w-full items-center justify-center p-0"
+              className="flex h-14 w-full items-center justify-center p-0"
             >
-              <File className="h-12 w-12 sm:h-8 sm:w-8" />
+              <File className="h-8 w-8 sm:h-6 sm:w-6" />
             </Button>
             <Button
               onClick={toggleQRCode}
               title="Show QR code"
               type="button"
               variant="primary"
-              className="flex h-16 w-full items-center justify-center p-0"
+              className="flex h-14 w-full items-center justify-center p-0"
             >
-              <QrCode className="h-12 w-12 sm:h-8 sm:w-8" />
+              <QrCode className="h-8 w-8 sm:h-6 sm:w-6" />
             </Button>
           </div>
         </div>
