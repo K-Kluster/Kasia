@@ -16,7 +16,7 @@ export const Button: FC<ButtonProps> = ({
     "cursor-pointer w-full font-bold py-3 px-4 sm:px-6 rounded-3xl transition-colors duration-200";
   const variantClasses =
     variant === "primary"
-      ? "bg-kas-secondary text-white hover:bg-kas-secondary/80"
+      ? "bg-kas-primary text-white hover:bg-kas-primary/80"
       : "bg-primary-bg/80 hover:bg-primary-bg/20 border border-primary-border";
   return (
     <button
