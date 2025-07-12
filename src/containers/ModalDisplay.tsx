@@ -9,7 +9,6 @@ import { WalletInfo } from "../components/Modals/WalletInfo";
 import { WalletSeedRetreiveDisplay } from "../components/Modals/WalletSeedRetreiveDisplay";
 import { WalletWithdrawal } from "../components/Modals/WalletWithdrawal";
 import { NewChatForm } from "../components/NewChatForm";
-import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 import { LoaderCircle } from "lucide-react";
 import { ContactInfoModal } from "../components/Modals/ContactInfoModal";
 
@@ -57,11 +56,6 @@ export const ModalDisplay = () => {
       {isOpen("walletInfo") && (
         <Modal onClose={() => closeModal("walletInfo")}>
           <WalletInfo />
-        </Modal>
-      )}
-      {isOpen("settings") && (
-        <Modal onClose={() => closeModal("settings")}>
-          <NetworkSettingsModal />
         </Modal>
       )}
       {messageStore.isCreatingNewChat && (

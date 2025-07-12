@@ -19,6 +19,8 @@ import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { StringCopy } from "../components/Common/StringCopy";
+import { Modal } from "../components/Common/modal";
+import { NetworkSettingsModal } from "../components/Modals/NetworkSettingsModal";
 
 export type Step = {
   type:
@@ -50,6 +52,8 @@ export const WalletFlow = ({
 }: WalletFlowProps) => {
   const navigate = useNavigate();
   const openModal = useUiStore((s) => s.openModal);
+  const isOpen = useUiStore((s) => s.isOpen);
+  const closeModal = useUiStore((s) => s.closeModal);
   const { wallet } = useParams<{ wallet: string }>();
 
   const [error, setError] = useState<{ message: string; id: number } | null>(
@@ -836,6 +840,13 @@ export const WalletFlow = ({
             </>
           )}
         </>
+      )}
+
+      {/* rendered at wallet flow so it works on all steps, */}
+      {isOpen("settings") && (
+        <Modal onClose={() => closeModal("settings")}>
+          <NetworkSettingsModal />
+        </Modal>
       )}
     </div>
   );
