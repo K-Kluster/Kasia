@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { Pencil, Ellipsis, Info } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessageDisplay } from "../components/MessageDisplay";
+import { MessagesList } from "../components/MessagesList";
 import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
@@ -412,27 +413,12 @@ export const MessageSection: FC<{
             className="bg-primary-bg flex-1 overflow-x-hidden overflow-y-auto p-4"
             ref={messagesScrollRef}
           >
-            {messageStore.messagesOnOpenedRecipient.length ? (
-              messageStore.messagesOnOpenedRecipient.map((msg, idx) => {
-                const isOutgoing = msg.senderAddress === address?.toString();
-                const showTimestamp = isOutgoing
-                  ? idx === lastOutgoing
-                  : idx === lastIncoming;
-
-                return (
-                  <MessageDisplay
-                    key={msg.transactionId}
-                    isOutgoing={isOutgoing}
-                    showTimestamp={showTimestamp}
-                    message={msg}
-                  />
-                );
-              })
-            ) : (
-              <div className="m-5 rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
-                No messages in this conversation.
-              </div>
-            )}
+            <MessagesList
+              messages={messageStore.messagesOnOpenedRecipient}
+              address={address?.toString() || null}
+              lastOutgoing={lastOutgoing}
+              lastIncoming={lastIncoming}
+            />
           </div>
 
           <SendMessageForm onExpand={scrollToBottom} />
