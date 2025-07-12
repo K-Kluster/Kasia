@@ -6,11 +6,9 @@ on:
       - staging
       - master
       # - chore/ci
-      # - chore/ci
 
 env:
   HUSKY: 0
-  SUFFIX: ${{ github.ref_name == 'master' && 'production' || 'staging' }}
   SUFFIX: ${{ github.ref_name == 'master' && 'production' || 'staging' }}
 
 jobs:
@@ -25,7 +23,6 @@ jobs:
           toolchain: 1.86.0
           target: wasm32-unknown-unknown
           # key based on branch name
-          cache-shared-key: cipher-wasm-build-cache-${{ env.SUFFIX }}
           cache-shared-key: cipher-wasm-build-cache-${{ env.SUFFIX }}
           cache-workspaces: ./cipher -> target
 
