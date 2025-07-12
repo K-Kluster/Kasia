@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { NetworkSelector } from "../../containers/NetworkSelector";
+import { NetworkSelector } from "../NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
 import { Button } from "../Common/Button";
