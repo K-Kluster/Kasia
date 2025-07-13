@@ -31,6 +31,7 @@ interface KasiaDB extends DBSchema {
       "by-wallet": string; // wallet address
       "by-conversation": string; // conversation ID
       "by-timestamp": number; // timestamp
+      "by-conversation-timestamp": [string, number]; // conversation ID and timestamp
     };
   };
   conversations: {
@@ -117,6 +118,10 @@ export function getDB(): Promise<IDBPDatabase<KasiaDB>> {
         messagesStore.createIndex("by-wallet", "walletAddress");
         messagesStore.createIndex("by-conversation", "conversationId");
         messagesStore.createIndex("by-timestamp", "timestamp");
+        messagesStore.createIndex("by-conversation-timestamp", [
+          "conversationId",
+          "timestamp",
+        ]);
 
         const conversationsStore = db.createObjectStore("conversations", {
           keyPath: "conversationId",
@@ -518,6 +523,33 @@ export class DatabaseService {
         nicknames,
       };
     });
+  }
+
+  // Fetch messages for a conversation using the compound index, with optional pagination
+  async getMessagesByConversationPaginated(
+    conversationId: string,
+    options?: { limit?: number; before?: number; after?: number }
+  ): Promise<Message[]> {
+    const db = await this.db;
+    const index = db
+      .transaction("messages", "readonly")
+      .store.index("by-conversation-timestamp");
+    const lowerBound = [conversationId, options?.after ?? 0];
+    const upperBound = [conversationId, options?.before ?? Date.now()];
+    const range = IDBKeyRange.bound(lowerBound, upperBound);
+    const messages: Message[] = [];
+    let cursor = await index.openCursor(range, "next");
+    while (cursor && (!options?.limit || messages.length < options.limit)) {
+      const {
+        key,
+        walletAddress: _,
+        conversationId: __,
+        ...message
+      } = cursor.value;
+      messages.push(message as Message);
+      cursor = await cursor.continue();
+    }
+    return messages;
   }
 }
 
