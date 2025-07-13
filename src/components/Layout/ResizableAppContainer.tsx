@@ -8,7 +8,7 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const isMobile = useIsMobile();
-  const [width, setWidth] = useState<number>(1440); // set default to 1440
+  const [width, setWidth] = useState<number>(1600); // set default to 1600
   const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
   const isResizing = useRef<null | "left" | "right">(null);
 

@@ -385,7 +385,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           />
         </div>
       )}
-      <div className="relative mx-4 my-2 rounded-lg p-1">
+      <div className="relative mx-4 my-2 rounded-lg p-1 pb-3 sm:pb-0">
         <div className="relative flex items-center">
           <Textarea
             ref={messageInputRef}
