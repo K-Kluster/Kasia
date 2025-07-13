@@ -89,8 +89,8 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
                 onClick={isMobile ? undefined : handleToggle}
                 className={
                   isMobile
-                    ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
-                    : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
+                    ? "px-0.5 text-xl max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+                    : "cursor-pointer px-0.5 text-xl hover:underline sm:cursor-pointer"
                 }
                 inert={isMobile ? true : undefined}
               >

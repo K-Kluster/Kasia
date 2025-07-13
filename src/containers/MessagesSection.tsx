@@ -1,6 +1,6 @@
 import { FC, useMemo, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
-import { Pencil, Ellipsis, Info, Copy, Check } from "lucide-react";
+import { Pencil, Ellipsis, Info, Copy, Check, UserCog } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessagesList } from "../components/MessagesList";
 import { SendMessageForm } from "./SendMessageForm";
@@ -343,8 +343,8 @@ export const MessageSection: FC<{
                   }
                   return (
                     <>
-                      <PopoverButton className="cursor-pointer rounded p-1 opacity-60 hover:bg-gray-200/20 focus:outline-none">
-                        <Ellipsis className="size-6 sm:size-5" />
+                      <PopoverButton className="hover:text-kas-secondary cursor-pointer rounded p-1 focus:outline-none">
+                        <UserCog className="size-6 sm:size-5" />
                       </PopoverButton>
                       <PopoverPanel
                         anchor="bottom end"
