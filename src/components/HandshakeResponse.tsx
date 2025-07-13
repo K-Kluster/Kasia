@@ -61,7 +61,7 @@ export const HandshakeResponse: React.FC<{
           </p>
           {error && <p className="mt-2 text-red-500">{error}</p>}
         </div>
-        <div className="ml-2 flex flex-col items-center justify-center">
+        <div className="ml-2 flex flex-col items-center justify-center select-none">
           <img
             src="/kasia-logo.png"
             alt="Kasia Logo"
