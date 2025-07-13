@@ -8,8 +8,6 @@ import {
   User,
   Info,
   Loader2,
-  Download,
-  Trash2,
   Key,
   Wallet,
 } from "lucide-react";
@@ -38,19 +36,8 @@ export const MenuContainer: FC<MenuContainerProps> = ({
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  const onClearHistory = () => {
-    if (!walletAddress) return;
-    if (
-      confirm(
-        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
-      )
-    ) {
-      messageStore.flushWalletHistory(walletAddress);
-    }
-  };
-
   return (
-    <div className="border-primary-border bg-secondary-bg border-t p-2">
+    <div className="border-primary-border bg-secondary-bg border-t p-2 select-none">
       <div
         className={clsx(
           "flex gap-2",

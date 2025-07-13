@@ -217,7 +217,7 @@ export const MessengerContainer: FC = () => {
               {/* If wallet is unlocked but message are not loaded, show the loading state*/}
               <div className="border-primary-border bg-secondary-bg relative h-full w-full overflow-hidden border-t">
                 <div className="bg-secondary-bg/20 absolute inset-0" />
-                <div className="relative flex h-full flex-col items-center justify-center space-y-4">
+                <div className="relative flex h-full flex-col items-center justify-center space-y-4 select-none">
                   <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                     Starting the message client...
                   </span>
