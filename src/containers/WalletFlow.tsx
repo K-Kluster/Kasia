@@ -105,7 +105,15 @@ export const WalletFlow = ({
     toast.error(error.message);
   }, [error]);
 
-  if (!isMounted) return null;
+  // ref for scroll up when step changes, like a page reset
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // scroll to top instantly on step change
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [step.type]);
 
   const onStepChange = (type: Step["type"], walletId?: string) => {
     if (unlockedWallet) return;
@@ -295,7 +303,7 @@ export const WalletFlow = ({
   );
 
   return (
-    <div className={wrapperClass}>
+    <div ref={containerRef} className={wrapperClass}>
       {/* Home wallet 'Route' */}
       {step.type === "home" && (
         <>
@@ -321,7 +329,7 @@ export const WalletFlow = ({
           <h2 className="text-text-primary mt-2 mb-2 text-center text-xl font-semibold sm:mt-2 sm:mb-3 sm:text-2xl">
             {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
           </h2>
-          <div className="mb-3 flex max-h-[330px] flex-col gap-2 overflow-y-auto sm:gap-4">
+          <div className="mb-3 flex flex-col gap-2 overflow-y-auto sm:gap-4">
             {wallets.map((w) => (
               <div
                 key={w.id}

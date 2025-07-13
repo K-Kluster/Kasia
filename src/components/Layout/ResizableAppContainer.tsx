@@ -70,7 +70,7 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
         "bg-primary-bg flex min-h-screen flex-col",
         isMobile
           ? "w-full"
-          : "relative mx-auto h-screen overflow-hidden rounded-lg shadow-2xl"
+          : "relative mx-auto overflow-hidden rounded-lg shadow-2xl"
       )}
       style={
         !isMobile

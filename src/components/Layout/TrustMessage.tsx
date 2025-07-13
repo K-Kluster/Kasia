@@ -7,7 +7,7 @@ export const TrustMessage: FC = () => {
   const [openWhy, setOpenWhy] = useState(false);
 
   return (
-    <div className="mb-12">
+    <div className="mb-2 sm:mb-5">
       {/* trust message section */}
       <div
         className="border-kas-secondary from-kas-secondary/20 to-kas-secondary/5 mt-6 cursor-pointer rounded-2xl border bg-gradient-to-r p-2"
