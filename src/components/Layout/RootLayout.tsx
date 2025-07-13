@@ -8,6 +8,7 @@ import { SlideOutMenu } from "../Layout/SlideOutMenu";
 import { ToastContainer } from "../Common/ToastContainer";
 import { useUiStore } from "../../store/ui.store";
 import { toast } from "../../utils/toast";
+import { ResizableAppContainer } from "./ResizableAppContainer";
 
 export const RootLayout: FC = () => {
   const walletStore = useWalletStore();
@@ -35,26 +36,27 @@ export const RootLayout: FC = () => {
   return (
     <>
       <ToastContainer />
+      <ResizableAppContainer>
+        {/* desktop header */}
+        {!isMobile && (
+          <Header
+            isWalletReady={isWalletReady}
+            walletAddress={walletStore.address?.toString()}
+            onCloseWallet={handleCloseWallet}
+          />
+        )}
 
-      {/* desktop header */}
-      {!isMobile && (
-        <Header
-          isWalletReady={isWalletReady}
-          walletAddress={walletStore.address?.toString()}
-          onCloseWallet={handleCloseWallet}
-        />
-      )}
+        {/* mobile drawer */}
+        {isMobile && (
+          <SlideOutMenu
+            isWalletReady={isWalletReady}
+            address={walletStore.address?.toString()}
+            onCloseWallet={handleCloseWallet}
+          />
+        )}
 
-      {/* mobile drawer */}
-      {isMobile && (
-        <SlideOutMenu
-          isWalletReady={isWalletReady}
-          address={walletStore.address?.toString()}
-          onCloseWallet={handleCloseWallet}
-        />
-      )}
-
-      <Outlet />
+        <Outlet />
+      </ResizableAppContainer>
     </>
   );
 };

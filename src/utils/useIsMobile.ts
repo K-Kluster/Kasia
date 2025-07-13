@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 
-export function useIsMobile(breakpoint = 640) {
+export const MOBILE_BREAKPOINT = 640;
+
+export function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const query = `(max-width: ${breakpoint - 1}px)`;
+    const query = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
     const mql = window.matchMedia(query);
 
     // set initial value on mount
@@ -15,7 +17,7 @@ export function useIsMobile(breakpoint = 640) {
     const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mql.addEventListener("change", onChange);
     return () => mql.removeEventListener("change", onChange);
-  }, [breakpoint]);
+  }, []);
 
   return isMobile;
 }

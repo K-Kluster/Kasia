@@ -449,7 +449,6 @@ export const MessageSection: FC<{
               lastIncoming={lastIncoming}
             />
           </div>
-
           <SendMessageForm onExpand={scrollToBottom} />
         </>
       )}
