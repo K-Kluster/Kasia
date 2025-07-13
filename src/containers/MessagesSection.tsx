@@ -439,7 +439,7 @@ export const MessageSection: FC<{
           </div>
 
           <div
-            className="bg-primary-bg flex-1 overflow-x-hidden overflow-y-auto p-4"
+            className="bg-primary-bg flex-1 overflow-x-hidden overflow-y-auto p-4 pb-8"
             ref={messagesScrollRef}
           >
             <MessagesList

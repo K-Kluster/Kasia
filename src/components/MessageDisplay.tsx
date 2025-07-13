@@ -7,7 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
 
 type MessageDisplayProps = {
@@ -146,8 +146,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const formatAmountAndFee = () => {
     if (isOutgoing && fee !== undefined) {
       return (
-        <div className="message-transaction-info">
-          <div className="message-fee">Fee: {fee.toFixed(8)} KAS</div>
+        <div className="w-full">
+          <div className="message-fee text-right">
+            Fee: {fee.toFixed(8)} KAS
+          </div>
         </div>
       );
     }
@@ -177,7 +179,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             paymentPayload.message && paymentPayload.message.trim();
 
           return (
-            <div className={clsx("flex items-center gap-1 p-2")}>
+            <div className={clsx("flex items-center gap-1")}>
               <div
                 className={clsx(
                   "mr-2 flex h-18 w-18 animate-pulse items-center justify-center drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]"
@@ -186,7 +188,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
                 <KasIcon
                   className="h-18 w-18 scale-140 cursor-pointer drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
-                  kClassName="fill-[#70C7BA]"
+                  kClassName="fill-[var(--kas-primary)]"
                 />
               </div>
               <div className="flex-1">
@@ -455,31 +457,41 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   return (
     <div
       className={clsx(
-        "my-2 flex w-full",
+        "mt-1 flex w-full",
         isOutgoing
           ? "justify-end pr-0.5 sm:pr-2"
           : "justify-start pl-0.5 sm:pl-2"
       )}
     >
+      {showMeta && transactionId && isOutgoing && (
+        <div className="mr-2 flex items-center">
+          <a
+            href={getExplorerUrl(transactionId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[0.75em] opacity-80 transition-opacity hover:opacity-100"
+          >
+            <Tickets className="size-5" />
+          </a>
+        </div>
+      )}
       <div
         onClick={() => setShowMeta((prev) => !prev)}
         className={clsx(
-          "relative z-0 mb-4 max-w-[70%] cursor-pointer px-4 py-3 text-left break-words hyphens-auto",
+          "relative z-0 mb-1 max-w-[70%] cursor-pointer px-4 py-1 text-left break-words hyphens-auto",
           isOutgoing
             ? "bg-kas-secondary/20 border-kas-secondary rounded-2xl rounded-br-none border"
             : "rounded-2xl rounded-bl-none bg-[var(--secondary-bg)]"
         )}
       >
+        <div className="my-0.5 text-base leading-relaxed">
+          {renderMessageContent()}
+        </div>
         {(showMeta || showTimestamp) && (
-          <div className="mb-[6px] flex items-center justify-between truncate text-[0.8em]">
+          <div className="mb-[6px] flex justify-between justify-end truncate text-[0.8em]">
             <div className="opacity-70">{displayStamp}</div>
           </div>
         )}
-
-        <div className="my-2 text-[1em] leading-[1.4]">
-          {renderMessageContent()}
-        </div>
-
         {showMeta && (
           <div
             className={clsx(
@@ -490,19 +502,21 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             )}
           >
             {formatAmountAndFee()}
-            {transactionId && (
-              <a
-                href={getExplorerUrl(transactionId)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transaction-link"
-              >
-                View Transaction
-              </a>
-            )}
           </div>
         )}
       </div>
+      {showMeta && transactionId && !isOutgoing && (
+        <div className="ml-2 flex items-center">
+          <a
+            href={getExplorerUrl(transactionId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[0.75em] opacity-80 transition-opacity hover:opacity-100"
+          >
+            <Tickets className="size-5" />
+          </a>
+        </div>
+      )}
     </div>
   );
 };
