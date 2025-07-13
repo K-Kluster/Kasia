@@ -1,4 +1,4 @@
-wasm/.gitkeep
+wasm/*
 
 # Logs
 logs
@@ -24,7 +24,3 @@ dist-ssr
 *.sw?
 
 .env
-
-# Build files
-*.wasm
-*.tar.gz
