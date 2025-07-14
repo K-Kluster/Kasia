@@ -88,9 +88,9 @@ interface MessagingState {
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
 
   // Nickname management
-  setContactNickname: (address: string, nickname: string) => Promise<void>;
-  removeContactNickname: (address: string) => Promise<void>;
-  getLastMessageForContact: (contactAddress: string) => Promise<Message | null>;
+  setContactNickname: (address: string, nickname: string) => void;
+  removeContactNickname: (address: string) => void;
+  getLastMessageForContact: (contactAddress: string) => Message | null;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -355,6 +355,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // After all logic, write to IndexedDB
     await databaseService.saveMessage(message, walletAddressMsg);
+
     // After successful write, update in-memory state and contacts
     const state = g();
     const otherParty =
@@ -956,7 +957,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
     }
   },
-
   removeContactNickname: async (address) => {
     const walletStore = useWalletStore.getState();
     if (walletStore.address) {
@@ -967,7 +967,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
     await g().setContactNickname(address, "");
   },
-  getLastMessageForContact: async (contactAddress: string) => {
+  getLastMessageForContact: (contactAddress: string) => {
     const messages = g().messages;
     const relevant = messages.filter(
       (msg) =>

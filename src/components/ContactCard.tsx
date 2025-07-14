@@ -203,7 +203,7 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "group bg-bg-secondary relative mb-2 cursor-pointer overflow-hidden rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
+        "bg-bg-secondary group relative mb-2 cursor-pointer overflow-hidden rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
         {
           "border-[var(--color-kas-primary)] bg-[var(--color-kas-primary)]/5":
             isSelected,

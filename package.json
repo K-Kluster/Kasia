@@ -1,7 +1,7 @@
 {
   "name": "kasia",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:fix": "prettier --write ./src",
+    "format:check": "prettier --check ./src",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "tauri": "tauri",
     "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd ..",
@@ -63,6 +65,7 @@
     "vite-plugin-sri3": "1.0.6"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.42.0"
+    "@rollup/rollup-linux-x64-gnu": "4.42.0",
+    "lightningcss-linux-x64-gnu": "1.30.1"
   }
 }
