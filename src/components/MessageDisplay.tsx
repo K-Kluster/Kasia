@@ -9,6 +9,7 @@ import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
+import { parseMessageForDisplay } from "../utils/message-format";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -345,6 +346,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     } catch (e) {
       // Not a JSON message, render as text
       void e;
+    }
+
+    // render plain text with newlines as <br /> and \\n as literal text
+    if (typeof messageToRender === "string") {
+      return parseMessageForDisplay(messageToRender);
     }
 
     return messageToRender;

@@ -397,7 +397,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             placeholder="Type your message..."
             className="peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
             value={message}
-            onChange={(e) => setMessage(e.currentTarget.value)}
+            onChange={(e) => {
+              setMessage(e.currentTarget.value);
+            }}
             onInput={(e) => {
               const t = e.currentTarget;
               const maxHeight = 144;
