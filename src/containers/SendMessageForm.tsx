@@ -20,6 +20,7 @@ import {
   ChevronDown,
   AlertTriangle,
   Info,
+  Camera,
 } from "lucide-react";
 import { toast } from "../utils/toast";
 import { SendPayment } from "./SendPayment";
@@ -72,6 +73,27 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+
+  const isMobile = useIsMobile();
+  const messageInputEmpty = message.length === 0;
+  const [hasCamera, setHasCamera] = useState(false);
+
+  // check if a camera exsist! desktop only really
+  useEffect(() => {
+    async function checkCamera() {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          await navigator.mediaDevices.getUserMedia({ video: true });
+          setHasCamera(true);
+        } catch {
+          setHasCamera(false);
+        }
+      } else {
+        setHasCamera(false);
+      }
+    }
+    checkCamera();
+  }, []);
 
   useEffect(() => {
     if (messageInputRef.current) {
@@ -326,8 +348,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const isMobile = useIsMobile();
-
   return (
     <div className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t">
       {/* Chevron expand/collapse that sorta sits above the textarea */}
@@ -390,7 +410,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       )}
       <div className="relative my-2 mr-2 rounded-lg p-1 pb-3 sm:pb-0">
         <div className="relative flex items-center">
-          {/* Attachment Options (Plus/Popover) - now on the left */}
+          {/* attachments symbol */}
           <div className="flex h-full items-center">
             <input
               type="file"
@@ -398,6 +418,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               style={{ display: "none" }}
               onChange={handleFileUpload}
               accept="image/*,.txt,.json,.md"
+              capture="environment"
             />
             <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
               <div className={"flex justify-center"}>
@@ -441,7 +462,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               </div>
             </div>
           </div>
-          {/* Textarea */}
+          {/* textarea aka message input */}
           <Textarea
             ref={messageInputRef}
             rows={isExpanded ? 6 : 1}
@@ -464,7 +485,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                 e.preventDefault();
                 onSendClicked();
               }
-              // On mobile, Enter inserts a newline as normal
             }}
             autoComplete="off"
             spellCheck="false"
@@ -479,27 +499,37 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                   : "hidden",
             }}
           />
-          {/* Send Button - remains on the right */}
+          {/* send button */}
           <div className="absolute right-2 flex h-full items-center gap-1">
             <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <div
-                className={clsx(
-                  "absolute inset-0 flex items-center justify-center transition-all duration-300",
-                  message.length > 0
-                    ? "pointer-events-auto translate-x-0 opacity-100"
-                    : "pointer-events-none translate-x-4 opacity-0"
-                )}
-              >
+              <div className="absolute inset-0 flex items-center justify-center">
                 <button
                   onClick={onSendClicked}
                   className={clsx(
-                    "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
-                    "w-6 cursor-pointer"
+                    "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 items-center justify-center transition-all duration-200 ease-in-out",
+                    !messageInputEmpty
+                      ? "pointer-events-auto translate-x-0 opacity-100"
+                      : "pointer-events-none translate-x-4 opacity-0"
                   )}
                   aria-label="Send"
                 >
                   <SendHorizonal className="size-6" />
                 </button>
+                {/* just always show camera button on mobile OR if its detected on desktop */}
+                {(isMobile || hasCamera) && (
+                  <button
+                    onClick={openFileDialog}
+                    className={clsx(
+                      "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
+                      messageInputEmpty
+                        ? "pointer-events-auto translate-x-0 opacity-100"
+                        : "pointer-events-none -translate-x-4 opacity-0"
+                    )}
+                    aria-label="Open Camera"
+                  >
+                    <Camera className="size-6" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
