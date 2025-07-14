@@ -32,6 +32,7 @@ import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
+import { useIsMobile } from "../utils/useIsMobile";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -325,6 +326,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const messageInputEmpty = message.length === 0;
+  const isMobile = useIsMobile();
+
   return (
     <div className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t">
       {/* Chevron expand/collapse that sorta sits above the textarea */}
@@ -404,10 +408,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               }
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
+              if (!isMobile && e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 onSendClicked();
               }
+              // On mobile, Enter inserts a newline as normal
             }}
             autoComplete="off"
             spellCheck="false"
@@ -423,54 +428,76 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               onChange={handleFileUpload}
               accept="image/*,.txt,.json,.md"
             />
-            <Popover className="relative cursor-pointer">
-              {({ close }) => (
-                <>
-                  <PopoverButton className="rounded p-1 hover:bg-white/5">
-                    <Plus className="size-6 cursor-pointer" />
-                  </PopoverButton>
-                  <Transition
-                    enter="transition ease-out duration-100"
-                    enterFrom="opacity-0 translate-y-1"
-                    enterTo="opacity-100 translate-y-0"
-                    leave="transition ease-in duration-75"
-                    leaveFrom="opacity-100 translate-y-0"
-                    leaveTo="opacity-0 translate-y-1"
-                  >
-                    <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
-                      <button
-                        onClick={() => {
-                          openFileDialog();
-                          close();
-                        }}
-                        className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
-                        disabled={isUploading}
+            {/* Button transition container */}
+            <div className="relative h-10 w-10 flex-shrink-0">
+              {/* Attachment Options (Plus/Popover) */}
+              <div
+                className={clsx(
+                  "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                  messageInputEmpty
+                    ? "pointer-events-auto translate-x-0 opacity-100"
+                    : "pointer-events-none translate-x-4 opacity-0"
+                )}
+              >
+                <Popover className={clsx("relative cursor-pointer")}>
+                  {({ close }: { close: () => void }) => (
+                    <>
+                      <PopoverButton className="rounded p-1 hover:bg-white/5">
+                        <Plus className="size-6 cursor-pointer" />
+                      </PopoverButton>
+                      <Transition
+                        enter="transition ease-out duration-100"
+                        enterFrom="opacity-0 translate-y-1"
+                        enterTo="opacity-100 translate-y-0"
+                        leave="transition ease-in duration-75"
+                        leaveFrom="opacity-100 translate-y-0"
+                        leaveTo="opacity-0 translate-y-1"
                       >
-                        <Paperclip className="m-2 size-5" />
-                      </button>
+                        <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
+                          <button
+                            onClick={() => {
+                              openFileDialog();
+                              close();
+                            }}
+                            className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
+                            disabled={isUploading}
+                          >
+                            <Paperclip className="m-2 size-5" />
+                          </button>
 
-                      {openedRecipient && (
-                        <SendPayment
-                          address={openedRecipient}
-                          onPaymentSent={close}
-                        />
-                      )}
-                    </PopoverPanel>
-                  </Transition>
-                </>
-              )}
-            </Popover>
-
-            <button
-              onClick={onSendClicked}
-              className={clsx(
-                "text-kas-primary hover:text-kas-secondary transition-width mx-2 flex items-center justify-center overflow-hidden duration-200 ease-out",
-                message.length > 0 ? "w-6 cursor-pointer" : "w-0"
-              )}
-              aria-label="Send"
-            >
-              <SendHorizonal className="size-6" />
-            </button>
+                          {openedRecipient && (
+                            <SendPayment
+                              address={openedRecipient}
+                              onPaymentSent={close}
+                            />
+                          )}
+                        </PopoverPanel>
+                      </Transition>
+                    </>
+                  )}
+                </Popover>
+              </div>
+              {/* Send Button */}
+              <div
+                className={clsx(
+                  "absolute inset-0 flex items-center justify-center transition-all duration-300",
+                  !messageInputEmpty
+                    ? "pointer-events-auto translate-x-0 opacity-100"
+                    : "pointer-events-none translate-x-4 opacity-0"
+                )}
+              >
+                <button
+                  onClick={onSendClicked}
+                  className={clsx(
+                    "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
+                    "w-6 cursor-pointer"
+                  )}
+                  aria-label="Send"
+                >
+                  <SendHorizonal className="size-6" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
