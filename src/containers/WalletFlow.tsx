@@ -506,6 +506,7 @@ export const WalletFlow = ({
               Password
             </label>
             <input
+              autoComplete="new-password"
               ref={passwordRef}
               type="password"
               placeholder="Enter password"
@@ -814,15 +815,12 @@ export const WalletFlow = ({
               <div className="mb-3.5">
                 <label className="mb-3.5 block font-medium">Password</label>
                 <input
-                  data-1p-ignore
-                  data-lpignore="true"
-                  data-protonpass-ignore="true"
-                  autoComplete="off"
+                  autoComplete="current-password"
                   ref={usePasswordRef}
                   type="password"
                   placeholder="Enter your password"
                   className={clsx(
-                    "focus:!border-kas-primary border-primary-border bg-input-bg focus:!border-kas-secondary w-full rounded-3xl border p-2.5 px-4 text-base transition-all duration-200 focus:outline-none",
+                    "focus:!border-kas-primary border-primary-border bg-input-bg w-full rounded-3xl border p-2.5 px-4 text-base transition-all duration-200 focus:outline-none",
                     { "!border-red-500": error }
                   )}
                   onKeyDown={(e) => e.key === "Enter" && onUnlockWallet()}
