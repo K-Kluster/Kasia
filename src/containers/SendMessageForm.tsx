@@ -400,12 +400,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             onChange={(e) => setMessage(e.currentTarget.value)}
             onInput={(e) => {
               const t = e.currentTarget;
+              const maxHeight = 144;
               t.style.height = "auto";
-              if (!isExpanded) {
-                t.style.height = `${t.scrollHeight + 2}px`;
-              } else {
-                t.style.height = "144px";
-              }
+              t.style.height = `${Math.min(t.scrollHeight, maxHeight)}px`;
+              t.style.overflowY =
+                t.scrollHeight > maxHeight ? "auto" : "hidden";
             }}
             onKeyDown={(e) => {
               if (!isMobile && e.key === "Enter" && !e.shiftKey) {
@@ -417,7 +416,15 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             autoComplete="off"
             spellCheck="false"
             data-form-type="other"
-            style={isExpanded ? { height: "144px" } : { height: "auto" }}
+            style={{
+              height: isExpanded ? "144px" : "auto",
+              maxHeight: "144px",
+              overflowY:
+                messageInputRef.current &&
+                messageInputRef.current.scrollHeight > 144
+                  ? "auto"
+                  : "hidden",
+            }}
           />
 
           <div className="absolute right-2 flex items-center gap-1">
