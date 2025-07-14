@@ -11,19 +11,18 @@ import {
   Key,
   Wallet,
 } from "lucide-react";
-import { SettingsModal } from "../components/Modals/SettingsModal";
-import { useUiStore } from "../store/ui.store";
-import { useWalletStore } from "../store/wallet.store";
-import { useMessagingStore } from "../store/messaging.store";
+import { SettingsModal } from "../Modals/SettingsModal";
+import { useUiStore } from "../../store/ui.store";
+import { useWalletStore } from "../../store/wallet.store";
 
-interface MenuContainerProps {
+interface DesktopMenuProps {
   contactsCollapsed: boolean;
   setContactsCollapsed: (v: boolean) => void;
   isMobile: boolean;
   walletAddress: string | undefined;
 }
 
-export const MenuContainer: FC<MenuContainerProps> = ({
+export const DesktopMenu: FC<DesktopMenuProps> = ({
   contactsCollapsed,
   setContactsCollapsed,
   isMobile,
@@ -32,7 +31,6 @@ export const MenuContainer: FC<MenuContainerProps> = ({
   const openModal = useUiStore((s) => s.openModal);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const lockWallet = useWalletStore((s) => s.lock);
-  const messageStore = useMessagingStore();
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
@@ -102,7 +100,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           { "pointer-events-none opacity-50": !walletAddress }
                         )}
                       >
-                        <Info className="h-5 w-5" />
+                        <Wallet className="h-5 w-5" />
                         <span className="flex items-center text-sm">
                           Wallet Info
                           {!walletAddress && (
@@ -260,7 +258,7 @@ export const MenuContainer: FC<MenuContainerProps> = ({
                           { "pointer-events-none opacity-50": !walletAddress }
                         )}
                       >
-                        <Info className="h-5 w-5" />
+                        <Wallet className="h-5 w-5" />
                         <span className="flex items-center text-sm">
                           Wallet Info
                           {!walletAddress && (

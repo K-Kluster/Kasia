@@ -6,7 +6,7 @@ import { Contact } from "../types/all";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { useMessagingStore } from "../store/messaging.store";
-import { MenuContainer } from "./MenuContainer";
+import { DesktopMenu } from "../components/Layout/DesktopMenu";
 
 interface ContactSectionProps {
   contacts: Contact[];
@@ -164,7 +164,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
 
       {/* Bottom controls (desktop only) */}
       {!isMobile && (
-        <MenuContainer
+        <DesktopMenu
           contactsCollapsed={contactsCollapsed}
           setContactsCollapsed={setContactsCollapsed}
           isMobile={isMobile}

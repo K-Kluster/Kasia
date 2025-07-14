@@ -173,31 +173,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                       </span>
                     </button>
 
-                    {msgStore.isLoaded && (
-                      <button
-                        onClick={() => {
-                          openModal("backup");
-                          setActionsOpen(false);
-                        }}
-                        className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
-                      >
-                        <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
-                        <span className="text-sm text-[var(--text-primary)]">
-                          Import / Export Messages
-                        </span>
-                      </button>
-                    )}
-
-                    <button
-                      onClick={clearHistory}
-                      className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
-                    >
-                      <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
-                      <span className="text-sm text-[var(--text-primary)]">
-                        Delete All Messages
-                      </span>
-                    </button>
-
                     <button
                       onClick={() => {
                         openModal("seed");
