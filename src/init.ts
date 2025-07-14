@@ -21,6 +21,8 @@ export async function boot() {
 
   console.log("Kaspa SDK initialized successfully");
 
+  // Removed IndexedDB migration trigger from here
+
   // lazy load main
   const { loadApplication } = await import("./main");
   await loadApplication(root);

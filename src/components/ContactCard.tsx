@@ -22,10 +22,8 @@ export const ContactCard: FC<{
   const [showNewMsgAlert, setNewMsgAlert] = useState(false);
   const prevMessageId = useRef<string | undefined>(undefined);
 
-  // Use the store selector to get the latest message for this contact
-  const lastMessage = useMessagingStore((s) =>
-    s.getLastMessageForContact(contact.address)
-  );
+  // Use the contact's lastMessage directly instead of calling async method
+  const lastMessage = contact.lastMessage;
 
   // get last message preview
   const preview = useMemo(() => {
@@ -205,7 +203,7 @@ export const ContactCard: FC<{
   return (
     <div
       className={clsx(
-        "group bg-bg-secondary relative mb-2 cursor-pointer overflow-hidden rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
+        "bg-bg-secondary group relative mb-2 cursor-pointer overflow-hidden rounded-lg border p-4 transition-all duration-200 hover:bg-slate-900/20",
         {
           "border-[var(--color-kas-primary)] bg-[var(--color-kas-primary)]/5":
             isSelected,

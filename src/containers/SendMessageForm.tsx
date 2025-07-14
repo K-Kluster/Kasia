@@ -159,7 +159,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       );
 
       // Check if we have an active conversation with this recipient
-      const activeConversations = messageStore.getActiveConversations();
+      const activeConversations = await messageStore.getActiveConversations();
       const existingConversation = activeConversations.find(
         (conv) => conv.kaspaAddress === openedRecipient
       );
@@ -283,7 +283,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
   const onSendClicked = useCallback(async () => {
     // Check if we have an active conversation with this recipient
-    const activeConversations = messageStore.getActiveConversations();
+    const activeConversations = await messageStore.getActiveConversations();
     const existingConversation = activeConversations.find(
       (conv) => conv.kaspaAddress === openedRecipient
     );

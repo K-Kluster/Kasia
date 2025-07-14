@@ -142,6 +142,13 @@ export const useWalletStore = create<WalletState>((set, get) => {
         derivationType
       );
       get().loadWallets();
+
+      // Trigger migration after wallet creation
+      const { migrationService } = await import("../utils/migration");
+      if (!migrationService.isMigrationComplete()) {
+        await migrationService.migrateFromLocalStorage();
+      }
+
       return walletId;
     },
 
@@ -321,6 +328,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
           isAccountServiceRunning: true,
           accountService: _accountService,
         });
+
+        // Trigger migration after wallet unlock
+        const { migrationService } = await import("../utils/migration");
+        if (!migrationService.isMigrationComplete()) {
+          await migrationService.migrateFromLocalStorage();
+        }
 
         return wallet;
       } catch (error) {
