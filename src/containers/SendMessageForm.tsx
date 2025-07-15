@@ -23,7 +23,7 @@ import {
   Camera,
 } from "lucide-react";
 import { toast } from "../utils/toast";
-import { SendPayment } from "./SendPayment";
+import { SendPaymentPopup } from "../components/SendPaymentPopup";
 import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { PriorityFeeConfig } from "../types/all";
@@ -425,7 +425,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
             />
             <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
               <div className={"flex justify-center"}>
-                <Popover className={clsx("relative cursor-pointer")}>
+                <Popover className={clsx("relative")}>
                   {({ close }: { close: () => void }) => (
                     <>
                       <PopoverButton className="rounded p-1 hover:bg-white/5">
@@ -445,14 +445,14 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                               openFileDialog();
                               close();
                             }}
-                            className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
+                            className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5"
                             disabled={isUploading}
                           >
                             <Paperclip className="m-2 size-5" />
                           </button>
 
                           {openedRecipient && (
-                            <SendPayment
+                            <SendPaymentPopup
                               address={openedRecipient}
                               onPaymentSent={close}
                             />

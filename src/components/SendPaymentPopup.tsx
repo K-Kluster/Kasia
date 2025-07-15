@@ -1,7 +1,7 @@
 import { Input } from "@headlessui/react";
 import clsx from "clsx";
 import { FC, useCallback, useEffect, useRef, useState } from "react";
-import { KasIcon } from "../components/icons/KasCoin";
+import { KasIcon } from "./icons/KasCoin";
 import { sompiToKaspaString, kaspaToSompi } from "kaspa-wasm";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
@@ -9,7 +9,7 @@ import { encrypt_message } from "cipher";
 import { Address } from "kaspa-wasm";
 import { toast } from "../utils/toast";
 
-export const SendPayment: FC<{
+export const SendPaymentPopup: FC<{
   address: string;
   onPaymentSent: () => void;
 }> = ({ address, onPaymentSent }) => {
@@ -248,7 +248,7 @@ export const SendPayment: FC<{
     <div className="relative">
       <button
         ref={buttonRef}
-        className="flex w-full items-center gap-2 rounded p-2 hover:bg-white/5"
+        className="flex w-full cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5"
         title="Send Kaspa payment to recipient"
         onClick={() => setPanelOpen((open) => !open)}
         type="button"
