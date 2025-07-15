@@ -73,8 +73,10 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+  const openCameraDialog = () => cameraInputRef.current?.click();
 
   const isMobile = useIsMobile();
   const messageInputEmpty = message.length === 0;
@@ -419,55 +421,60 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       <div className="relative my-2 mr-2 rounded-lg p-1 pb-3 sm:pb-0">
         <div className="relative flex items-center">
           {/* attachments symbol */}
-          <div className="flex h-full items-center">
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={handleFileUpload}
-              accept="image/*,.txt,.json,.md"
-              capture="environment"
-            />
-            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <div className={"flex justify-center"}>
-                <Popover className={clsx("relative")}>
-                  {({ close }: { close: () => void }) => (
-                    <>
-                      <PopoverButton className="rounded p-1 hover:bg-white/5">
-                        <Plus className="size-6 cursor-pointer" />
-                      </PopoverButton>
-                      <Transition
-                        enter="transition ease-out duration-100"
-                        enterFrom="opacity-0 translate-y-1"
-                        enterTo="opacity-100 translate-y-0"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="opacity-100 translate-y-0"
-                        leaveTo="opacity-0 translate-y-1"
-                      >
-                        <PopoverPanel className="absolute bottom-full left-0 mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
-                          <button
-                            onClick={() => {
-                              openFileDialog();
-                              close();
-                            }}
-                            className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5"
-                            disabled={isUploading}
-                          >
-                            <Paperclip className="m-2 size-5" />
-                          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileUpload}
+            accept="image/*,.txt,.json,.md"
+          />
+          <input
+            type="file"
+            ref={cameraInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileUpload}
+            accept="image/*"
+            capture="environment"
+          />
+          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <div className={"flex justify-center"}>
+              <Popover className={clsx("relative")}>
+                {({ close }: { close: () => void }) => (
+                  <>
+                    <PopoverButton className="rounded p-1 hover:bg-white/5">
+                      <Plus className="size-6 cursor-pointer" />
+                    </PopoverButton>
+                    <Transition
+                      enter="transition ease-out duration-100"
+                      enterFrom="opacity-0 translate-y-1"
+                      enterTo="opacity-100 translate-y-0"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="opacity-100 translate-y-0"
+                      leaveTo="opacity-0 translate-y-1"
+                    >
+                      <PopoverPanel className="absolute bottom-full left-0 mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
+                        <button
+                          onClick={() => {
+                            openFileDialog();
+                            close();
+                          }}
+                          className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5"
+                          disabled={isUploading}
+                        >
+                          <Paperclip className="m-2 size-5" />
+                        </button>
 
-                          {openedRecipient && (
-                            <SendPaymentPopup
-                              address={openedRecipient}
-                              onPaymentSent={close}
-                            />
-                          )}
-                        </PopoverPanel>
-                      </Transition>
-                    </>
-                  )}
-                </Popover>
-              </div>
+                        {openedRecipient && (
+                          <SendPaymentPopup
+                            address={openedRecipient}
+                            onPaymentSent={close}
+                          />
+                        )}
+                      </PopoverPanel>
+                    </Transition>
+                  </>
+                )}
+              </Popover>
             </div>
           </div>
           {/* image preview or message input */}
@@ -507,20 +514,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                     >
                       <SendHorizonal className="size-6" />
                     </button>
-                    {(isMobile || hasCamera) && (
-                      <button
-                        onClick={openFileDialog}
-                        className={clsx(
-                          "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
-                          messageInputEmpty
-                            ? "pointer-events-auto translate-x-0 opacity-100"
-                            : "pointer-events-none -translate-x-4 opacity-0"
-                        )}
-                        aria-label="Open Camera"
-                      >
-                        <Camera className="size-6" />
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -582,7 +575,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                     </button>
                     {(isMobile || hasCamera) && (
                       <button
-                        onClick={openFileDialog}
+                        onClick={openCameraDialog}
                         className={clsx(
                           "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
                           messageInputEmpty
