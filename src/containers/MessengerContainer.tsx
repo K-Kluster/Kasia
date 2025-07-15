@@ -29,6 +29,32 @@ export const MessengerContainer: FC = () => {
   const isMobile = useIsMobile();
   const { closeAllModals } = useUiStore();
 
+  // while we load and start message client, keep it interesting
+  const loadingMessages = [
+    { delay: 0, message: "Starting the message client..." },
+    { delay: 5000, message: "Loading your message history..." },
+    {
+      delay: 10000,
+      message:
+        "Still loading... \nFun Fact: Kaspa has processed 100 blocks since you started loading.",
+    },
+    { delay: 14000, message: "Still loading... \nActually.. 140..." },
+    { delay: 18000, message: "Still loading... \nNow.. 180..." },
+    {
+      delay: 20000,
+      message: "Yep, still loading... \nOk, now its too many blocks to count.",
+    },
+    {
+      delay: 25000,
+      message:
+        "Yep, still loading... \nWe just didnt expect you to talk to so many people.\nDon't worry, we will fix this long wait soon.",
+    },
+  ];
+
+  const [loadingMessage, setLoadingMessage] = useState(
+    loadingMessages[0].message
+  );
+
   useEffect(() => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);
   }, [walletStore.unlockedWallet]);
@@ -143,6 +169,20 @@ export const MessengerContainer: FC = () => {
     startMessageClient();
   }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
+  useEffect(() => {
+    if (isWalletReady && !messageStore.isLoaded) {
+      setLoadingMessage(loadingMessages[0].message);
+      const timeouts = loadingMessages
+        .slice(1)
+        .map(({ delay, message }) =>
+          setTimeout(() => setLoadingMessage(message), delay)
+        );
+      return () => {
+        timeouts.forEach(clearTimeout);
+      };
+    }
+  }, [isWalletReady, messageStore.isLoaded]);
+
   // Effect to restore last opened conversation after messages are loaded (desktop only)
   useEffect(() => {
     if (
@@ -218,10 +258,10 @@ export const MessengerContainer: FC = () => {
               <div className="border-primary-border bg-secondary-bg relative h-full w-full overflow-hidden border-t">
                 <div className="bg-secondary-bg/20 absolute inset-0" />
                 <div className="relative flex h-full flex-col items-center justify-center space-y-4 select-none">
-                  <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
-                    Starting the message client...
+                  <span className="text-text-secondary text-center text-sm font-medium tracking-wide whitespace-pre-line sm:text-lg">
+                    {loadingMessage}
                   </span>
-                  <LoaderCircle className="h-14 w-14 animate-spin text-gray-500" />
+                  <LoaderCircle className="text-text-secondary h-14 w-14 animate-spin" />
                 </div>
               </div>
             </div>
@@ -229,7 +269,7 @@ export const MessengerContainer: FC = () => {
             <div className="flex w-full flex-col items-center justify-center">
               <div className="text-center">
                 <p className="mb-2 text-lg font-semibold">Wallet not ready</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-text-primary text-sm">
                   Please unlock your wallet first
                 </p>
               </div>
