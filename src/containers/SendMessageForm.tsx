@@ -78,13 +78,16 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   const messageInputEmpty = message.length === 0;
   const [hasCamera, setHasCamera] = useState(false);
 
-  // check if a camera exsist! desktop only really
+  // check if a camera exists! desktop only really
   useEffect(() => {
     async function checkCamera() {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
         try {
-          await navigator.mediaDevices.getUserMedia({ video: true });
-          setHasCamera(true);
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const hasVideoInput = devices.some(
+            (device) => device.kind === "videoinput"
+          );
+          setHasCamera(hasVideoInput);
         } catch {
           setHasCamera(false);
         }

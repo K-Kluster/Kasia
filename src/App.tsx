@@ -4,6 +4,7 @@ import { useUiStore } from "./store/ui.store";
 import type { NetworkType } from "./types/all";
 import { AppRoutes } from "./AppRoutes";
 import { useIsMobile } from "./utils/useIsMobile";
+import { syncThemeColorMeta } from "./utils/meta-theme-syncer";
 
 const App: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -34,12 +35,16 @@ const App: React.FC = () => {
     const effectiveTheme = getEffectiveTheme();
     document.documentElement.setAttribute("data-theme", effectiveTheme);
 
+    // sync the theme color meta tag
+    syncThemeColorMeta();
+
     // Listen for system theme changes when using "system" mode
     const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
     const handleSystemThemeChange = () => {
       if (theme === "system") {
         const newEffectiveTheme = getEffectiveTheme();
         document.documentElement.setAttribute("data-theme", newEffectiveTheme);
+        syncThemeColorMeta(); // update meta tag if system theme changes
       }
     };
 
