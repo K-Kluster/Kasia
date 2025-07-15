@@ -11,10 +11,7 @@ export const ContactCard: FC<{
   isSelected?: boolean;
   collapsed?: boolean; // tiny-avatar mode
 }> = ({ contact, onClick, isSelected, collapsed = false }) => {
-  const messagingStore = useMessagingStore();
   const [showNewMsgAlert, setNewMsgAlert] = useState(false);
-  const [isEditingNickname, setIsEditingNickname] = useState(false);
-  const [tempNickname, setTempNickname] = useState(contact.nickname || "");
   const prevMessageId = useRef<string | undefined>(undefined);
 
   // Use the store selector to get the latest message for this contact
@@ -119,16 +116,6 @@ export const ContactCard: FC<{
     }
     return shortAddress;
   }, [contact?.nickname, shortAddress]);
-
-  const handleNicknameSave = () => {
-    messagingStore.setContactNickname(contact.address, tempNickname);
-    setIsEditingNickname(false);
-  };
-
-  const handleNicknameCancel = () => {
-    setTempNickname(contact.nickname || "");
-    setIsEditingNickname(false);
-  };
 
   useEffect(() => {
     if (
@@ -249,39 +236,22 @@ export const ContactCard: FC<{
         {/* Contact Info */}
         <div className="min-w-0 flex-1">
           <div className="mb-1 text-base font-semibold">
-            {isEditingNickname ? (
-              <div className="flex w-full flex-col md:flex-row md:items-center md:gap-2">
-                <input
-                  type="text"
-                  value={tempNickname}
-                  onChange={(e) => setTempNickname(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleNicknameSave();
-                    if (e.key === "Escape") handleNicknameCancel();
-                  }}
-                  autoFocus
-                  placeholder={contact?.address}
-                  className="h-5 flex-1 rounded-sm text-xs leading-none"
-                />
-              </div>
-            ) : (
-              <span
-                className={clsx(
-                  "block w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
-                  {
-                    "cursor-help": contact.nickname?.trim(),
-                    "cursor-default": !contact.nickname?.trim(),
-                  }
-                )}
-                title={
-                  contact.nickname?.trim()
-                    ? `Address: ${shortAddress}`
-                    : undefined
+            <span
+              className={clsx(
+                "block w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
+                {
+                  "cursor-help": contact.nickname?.trim(),
+                  "cursor-default": !contact.nickname?.trim(),
                 }
-              >
-                {displayName}
-              </span>
-            )}
+              )}
+              title={
+                contact.nickname?.trim()
+                  ? `Address: ${shortAddress}`
+                  : undefined
+              }
+            >
+              {displayName}
+            </span>
           </div>
           <div className="overflow-hidden text-sm text-ellipsis whitespace-nowrap text-[var(--text-secondary)]">
             <span
