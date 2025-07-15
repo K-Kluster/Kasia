@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Info,
   Camera,
+  Trash,
 } from "lucide-react";
 import { toast } from "../utils/toast";
 import { SendPaymentPopup } from "../components/SendPaymentPopup";
@@ -34,6 +35,7 @@ import { Button } from "../components/Common/Button";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 import { useIsMobile } from "../utils/useIsMobile";
+import { parseImageFileJson } from "../utils/parse-image-file";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -287,6 +289,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       // Only reset the message input, keep the recipient
       if (messageInputRef.current) messageInputRef.current.value = "";
       setMessage("");
+      setIsExpanded(false);
       if (messageInputRef.current) {
         messageInputRef.current.style.height = "";
       }
@@ -350,6 +353,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const imageFile = parseImageFileJson(message);
 
   return (
     <div className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t">
@@ -465,77 +470,135 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               </div>
             </div>
           </div>
-          {/* textarea aka message input */}
-          <Textarea
-            ref={messageInputRef}
-            rows={isExpanded ? 6 : 1}
-            placeholder="Type your message..."
-            className="peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
-            value={message}
-            onChange={(e) => {
-              setMessage(e.currentTarget.value);
-            }}
-            onInput={(e) => {
-              const t = e.currentTarget;
-              const maxHeight = 144;
-              t.style.height = "auto";
-              t.style.height = `${Math.min(t.scrollHeight, maxHeight)}px`;
-              t.style.overflowY =
-                t.scrollHeight > maxHeight ? "auto" : "hidden";
-            }}
-            onKeyDown={(e) => {
-              if (!isMobile && e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onSendClicked();
-              }
-            }}
-            autoComplete="off"
-            spellCheck="false"
-            data-form-type="other"
-            style={{
-              height: isExpanded ? "144px" : "auto",
-              maxHeight: "144px",
-              overflowY:
-                messageInputRef.current &&
-                messageInputRef.current.scrollHeight > 144
-                  ? "auto"
-                  : "hidden",
-            }}
-          />
-          {/* send button */}
-          <div className="absolute right-2 flex h-full items-center gap-1">
-            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <button
-                  onClick={onSendClicked}
-                  className={clsx(
-                    "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 items-center justify-center transition-all duration-200 ease-in-out",
-                    !messageInputEmpty
-                      ? "pointer-events-auto translate-x-0 opacity-100"
-                      : "pointer-events-none translate-x-4 opacity-0"
-                  )}
-                  aria-label="Send"
-                >
-                  <SendHorizonal className="size-6" />
-                </button>
-                {/* just always show camera button on mobile OR if its detected on desktop */}
-                {(isMobile || hasCamera) && (
-                  <button
-                    onClick={openFileDialog}
-                    className={clsx(
-                      "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
-                      messageInputEmpty
-                        ? "pointer-events-auto translate-x-0 opacity-100"
-                        : "pointer-events-none -translate-x-4 opacity-0"
+          {/* image preview or message input */}
+          {imageFile ? (
+            <div
+              className="peer border-secondary-border bg-primary-bg relative box-border flex max-h-[144px] min-h-[48px] flex-1 resize-none items-center justify-center overflow-hidden overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none" // height is handled by min-h/max-h, flex for centering
+            >
+              <img
+                src={imageFile.content}
+                alt={imageFile.name}
+                className="m-auto block max-h-32 max-w-full rounded-lg object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setMessage("");
+                  setIsExpanded(false);
+                }}
+                className="ml-2 cursor-pointer rounded-md p-2 text-red-400/80 hover:text-red-400"
+                title="Remove"
+              >
+                <Trash className="size-6" />
+              </button>
+              {/* Send button for image */}
+              <div className="absolute right-2 flex h-full items-center gap-1">
+                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button
+                      onClick={onSendClicked}
+                      className={clsx(
+                        "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
+                        !messageInputEmpty
+                          ? "pointer-events-auto translate-x-0 opacity-100"
+                          : "pointer-events-none translate-x-4 opacity-0"
+                      )}
+                      aria-label="Send"
+                    >
+                      <SendHorizonal className="size-6" />
+                    </button>
+                    {(isMobile || hasCamera) && (
+                      <button
+                        onClick={openFileDialog}
+                        className={clsx(
+                          "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
+                          messageInputEmpty
+                            ? "pointer-events-auto translate-x-0 opacity-100"
+                            : "pointer-events-none -translate-x-4 opacity-0"
+                        )}
+                        aria-label="Open Camera"
+                      >
+                        <Camera className="size-6" />
+                      </button>
                     )}
-                    aria-label="Open Camera"
-                  >
-                    <Camera className="size-6" />
-                  </button>
-                )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* message input */}
+              <Textarea
+                ref={messageInputRef}
+                rows={isExpanded ? 6 : 1}
+                placeholder="Type your message..."
+                className="peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.currentTarget.value);
+                }}
+                onInput={(e) => {
+                  const t = e.currentTarget;
+                  const maxHeight = 144;
+                  t.style.height = "auto";
+                  t.style.height = `${Math.min(t.scrollHeight, maxHeight)}px`;
+                  t.style.overflowY =
+                    t.scrollHeight > maxHeight ? "auto" : "hidden";
+                }}
+                onKeyDown={(e) => {
+                  if (!isMobile && e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    onSendClicked();
+                  }
+                }}
+                autoComplete="off"
+                spellCheck="false"
+                data-form-type="other"
+                style={{
+                  height: isExpanded ? "144px" : "auto",
+                  maxHeight: "144px",
+                  overflowY:
+                    messageInputRef.current &&
+                    messageInputRef.current.scrollHeight > 144
+                      ? "auto"
+                      : "hidden",
+                }}
+              />
+              {/* send button */}
+              <div className="absolute right-2 flex h-full items-center gap-1">
+                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button
+                      onClick={onSendClicked}
+                      className={clsx(
+                        "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 items-center justify-center transition-all duration-200 ease-in-out",
+                        !messageInputEmpty
+                          ? "pointer-events-auto translate-x-0 opacity-100"
+                          : "pointer-events-none translate-x-4 opacity-0"
+                      )}
+                      aria-label="Send"
+                    >
+                      <SendHorizonal className="size-6" />
+                    </button>
+                    {(isMobile || hasCamera) && (
+                      <button
+                        onClick={openFileDialog}
+                        className={clsx(
+                          "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
+                          messageInputEmpty
+                            ? "pointer-events-auto translate-x-0 opacity-100"
+                            : "pointer-events-none -translate-x-4 opacity-0"
+                        )}
+                        aria-label="Open Camera"
+                      >
+                        <Camera className="size-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
