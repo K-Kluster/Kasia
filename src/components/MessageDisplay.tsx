@@ -15,12 +15,14 @@ type MessageDisplayProps = {
   message: MessageType;
   isOutgoing: boolean;
   showTimestamp?: boolean;
+  groupPosition?: "single" | "top" | "middle" | "bottom";
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
   message,
   isOutgoing,
   showTimestamp,
+  groupPosition = "single",
 }) => {
   const [showMeta, setShowMeta] = useState(false);
 
@@ -460,6 +462,25 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     };
   }, []);
 
+  // determine the 'chat' style that we apply
+  const bubbleClass = (() => {
+    if (isOutgoing) {
+      if (groupPosition === "middle")
+        return "rounded-2xl rounded-tr-none rounded-br-none";
+      if (groupPosition === "bottom")
+        return "rounded-2xl rounded-tr-none rounded-br-2xl";
+      // top and single: default (one square edge)
+      return "rounded-2xl rounded-br-none";
+    } else {
+      if (groupPosition === "middle")
+        return "rounded-2xl rounded-tl-none rounded-bl-none";
+      if (groupPosition === "bottom")
+        return "rounded-2xl rounded-tl-none rounded-bl-2xl";
+      // top and single: default (one square edge)
+      return "rounded-2xl rounded-bl-none";
+    }
+  })();
+
   return (
     <div
       className={clsx(
@@ -486,8 +507,9 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         className={clsx(
           "relative z-0 mb-1 max-w-[70%] cursor-pointer px-4 py-1 text-left break-words hyphens-auto",
           isOutgoing
-            ? "bg-kas-secondary/20 border-kas-secondary rounded-2xl rounded-br-none border"
-            : "rounded-2xl rounded-bl-none bg-[var(--secondary-bg)]"
+            ? "bg-kas-secondary/20 border-kas-secondary border"
+            : "bg-[var(--secondary-bg)]",
+          bubbleClass
         )}
       >
         <div className="my-0.5 text-base leading-relaxed">

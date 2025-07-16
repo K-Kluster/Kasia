@@ -34,6 +34,7 @@ export const MessagesList: FC<MessagesListProps> = memo(
             : idx === lastIncoming;
 
           const prevMsg = messages[idx - 1];
+          const nextMsg = messages[idx + 1];
           const dateObj = new Date(msg.timestamp);
 
           // is this the first message of today?
@@ -49,6 +50,29 @@ export const MessagesList: FC<MessagesListProps> = memo(
               prevMsg &&
               msg.timestamp - prevMsg.timestamp > 30 * 60 * 1000) ||
             (idx === 0 && !isToday(dateObj));
+
+          // if there's a separator, treat as new group
+          const isPrevSameSender =
+            !showSeparator &&
+            prevMsg &&
+            prevMsg.senderAddress === msg.senderAddress;
+          const isNextSameSender =
+            nextMsg &&
+            // if the next message has a separator, it's not same group
+            !(
+              (idx + 1 === firstTodayIdx &&
+                isToday(new Date(nextMsg.timestamp))) ||
+              (idx + 1 > 0 &&
+                messages[idx + 1 - 1] &&
+                nextMsg.timestamp - messages[idx + 1 - 1].timestamp >
+                  30 * 60 * 1000) ||
+              (idx + 1 === 0 && !isToday(new Date(nextMsg.timestamp)))
+            ) &&
+            nextMsg.senderAddress === msg.senderAddress;
+
+          const isSingleInGroup = !isPrevSameSender && !isNextSameSender;
+          const isTopOfGroup = !isPrevSameSender && isNextSameSender;
+          const isBottomOfGroup = isPrevSameSender && !isNextSameSender;
 
           return (
             <div key={msg.transactionId}>
@@ -69,6 +93,15 @@ export const MessagesList: FC<MessagesListProps> = memo(
                 isOutgoing={isOutgoing}
                 showTimestamp={showTimestamp}
                 message={msg}
+                groupPosition={
+                  isSingleInGroup
+                    ? "single"
+                    : isTopOfGroup
+                      ? "top"
+                      : isBottomOfGroup
+                        ? "bottom"
+                        : "middle"
+                }
               />
             </div>
           );
