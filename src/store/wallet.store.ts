@@ -80,6 +80,16 @@ type WalletState = {
     newName?: string
   ) => Promise<string>;
 
+  // password management
+  changePassword: (
+    walletId: string,
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<void>;
+
+  // wallet name management
+  changeWalletName: (walletId: string, newName: string) => void;
+
   // wallet operations
   start: (client: KaspaClient) => Promise<{ receiveAddress: Address }>;
   stop: () => void;
@@ -590,6 +600,47 @@ export const useWalletStore = create<WalletState>((set, get) => {
       );
       get().loadWallets();
       return newWalletId;
+    },
+
+    changePassword: async (
+      walletId: string,
+      currentPassword: string,
+      newPassword: string
+    ) => {
+      await _walletStorage.changePassword(
+        walletId,
+        currentPassword,
+        newPassword
+      );
+
+      // If this is the currently unlocked wallet, update its password
+      const state = get();
+      if (state.unlockedWallet && state.selectedWalletId === walletId) {
+        set({
+          unlockedWallet: {
+            ...state.unlockedWallet,
+            password: newPassword,
+          },
+        });
+      }
+    },
+
+    changeWalletName: (walletId: string, newName: string) => {
+      _walletStorage.changeWalletName(walletId, newName);
+
+      // Reload wallet list to reflect the name change
+      get().loadWallets();
+
+      // If this is the currently unlocked wallet, update its name
+      const state = get();
+      if (state.unlockedWallet && state.selectedWalletId === walletId) {
+        set({
+          unlockedWallet: {
+            ...state.unlockedWallet,
+            name: newName,
+          },
+        });
+      }
     },
   };
 });
