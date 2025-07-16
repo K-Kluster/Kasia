@@ -463,7 +463,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   return (
     <div
       className={clsx(
-        "mt-1 flex w-full",
+        "flex w-full",
         isOutgoing
           ? "justify-end pr-0.5 sm:pr-2"
           : "justify-start pl-0.5 sm:pl-2"
@@ -475,7 +475,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             href={getExplorerUrl(transactionId)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[0.75em] opacity-80 transition-opacity hover:opacity-100"
+            className="text-xs opacity-80 transition-opacity hover:opacity-100"
           >
             <Tickets className="size-5" />
           </a>
@@ -494,14 +494,14 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           {renderMessageContent()}
         </div>
         {(showMeta || showTimestamp) && (
-          <div className="mb-[6px] flex justify-between justify-end truncate text-[0.8em]">
+          <div className="mb-1.5 flex justify-end truncate text-xs">
             <div className="opacity-70">{displayStamp}</div>
           </div>
         )}
         {showMeta && (
           <div
             className={clsx(
-              "mt-[6px] text-[0.75em] whitespace-nowrap opacity-80",
+              "mt-1.5 text-xs whitespace-nowrap opacity-80",
               isOutgoing
                 ? "flex flex-col items-start space-y-1"
                 : "flex flex-col items-start space-x-4 sm:flex-row sm:items-center sm:justify-between"
@@ -517,7 +517,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             href={getExplorerUrl(transactionId)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[0.75em] opacity-80 transition-opacity hover:opacity-100"
+            className="text-xs opacity-80 transition-opacity hover:opacity-100"
           >
             <Tickets className="size-5" />
           </a>
