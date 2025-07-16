@@ -67,7 +67,7 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
   return (
     <div
       className={clsx(
-        "bg-primary-bg flex min-h-screen flex-col",
+        "bg-primary-bg flex flex-col",
         isMobile
           ? "w-full"
           : "relative mx-auto overflow-hidden rounded-lg shadow-2xl"
