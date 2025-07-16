@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useWalletStore } from "../../store/wallet.store";
@@ -65,6 +65,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   });
   const [connectionSuccess, setConnectionSuccess] = useState(false);
 
+  // Check if user is already connected to the current URL
+  const isAlreadyConnected = useMemo(() => {
+    if (!networkStore.isConnected) return false;
+
+    const currentConnectedUrl = networkStore.kaspaClient?.rpc?.url;
+    const targetUrl = nodeUrl === "" ? undefined : nodeUrl;
+
+    // Both undefined (using default resolver) or both have same URL
+    return currentConnectedUrl === targetUrl;
+  }, [networkStore.isConnected, networkStore.kaspaClient?.rpc?.url, nodeUrl]);
+
+  // Track if URL has changed during connection to enable save button
+  const [urlChangedDuringConnection, setUrlChangedDuringConnection] =
+    useState(false);
+  const [lastConnectingUrl, setLastConnectingUrl] = useState<string>("");
+
+  // Track URL changes during connection
+  useEffect(() => {
+    if (networkStore.isConnecting) {
+      if (lastConnectingUrl === "") {
+        // Just started connecting, store the URL
+        setLastConnectingUrl(nodeUrl);
+        setUrlChangedDuringConnection(false);
+      } else if (lastConnectingUrl !== nodeUrl) {
+        // URL changed during connection
+        setUrlChangedDuringConnection(true);
+      }
+    } else {
+      // Connection finished, reset tracking
+      setLastConnectingUrl("");
+      setUrlChangedDuringConnection(false);
+    }
+  }, [nodeUrl, networkStore.isConnecting, lastConnectingUrl]);
+
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -95,9 +129,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSaveNodeUrl = async () => {
     setConnectionSuccess(false);
 
-    if (networkStore.isConnecting) {
+    // Only prevent save if connecting AND URL hasn't changed
+    if (networkStore.isConnecting && !urlChangedDuringConnection) {
       return;
     }
+
+    // Reset URL change tracking since we're now attempting a new connection
+    setUrlChangedDuringConnection(false);
+    setLastConnectingUrl("");
 
     networkStore.setNodeUrl(nodeUrl === "" ? undefined : nodeUrl);
 
@@ -601,7 +640,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       Force using a specific node URL for the selected network.
                       Leave empty to use automatic resolver.
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <input
                         type="text"
                         value={nodeUrl}
@@ -611,11 +650,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       />
                       <button
                         onClick={handleSaveNodeUrl}
-                        disabled={networkStore.isConnecting}
-                        className="hover:bg-primary/80 bg-primary flex items-center gap-1 rounded px-3 py-2 text-sm transition-colors disabled:opacity-50"
+                        disabled={
+                          (networkStore.isConnecting &&
+                            !urlChangedDuringConnection) ||
+                          isAlreadyConnected
+                        }
+                        className="hover:bg-primary/80 bg-primary flex items-center justify-start gap-1 rounded px-3 py-2 text-sm transition-colors disabled:opacity-50"
                       >
-                        <Save className="h-4 w-4" />
-                        Save
+                        {networkStore.isConnecting &&
+                        !urlChangedDuringConnection ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                            Connecting...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4" />
+                            Save
+                          </>
+                        )}
                       </button>
                     </div>
                     {connectionSuccess && (
