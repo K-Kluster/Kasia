@@ -287,14 +287,15 @@ export class WalletStorage {
         newPassword
       );
 
-      // Update the wallet with the new encrypted phrase
-      wallets[walletIndex] = {
+      // Create a copy of wallets and update the encrypted phrase
+      const updatedWallets = [...wallets];
+      updatedWallets[walletIndex] = {
         ...wallet,
         encryptedPhrase: newEncryptedPhrase,
       };
 
-      // Save to localStorage
-      localStorage.setItem(this._storageKey, JSON.stringify(wallets));
+      // Save to localStorage first - if this fails, original state is preserved
+      localStorage.setItem(this._storageKey, JSON.stringify(updatedWallets));
     } catch (error) {
       console.error("Error changing password:", error);
       throw new Error("Invalid current password");
@@ -325,13 +326,14 @@ export class WalletStorage {
       throw new Error("A wallet with this name already exists");
     }
 
-    // Update the wallet name
-    wallets[walletIndex] = {
+    // Create a copy of wallets and update the name
+    const updatedWallets = [...wallets];
+    updatedWallets[walletIndex] = {
       ...wallets[walletIndex],
       name: newName.trim(),
     };
 
-    // Save to localStorage
-    localStorage.setItem(this._storageKey, JSON.stringify(wallets));
+    // Save to localStorage first - if this fails, original state is preserved
+    localStorage.setItem(this._storageKey, JSON.stringify(updatedWallets));
   }
 }
