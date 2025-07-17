@@ -16,6 +16,7 @@ import {
   PendingConversation,
 } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
+import { loadMessages, saveMessages } from "../utils/storage-encryption";
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -162,16 +163,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   flushWalletHistory: (address: string) => {
     // 1. Clear wallet messages from localStorage
-    const messagesOnWallet = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
+    const password = useWalletStore.getState().unlockedWallet?.password;
+    if (!password) {
+      console.error("Wallet password not available for flushing history.");
+      return;
+    }
 
-    delete messagesOnWallet[address];
+    const messagesMap = loadMessages(password);
 
-    localStorage.setItem(
-      "kaspa_messages_by_wallet",
-      JSON.stringify(messagesOnWallet)
-    );
+    delete messagesMap[address];
+
+    saveMessages(messagesMap, password);
 
     // 2. Clear nickname mappings for this wallet
     const nicknameKey = `contact_nicknames_${address}`;
@@ -205,9 +207,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     console.log("Complete history clear completed - all data wiped");
   },
   loadMessages: (address): Message[] => {
-    const messages: Record<string, Message[]> = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
+    const password = useWalletStore.getState().unlockedWallet?.password;
+    if (!password) {
+      console.error("Wallet password not available for loading messages.");
+      return [];
+    }
+
+    const messages: Record<string, Message[]> = loadMessages(password);
 
     const contacts = new Map();
 
@@ -377,9 +383,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
     }
 
-    const messagesMap = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
+    const password = useWalletStore.getState().unlockedWallet?.password;
+    if (!password) {
+      console.error("Wallet password not available for storing message.");
+      return;
+    }
+
+    const messagesMap = loadMessages(password);
     if (!messagesMap[walletAddress]) {
       messagesMap[walletAddress] = [];
     }
@@ -429,10 +439,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       messagesMap[walletAddress].push(message);
     }
 
-    localStorage.setItem(
-      "kaspa_messages_by_wallet",
-      JSON.stringify(messagesMap)
-    );
+    saveMessages(messagesMap, password);
 
     // Update contacts and conversations
     const state = g();
@@ -519,9 +526,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     try {
       console.log("Starting message export process...");
 
-      const messagesMap = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
+      const password = useWalletStore.getState().unlockedWallet?.password;
+      if (!password) {
+        throw new Error(
+          "Wallet password not available for exporting messages."
+        );
+      }
+
+      const messagesMap = loadMessages(password);
 
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
@@ -652,9 +664,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       console.log("Merging with existing messages...");
       // Merge with existing messages
-      const existingMessages = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
+      const password = useWalletStore.getState().unlockedWallet?.password;
+      if (!password) {
+        throw new Error(
+          "Wallet password not available for importing messages."
+        );
+      }
+
+      const existingMessages = loadMessages(password);
 
       const mergedMessages = {
         ...existingMessages,
@@ -662,10 +679,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       };
 
       // Save merged messages
-      localStorage.setItem(
-        "kaspa_messages_by_wallet",
-        JSON.stringify(mergedMessages)
-      );
+      saveMessages(mergedMessages, password);
 
       // Get network type and current address first
       let networkType = NetworkType.Mainnet; // Default to mainnet
