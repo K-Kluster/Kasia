@@ -331,14 +331,17 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || isUploading) return;
 
     setIsUploading(true);
     const { fileMessage, error } = await prepareFileForUpload(
       file,
       MAX_PAYLOAD_SIZE,
       {},
-      (status) => toast.info(status)
+      (status) => {
+        toast.removeAll();
+        toast.info(status);
+      }
     );
     setIsUploading(false);
 
@@ -361,7 +364,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     event: React.ClipboardEvent<HTMLTextAreaElement>
   ) => {
     const items = event.clipboardData?.items;
-    if (!items) return;
+    if (!items || isUploading) return;
 
     // Look for image items in the clipboard
     for (let i = 0; i < items.length; i++) {
@@ -375,13 +378,15 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         if (!file) continue;
 
         setIsUploading(true);
-        toast.info("Processing pasted image...");
 
         const { fileMessage, error } = await prepareFileForUpload(
           file,
           MAX_PAYLOAD_SIZE,
           {},
-          (status) => toast.info(status)
+          (status) => {
+            toast.removeAll();
+            toast.info(status);
+          }
         );
         setIsUploading(false);
 
