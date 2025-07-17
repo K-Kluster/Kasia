@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useWalletStore } from "../../store/wallet.store";
@@ -8,8 +8,6 @@ import { Button } from "../Common/Button";
 import clsx from "clsx";
 import {
   User,
-  Info,
-  Settings,
   Sun,
   Moon,
   Monitor,
@@ -17,7 +15,6 @@ import {
   Trash2,
   Shield,
   Network,
-  Save,
   Key,
   ArrowLeft,
   Edit3,
@@ -52,53 +49,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const changeWalletName = useWalletStore((s) => s.changeWalletName);
   const networkStore = useNetworkStore();
 
-  // Local settings state
-  const [autoBackupEnabled, setAutoBackupEnabled] = useState(() => {
-    return localStorage.getItem("kasia-auto-backup-enabled") === "true";
-  });
-  const [nodeUrl, setNodeUrl] = useState(() => {
-    return (
-      networkStore.nodeUrl ??
-      localStorage.getItem(`kasia_node_url_${networkStore.network}`) ??
-      ""
-    );
-  });
-  const [connectionSuccess, setConnectionSuccess] = useState(false);
-
-  // Check if user is already connected to the current URL
-  const isAlreadyConnected = useMemo(() => {
-    if (!networkStore.isConnected) return false;
-
-    const currentConnectedUrl = networkStore.kaspaClient?.rpc?.url;
-    const targetUrl = nodeUrl === "" ? undefined : nodeUrl;
-
-    // Both undefined (using default resolver) or both have same URL
-    return currentConnectedUrl === targetUrl;
-  }, [networkStore.isConnected, networkStore.kaspaClient?.rpc?.url, nodeUrl]);
-
-  // Track if URL has changed during connection to enable save button
-  const [urlChangedDuringConnection, setUrlChangedDuringConnection] =
-    useState(false);
-  const [lastConnectingUrl, setLastConnectingUrl] = useState<string>("");
-
-  // Track URL changes during connection
-  useEffect(() => {
-    if (networkStore.isConnecting) {
-      if (lastConnectingUrl === "") {
-        // Just started connecting, store the URL
-        setLastConnectingUrl(nodeUrl);
-        setUrlChangedDuringConnection(false);
-      } else if (lastConnectingUrl !== nodeUrl) {
-        // URL changed during connection
-        setUrlChangedDuringConnection(true);
-      }
-    } else {
-      // Connection finished, reset tracking
-      setLastConnectingUrl("");
-      setUrlChangedDuringConnection(false);
-    }
-  }, [nodeUrl, networkStore.isConnecting, lastConnectingUrl]);
-
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -123,31 +73,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       )
     ) {
       messageStore.flushWalletHistory(walletAddress.toString());
-    }
-  };
-
-  const handleSaveNodeUrl = async () => {
-    setConnectionSuccess(false);
-
-    // Only prevent save if connecting AND URL hasn't changed
-    if (networkStore.isConnecting && !urlChangedDuringConnection) {
-      return;
-    }
-
-    // Reset URL change tracking since we're now attempting a new connection
-    setUrlChangedDuringConnection(false);
-    setLastConnectingUrl("");
-
-    networkStore.setNodeUrl(nodeUrl === "" ? undefined : nodeUrl);
-
-    const isSuccess = await networkStore.connect();
-    setConnectionSuccess(isSuccess);
-
-    // Hide success/error messages after 5 seconds
-    if (isSuccess || networkStore.connectionError) {
-      setTimeout(() => {
-        setConnectionSuccess(false);
-      }, 5000);
     }
   };
 
@@ -211,7 +136,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setShowPasswordChange(false);
   };
 
-  const handleNameChange = () => {
+  const handleNameChange = async () => {
     if (!selectedWalletId) {
       setNameChangeError("No wallet selected");
       return;
@@ -236,7 +161,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setIsChangingName(true);
 
     try {
-      changeWalletName(selectedWalletId, newWalletName.trim());
+      await changeWalletName(selectedWalletId, newWalletName.trim());
       setNameChangeSuccess(true);
       setNewWalletName("");
 
@@ -274,13 +199,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
 
-  // Update nodeUrl when network changes
-  useEffect(() => {
-    const savedNodeUrl =
-      localStorage.getItem(`kasia_node_url_${networkStore.network}`) ?? "";
-    setNodeUrl(networkStore.nodeUrl ?? savedNodeUrl);
-  }, [networkStore.network, networkStore.nodeUrl]);
-
   // Real-time validation for wallet name
   useEffect(() => {
     if (!showNameChange || !newWalletName.trim()) {
@@ -309,16 +227,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     // Clear error if validation passes
     setNameChangeError("");
   }, [newWalletName, wallets, selectedWalletId, showNameChange]);
-
-  // Auto-hide connection messages after 5 seconds
-  useEffect(() => {
-    if (connectionSuccess) {
-      const timer = setTimeout(() => {
-        setConnectionSuccess(false);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [connectionSuccess]);
 
   useEffect(() => {
     if (isOpen) {
@@ -418,7 +326,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="mb-2 text-sm font-bold">
                             Your Wallet:
                           </div>
-                          <div className="text-muted-foreground text-kas-secondary text-lg font-bold">
+                          <div className="text-muted-foreground text-lg font-bold">
                             {unlockedWallet.name}
                           </div>
                         </div>
@@ -505,7 +413,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <>
+                        <form onSubmit={handleNameChange} className="space-y-4">
                           {/* Wallet Name Input */}
                           <div>
                             <label
@@ -536,7 +444,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           {/* Action Buttons */}
                           <div className="flex flex-col gap-3 sm:flex-row">
                             <Button
-                              onClick={handleNameChange}
+                              type="button"
+                              onClick={resetNameChangeForm}
+                              variant="secondary"
+                              disabled={isChangingName}
+                              className="sm:flex-1"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="submit"
                               variant="primary"
                               disabled={
                                 isChangingName ||
@@ -547,16 +464,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             >
                               {isChangingName ? "Changing..." : "Confirm"}
                             </Button>
-                            <Button
-                              onClick={resetNameChangeForm}
-                              variant="secondary"
-                              disabled={isChangingName}
-                              className="sm:flex-1"
-                            >
-                              Cancel
-                            </Button>
                           </div>
-                        </>
+                        </form>
                       )}
                     </div>
                   </>
@@ -608,7 +517,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
             {activeTab === "network" && (
               <div className="mt-4 space-y-6 sm:mt-0">
-                <h3 className="mb-4 text-lg font-medium">Network Settings</h3>
+                <h3 className="mb-4 text-lg font-medium">Network</h3>
                 <div className="space-y-4">
                   {/* Current Network */}
                   <div className="border-primary-border bg-primary-bg rounded-2xl border p-4">
@@ -629,56 +538,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ? "(Connected)"
                         : "(Disconnected)"}
                     </div>
-                  </div>
-
-                  {/* Node URL Input */}
-                  <div className="border-primary-border bg-primary-bg rounded-2xl border p-4">
-                    <div className="mb-2 text-sm font-medium">
-                      Custom Node URL
-                    </div>
-                    <div className="text-muted-foreground mb-3 text-xs">
-                      Force using a specific node URL for the selected network.
-                      Leave empty to use automatic resolver.
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <input
-                        type="text"
-                        value={nodeUrl}
-                        onChange={(e) => setNodeUrl(e.target.value)}
-                        className="border-primary-border bg-secondary-bg text-primary focus:ring-kas-secondary/80 flex-1 rounded-lg border p-2 text-sm focus:ring-2 focus:outline-none"
-                        placeholder="wss://your-node-url.com"
-                      />
-                      <button
-                        onClick={handleSaveNodeUrl}
-                        disabled={
-                          (networkStore.isConnecting &&
-                            !urlChangedDuringConnection) ||
-                          isAlreadyConnected
-                        }
-                        className="hover:bg-primary/80 bg-primary flex items-center justify-start gap-1 rounded px-3 py-2 text-sm transition-colors disabled:opacity-50"
-                      >
-                        {networkStore.isConnecting &&
-                        !urlChangedDuringConnection ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            Connecting...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-4 w-4" />
-                            Save
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {connectionSuccess && (
-                      <div className="mt-2 text-sm text-green-500">
-                        Successfully connected to the node!
-                      </div>
-                    )}
-                    {networkStore.connectionError && (
-                      <div className="mt-2 text-sm text-red-500">
-                        Error: {networkStore.connectionError}
+                    {networkStore.nodeUrl && (
+                      <div className="text-muted-foreground mt-2 text-xs">
+                        <div className="text-xs break-all">
+                          {networkStore.nodeUrl}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -814,6 +678,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           {/* Action Buttons */}
                           <div className="flex flex-col gap-3 sm:flex-row">
                             <Button
+                              onClick={resetPasswordChangeForm}
+                              variant="secondary"
+                              disabled={isChangingPassword}
+                              className="sm:flex-1"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
                               onClick={handlePasswordChange}
                               variant="primary"
                               disabled={
@@ -825,14 +697,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               className="sm:flex-1"
                             >
                               {isChangingPassword ? "Changing..." : "Confirm"}
-                            </Button>
-                            <Button
-                              onClick={resetPasswordChangeForm}
-                              variant="secondary"
-                              disabled={isChangingPassword}
-                              className="sm:flex-1"
-                            >
-                              Cancel
                             </Button>
                           </div>
                         </>
