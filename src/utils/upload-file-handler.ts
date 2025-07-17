@@ -39,7 +39,6 @@ export async function prepareFileForUpload(
   onStatus?: (status: string) => void
 ): Promise<PrepareFileResult> {
   const rawTarget = Math.floor(((maxSize - JSON_WRAP_LEN) * 3) / 4);
-
   {
     /*default return for NON images */
   }
