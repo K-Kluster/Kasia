@@ -356,6 +356,52 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // Handle paste events for images
+  const handlePaste = async (
+    event: React.ClipboardEvent<HTMLTextAreaElement>
+  ) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    // Look for image items in the clipboard
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      // Check if the item is an image
+      if (item.type.startsWith("image/")) {
+        event.preventDefault(); // Prevent default paste behavior
+
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        setIsUploading(true);
+        toast.info("Processing pasted image...");
+
+        const { fileMessage, error } = await prepareFileForUpload(
+          file,
+          MAX_PAYLOAD_SIZE,
+          {},
+          (status) => toast.info(status)
+        );
+        setIsUploading(false);
+
+        if (error) {
+          toast.error(error);
+          return;
+        }
+
+        if (fileMessage) {
+          setMessage(fileMessage);
+          if (messageInputRef.current) {
+            messageInputRef.current.value = `[Pasted Image: ${file.name || "image"}]`;
+          }
+          toast.success("Image pasted successfully!");
+        }
+        break; // Only handle the first image found
+      }
+    }
+  };
+
   const imageFile = parseImageFileJson(message);
 
   return (
@@ -544,6 +590,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                     onSendClicked();
                   }
                 }}
+                onPaste={handlePaste}
                 autoComplete="off"
                 spellCheck="false"
                 data-form-type="other"
