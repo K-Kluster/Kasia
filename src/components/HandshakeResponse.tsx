@@ -71,7 +71,10 @@ export const HandshakeResponse: React.FC<{
       </div>
       {!conversation.initiatedByMe && conversation.status === "pending" && (
         <button
-          onClick={handleRespond}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRespond();
+          }}
           className="bg-kas-primary hover:bg-kas-secondary cursor-pointer rounded border-none px-4 py-2 text-sm text-white transition-colors duration-200 disabled:cursor-not-allowed disabled:bg-gray-500"
           disabled={isResponding}
         >

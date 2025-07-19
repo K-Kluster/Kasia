@@ -125,7 +125,7 @@ export const ContactCard: FC<{
       prevMessageId.current !== lastMessage.transactionId
     ) {
       setNewMsgAlert(true);
-      const timeout = setTimeout(() => setNewMsgAlert(false), 5000);
+      const timeout = setTimeout(() => setNewMsgAlert(false), 20000);
       prevMessageId.current = lastMessage.transactionId;
       return () => clearTimeout(timeout);
     }
