@@ -1,5 +1,5 @@
-import { FC, ReactNode } from "react";
-import { XMarkIcon } from "@heroicons/react/24/solid";
+import { FC, ReactNode, useEffect } from "react";
+import { X } from "lucide-react";
 import clsx from "clsx";
 
 // Basic modal component to standardise the look
@@ -8,25 +8,38 @@ export const Modal: FC<{
   onClose: () => void;
   children: ReactNode;
   className?: string;
-}> = ({ onClose, children, className }) => (
-  <div
-    className={clsx(
-      "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
-      className
-    )}
-    onClick={onClose}
-  >
+}> = ({ onClose, children, className }) => {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  return (
     <div
-      className="relative mx-4 w-full max-w-md rounded-lg bg-[var(--secondary-bg)] p-6"
-      onClick={(e) => e.stopPropagation()}
+      className={clsx(
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/50",
+        className
+      )}
+      onClick={onClose}
     >
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110 hover:text-white"
+      <div
+        className="border-primary-border bg-secondary-bg relative mx-4 w-full max-w-2xl rounded-2xl border p-6"
+        onClick={(e) => e.stopPropagation()}
       >
-        <XMarkIcon className="h-6 w-6 text-gray-200" />
-      </button>
-      {children}
+        <button
+          onClick={onClose}
+          className="hover:text-kas-secondary absolute top-2 right-2 z-60 cursor-pointer p-2 hover:scale-110"
+        >
+          <X className="bg-primary-bg border-primary-border h-7 w-7 rounded-3xl border p-1" />
+        </button>
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};

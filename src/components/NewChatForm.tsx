@@ -15,6 +15,8 @@ import { KaspaAddress } from "./KaspaAddress";
 import { Textarea } from "@headlessui/react";
 import { Button } from "./Common/Button";
 import { QrScanner } from "./QrScanner";
+import { StringCopy } from "./Common/StringCopy";
+import { Search, X, Clipboard } from "lucide-react";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -207,6 +209,16 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     setHandshakeAmount(amount);
   }, []);
 
+  const handlePaste = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setRecipientInputValue(text.toLowerCase());
+    } catch {
+      // Handle clipboard access error silently or show a toast
+      console.warn("Failed to paste from clipboard");
+    }
+  }, []);
+
   // Update validation to use knsRecipientAddress
   const validateAndPrepareHandshake = useCallback(() => {
     setError(null);
@@ -323,8 +335,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
     return (
       <>
-        <h3 className="m-0 mb-5 text-[1.2rem] text-white">Confirm Handshake</h3>
-        <div className="mb-5 text-sm leading-normal text-white/80">
+        <h3 className="m-0 mb-5 text-[1.2rem] font-bold">Confirm Handshake</h3>
+        <div className="mb-5 text-sm leading-normal">
           <p>
             <strong>Recipient:</strong>
             <div className="flex justify-start break-all">
@@ -380,38 +392,47 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   return (
     <>
-      <h3 className="mb-5 text-base font-semibold text-white">
-        Start New Conversation
-      </h3>
+      <h3 className="mb-5 text-base font-semibold">Start New Conversation</h3>
       <form onSubmit={handleSubmit}>
         <div className={"mb-5"}>
           <label
-            className="mb-[5px] block text-[14px] font-bold text-white"
+            className="mb-[5px] block text-[14px] font-bold"
             htmlFor="recipientAddress"
           >
             Recipient Address
           </label>
-          <div className="flex items-center gap-2">
+          <div className="relative">
             <Textarea
               ref={useRecipientInputRef}
-              className="box-border flex w-full resize-none items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-[1.4] text-white lowercase placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none disabled:bg-black/50 disabled:text-white/30"
+              className="bg-primary-bg border-primary-border focus:ring-kas-secondary/80 w-full resize-none rounded-lg border p-2 pr-24 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
               rows={3}
               id="recipientAddress"
               value={recipientInputValue}
               onChange={(e) =>
                 setRecipientInputValue(e.target.value.toLowerCase())
               }
-              placeholder="Kaspa address or Kns domain"
+              placeholder="Kaspa address or KNS domain"
               disabled={isLoading}
               required
               autoComplete="off"
             />
-            <QrScanner
-              onScan={(data: string) => {
-                setRecipientInputValue(data.toLowerCase());
-              }}
-            />
+            <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
+              <button
+                onClick={handlePaste}
+                className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border px-1.5 py-1 transition-colors"
+                title="Paste from clipboard"
+                disabled={isLoading}
+              >
+                <Clipboard size={16} />
+              </button>
+              <QrScanner
+                onScan={(data: string) => {
+                  setRecipientInputValue(data.toLowerCase());
+                }}
+              />
+            </div>
           </div>
+
           {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
             <div className={styles["checking-text"]}>
               Resolving KNS domain...
@@ -423,6 +444,12 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             !knsError && (
               <div className="mt-2 mb-4 flex justify-start break-all">
                 <KaspaAddress address={resolvedRecipientAddress} />
+                <StringCopy
+                  text={resolvedRecipientAddress}
+                  alertText="Address Copied"
+                  titleText="Copy Address"
+                  className="ml-2"
+                />
               </div>
             )}
           {knsError &&
@@ -438,19 +465,21 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             </div>
           )}
           {recipientWarning && (
-            <div className={styles["warning-message"]}>{recipientWarning}</div>
+            <div className="mt-1 mt-2 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4] text-yellow-400">
+              {recipientWarning}
+            </div>
           )}
         </div>
 
         <div className={"mb-5"}>
           <label
-            className="mb-[5px] block text-[14px] font-bold text-white"
+            className="mb-[5px] block text-[14px] font-bold"
             htmlFor="handshakeAmount"
           >
             Handshake Amount (KAS)
           </label>
           <input
-            className="mb-2 box-border flex h-10 w-full items-center rounded-md border border-white/10 bg-black/30 px-3 py-2 font-mono text-base leading-1.5 text-white placeholder-white/50 transition-colors duration-200 hover:border-white/20 hover:bg-white/10 focus:border-white/20 focus:bg-white/10 focus:outline-none"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 focus:ring-2 focus:outline-none"
             type="text"
             id="handshakeAmount"
             value={handshakeAmount}
@@ -490,7 +519,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
               1
             </button>
           </div>
-          <div className={styles["info-text"]}>
+          <div className="mt-4 text-xs text-gray-400">
             Default: 0.2 KAS. Higher amounts help recipients respond even if
             they have no KAS. This creates a better experience for newcomers to
             Kasia.

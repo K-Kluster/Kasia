@@ -18,6 +18,7 @@ import { KaspaClient } from "../utils/kaspa-client";
 import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
+import { hexToString } from "../utils/format";
 import { BlockAddedData, PriorityFeeConfig } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
@@ -32,6 +33,12 @@ import {
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
+import {
+  PROTOCOL_PREFIX,
+  HANDSHAKE_PREFIX,
+  COMM_PREFIX,
+  PAYMENT_PREFIX,
+} from "../config/protocol";
 
 // Message related types
 type DecodedMessage = {
@@ -113,17 +120,6 @@ type CreatePaymentWithMessageArgs = {
   priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
-interface Conversation {
-  conversationId: string;
-  myAlias: string;
-  theirAlias: string;
-  kaspaAddress: string;
-  status: string;
-  createdAt: number;
-  lastActivity: number;
-  initiatedByMe: boolean;
-}
-
 export class AccountService extends EventEmitter<AccountServiceEvents> {
   processor: UtxoProcessor;
   context: UtxoContext;
@@ -136,14 +132,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private processedMessageIds: Set<string> = new Set();
   private monitoredConversations: Set<string> = new Set(); // Store monitored aliases
   private monitoredAddresses: Map<string, string> = new Map(); // Store address -> alias mappings
-  private readonly MESSAGE_PREFIX_HEX = "636970685f6d73673a"; // "ciph_msg:" in hex
   private readonly MAX_PROCESSED_MESSAGES = 1000; // Prevent unlimited growth
 
   // Add password field
   private password: string | null = null;
-
-  private conversations: Conversation[] = [];
-  private conversationsLoaded = false;
 
   constructor(
     private readonly rpcClient: KaspaClient,
@@ -608,15 +600,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Create a message record for the sender to show they sent this payment
       if (this.receiveAddress) {
         try {
-          // Parse the payload to extract the payment details
-          const hexToString = (hex: string) => {
-            let str = "";
-            for (let i = 0; i < hex.length; i += 2) {
-              str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-            }
-            return str;
-          };
-
           // Remove the ciph_msg: prefix and parse the message
           const prefixLength = "636970685f6d73673a".length; // "ciph_msg:" in hex
           const messageHex = paymentTransaction.payload.substring(prefixLength);
@@ -787,46 +770,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     return this._getGeneratorForTransaction(transaction).estimate();
-  }
-
-  // Add method to load conversations
-  private async loadConversations(): Promise<void> {
-    try {
-      // If conversations are already loaded and we have some, return
-      if (this.conversationsLoaded && this.conversations.length > 0) {
-        return;
-      }
-
-      // Maximum number of retries
-      const maxRetries = 10;
-      let retries = 0;
-
-      while (!this.conversationsLoaded && retries < maxRetries) {
-        // Wait for conversations to load
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Check if we have conversations
-        if (this.conversations && this.conversations.length > 0) {
-          this.conversationsLoaded = true;
-          console.log("Conversations loaded:", this.conversations.length);
-          break;
-        }
-
-        retries++;
-        console.log("Waiting for conversations... attempt", retries);
-      }
-
-      // If we still don't have conversations, log a warning but continue
-      if (!this.conversationsLoaded) {
-        console.warn("Could not load conversations after maximum retries");
-        // Set loaded to true anyway to prevent further retries
-        this.conversationsLoaded = true;
-      }
-    } catch (error) {
-      console.error("Error loading conversations:", error);
-      // Set loaded to true to prevent further retries
-      this.conversationsLoaded = true;
-    }
   }
 
   public async sendMessage(
@@ -1090,9 +1033,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     let isMessageTransaction = false;
     if (transaction.payload) {
       // Check if this is a message transaction by looking for the message prefix
-      isMessageTransaction = transaction.payload.startsWith(
-        this.MESSAGE_PREFIX_HEX
-      );
+      isMessageTransaction = transaction.payload.startsWith(PROTOCOL_PREFIX);
     }
 
     // Check if we have an active conversation with this address
@@ -1257,7 +1198,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private isMessageOrHandshakeTransaction(
     tx: ITransaction | ExplorerTransaction
   ): boolean {
-    return tx?.payload?.startsWith(this.MESSAGE_PREFIX_HEX) ?? false;
+    return tx?.payload?.startsWith(PROTOCOL_PREFIX) ?? false;
   }
 
   private async processMessageTransaction(
@@ -1374,7 +1315,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Process the message
       const payload = getTransactionPayload(tx);
-      if (!payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
+      if (!payload.startsWith(PROTOCOL_PREFIX)) {
         return;
       }
 
@@ -1384,30 +1325,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
-
-      const handshakePrefix = "313a68616e647368616b653a";
-      const commPrefix = "313a636f6d6d3a";
-      const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
+      const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
 
       let messageType = "unknown";
       let isHandshake = false;
       let targetAlias = null;
       let encryptedHex = messageHex;
 
-      if (messageHex.startsWith(handshakePrefix)) {
+      if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
         messageType = "handshake";
         isHandshake = true;
         encryptedHex = messageHex;
-      } else if (messageHex.startsWith(commPrefix)) {
-        const hexToString = (hex: string) => {
-          let str = "";
-          for (let i = 0; i < hex.length; i += 2) {
-            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-          }
-          return str;
-        };
-
+      } else if (messageHex.startsWith(COMM_PREFIX)) {
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 
@@ -1416,18 +1345,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           targetAlias = parts[2];
           encryptedHex = parts[3];
         }
-      } else if (messageHex.startsWith(paymentPrefix)) {
+      } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
         messageType = "payment";
         // For payments, we don't need to parse aliases - just get the encrypted content
         // New format: 1:payment:{encrypted_payload}
-        const hexToString = (hex: string) => {
-          let str = "";
-          for (let i = 0; i < hex.length; i += 2) {
-            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-          }
-          return str;
-        };
-
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 

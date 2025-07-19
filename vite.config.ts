@@ -14,8 +14,8 @@ export default defineConfig({
         name: "Kasia",
         short_name: "Kasia",
         description: "Kasia: Encrypted Messaging Platform",
-        theme_color: "#1e293b",
-        background_color: "#1e293b",
+        theme_color: "#242424",
+        background_color: "#242424",
         display: "standalone",
         start_url: "/",
         icons: [

@@ -9,6 +9,15 @@ export function formatKasAmount(amount: number, isSompi: boolean = false) {
   });
 }
 
+// hex to string conversion utility
+export function hexToString(hex: string): string {
+  let str = "";
+  for (let i = 0; i < hex.length; i += 2) {
+    str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  }
+  return str;
+}
+
 export function decodePayload(hex: string) {
   try {
     if (!hex) return "No payload";

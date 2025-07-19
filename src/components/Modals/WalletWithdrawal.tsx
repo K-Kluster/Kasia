@@ -5,6 +5,7 @@ import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast";
 import { QrScanner } from "../QrScanner";
+import { Clipboard } from "lucide-react";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 
@@ -67,6 +68,15 @@ export const WalletWithdrawal: FC = () => {
     setAmountInputError(null);
   }, [balance]);
 
+  const handlePaste = useCallback(async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setWithdrawAddress(text.toLowerCase());
+    } catch {
+      toast.error("Failed to paste from clipboard");
+    }
+  }, []);
+
   const handleWithdraw = useCallback(async () => {
     if (amountInputError !== null) {
       return;
@@ -119,46 +129,54 @@ export const WalletWithdrawal: FC = () => {
     <>
       <h4 className="text-lg font-semibold">Withdraw KAS</h4>
       <div className="mt-2">
-        <div className="flex items-center gap-2">
+        <div className="relative mb-2">
           <textarea
             value={withdrawAddress}
             onChange={(e) => setWithdrawAddress(e.target.value)}
             placeholder="Enter Kaspa address"
             rows={3}
-            className="mb-2 w-full resize-none rounded-md border border-white/20 bg-black/30 p-2 break-words whitespace-pre-wrap text-white"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-primary-bg w-full resize-none rounded-lg border p-2 pr-24 break-words whitespace-pre-wrap focus:ring-2 focus:outline-none"
           />
-          <QrScanner
-            onScan={(data: string) => {
-              setWithdrawAddress(data.toLowerCase());
-            }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={withdrawAmount}
-              onChange={inputAmountUpdated}
-              placeholder="Amount (KAS)"
-              className="box-border w-full rounded-md border border-white/10 bg-black/30 pr-14 pl-2 text-white"
-            />
+          <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
             <button
-              type="button"
-              onClick={handleMaxClick}
-              className="absolute top-1/2 right-2 -translate-y-1/2 transform cursor-pointer text-sm font-semibold text-blue-500 hover:text-blue-600"
+              onClick={handlePaste}
+              className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border px-1.5 py-1 transition-colors"
+              title="Paste from clipboard"
             >
-              Max
+              <Clipboard size={16} />
             </button>
+            <QrScanner
+              onScan={(data: string) => {
+                setWithdrawAddress(data.toLowerCase());
+              }}
+            />
           </div>
-          <Button
-            onClick={handleWithdraw}
-            disabled={isSending || amountInputError !== null}
-            variant="primary"
-            className="!w-fit !py-2.5"
-          >
-            {isSending ? "Sending..." : "Send"}
-          </Button>
         </div>
+        <div className="relative">
+          <input
+            type="text"
+            value={withdrawAmount}
+            onChange={inputAmountUpdated}
+            placeholder="Amount (KAS)"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-primary-bg box-border w-full rounded-lg border py-2 pr-14 pl-2 focus:ring-2 focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={handleMaxClick}
+            className="border-kas-secondary bg-kas-secondary/10 text-kas-secondary hover:text-kas-secondary/80 absolute top-1/2 right-2 -translate-y-1/2 transform cursor-pointer rounded-lg border px-1.5 text-sm font-semibold"
+          >
+            Max
+          </button>
+        </div>
+
+        <Button
+          onClick={handleWithdraw}
+          disabled={isSending || amountInputError !== null}
+          variant="primary"
+          className="mt-4 w-full"
+        >
+          {isSending ? "Sending..." : "Send"}
+        </Button>
 
         {amountInputError && (
           <div className="mt-2 text-center text-sm text-red-500">
