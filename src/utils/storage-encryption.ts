@@ -92,6 +92,88 @@ export function migrateToPerAddressStorage(
   }
 }
 
+// cleanup function to remove migrated addresses from legacy storage
+export function cleanupLegacyStorage(
+  walletIds: string[],
+  password: string
+): void {
+  try {
+    const legacyMessages = loadLegacyMessages(password);
+    if (!legacyMessages || Object.keys(legacyMessages).length === 0) {
+      return; // no legacy data to clean up
+    }
+
+    const addressesToRemove: string[] = [];
+    const updatedLegacyMessages = { ...legacyMessages };
+
+    // check each address in legacy storage
+    const migratedWalletIds = new Set<string>();
+
+    for (const [address] of Object.entries(legacyMessages)) {
+      let addressMigrated = false;
+      let walletExists = false;
+      let migratedWalletId = "";
+
+      // check if any existing wallet has migrated this address
+      for (const walletId of walletIds) {
+        const storageKey = generateStorageKey(walletId, address);
+        const newStorageData = localStorage.getItem(storageKey);
+
+        if (newStorageData) {
+          addressMigrated = true;
+          walletExists = true;
+          migratedWalletId = walletId;
+          break;
+        }
+      }
+
+      // if address is migrated or wallet doesn't exist, mark for removal
+      if (addressMigrated || !walletExists) {
+        addressesToRemove.push(address);
+        delete updatedLegacyMessages[address];
+
+        // track which wallet was migrated
+        if (addressMigrated && migratedWalletId) {
+          migratedWalletIds.add(migratedWalletId);
+        }
+      }
+    }
+
+    // if we have addresses to remove, update legacy storage
+    if (addressesToRemove.length > 0) {
+      if (Object.keys(updatedLegacyMessages).length === 0) {
+        // all addresses removed, delete entire legacy storage
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+
+        // clean up all migration flags
+        for (const walletId of walletIds) {
+          const walletIdPrefix = walletId.substring(0, 10);
+          localStorage.removeItem(`success_migrated_${walletIdPrefix}`);
+        }
+
+        console.log(
+          "All addresses migrated - legacy storage and migration flags deleted"
+        );
+      } else {
+        // some addresses remain, update legacy storage
+        saveMessages(updatedLegacyMessages, password);
+
+        // clean up migration flags for wallets that were actually migrated
+        for (const walletId of migratedWalletIds) {
+          const walletIdPrefix = walletId.substring(0, 10);
+          localStorage.removeItem(`success_migrated_${walletIdPrefix}`);
+        }
+
+        console.log(
+          `Cleaned up ${addressesToRemove.length} migrated addresses from legacy storage`
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Error during legacy storage cleanup:", error);
+  }
+}
+
 // legacy function for backward compatibility
 export function saveMessages(
   messages: Record<string, Message[]>,

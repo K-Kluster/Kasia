@@ -22,6 +22,7 @@ import {
   saveMessagesForAddress,
   loadMessagesForAddress,
   migrateToPerAddressStorage,
+  cleanupLegacyStorage,
 } from "../utils/storage-encryption";
 
 // Define the HandshakeState interface
@@ -358,6 +359,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // Refresh the currently opened conversation
     g().refreshMessagesOnOpenedRecipient();
+
+    // run cleanup of legacy storage
+    if (walletStore.unlockedWallet?.password) {
+      // get all wallet IDs from the wallet store
+      const allWalletIds = walletStore.wallets?.map((w) => w.id) || [];
+      if (allWalletIds.length > 0) {
+        cleanupLegacyStorage(allWalletIds, walletStore.unlockedWallet.password);
+      }
+    }
 
     return g().messages;
   },
