@@ -18,6 +18,7 @@ import { KaspaClient } from "../utils/kaspa-client";
 import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
+import { hexToString } from "../utils/format";
 import { BlockAddedData, PriorityFeeConfig } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
@@ -113,17 +114,6 @@ type CreatePaymentWithMessageArgs = {
   priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
 
-interface Conversation {
-  conversationId: string;
-  myAlias: string;
-  theirAlias: string;
-  kaspaAddress: string;
-  status: string;
-  createdAt: number;
-  lastActivity: number;
-  initiatedByMe: boolean;
-}
-
 export class AccountService extends EventEmitter<AccountServiceEvents> {
   processor: UtxoProcessor;
   context: UtxoContext;
@@ -141,9 +131,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
   // Add password field
   private password: string | null = null;
-
-  private conversations: Conversation[] = [];
-  private conversationsLoaded = false;
 
   constructor(
     private readonly rpcClient: KaspaClient,
@@ -608,15 +595,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Create a message record for the sender to show they sent this payment
       if (this.receiveAddress) {
         try {
-          // Parse the payload to extract the payment details
-          const hexToString = (hex: string) => {
-            let str = "";
-            for (let i = 0; i < hex.length; i += 2) {
-              str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-            }
-            return str;
-          };
-
           // Remove the ciph_msg: prefix and parse the message
           const prefixLength = "636970685f6d73673a".length; // "ciph_msg:" in hex
           const messageHex = paymentTransaction.payload.substring(prefixLength);
@@ -787,46 +765,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     return this._getGeneratorForTransaction(transaction).estimate();
-  }
-
-  // Add method to load conversations
-  private async loadConversations(): Promise<void> {
-    try {
-      // If conversations are already loaded and we have some, return
-      if (this.conversationsLoaded && this.conversations.length > 0) {
-        return;
-      }
-
-      // Maximum number of retries
-      const maxRetries = 10;
-      let retries = 0;
-
-      while (!this.conversationsLoaded && retries < maxRetries) {
-        // Wait for conversations to load
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Check if we have conversations
-        if (this.conversations && this.conversations.length > 0) {
-          this.conversationsLoaded = true;
-          console.log("Conversations loaded:", this.conversations.length);
-          break;
-        }
-
-        retries++;
-        console.log("Waiting for conversations... attempt", retries);
-      }
-
-      // If we still don't have conversations, log a warning but continue
-      if (!this.conversationsLoaded) {
-        console.warn("Could not load conversations after maximum retries");
-        // Set loaded to true anyway to prevent further retries
-        this.conversationsLoaded = true;
-      }
-    } catch (error) {
-      console.error("Error loading conversations:", error);
-      // Set loaded to true to prevent further retries
-      this.conversationsLoaded = true;
-    }
   }
 
   public async sendMessage(
@@ -1400,14 +1338,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         isHandshake = true;
         encryptedHex = messageHex;
       } else if (messageHex.startsWith(commPrefix)) {
-        const hexToString = (hex: string) => {
-          let str = "";
-          for (let i = 0; i < hex.length; i += 2) {
-            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-          }
-          return str;
-        };
-
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 
@@ -1420,14 +1350,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         messageType = "payment";
         // For payments, we don't need to parse aliases - just get the encrypted content
         // New format: 1:payment:{encrypted_payload}
-        const hexToString = (hex: string) => {
-          let str = "";
-          for (let i = 0; i < hex.length; i += 2) {
-            str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
-          }
-          return str;
-        };
-
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 

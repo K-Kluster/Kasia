@@ -6,6 +6,7 @@ import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
+import { hexToString } from "../utils/format";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";
@@ -218,13 +219,6 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   encryptedContent = messageHex;
                 } else if (messageHex.startsWith(commPrefix)) {
                   // Parse regular messages
-                  const hexToString = (hex: string) => {
-                    const hexArray = hex.match(/.{1,2}/g) || [];
-                    return hexArray
-                      .map((byte) => String.fromCharCode(parseInt(byte, 16)))
-                      .join("");
-                  };
-
                   const messageStr = hexToString(messageHex);
                   const parts = messageStr.split(":");
 
@@ -235,13 +229,6 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                   }
                 } else if (messageHex.startsWith(paymentPrefix)) {
                   // Parse payment messages - simplified format without aliases
-                  const hexToString = (hex: string) => {
-                    const hexArray = hex.match(/.{1,2}/g) || [];
-                    return hexArray
-                      .map((byte) => String.fromCharCode(parseInt(byte, 16)))
-                      .join("");
-                  };
-
                   const messageStr = hexToString(messageHex);
                   const parts = messageStr.split(":");
 
