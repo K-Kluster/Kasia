@@ -33,6 +33,12 @@ import {
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
+import {
+  PROTOCOL_PREFIX,
+  HANDSHAKE_PREFIX,
+  COMM_PREFIX,
+  PAYMENT_PREFIX,
+} from "../config/protocol";
 
 // Message related types
 type DecodedMessage = {
@@ -126,7 +132,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private processedMessageIds: Set<string> = new Set();
   private monitoredConversations: Set<string> = new Set(); // Store monitored aliases
   private monitoredAddresses: Map<string, string> = new Map(); // Store address -> alias mappings
-  private readonly MESSAGE_PREFIX_HEX = "636970685f6d73673a"; // "ciph_msg:" in hex
   private readonly MAX_PROCESSED_MESSAGES = 1000; // Prevent unlimited growth
 
   // Add password field
@@ -1028,9 +1033,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     let isMessageTransaction = false;
     if (transaction.payload) {
       // Check if this is a message transaction by looking for the message prefix
-      isMessageTransaction = transaction.payload.startsWith(
-        this.MESSAGE_PREFIX_HEX
-      );
+      isMessageTransaction = transaction.payload.startsWith(PROTOCOL_PREFIX);
     }
 
     // Check if we have an active conversation with this address
@@ -1195,7 +1198,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private isMessageOrHandshakeTransaction(
     tx: ITransaction | ExplorerTransaction
   ): boolean {
-    return tx?.payload?.startsWith(this.MESSAGE_PREFIX_HEX) ?? false;
+    return tx?.payload?.startsWith(PROTOCOL_PREFIX) ?? false;
   }
 
   private async processMessageTransaction(
@@ -1312,7 +1315,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Process the message
       const payload = getTransactionPayload(tx);
-      if (!payload.startsWith(this.MESSAGE_PREFIX_HEX)) {
+      if (!payload.startsWith(PROTOCOL_PREFIX)) {
         return;
       }
 
@@ -1322,22 +1325,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      const messageHex = tx.payload.substring(this.MESSAGE_PREFIX_HEX.length);
-
-      const handshakePrefix = "313a68616e647368616b653a";
-      const commPrefix = "313a636f6d6d3a";
-      const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
+      const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
 
       let messageType = "unknown";
       let isHandshake = false;
       let targetAlias = null;
       let encryptedHex = messageHex;
 
-      if (messageHex.startsWith(handshakePrefix)) {
+      if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
         messageType = "handshake";
         isHandshake = true;
         encryptedHex = messageHex;
-      } else if (messageHex.startsWith(commPrefix)) {
+      } else if (messageHex.startsWith(COMM_PREFIX)) {
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 
@@ -1346,7 +1345,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           targetAlias = parts[2];
           encryptedHex = parts[3];
         }
-      } else if (messageHex.startsWith(paymentPrefix)) {
+      } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
         messageType = "payment";
         // For payments, we don't need to parse aliases - just get the encrypted content
         // New format: 1:payment:{encrypted_payload}

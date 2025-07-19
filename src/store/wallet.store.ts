@@ -20,6 +20,7 @@ import {
 import { TransactionId, ExplorerTransaction } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
+import { PROTOCOL_PREFIX } from "../config/protocol";
 
 export interface WalletStoreSendMessageArgs {
   message: string;
@@ -249,7 +250,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
         _accountService.on("transactionReceived", async (raw) => {
           const txDetails = raw as ExplorerTransaction;
-          if (txDetails.payload?.startsWith("636970685f6d73673a")) {
+          if (txDetails.payload?.startsWith(PROTOCOL_PREFIX)) {
             const messageOutput = txDetails.outputs.find(
               (output: { amount: number }) => output.amount === 10000000
             );
@@ -372,7 +373,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
       _accountService.on("transactionReceived", async (raw) => {
         const txDetails = raw as ExplorerTransaction;
-        if (txDetails.payload?.startsWith("636970685f6d73673a")) {
+        if (txDetails.payload?.startsWith(PROTOCOL_PREFIX)) {
           const messageOutput = txDetails.outputs.find(
             (output: { amount: number }) => output.amount === 10000000
           );
