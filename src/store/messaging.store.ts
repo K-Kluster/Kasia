@@ -16,7 +16,13 @@ import {
   PendingConversation,
 } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
-import { loadMessages, saveMessages } from "../utils/storage-encryption";
+import {
+  loadLegacyMessages,
+  saveMessages,
+  saveMessagesForAddress,
+  loadMessagesForAddress,
+  migrateToPerAddressStorage,
+} from "../utils/storage-encryption";
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -162,18 +168,24 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     g().refreshMessagesOnOpenedRecipient();
   },
   flushWalletHistory: (address: string) => {
-    // 1. Clear wallet messages from localStorage
-    const password = useWalletStore.getState().unlockedWallet?.password;
+    // 1. Clear wallet messages from localStorage using new per-address system
+    const walletStore = useWalletStore.getState();
+    const password = walletStore.unlockedWallet?.password;
+    const walletId = walletStore.selectedWalletId;
+
     if (!password) {
       console.error("Wallet password not available for flushing history.");
       return;
     }
 
-    const messagesMap = loadMessages(password);
+    if (!walletId) {
+      console.error("No wallet selected for flushing history.");
+      return;
+    }
 
-    delete messagesMap[address];
-
-    saveMessages(messagesMap, password);
+    // Remove the specific address storage key
+    const storageKey = `msg_${walletId.substring(0, 8)}_${address.replace(/^kaspa[test]?:/, "").slice(-10)}`;
+    localStorage.removeItem(storageKey);
 
     // 2. Clear nickname mappings for this wallet
     const nicknameKey = `contact_nicknames_${address}`;
@@ -207,18 +219,53 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     console.log("Complete history clear completed - all data wiped");
   },
   loadMessages: (address): Message[] => {
-    const password = useWalletStore.getState().unlockedWallet?.password;
+    const walletStore = useWalletStore.getState();
+    const password = walletStore.unlockedWallet?.password;
+    const walletId = walletStore.selectedWalletId;
+
     if (!password) {
       console.error("Wallet password not available for loading messages.");
       return [];
     }
 
-    const messages: Record<string, Message[]> = loadMessages(password);
+    if (!walletId) {
+      console.error("No wallet selected for loading messages.");
+      return [];
+    }
+
+    // Try to load messages using the new per-address system first
+    let messages: Message[] = [];
+
+    try {
+      messages = loadMessagesForAddress(walletId, address, password);
+    } catch (error) {
+      console.log(
+        "Failed to load messages using per-address system, trying legacy:",
+        error
+      );
+      // fallback to legacy system
+      const legacyMessages: Record<string, Message[]> =
+        loadLegacyMessages(password);
+      messages = legacyMessages[address] || [];
+
+      // if we have legacy messages, migrate them to the new system
+      if (messages.length > 0) {
+        try {
+          migrateToPerAddressStorage(walletId, password);
+          // set a flag to indicate migration was successful
+        } catch (migrationError) {
+          console.error(
+            "Failed to migrate to per-address storage:",
+            migrationError
+          );
+        }
+      }
+    }
 
     const contacts = new Map();
 
     // Process messages and organize by conversation
-    messages[address]?.forEach((msg) => {
+    messages.forEach((msg: Message) => {
       // Ensure fileData is properly loaded if it exists
       if (msg.fileData) {
         msg.content = `[File: ${msg.fileData.name}]`;
@@ -304,7 +351,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     set({
       contacts: sortedContacts,
-      messages: (messages[address] || []).sort(
+      messages: messages.sort(
         (a: Message, b: Message) => a.timestamp - b.timestamp
       ),
     });
@@ -383,25 +430,43 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
     }
 
-    const password = useWalletStore.getState().unlockedWallet?.password;
+    const walletStore = useWalletStore.getState();
+    const password = walletStore.unlockedWallet?.password;
+    const walletId = walletStore.selectedWalletId;
+
     if (!password) {
       console.error("Wallet password not available for storing message.");
       return;
     }
 
-    const messagesMap = loadMessages(password);
-    if (!messagesMap[walletAddress]) {
-      messagesMap[walletAddress] = [];
+    if (!walletId) {
+      console.error("No wallet selected for storing message.");
+      return;
+    }
+
+    // Load existing messages for this address
+    let existingMessages: Message[] = [];
+    try {
+      existingMessages = loadMessagesForAddress(
+        walletId,
+        walletAddress,
+        password
+      );
+    } catch (error) {
+      console.log(
+        "Failed to load messages using per-address system, using empty array:",
+        error
+      );
     }
 
     // Check if we already have a message with this transaction ID
-    const existingMessageIndex = messagesMap[walletAddress].findIndex(
+    const existingMessageIndex = existingMessages.findIndex(
       (m: Message) => m.transactionId === message.transactionId
     );
 
     if (existingMessageIndex !== -1) {
       // Merge the messages, preferring non-empty values
-      const existingMessage = messagesMap[walletAddress][existingMessageIndex];
+      const existingMessage = existingMessages[existingMessageIndex];
       const mergedMessage = {
         ...message,
         content: message.content || existingMessage.content,
@@ -415,7 +480,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         recipientAddress:
           message.recipientAddress || existingMessage.recipientAddress,
       };
-      messagesMap[walletAddress][existingMessageIndex] = mergedMessage;
+      existingMessages[existingMessageIndex] = mergedMessage;
     } else {
       // For outgoing messages with file content, try to parse and store fileData
       if (!message.fileData && message.content) {
@@ -436,10 +501,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         }
       }
       // Add new message
-      messagesMap[walletAddress].push(message);
+      existingMessages.push(message);
     }
 
-    saveMessages(messagesMap, password);
+    // Save messages using the new per-address system
+    saveMessagesForAddress(existingMessages, walletId, walletAddress, password);
 
     // Update contacts and conversations
     const state = g();
@@ -533,7 +599,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         );
       }
 
-      const messagesMap = loadMessages(password);
+      const messagesMap = loadLegacyMessages(password);
 
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
@@ -664,14 +730,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       console.log("Merging with existing messages...");
       // Merge with existing messages
-      const password = useWalletStore.getState().unlockedWallet?.password;
-      if (!password) {
+      const currentPassword =
+        useWalletStore.getState().unlockedWallet?.password;
+      if (!currentPassword) {
         throw new Error(
           "Wallet password not available for importing messages."
         );
       }
 
-      const existingMessages = loadMessages(password);
+      const existingMessages = loadLegacyMessages(currentPassword);
 
       const mergedMessages = {
         ...existingMessages,
@@ -679,7 +746,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       };
 
       // Save merged messages
-      saveMessages(mergedMessages, password);
+      saveMessages(mergedMessages, currentPassword);
 
       // Get network type and current address first
       let networkType = NetworkType.Mainnet; // Default to mainnet
