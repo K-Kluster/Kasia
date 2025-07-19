@@ -6,6 +6,7 @@ import { useNetworkStore } from "../../store/network.store";
 import { Modal } from "../Common/modal";
 import { Button } from "../Common/Button";
 import clsx from "clsx";
+import { reencryptMessagesForWallet } from "../../utils/storage-encryption";
 import {
   User,
   Sun,
@@ -112,6 +113,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+
+      // reencrypt all messages with the new password
+      await reencryptMessagesForWallet(
+        selectedWalletId,
+        currentPassword,
+        newPassword
+      );
 
       // Show success for 2 seconds, then go back
       setTimeout(() => {

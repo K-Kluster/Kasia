@@ -185,3 +185,75 @@ export function saveMessages(
   );
   localStorage.setItem(LEGACY_STORAGE_KEY, encrypted);
 }
+
+// reencrypt all messages for a wallet when password changes
+export async function reencryptMessagesForWallet(
+  walletId: string,
+  oldPassword: string,
+  newPassword: string
+): Promise<void> {
+  try {
+    // get all storage keys for this wallet
+    const walletIdPrefix = walletId.substring(0, 8);
+    const storageKeys: string[] = [];
+
+    // find all storage keys that belong to this wallet
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`msg_${walletIdPrefix}_`)) {
+        storageKeys.push(key);
+      }
+    }
+
+    // reencrypt each address's messages
+    for (const storageKey of storageKeys) {
+      try {
+        // extract the address from the storage key
+        const addressSuffix = storageKey.replace(`msg_${walletIdPrefix}_`, "");
+
+        // load messages with old password
+        const messages = loadMessagesForAddress(
+          walletId,
+          addressSuffix,
+          oldPassword
+        );
+
+        if (messages.length > 0) {
+          // save messages with new password
+          saveMessagesForAddress(
+            messages,
+            walletId,
+            addressSuffix,
+            newPassword
+          );
+          console.log(
+            `Reencrypted ${messages.length} messages for address suffix: ${addressSuffix}`
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Failed to reencrypt messages for storage key ${storageKey}:`,
+          error
+        );
+        // continue with other addresses even if one fails
+      }
+    }
+
+    // also handle legacy storage if it exists
+    try {
+      const legacyMessages = loadLegacyMessages(oldPassword);
+      if (Object.keys(legacyMessages).length > 0) {
+        // save legacy messages with new password
+        saveMessages(legacyMessages, newPassword);
+        console.log("Reencrypted legacy messages");
+      }
+    } catch (error) {
+      console.error("Failed to reencrypt legacy messages:", error);
+    }
+
+    console.log(`Successfully reencrypted messages for wallet ${walletId}`);
+  } catch (error) {
+    console.error("Error during message reencryption:", error);
+    throw new Error("Failed to reencrypt messages with new password");
+  }
+}
