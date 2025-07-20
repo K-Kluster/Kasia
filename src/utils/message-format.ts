@@ -1,19 +1,17 @@
 import React from "react";
+const LITERAL_NL = "__LITERAL_NL__";
+const ESCAPED_NL_RE = /\\\\n/g;
+const LEADING_WS_RE = /^(\s+)/;
 
-// renders real newlines as <br /> and literal \\n as the text '\n'.
 export function parseMessageForDisplay(stored: string): React.ReactNode {
   if (typeof stored !== "string") return stored;
-  // Replace all \\n with a unique placeholder
-  const PLACEHOLDER = "__LITERAL_NL__";
-  const withPlaceholders = stored.replace(/\\\\n/g, PLACEHOLDER);
-  // split by real newlines
-  const lines = withPlaceholders.split("\n");
-  return lines.map((line, idx, arr) =>
-    React.createElement(
-      React.Fragment,
-      { key: idx },
-      line.replace(new RegExp(PLACEHOLDER, "g"), "\\n"),
-      idx < arr.length - 1 ? React.createElement("br") : null
-    )
-  );
+  return stored
+    .replace(ESCAPED_NL_RE, LITERAL_NL)
+    .split("\n")
+    .flatMap((line, i, arr) => [
+      line
+        .replace(LEADING_WS_RE, (m) => "\u00A0".repeat(m.length))
+        .replace(new RegExp(LITERAL_NL, "g"), "\\n"),
+      i < arr.length - 1 && React.createElement("br", { key: i }),
+    ]);
 }
