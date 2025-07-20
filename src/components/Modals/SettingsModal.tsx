@@ -5,8 +5,14 @@ import { useWalletStore } from "../../store/wallet.store";
 import { useNetworkStore } from "../../store/network.store";
 import { Modal } from "../Common/modal";
 import { Button } from "../Common/Button";
+import { ColorPicker } from "../Common/ColorPicker";
+import { NetworkSelector } from "../NetworkSelector";
 import clsx from "clsx";
 import { reencryptMessagesForWallet } from "../../utils/storage-encryption";
+import {
+  DEFAULT_COLORS,
+  type CustomColorPalette,
+} from "../../utils/custom-theme-applier";
 import {
   User,
   Sun,
@@ -19,6 +25,7 @@ import {
   Key,
   ArrowLeft,
   Edit3,
+  Palette,
 } from "lucide-react";
 
 interface SettingsModalProps {
@@ -33,13 +40,30 @@ const tabs = [
   { id: "security", label: "Security", icon: Shield },
 ];
 
+const colorPickers: Array<{
+  key: keyof CustomColorPalette;
+  label: string;
+}> = [
+  { key: "primaryBg", label: "Primary Background" },
+  { key: "secondaryBg", label: "Secondary Background" },
+  { key: "primaryBorder", label: "Primary Border" },
+  { key: "secondaryBorder", label: "Secondary Border" },
+  { key: "textPrimary", label: "Primary Text" },
+  { key: "textSecondary", label: "Secondary Text" },
+  { key: "accentRed", label: "Accent Red" },
+  { key: "inputBg", label: "Input Background" },
+  { key: "textWarning", label: "Warning Text" },
+  { key: "buttonPrimary", label: "Button Primary" },
+];
+
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
 }) => {
   const [activeTab, setActiveTab] = useState("account");
   const [isMobile, setIsMobile] = useState(false);
-  const { theme, setTheme } = useUiStore();
+  const { theme, setTheme, customColors, setCustomColors, resetCustomColors } =
+    useUiStore();
   const openModal = useUiStore((s) => s.openModal);
   const messageStore = useMessagingStore();
   const walletAddress = useWalletStore((s) => s.address);
@@ -65,6 +89,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [nameChangeError, setNameChangeError] = useState("");
   const [nameChangeSuccess, setNameChangeSuccess] = useState(false);
   const [isChangingName, setIsChangingName] = useState(false);
+
+  // Custom colors state
+  const [tempCustomColors, setTempCustomColors] = useState(
+    customColors || DEFAULT_COLORS
+  );
 
   const onClearHistory = () => {
     if (!walletAddress) return;
@@ -198,6 +227,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     // Start with blank input
     setNewWalletName("");
     setShowNameChange(true);
+  };
+
+  // Update temp colors when custom colors change
+  useEffect(() => {
+    if (customColors) {
+      setTempCustomColors(customColors);
+    }
+  }, [customColors]);
+
+  const handleCustomColorChange = (key: string, value: string) => {
+    setTempCustomColors((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  };
+
+  const applyCustomColors = () => {
+    setCustomColors(tempCustomColors);
+  };
+
+  const handleResetCustomColors = () => {
+    resetCustomColors();
+    setTempCustomColors(DEFAULT_COLORS);
+    // switch away from custom theme when resetting
+    setTheme("dark");
   };
 
   useEffect(() => {
@@ -508,14 +562,76 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <Monitor className="h-5 w-5 text-[var(--text-primary)]" />
                     <span className="text-sm font-medium">System</span>
                   </button>
+                  <button
+                    onClick={() => setTheme("custom")}
+                    className={clsx(
+                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-colors",
+                      theme === "custom"
+                        ? "bg-kas-secondary/10 border-kas-secondary"
+                        : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
+                    )}
+                  >
+                    <Palette className="h-5 w-5 text-[var(--text-primary)]" />
+                    <span className="text-sm font-medium">Custom</span>
+                  </button>
                 </div>
+
+                {/* Custom Color Configuration - only show when custom theme is selected */}
+                {theme === "custom" && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="text-md font-medium">
+                      Custom Color Palette
+                    </h4>
+                    <div className="flex flex-wrap gap-4">
+                      {colorPickers.map((picker) => (
+                        <ColorPicker
+                          key={picker.key}
+                          color={tempCustomColors[picker.key]}
+                          onChange={(color) =>
+                            handleCustomColorChange(picker.key, color)
+                          }
+                          label={picker.label}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex gap-2 pt-4">
+                      <Button onClick={applyCustomColors} variant="primary">
+                        Apply Colors
+                      </Button>
+                      <Button
+                        onClick={handleResetCustomColors}
+                        variant="secondary"
+                      >
+                        Reset to Default
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
             {activeTab === "network" && (
               <div className="mt-4 space-y-6 sm:mt-0">
                 <h3 className="mb-4 text-lg font-medium">Network</h3>
                 <div className="space-y-4">
-                  {/* Current Network */}
+                  {/* Network Selector */}
+                  <div className="border-primary-border bg-primary-bg rounded-2xl border p-4">
+                    <div className="mb-4 text-sm font-medium">
+                      Select Network
+                    </div>
+                    <div className="flex justify-center">
+                      <NetworkSelector
+                        selectedNetwork={networkStore.network}
+                        onNetworkChange={(network) =>
+                          networkStore.setNetwork(network)
+                        }
+                        isConnected={networkStore.isConnected}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Current Network Info */}
                   <div className="border-primary-border bg-primary-bg rounded-2xl border p-4">
                     <div className="mb-2 text-sm font-medium">
                       Current Network

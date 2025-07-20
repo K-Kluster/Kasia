@@ -1,12 +1,14 @@
 import { FC } from "react";
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon, Monitor, Palette } from "lucide-react";
 import { useUiStore } from "../../store/ui.store";
 
 export const ThemeToggle: FC = () => {
-  const { theme, setTheme, getEffectiveTheme } = useUiStore();
+  const { theme, setTheme, getEffectiveTheme, customColors } = useUiStore();
   const effectiveTheme = getEffectiveTheme();
 
-  const getButtonStyles = (buttonTheme: "light" | "dark" | "system") => {
+  const getButtonStyles = (
+    buttonTheme: "light" | "dark" | "system" | "custom"
+  ) => {
     const isActive = theme === buttonTheme;
     const baseStyles =
       "cursor-pointer p-1.5 rounded-2xl transition-all duration-200";
@@ -18,7 +20,9 @@ export const ThemeToggle: FC = () => {
     }
   };
 
-  const getButtonColors = (buttonTheme: "light" | "dark" | "system") => {
+  const getButtonColors = (
+    buttonTheme: "light" | "dark" | "system" | "custom"
+  ) => {
     const isActive = theme === buttonTheme;
 
     if (isActive) {
@@ -91,6 +95,25 @@ export const ThemeToggle: FC = () => {
           }}
         />
       </button>
+
+      {customColors && (
+        <button
+          onClick={() => setTheme("custom")}
+          className={getButtonStyles("custom")}
+          style={getButtonColors("custom")}
+          aria-label="Custom theme"
+        >
+          <Palette
+            className="h-4 w-4"
+            style={{
+              color:
+                theme === "custom"
+                  ? "var(--color-kas-secondary)"
+                  : "var(--text-secondary)",
+            }}
+          />
+        </button>
+      )}
     </div>
   );
 };
