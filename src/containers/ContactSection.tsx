@@ -36,6 +36,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const messageStore = useMessagingStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   // Search through all messages and contacts
   const searchResults = useMemo(() => {
@@ -100,13 +101,21 @@ export const ContactSection: FC<ContactSectionProps> = ({
               </button>
             )}
             <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search
+                className="hover:text-kas-primary absolute top-1/2 left-3 size-5 -translate-y-1/2 cursor-pointer text-gray-400 hover:scale-110"
+                onClick={() => {
+                  setShowSearch(!showSearch);
+                }}
+              />
               <input
                 type="text"
                 placeholder="Search messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-primary-bg focus:ring-kas-secondary/50 border-primary-border w-full rounded-lg border px-10 py-2 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
+                className={clsx(
+                  "bg-primary-bg focus:ring-kas-secondary/50 border-primary-border w-full rounded-lg border px-10 py-2 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none",
+                  showSearch ? "flex" : "hidden"
+                )}
               />
               {searchQuery && (
                 <button

@@ -27,10 +27,10 @@ interface SettingsModalProps {
 }
 
 const tabs = [
-  { id: "account", label: "Account" },
-  { id: "theme", label: "Theme" },
-  { id: "network", label: "Network" },
-  { id: "security", label: "Security" },
+  { id: "account", label: "Account", icon: User },
+  { id: "theme", label: "Theme", icon: Monitor },
+  { id: "network", label: "Network", icon: Network },
+  { id: "security", label: "Security", icon: Shield },
 ];
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -295,19 +295,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     }
                   )}
                 >
-                  {/* Tab icons */}
-                  {tab.id === "account" && (
-                    <User className="h-5 w-5 text-[var(--text-primary)]" />
-                  )}
-                  {tab.id === "theme" && (
-                    <Monitor className="h-5 w-5 text-[var(--text-primary)]" />
-                  )}
-                  {tab.id === "network" && (
-                    <Network className="h-5 w-5 text-[var(--text-primary)]" />
-                  )}
-                  {tab.id === "security" && (
-                    <Shield className="h-5 w-5 text-[var(--text-primary)]" />
-                  )}
+                  <tab.icon className="h-5 w-5 text-[var(--text-primary)]" />
                   {tab.label}
                 </button>
               ))}

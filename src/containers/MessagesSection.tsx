@@ -1,6 +1,6 @@
 import { FC, useMemo, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
-import { Pencil, Ellipsis, Info, Copy, Check, UserCog } from "lucide-react";
+import { Pencil, Info, Copy, Check, UserCog } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessagesList } from "../components/MessagesList";
 import { SendMessageForm } from "./SendMessageForm";
@@ -300,137 +300,138 @@ export const MessageSection: FC<{
         <>
           <div className="flex h-[60px] items-center justify-between bg-[var(--secondary-bg)] px-4">
             {/* mobile back button */}
-            <button
-              onClick={() => {
-                setMobileView("contacts");
-                messageStore.setOpenedRecipient(null);
-              }}
-              className="mr-2 cursor-pointer p-1 sm:hidden"
-              aria-label="Back to contacts"
-            >
-              <ChevronLeft className="size-6" />
-            </button>
-
-            <h3 className="flex items-center gap-2 truncate text-base font-semibold">
-              {isEditingNickname ? (
-                <input
-                  type="text"
-                  value={tempNickname}
-                  onChange={(e) => setTempNickname(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleNicknameSave();
-                    if (e.key === "Escape") handleNicknameCancel();
-                  }}
-                  autoFocus
-                  placeholder={currentContact?.address}
-                  className="h-6 flex-1 rounded-sm border border-gray-600 bg-transparent px-2 text-sm leading-none"
-                />
-              ) : currentContact?.nickname ? (
-                <span title={currentContact.nickname}>
-                  {isMobile
-                    ? truncateNickname(currentContact.nickname)
-                    : currentContact.nickname}
-                </span>
-              ) : (
-                <KaspaAddress address={openedRecipient ?? ""} />
-              )}
-              <Popover className="relative">
-                {({ open }) => {
-                  // Only update state if it actually changed, and never in render
-                  if (open !== popoverOpen) {
-                    // Use a microtask to avoid updating state during render
-                    Promise.resolve().then(() => setPopoverOpen(open));
-                  }
-                  return (
-                    <>
-                      <PopoverButton className="hover:text-kas-secondary cursor-pointer rounded p-1 focus:outline-none">
-                        <UserCog className="size-6 sm:size-5" />
-                      </PopoverButton>
-                      <PopoverPanel
-                        anchor="bottom end"
-                        className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-2xl ring-1 shadow-(color:--kas-primary)/30 ring-[var(--primary-border)]"
-                      >
-                        <div className="flex flex-col">
-                          <button
-                            onClick={() => {
-                              copyToClipboard(
-                                currentContact?.address ??
-                                  openedRecipient ??
-                                  "",
-                                "Address Copied"
-                              );
-                              setIsCopying(true);
-                              setTimeout(() => setIsCopying(false), 1000);
-                            }}
-                            className={clsx(
-                              "flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 transition duration-300",
-                              {
-                                "bg-kas-secondary text-white": isCopying,
-                                "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg text-[var(--text-primary)]":
-                                  !isCopying,
-                              }
-                            )}
-                            title="Copy Address"
-                          >
-                            {isCopying ? (
-                              <Check className="h-4 w-4 text-white" />
-                            ) : (
-                              <Copy className="h-4 w-4 text-[var(--text-primary)]" />
-                            )}
-                            Copy Address
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsEditingInPopover(true);
-                              setPopoverEditValue(
-                                currentContact?.nickname || ""
-                              );
-                            }}
-                            className={clsx(
-                              "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]",
-                              { hidden: isEditingInPopover }
-                            )}
-                          >
-                            <Pencil className="h-4 w-4" /> Edit Nickname
-                          </button>
-                          {isEditingInPopover && (
-                            <EditNicknamePopover
-                              value={popoverEditValue}
-                              placeholder={
-                                currentContact?.nickname ||
-                                currentContact?.address ||
-                                ""
-                              }
-                              onChange={setPopoverEditValue}
-                              onSave={() => {
-                                if (currentContact) {
-                                  messageStore.setContactNickname(
-                                    currentContact.address,
-                                    popoverEditValue
-                                  );
-                                }
-                                setIsEditingInPopover(false);
-                              }}
-                              onCancel={() => setIsEditingInPopover(false)}
-                            />
-                          )}
-                          <button
-                            onClick={() => {
-                              setContactInfoContact(currentContact ?? null);
-                              openModal("contact-info-modal");
-                            }}
-                            className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]"
-                          >
-                            <Info className="h-4 w-4" /> Contact Info
-                          </button>
-                        </div>
-                      </PopoverPanel>
-                    </>
-                  );
+            <div className="flex items-center">
+              <button
+                onClick={() => {
+                  setMobileView("contacts");
+                  messageStore.setOpenedRecipient(null);
                 }}
-              </Popover>
-            </h3>
+                className="mr-2 cursor-pointer p-1 sm:hidden"
+                aria-label="Back to contacts"
+              >
+                <ChevronLeft className="size-6" />
+              </button>
 
+              <h3 className="flex items-center gap-2 truncate text-base font-semibold">
+                {isEditingNickname ? (
+                  <input
+                    type="text"
+                    value={tempNickname}
+                    onChange={(e) => setTempNickname(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleNicknameSave();
+                      if (e.key === "Escape") handleNicknameCancel();
+                    }}
+                    autoFocus
+                    placeholder={currentContact?.address}
+                    className="h-6 flex-1 rounded-sm border border-gray-600 bg-transparent px-2 text-sm leading-none"
+                  />
+                ) : currentContact?.nickname ? (
+                  <span title={currentContact.nickname}>
+                    {isMobile
+                      ? truncateNickname(currentContact.nickname)
+                      : currentContact.nickname}
+                  </span>
+                ) : (
+                  <KaspaAddress address={openedRecipient ?? ""} />
+                )}
+                <Popover className="relative">
+                  {({ open }) => {
+                    // Only update state if it actually changed, and never in render
+                    if (open !== popoverOpen) {
+                      // Use a microtask to avoid updating state during render
+                      Promise.resolve().then(() => setPopoverOpen(open));
+                    }
+                    return (
+                      <>
+                        <PopoverButton className="hover:text-kas-secondary cursor-pointer rounded p-1 focus:outline-none">
+                          <UserCog className="size-6 sm:size-5" />
+                        </PopoverButton>
+                        <PopoverPanel
+                          anchor="bottom end"
+                          className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-2xl ring-1 shadow-(color:--kas-primary)/30 ring-[var(--primary-border)]"
+                        >
+                          <div className="flex flex-col">
+                            <button
+                              onClick={() => {
+                                copyToClipboard(
+                                  currentContact?.address ??
+                                    openedRecipient ??
+                                    "",
+                                  "Address Copied"
+                                );
+                                setIsCopying(true);
+                                setTimeout(() => setIsCopying(false), 1000);
+                              }}
+                              className={clsx(
+                                "flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 transition duration-300",
+                                {
+                                  "bg-kas-secondary text-white": isCopying,
+                                  "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg text-[var(--text-primary)]":
+                                    !isCopying,
+                                }
+                              )}
+                              title="Copy Address"
+                            >
+                              {isCopying ? (
+                                <Check className="h-4 w-4 text-white" />
+                              ) : (
+                                <Copy className="h-4 w-4 text-[var(--text-primary)]" />
+                              )}
+                              Copy Address
+                            </button>
+                            <button
+                              onClick={() => {
+                                setIsEditingInPopover(true);
+                                setPopoverEditValue(
+                                  currentContact?.nickname || ""
+                                );
+                              }}
+                              className={clsx(
+                                "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]",
+                                { hidden: isEditingInPopover }
+                              )}
+                            >
+                              <Pencil className="h-4 w-4" /> Edit Nickname
+                            </button>
+                            {isEditingInPopover && (
+                              <EditNicknamePopover
+                                value={popoverEditValue}
+                                placeholder={
+                                  currentContact?.nickname ||
+                                  currentContact?.address ||
+                                  ""
+                                }
+                                onChange={setPopoverEditValue}
+                                onSave={() => {
+                                  if (currentContact) {
+                                    messageStore.setContactNickname(
+                                      currentContact.address,
+                                      popoverEditValue
+                                    );
+                                  }
+                                  setIsEditingInPopover(false);
+                                }}
+                                onCancel={() => setIsEditingInPopover(false)}
+                              />
+                            )}
+                            <button
+                              onClick={() => {
+                                setContactInfoContact(currentContact ?? null);
+                                openModal("contact-info-modal");
+                              }}
+                              className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]"
+                            >
+                              <Info className="h-4 w-4" /> Contact Info
+                            </button>
+                          </div>
+                        </PopoverPanel>
+                      </>
+                    );
+                  }}
+                </Popover>
+              </h3>
+            </div>
             {openedRecipient && (
               <div className="flex items-center gap-3">
                 {address && <FetchApiMessages address={address.toString()} />}
