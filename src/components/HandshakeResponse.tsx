@@ -75,7 +75,7 @@ export const HandshakeResponse: React.FC<{
             e.stopPropagation();
             handleRespond();
           }}
-          className="bg-kas-primary hover:bg-kas-secondary cursor-pointer rounded border-none px-4 py-2 text-sm text-white transition-colors duration-200 disabled:cursor-not-allowed disabled:bg-gray-500"
+          className="cursor-pointer rounded border-none bg-[var(--button-primary)] px-4 py-2 text-sm text-white transition-colors duration-200 hover:bg-[var(--button-primary)]/80 disabled:cursor-not-allowed disabled:bg-gray-500"
           disabled={isResponding}
         >
           {isResponding ? "Sending Response..." : "Accept & Send Response"}

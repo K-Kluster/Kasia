@@ -65,7 +65,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
                   {/* spacer bridge */}
                   <div className="absolute bottom-full left-0 z-10 h-2 w-56" />
                   <div
-                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-2xl shadow-(color:--kas-primary)/30"
+                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-2xl shadow-(color:--button-primary)/30"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ul className="divide-primary-border divide-y">
@@ -223,7 +223,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
                   {/* spacer bridge */}
                   <div className="absolute bottom-full left-0 z-10 h-2 w-56" />
                   <div
-                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-2xl shadow-(color:--kas-primary)/30"
+                    className="border-primary-border absolute bottom-full left-0 z-10 mb-2 w-56 rounded border bg-[var(--primary-bg)] shadow-2xl shadow-(color:--button-primary)/30"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ul className="divide-primary-border divide-y">

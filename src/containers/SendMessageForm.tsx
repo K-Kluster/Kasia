@@ -501,7 +501,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                 {({ close }: { close: () => void }) => (
                   <>
                     <PopoverButton className="rounded p-1 hover:bg-white/5">
-                      <Plus className="size-6 cursor-pointer" />
+                      <Plus className="size-6 cursor-pointer text-[var(--button-primary)]" />
                     </PopoverButton>
                     <Transition
                       enter="transition ease-out duration-100"
@@ -511,7 +511,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                       leaveFrom="opacity-100 translate-y-0"
                       leaveTo="opacity-0 translate-y-1"
                     >
-                      <PopoverPanel className="absolute bottom-full left-0 mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
+                      <PopoverPanel className="bg-secondary-bg absolute bottom-full left-0 mb-2 flex flex-col gap-2 rounded p-2 shadow-lg">
                         <button
                           onClick={() => {
                             openFileDialog();
@@ -564,7 +564,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                     <button
                       onClick={onSendClicked}
                       className={clsx(
-                        "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
+                        "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
                         !messageInputEmpty
                           ? "pointer-events-auto translate-x-0 opacity-100"
                           : "pointer-events-none translate-x-4 opacity-0"
@@ -629,7 +629,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                     <button
                       onClick={onSendClicked}
                       className={clsx(
-                        "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 items-center justify-center transition-all duration-200 ease-in-out",
+                        "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
                         !messageInputEmpty
                           ? "pointer-events-auto translate-x-0 opacity-100"
                           : "pointer-events-none translate-x-4 opacity-0"
@@ -642,7 +642,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                       <button
                         onClick={openCameraDialog}
                         className={clsx(
-                          "text-kas-primary hover:text-kas-secondary absolute flex h-6 w-6 cursor-pointer items-center justify-center transition-all duration-200 ease-in-out",
+                          "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
                           messageInputEmpty
                             ? "pointer-events-auto translate-x-0 opacity-100"
                             : "pointer-events-none -translate-x-4 opacity-0"

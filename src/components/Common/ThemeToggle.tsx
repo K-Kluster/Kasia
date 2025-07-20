@@ -71,7 +71,7 @@ export const ThemeToggle: FC = () => {
           style={{
             color:
               theme === "dark"
-                ? "var(--color-kas-primary)"
+                ? "var(--button-primary)"
                 : "var(--text-secondary)",
           }}
         />
@@ -89,7 +89,7 @@ export const ThemeToggle: FC = () => {
             color:
               theme === "system"
                 ? effectiveTheme === "dark"
-                  ? "var(--color-kas-primary)"
+                  ? "var(--button-primary)"
                   : "#64748b"
                 : "var(--text-secondary)",
           }}
@@ -108,7 +108,7 @@ export const ThemeToggle: FC = () => {
             style={{
               color:
                 theme === "custom"
-                  ? "var(--color-kas-secondary)"
+                  ? "var(--button-primary)"
                   : "var(--text-secondary)",
             }}
           />

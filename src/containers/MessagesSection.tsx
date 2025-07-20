@@ -344,12 +344,12 @@ export const MessageSection: FC<{
                     }
                     return (
                       <>
-                        <PopoverButton className="hover:text-kas-secondary cursor-pointer rounded p-1 focus:outline-none">
+                        <PopoverButton className="cursor-pointer rounded p-1 text-[var(--button-primary)] hover:text-[var(--button-primary)]/80 focus:outline-none">
                           <UserCog className="size-6 sm:size-5" />
                         </PopoverButton>
                         <PopoverPanel
                           anchor="bottom end"
-                          className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-2xl ring-1 shadow-(color:--kas-primary)/30 ring-[var(--primary-border)]"
+                          className="absolute right-0 z-10 mt-2 w-48 rounded bg-[var(--primary-bg)] shadow-2xl ring-1 shadow-(color:--button-primary)/30 ring-[var(--primary-border)]"
                         >
                           <div className="flex flex-col">
                             <button

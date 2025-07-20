@@ -8,7 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import { kaspaToSompi } from "kaspa-wasm";
-import styles from "../components/NewChatForm.module.css";
+import clsx from "clsx";
 import { knsIntegrationService_getDomainResolution } from "../service/integrations/kns-integration-service";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { KaspaAddress } from "./KaspaAddress";
@@ -357,14 +357,16 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             <strong>Your Balance:</strong> {balance?.matureDisplay || "0"} KAS
           </p>
           {parseFloat(handshakeAmount) > 0.2 && (
-            <p className={styles["info-text"]}>
+            <p className="text-sm text-[var(--text-secondary)]">
               The extra amount ({(parseFloat(handshakeAmount) - 0.2).toFixed(8)}{" "}
               KAS) helps the recipient respond even if they have no KAS.
             </p>
           )}
           {/* Only show warning if user is NOT sending extra amount */}
           {recipientWarning && parseFloat(handshakeAmount) <= 0.2 && (
-            <p className={styles["warning-text"]}>{recipientWarning}</p>
+            <p className="my-1.5 text-sm leading-[1.4] text-[#ffc107]">
+              {recipientWarning}
+            </p>
           )}
           <p>This will initiate a handshake conversation. Continue?</p>
         </div>
@@ -404,7 +406,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           <div className="relative">
             <Textarea
               ref={useRecipientInputRef}
-              className="bg-primary-bg border-primary-border focus:ring-kas-secondary/80 w-full resize-none rounded-lg border p-2 pr-24 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
+              className="bg-primary-bg border-primary-border w-full resize-none rounded-lg border p-2 pr-24 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:border-[var(--button-primary)]/80 focus:ring-2 focus:outline-none"
               rows={3}
               id="recipientAddress"
               value={recipientInputValue}
@@ -434,7 +436,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           </div>
 
           {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
-            <div className={styles["checking-text"]}>
+            <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
               Resolving KNS domain...
             </div>
           )}
@@ -455,17 +457,17 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           {knsError &&
             detectedRecipientInputValueFormat === "kns" &&
             !isResolvingKns && (
-              <div className={`mt-2 ${styles["error-message"]}`}>
+              <div className="mt-2 mb-4 rounded-lg border border-[rgba(255,68,68,0.3)] bg-[rgba(255,68,68,0.1)] p-2.5 text-sm text-[#ff4444]">
                 {knsError}
               </div>
             )}
           {isCheckingRecipient && (
-            <div className={styles["checking-text"]}>
+            <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
               Checking recipient balance...
             </div>
           )}
           {recipientWarning && (
-            <div className="mt-1 mt-2 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4] text-yellow-400">
+            <div className="mt-1 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4] text-yellow-400">
               {recipientWarning}
             </div>
           )}
@@ -487,12 +489,22 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             placeholder="0.2"
             disabled={isLoading}
           />
-          <div className={styles["amount-buttons"]}>
+          <div className="mb-2.5 flex gap-2">
             <button
               type="button"
-              className={`${styles["amount-button"]} ${
-                handshakeAmount === "0.2" ? styles["active"] : ""
-              }`}
+              className={clsx(
+                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                {
+                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                    handshakeAmount === "0.2",
+                }
+              )}
+              style={{
+                color:
+                  handshakeAmount !== "0.2"
+                    ? "var(--button-primary)"
+                    : undefined,
+              }}
               onClick={() => handleQuickAmount("0.2")}
               disabled={isLoading}
             >
@@ -500,9 +512,19 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             </button>
             <button
               type="button"
-              className={`${styles["amount-button"]} ${
-                handshakeAmount === "0.5" ? styles["active"] : ""
-              }`}
+              className={clsx(
+                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                {
+                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                    handshakeAmount === "0.5",
+                }
+              )}
+              style={{
+                color:
+                  handshakeAmount !== "0.5"
+                    ? "var(--button-primary)"
+                    : undefined,
+              }}
               onClick={() => handleQuickAmount("0.5")}
               disabled={isLoading}
             >
@@ -510,23 +532,35 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             </button>
             <button
               type="button"
-              className={`${styles["amount-button"]} ${
-                handshakeAmount === "1" ? styles["active"] : ""
-              }`}
+              className={clsx(
+                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                {
+                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                    handshakeAmount === "1",
+                }
+              )}
+              style={{
+                color:
+                  handshakeAmount !== "1" ? "var(--button-primary)" : undefined,
+              }}
               onClick={() => handleQuickAmount("1")}
               disabled={isLoading}
             >
               1
             </button>
           </div>
-          <div className="mt-4 text-xs text-gray-400">
+          <div className="mt-4 text-xs text-[var(--text-secondary)]">
             Default: 0.2 KAS. Higher amounts help recipients respond even if
             they have no KAS. This creates a better experience for newcomers to
             Kasia.
           </div>
         </div>
 
-        {error && <div className={styles["error-message"]}>{error}</div>}
+        {error && (
+          <div className="mb-4 rounded-lg border border-[rgba(255,68,68,0.3)] bg-[rgba(255,68,68,0.1)] p-2.5 text-sm text-[#ff4444]">
+            {error}
+          </div>
+        )}
 
         <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
           <Button type="submit" disabled={isLoading} variant="primary">

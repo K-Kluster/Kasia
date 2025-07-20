@@ -129,7 +129,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
             </div>
             <button
               aria-label="new chat"
-              className="text-kas-secondary bg-kas-secondary/20 border-kas-secondary cursor-pointer rounded-full border p-1 hover:scale-110"
+              className="cursor-pointer rounded-full border border-[var(--button-primary)] bg-[var(--button-primary)]/20 p-1 text-[var(--button-primary)] hover:scale-110"
               onClick={onNewChatClicked}
             >
               <Plus className="size-4" />
@@ -140,7 +140,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
           <div className="flex flex-1 justify-center">
             <button
               aria-label="new chat"
-              className="text-kas-secondary bg-kas-secondary/20 border-kas-secondary cursor-pointer rounded-full border p-1 hover:scale-110"
+              className="cursor-pointer rounded-full border border-[var(--button-primary)] bg-[var(--button-primary)]/20 p-1 text-[var(--button-primary)] hover:scale-110"
               onClick={onNewChatClicked}
             >
               <Plus className="size-4" />

@@ -262,7 +262,7 @@ export const SendPaymentPopup: FC<{
       {panelOpen && (
         <div
           ref={panelRef}
-          className="absolute bottom-full left-0 z-50 mt-3 mb-20 block min-w-[320px] translate-y-2/5 transform rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg)] p-4 shadow-2xl shadow-(color:--kas-primary)/30 transition duration-200 ease-out sm:translate-y-1/2"
+          className="absolute bottom-full left-0 z-50 mt-3 mb-20 block min-w-[320px] translate-y-2/5 transform rounded-lg border border-[var(--border-color)] bg-[var(--secondary-bg)] p-4 shadow-2xl shadow-(color:--button-primary)/30 transition duration-200 ease-out sm:translate-y-1/2"
         >
           <div className="mb-3 flex items-center justify-between">
             <h4 className="text-sm font-medium text-[var(--text-primary)]">

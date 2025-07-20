@@ -590,7 +590,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             "h-6 w-6",
             loading
               ? "animate-spin text-gray-500"
-              : "text-kas-primary hover:scale-110"
+              : "text-[var(--button-primary)] hover:scale-110"
           )}
         />
       </button>
