@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState, DragEvent } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -67,6 +67,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { isOpen, closeModal, openModal } = useUiStore();
 
   const messageStore = useMessagingStore();
@@ -327,11 +328,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     openModal("warn-costy-send-message");
   }, [messageStore, openModal, openedRecipient, sendMessage]);
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file || isUploading) return;
+  const processFile = async (file: File, source: string) => {
+    if (isUploading) return;
 
     setIsUploading(true);
     const { fileMessage, error } = await prepareFileForUpload(
@@ -346,69 +344,81 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
     if (error) {
       toast.error(error);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
+
     if (fileMessage) {
       setMessage(fileMessage);
       if (messageInputRef.current) {
-        messageInputRef.current.value = `[File: ${file.name}]`;
+        messageInputRef.current.value = `[${source}: ${file.name}]`;
       }
+      toast.success(`Attached ${source.toLowerCase()} successfully!`);
     }
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    await processFile(file, "File");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Handle paste events for images
   const handlePaste = async (
     event: React.ClipboardEvent<HTMLTextAreaElement>
   ) => {
     const items = event.clipboardData?.items;
-    if (!items || isUploading) return;
+    if (!items) return;
 
     // Look for image items in the clipboard
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
 
-      // Check if the item is an image
       if (item.type.startsWith("image/")) {
-        event.preventDefault(); // Prevent default paste behavior
-
+        event.preventDefault();
         const file = item.getAsFile();
-        if (!file) continue;
-
-        setIsUploading(true);
-
-        const { fileMessage, error } = await prepareFileForUpload(
-          file,
-          MAX_PAYLOAD_SIZE,
-          {},
-          (status) => {
-            toast.info(status);
-          }
-        );
-        setIsUploading(false);
-
-        if (error) {
-          toast.error(error);
-          return;
-        }
-
-        if (fileMessage) {
-          setMessage(fileMessage);
-          if (messageInputRef.current) {
-            messageInputRef.current.value = `[Pasted Image: ${file.name || "image"}]`;
-          }
-          toast.success("Image pasted successfully!");
+        if (file) {
+          await processFile(file, "Pasted Image");
         }
         break; // Only handle the first image found
       }
     }
   };
 
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await processFile(files[0], "Dropped File");
+    }
+  };
+
   const imageFile = parseImageFileJson(message);
 
   return (
-    <div className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t">
+    <div
+      className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t transition-colors duration-200"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Chevron expand/collapse that sorta sits above the textarea */}
       <div className="absolute -top-4 left-1/2 z-10 hidden -translate-x-1/2 sm:block">
         {!isExpanded ? (
@@ -574,7 +584,12 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
                 ref={messageInputRef}
                 rows={isExpanded ? 6 : 1}
                 placeholder="Type your message..."
-                className="peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none"
+                className={clsx(
+                  "peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none",
+                  {
+                    "!border-kas-primary bg-kas-primary/10": isDragOver,
+                  }
+                )}
                 value={message}
                 onChange={(e) => {
                   setMessage(e.currentTarget.value);
