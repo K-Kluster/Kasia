@@ -182,6 +182,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       return;
     }
 
+    let pendingMessage: Message | undefined;
+
     try {
       console.log(
         "Sending transaction from primary address:",
@@ -230,7 +232,26 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         // Not a file message, use message as is
       }
 
-      let txId: string;
+      let txId: string = "";
+
+      // Create the message object for storage
+      pendingMessage = {
+        transactionId: "",
+        status: "pending", // Initial status is pending
+        senderAddress: walletStore.address.toString(),
+        recipientAddress: recipient,
+        timestamp: Date.now(),
+        content: fileDataForStorage
+          ? JSON.stringify(fileDataForStorage)
+          : message, // Store the complete file data in content
+        amount: 20000000, // 0.2 KAS in sompi
+        fee: feeEstimate || undefined, // Include the fee estimate if available
+        payload: "", // No need to store encrypted payload for sent messages
+        fileData: fileDataForStorage, // Also store it in fileData for immediate display
+      };
+
+      // Add pending message immediately to store for display
+      messageStore.addMessages([pendingMessage]);
 
       // If we have an active conversation, use the context-aware sending
       if (existingConversation && existingConversation.theirAlias) {
@@ -266,27 +287,26 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         });
       }
       setIsExpanded(false);
-      console.log("Message sent! Transaction response:", txId);
 
-      // Create the message object for storage
-      const newMessageData: Message = {
-        transactionId: txId,
-        senderAddress: walletStore.address.toString(),
-        recipientAddress: recipient,
-        timestamp: Date.now(),
-        content: fileDataForStorage
-          ? JSON.stringify(fileDataForStorage)
-          : message, // Store the complete file data in content
-        amount: 20000000, // 0.2 KAS in sompi
-        fee: feeEstimate || undefined, // Include the fee estimate if available
-        payload: "", // No need to store encrypted payload for sent messages
-        fileData: fileDataForStorage, // Also store it in fileData for immediate display
-      };
+      if (txId === "") {
+        pendingMessage = {
+          ...pendingMessage,
+          status: "failed",
+          fee: 0.0,
+        };
+      } else {
+        pendingMessage = {
+          ...pendingMessage,
+          status: "sent",
+          transactionId: txId,
+        };
+        console.log("Message sent! Transaction response:", txId);
+      }
 
       // Store message under both sender and recipient addresses for proper conversation grouping
-      messageStore.storeMessage(newMessageData, walletStore.address.toString());
-      messageStore.storeMessage(newMessageData, recipient);
-      messageStore.addMessages([newMessageData]);
+      messageStore.updateMessage(pendingMessage);
+      messageStore.storeMessage(pendingMessage, walletStore.address.toString());
+      messageStore.storeMessage(pendingMessage, recipient);
 
       // Only reset the message input, keep the recipient
       if (messageInputRef.current) messageInputRef.current.value = "";
@@ -300,6 +320,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       // Keep the conversation open with the same recipient
       messageStore.setOpenedRecipient(recipient);
     } catch (error) {
+      if (pendingMessage) {
+        messageStore.updateMessage({ ...pendingMessage, status: "failed" });
+      }
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }

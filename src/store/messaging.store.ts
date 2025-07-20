@@ -47,6 +47,7 @@ interface MessagingState {
   messagesOnOpenedRecipient: Message[];
   handshakes: HandshakeState[];
   addMessages: (messages: Message[]) => void;
+  updateMessage: (newMessage: Message) => void;
   flushWalletHistory: (address: string) => void;
   addContacts: (contacts: Contact[]) => void;
   loadMessages: (address: string) => Message[];
@@ -159,6 +160,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     g().refreshMessagesOnOpenedRecipient();
+  },
+  updateMessage: (newMessage: Message) => {
+    const fullMessages = g().messages.map((msg) =>
+      msg.timestamp === newMessage.timestamp ? { ...msg, ...newMessage } : msg
+    );
+    set({ messages: fullMessages });
   },
   flushWalletHistory: (address: string) => {
     // 1. Clear wallet messages from localStorage

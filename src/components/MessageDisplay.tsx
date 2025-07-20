@@ -27,6 +27,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const [showMeta, setShowMeta] = useState(false);
 
   const {
+    status,
     senderAddress,
     recipientAddress,
     timestamp,
@@ -157,6 +158,28 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       );
     }
     return null; // Don't show amount for any messages
+  };
+
+  // Render status for failed or pending
+  const formatStatus = () => {
+    if (status === "failed") {
+      return (
+        <div className="w-full">
+          <div className="message-fee text-right text-xs text-red-500">
+            {status}
+          </div>
+        </div>
+      );
+    }
+    if (status === "pending") {
+      return (
+        <div className="w-full">
+          <div className="message-fee text-accent-yellow text-right text-xs">
+            {status}
+          </div>
+        </div>
+      );
+    }
   };
 
   // Render payment message content
@@ -509,6 +532,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           isOutgoing
             ? "bg-kas-secondary/20 border-kas-secondary border"
             : "bg-[var(--secondary-bg)]",
+          status !== "sent" && "bg-text-secondary/10",
           bubbleClass
         )}
       >
@@ -530,6 +554,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             )}
           >
             {formatAmountAndFee()}
+            {formatStatus()}
           </div>
         )}
       </div>
