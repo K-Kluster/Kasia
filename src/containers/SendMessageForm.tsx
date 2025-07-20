@@ -339,7 +339,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       MAX_PAYLOAD_SIZE,
       {},
       (status) => {
-        toast.removeAll();
         toast.info(status);
       }
     );
@@ -384,7 +383,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           MAX_PAYLOAD_SIZE,
           {},
           (status) => {
-            toast.removeAll();
             toast.info(status);
           }
         );
