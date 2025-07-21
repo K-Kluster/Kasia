@@ -5,10 +5,14 @@ import type { NetworkType } from "./types/all";
 import { AppRoutes } from "./AppRoutes";
 import { useIsMobile } from "./utils/useIsMobile";
 import { syncThemeColorMeta } from "./utils/meta-theme-syncer";
+import {
+  applyCustomColors,
+  resetCustomColors,
+} from "./utils/custom-theme-applier";
 
 const App: React.FC = () => {
   const networkStore = useNetworkStore();
-  const { theme, getEffectiveTheme } = useUiStore();
+  const { theme, getEffectiveTheme, customColors } = useUiStore();
   const connect = useNetworkStore((s) => s.connect);
   const isMobile = useIsMobile();
 
@@ -54,6 +58,16 @@ const App: React.FC = () => {
       mediaQuery.removeEventListener("change", handleSystemThemeChange);
     };
   }, [theme, getEffectiveTheme]);
+
+  // Apply custom colors only when custom theme is selected
+  useEffect(() => {
+    if (theme === "custom" && customColors) {
+      applyCustomColors(customColors);
+    } else if (theme !== "custom") {
+      // reset custom colors when switching away from custom theme
+      resetCustomColors();
+    }
+  }, [theme, customColors]);
 
   return (
     <AppRoutes

@@ -10,6 +10,7 @@ import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
+import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -59,12 +60,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const isPayment = (() => {
     // First check if it's a hex payload starting with ciph_msg prefix
     if (payload) {
-      const prefix = "636970685f6d73673a"; // hex for "ciph_msg:"
-      if (payload.startsWith(prefix)) {
+      if (payload.startsWith(PROTOCOL_PREFIX)) {
         // Extract the message part and check for payment prefix
-        const messageHex = payload.substring(prefix.length);
-        const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
-        if (messageHex.startsWith(paymentPrefix)) {
+        const messageHex = payload.substring(PROTOCOL_PREFIX.length);
+        if (messageHex.startsWith(PAYMENT_PREFIX)) {
           return true;
         }
       }
@@ -507,7 +506,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         className={clsx(
           "relative z-0 mb-1 max-w-[70%] cursor-pointer px-4 py-1 text-left break-words hyphens-auto",
           isOutgoing
-            ? "bg-kas-secondary/20 border-kas-secondary border"
+            ? "border border-[var(--button-primary)] bg-[var(--button-primary)]/20"
             : "bg-[var(--secondary-bg)]",
           bubbleClass
         )}

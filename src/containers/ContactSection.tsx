@@ -36,6 +36,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
   const messageStore = useMessagingStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   // Search through all messages and contacts
   const searchResults = useMemo(() => {
@@ -100,13 +101,21 @@ export const ContactSection: FC<ContactSectionProps> = ({
               </button>
             )}
             <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search
+                className="hover:text-kas-primary absolute top-1/2 left-3 size-5 -translate-y-1/2 cursor-pointer text-gray-400 hover:scale-110"
+                onClick={() => {
+                  setShowSearch(!showSearch);
+                }}
+              />
               <input
                 type="text"
                 placeholder="Search messages..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-primary-bg focus:ring-kas-secondary/50 border-primary-border w-full rounded-lg border px-10 py-2 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none"
+                className={clsx(
+                  "bg-primary-bg focus:ring-kas-secondary/50 border-primary-border w-full rounded-lg border px-10 py-2 text-sm text-[var(--text-primary)] placeholder-gray-400 focus:ring-2 focus:outline-none",
+                  showSearch ? "flex" : "hidden"
+                )}
               />
               {searchQuery && (
                 <button
@@ -120,7 +129,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
             </div>
             <button
               aria-label="new chat"
-              className="text-kas-secondary bg-kas-secondary/20 border-kas-secondary cursor-pointer rounded-full border p-1 hover:scale-110"
+              className="cursor-pointer rounded-full border border-[var(--button-primary)] bg-[var(--button-primary)]/20 p-1 text-[var(--button-primary)] hover:scale-110"
               onClick={onNewChatClicked}
             >
               <Plus className="size-4" />
@@ -131,7 +140,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
           <div className="flex flex-1 justify-center">
             <button
               aria-label="new chat"
-              className="text-kas-secondary bg-kas-secondary/20 border-kas-secondary cursor-pointer rounded-full border p-1 hover:scale-110"
+              className="cursor-pointer rounded-full border border-[var(--button-primary)] bg-[var(--button-primary)]/20 p-1 text-[var(--button-primary)] hover:scale-110"
               onClick={onNewChatClicked}
             >
               <Plus className="size-4" />
