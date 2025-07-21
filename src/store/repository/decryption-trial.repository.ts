@@ -2,7 +2,7 @@ export type DbDecryptionTrial = {
   /**
    * // `${walletAddress}_${txId}`
    */
-  //   key: string;
+  id: string;
   /**
    * tenant is the selected wallet
    */

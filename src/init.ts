@@ -15,8 +15,8 @@ export async function boot() {
   root = createRoot(container);
   root.render(await SplashScreen({}));
 
-  await initKaspaWasm();
-  await initCipherWasm();
+  await Promise.all([initKaspaWasm(), initCipherWasm()]);
+
   initConsolePanicHook();
 
   console.log("Kaspa SDK initialized successfully");
@@ -25,10 +25,19 @@ export async function boot() {
   const { loadApplication } = await import("./main");
   await loadApplication(root);
 
-  // lazy load network store after the main app is running
-  const { useNetworkStore } = await import("./store/network.store");
+  // lazy load network store and db store after the main app is running
+  const [{ useNetworkStore }, { useDBStore }] = await Promise.all([
+    import("./store/network.store"),
+    import("./store/db.store"),
+  ]);
+
+  // connect to network if not connected
   const { connect, isConnected } = useNetworkStore.getState();
   if (!isConnected) connect();
+
+  // init db if not initialized
+  const { db, initDB } = useDBStore.getState();
+  if (!db) initDB();
 }
 
 boot();

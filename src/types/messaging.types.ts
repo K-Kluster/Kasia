@@ -1,3 +1,5 @@
+import { Conversation } from "../store/repository/conversation.repository";
+
 export interface HandshakeState {
   conversationId: string;
   myAlias: string;
@@ -9,34 +11,6 @@ export interface HandshakeState {
   lastActivity: number;
   initiatedByMe: boolean;
 }
-
-export type BaseConversation = {
-  conversationId: string;
-  myAlias: string;
-  theirAlias: string | null; // null if handshake incomplete
-  kaspaAddress: string;
-  createdAt: number;
-  lastActivity: number;
-
-  initiatedByMe: boolean; // track who initiated the handshake
-};
-
-export type ActiveConversation = BaseConversation & {
-  status: "active";
-};
-
-export type RejectedConversation = BaseConversation & {
-  status: "rejected";
-};
-
-export type PendingConversation = BaseConversation & {
-  status: "pending";
-};
-
-export type Conversation =
-  | ActiveConversation
-  | RejectedConversation
-  | PendingConversation;
 
 export interface HandshakePayload {
   type: "handshake";

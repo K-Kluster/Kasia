@@ -6,7 +6,7 @@ import {
   DbConversation,
 } from "./conversation.repository";
 import { DbDecryptionTrial } from "./decryption-trial.repository";
-import { DbContact } from "./contact.repository";
+import { ContactRepository, DbContact } from "./contact.repository";
 import { DbHandshake } from "./handshake.repository";
 import { DbPayment } from "./payment.repository";
 
@@ -95,7 +95,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
 
         // MESSAGES
         const messagesStore = db.createObjectStore("messages", {
-          keyPath: "key",
+          keyPath: "id",
         });
         messagesStore.createIndex("by-tenant-id", "tenantId");
         messagesStore.createIndex("by-conversation-id", "conversationId");
@@ -107,7 +107,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
 
         // PAYMENTS
         const paymentsStore = db.createObjectStore("payments", {
-          keyPath: "key",
+          keyPath: "id",
         });
         paymentsStore.createIndex("by-tenant-id", "tenantId");
         paymentsStore.createIndex("by-conversation-id", "conversationId");
@@ -119,7 +119,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
 
         // HANDSHAKES
         const handshakesStore = db.createObjectStore("handshakes", {
-          keyPath: "key",
+          keyPath: "id",
         });
         handshakesStore.createIndex("by-tenant-id", "tenantId");
         handshakesStore.createIndex("by-conversation-id", "conversationId");
@@ -135,23 +135,23 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         });
         conversationsStore.createIndex("by-tenant-id", "tenantId");
         conversationsStore.createIndex("by-status", "status");
-        conversationsStore.createIndex("by-last-activity", "lastActivity");
+        conversationsStore.createIndex("by-last-activity", "lastActivityAt");
         conversationsStore.createIndex("by-contact-id", "contactId");
         conversationsStore.createIndex("by-status-last-activity", [
           "status",
-          "lastActivity",
+          "lastActivityAt",
         ]);
 
         // DECRYPTION TRIALS
         const decryptionTrialsStore = db.createObjectStore("decryptionTrials", {
-          keyPath: "key",
+          keyPath: "id",
         });
         decryptionTrialsStore.createIndex("by-tenant-id", "tenantId");
         decryptionTrialsStore.createIndex("by-timestamp", "timestamp");
 
         // CONTACTS
         const contactsStore = db.createObjectStore("contacts", {
-          keyPath: "key",
+          keyPath: "id",
         });
         contactsStore.createIndex("by-tenant-id", "tenantId");
         contactsStore.createIndex("by-contact-id", "contactId");
@@ -164,11 +164,23 @@ export const openDatabase = async (): Promise<KasiaDB> => {
 
 export class Repositories {
   public readonly conversationRepository: ConversationRepository;
+  public readonly contactRepository: ContactRepository;
 
   constructor(
-    readonly tenantId: string,
-    readonly db: KasiaDB
+    readonly db: KasiaDB,
+    readonly walletPassword: string,
+    readonly tenantId: string
   ) {
-    this.conversationRepository = new ConversationRepository(db, tenantId);
+    this.conversationRepository = new ConversationRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
+
+    this.contactRepository = new ContactRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
   }
 }

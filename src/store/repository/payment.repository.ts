@@ -4,7 +4,7 @@ export type DbPayment = {
   /**
    * `${walletAddress}_${timestamp}_${transactionId}`
    */
-  //   key: string;
+  id: string;
   /**
    * tenant is the selected wallet
    */

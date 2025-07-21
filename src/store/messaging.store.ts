@@ -9,13 +9,14 @@ import { WalletStorage } from "../utils/wallet-storage";
 import { Address, NetworkType } from "kaspa-wasm";
 import { ConversationManager } from "../utils/conversation-manager";
 import { useWalletStore } from "./wallet.store";
-import {
-  ActiveConversation,
-  Conversation,
-  ConversationEvents,
-  PendingConversation,
-} from "src/types/messaging.types";
+import { ConversationEvents } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
+import { useDBStore } from "./db.store";
+import {
+  Conversation,
+  PendingConversation,
+  ActiveConversation,
+} from "./repository/conversation.repository";
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -101,7 +102,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   openedRecipient: null,
   contacts: [],
   messages: [],
-
   messagesOnOpenedRecipient: [],
   handshakes: [],
   addContacts: (contacts) => {
@@ -843,7 +843,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       },
     };
 
-    const manager = new ConversationManager(address, events);
+    const manager = new ConversationManager(
+      address,
+      useDBStore.getState().repositories,
+      events
+    );
     set({ conversationManager: manager });
   },
   initiateHandshake: async (

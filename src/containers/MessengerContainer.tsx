@@ -10,6 +10,7 @@ import { unknownErrorToErrorLike } from "../utils/errors";
 import { useIsMobile } from "../utils/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
+import { useDBStore } from "../store/db.store";
 
 export const MessengerContainer: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

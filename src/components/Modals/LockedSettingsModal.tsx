@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NetworkSelector } from "../NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
 import { Button } from "../Common/Button";
 import { useUiStore } from "../../store/ui.store";
 import { ThemeToggle } from "../Common/ThemeToggle";
+import { devMode } from "../../config/dev-mode";
+import { Shield } from "lucide-react";
+import { useDBStore } from "../../store/db.store";
+import { deleteDB } from "idb";
 
 export const LockedSettingsModal: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -17,6 +21,8 @@ export const LockedSettingsModal: React.FC = () => {
 
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
+
+  const dbStore = useDBStore();
 
   const [nodeUrl, setNodeUrl] = useState(
     networkStore.nodeUrl ??
@@ -65,6 +71,35 @@ export const LockedSettingsModal: React.FC = () => {
     setConnectionSuccess(isSuccess);
   }, [connect, isConnecting, networkStore, nodeUrl]);
 
+  const deleteIndexDB = useCallback(async () => {
+    if (dbStore.db) {
+      await deleteDB(dbStore.db.name);
+    }
+
+    await dbStore.initDB();
+  }, [dbStore]);
+
+  const devInfo = useMemo(() => {
+    if (!devMode) {
+      return null;
+    }
+
+    return (
+      <div className="my-4 flex flex-col items-center justify-center gap-2">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          <span className="text-sm">Dev mode enabled</span>
+        </div>
+
+        <div className="my-2">
+          <Button onClick={() => deleteIndexDB()} variant="primary">
+            Delete IndexDB
+          </Button>
+        </div>
+      </div>
+    );
+  }, [deleteIndexDB]);
+
   return (
     <div className="w-full max-w-[600px]">
       <div className="mb-6 flex w-full justify-center md:hidden">
@@ -77,6 +112,8 @@ export const LockedSettingsModal: React.FC = () => {
           isConnected={isConnected}
         />
       </div>
+
+      {devInfo}
 
       <h2 className="my-8 text-center text-[1.5rem] font-semibold text-[var(--text-primary)]">
         Network Settings

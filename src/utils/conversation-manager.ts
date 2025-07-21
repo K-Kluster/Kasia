@@ -1,13 +1,16 @@
 import {
-  ActiveConversation,
-  Conversation,
   ConversationEvents,
   HandshakePayload,
-  PendingConversation,
 } from "src/types/messaging.types";
 import { v4 as uuidv4 } from "uuid";
 import { ALIAS_LENGTH } from "../config/constants";
 import { isAlias } from "./alias-validator";
+import { Repositories } from "../store/repository/db";
+import {
+  Conversation,
+  ActiveConversation,
+  PendingConversation,
+} from "../store/repository/conversation.repository";
 
 export class ConversationManager {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";
@@ -19,6 +22,7 @@ export class ConversationManager {
 
   constructor(
     private currentAddress: string,
+    readonly repositories: Repositories,
     private events?: Partial<ConversationEvents>
   ) {
     this.loadConversations();
@@ -28,47 +32,43 @@ export class ConversationManager {
     return `${ConversationManager.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
   }
 
-  private saveToStorage() {
-    try {
-      const data = Array.from(this.conversations.values());
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
-    } catch (error) {
-      console.error("Failed to save conversations to storage:", error);
-    }
-  }
-
-  private loadConversations() {
+  private async loadConversations() {
     try {
       // Clear existing data first
       this.conversations.clear();
       this.aliasToConversation.clear();
       this.addressToConversation.clear();
 
+      const conversations =
+        await this.repositories.conversationRepository.getConversations();
+
+      // note: this isn't optimized, we're loading contacts here while it could have been cached earlier and centralized
+      const contacts = await this.repositories.contactRepository.getContacts();
+
       // Load conversations for current wallet
-      const data = localStorage.getItem(this.storageKey);
-      if (data) {
-        const conversations = JSON.parse(data) as Conversation[];
-        conversations.forEach((conv) => {
-          // Only load conversations that belong to the current wallet address
-          if (
-            conv.kaspaAddress &&
-            this.isValidKaspaAddress(conv.kaspaAddress)
-          ) {
-            this.conversations.set(conv.conversationId, conv);
-            this.addressToConversation.set(
-              conv.kaspaAddress,
-              conv.conversationId
-            );
-            this.aliasToConversation.set(conv.myAlias, conv.conversationId);
-            if (conv.theirAlias) {
-              this.aliasToConversation.set(
-                conv.theirAlias,
-                conv.conversationId
-              );
-            }
+      conversations.forEach((conversation) => {
+        const contact = contacts.find((c) => c.id === conversation.contactId);
+
+        if (!contact) {
+          return;
+        }
+
+        // Only load conversations that belong to the current wallet address
+        if (
+          contact.kaspaAddress &&
+          this.isValidKaspaAddress(contact.kaspaAddress)
+        ) {
+          this.conversations.set(conversation.id, conversation);
+          this.addressToConversation.set(
+            conv.kaspaAddress,
+            conv.conversationId
+          );
+          this.aliasToConversation.set(conv.myAlias, conv.conversationId);
+          if (conv.theirAlias) {
+            this.aliasToConversation.set(conv.theirAlias, conv.conversationId);
           }
-        });
-      }
+        }
+      });
     } catch (error) {
       console.error("Failed to load conversations from storage:", error);
     }

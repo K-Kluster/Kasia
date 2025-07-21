@@ -182,6 +182,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setPasswordChangeError("");
 
     try {
+      // @TODO(indexdb): should also decrypt and re-encrypt all data with new password
+      // mention that we recommend to backup the wallet before changing the password
       await changePassword(selectedWalletId, currentPassword, newPassword);
       setPasswordChangeSuccess(true);
       setCurrentPassword("");
