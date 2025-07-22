@@ -36,6 +36,7 @@ import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 import { useIsMobile } from "../utils/useIsMobile";
 import { parseImageFileJson } from "../utils/parse-image-file";
+import { v4 as uuidv4 } from "uuid";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -237,7 +238,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
       // Create the message object for storage
       pendingMessage = {
-        transactionId: "",
+        transactionId: uuidv4(),
         status: "pending", // Initial status is pending
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipient,
