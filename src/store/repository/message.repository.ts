@@ -33,7 +33,10 @@ export type MessageBag = {
   };
   content: string;
 };
-export type Message = MessageBag & Omit<DbMessage, "encryptedData">;
+export type Message = MessageBag &
+  Omit<DbMessage, "encryptedData"> & {
+    __type: "message";
+  };
 
 export class MessageRepository {
   constructor(
@@ -114,6 +117,7 @@ export class MessageRepository {
       fileData: messageBag.fileData,
       amount: messageBag.amount,
       content: messageBag.content,
+      __type: "message",
     };
   }
 }

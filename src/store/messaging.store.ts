@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { Contact, Message } from "../types/all";
+import { Message, OneOnOneConversation } from "../types/all";
+import { Contact } from "./repository/contact.repository";
 import {
   encrypt_message,
   decrypt_with_secret_key,
@@ -26,18 +27,6 @@ import {
   cleanupLegacyStorage,
 } from "../utils/storage-encryption";
 
-// Define the HandshakeState interface
-interface HandshakeState {
-  conversationId: string;
-  myAlias: string;
-  theirAlias: string | null;
-  kaspaAddress: string;
-  status: "pending" | "active" | "rejected";
-  createdAt: number;
-  lastActivity: number;
-  initiatedByMe: boolean;
-}
-
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
   if (address.startsWith("kaspatest:")) {
@@ -51,13 +40,15 @@ function getNetworkTypeFromAddress(address: string): NetworkType {
 interface MessagingState {
   isLoaded: boolean;
   isCreatingNewChat: boolean;
-  contacts: Contact[];
-  messages: Message[];
-  messagesOnOpenedRecipient: Message[];
+  oneOnOneConversations: { contact: Contact; conversation: Conversation }[];
+  eventsOnOpenedRecipient: OneOnOneConversation["events"][];
   handshakes: HandshakeState[];
   addMessages: (messages: Message[]) => void;
   flushWalletHistory: (address: string) => void;
-  addContacts: (contacts: Contact[]) => void;
+  addConversationWithContact: (conversationWithContact: {
+    contact: Contact;
+    conversation: Conversation;
+  }) => void;
   loadMessages: (address: string) => Message[];
   setIsLoaded: (isLoaded: boolean) => void;
   storeMessage: (message: Message, walletAddress: string) => void;
@@ -108,16 +99,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   isLoaded: false,
   isCreatingNewChat: false,
   openedRecipient: null,
-  contacts: [],
-  messages: [],
-  messagesOnOpenedRecipient: [],
-  handshakes: [],
-  addContacts: (contacts) => {
-    const fullContacts = [...g().contacts, ...contacts];
-    fullContacts.sort(
-      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+  oneOnOneConversations: [],
+  eventsOnOpenedRecipient: [],
+  addConversationWithContact: (conversationWithContact) => {
+    const oneOnOneConversations = [
+      ...g().oneOnOneConversations,
+      conversationWithContact,
+    ];
+    oneOnOneConversations.sort(
+      (a, b) =>
+        b.conversation.lastActivityAt.getTime() -
+        a.conversation.lastActivityAt.getTime()
     );
-    set({ contacts: [...g().contacts, ...contacts] });
+    set({ oneOnOneConversations: oneOnOneConversations });
   },
   addMessages: (messages) => {
     const fullMessages = [...g().messages, ...messages];
@@ -138,25 +132,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
             : message.senderAddress;
 
         // Update existing contact if found
-        const existingContactIndex = state.contacts.findIndex(
-          (c) => c.address === otherParty
-        );
+        const existingConversationWithContactIndex =
+          state.oneOnOneConversations.findIndex(
+            (c) => c.contact.kaspaAddress === otherParty
+          );
 
-        if (existingContactIndex !== -1) {
-          const existingContact = state.contacts[existingContactIndex];
+        if (existingConversationWithContactIndex !== -1) {
+          const existingConversationWithContact =
+            state.oneOnOneConversations[existingConversationWithContactIndex];
           // Only update if this message is newer than the current lastMessage
-          if (message.timestamp > existingContact.lastMessage.timestamp) {
-            const updatedContacts = [...state.contacts];
-            updatedContacts[existingContactIndex] = {
-              ...existingContact,
+          if (
+            message.timestamp >
+            existingConversationWithContact.conversation.lastActivityAt.getTime()
+          ) {
+            const updatedConversationWithContacts = [
+              ...state.oneOnOneConversations,
+            ];
+            updatedConversationWithContacts[
+              existingConversationWithContactIndex
+            ] = {
+              ...existingConversationWithContact,
               lastMessage: message,
-              messages: [...existingContact.messages, message].sort(
-                (a, b) => a.timestamp - b.timestamp
-              ),
+              messages: [
+                ...existingConversationWithContact.messages,
+                message,
+              ].sort((a, b) => a.timestamp - b.timestamp),
             };
 
             // Sort contacts by most recent message timestamp
-            const sortedContacts = updatedContacts.sort(
+            const sortedContacts = updatedConversationWithContacts.sort(
               (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
             );
 
@@ -646,6 +650,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         type: "kaspa-messages-backup",
         data: messagesMap,
         nicknames: nicknames,
+        contacts: g().conversationManager.get,
         conversations: {
           active: g().conversationManager?.getActiveConversations() || [],
           pending: g().conversationManager?.getPendingConversations() || [],
@@ -802,26 +807,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           g().initializeConversationManager(currentAddress);
         }
 
-        // Type guard to validate conversation objects
-        const isValidConversation = (
-          conv: Conversation
-        ): conv is Conversation => {
-          return (
-            typeof conv === "object" &&
-            typeof conv.conversationId === "string" &&
-            typeof conv.myAlias === "string" &&
-            (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
-            typeof conv.kaspaAddress === "string" &&
-            ["pending", "active", "rejected"].includes(conv.status) &&
-            typeof conv.createdAt === "number" &&
-            typeof conv.lastActivity === "number" &&
-            typeof conv.initiatedByMe === "boolean"
-          );
-        };
-
         // Restore active conversations
         active.forEach((conv: ActiveConversation) => {
-          if (isValidConversation(conv)) {
+          if (g().conversationManager?.isValidConversation(conv)) {
             g().conversationManager?.restoreConversation(conv);
           } else {
             console.error("Invalid conversation object in backup:", conv);
@@ -902,29 +890,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   conversationManager: null,
   initializeConversationManager: (address: string) => {
     const events: Partial<ConversationEvents> = {
-      onHandshakeInitiated: (conversation) => {
+      onHandshakeInitiated: (conversation, contact) => {
         console.log("Handshake initiated:", conversation);
         // You might want to update UI or state here
       },
-      onHandshakeCompleted: (conversation) => {
+      onHandshakeCompleted: (conversation, contact) => {
         console.log("Handshake completed:", conversation);
-        // Update contacts list
-        const contact: Contact = {
-          address: conversation.kaspaAddress,
-          lastMessage: {
-            content: "Handshake completed",
-            timestamp: conversation.lastActivity,
-            senderAddress: address,
-            recipientAddress: conversation.kaspaAddress,
-            transactionId: "",
-            payload: "",
-            amount: 0,
-          },
-          messages: [],
-        };
+
         g().addContacts([contact]);
       },
-      onHandshakeExpired: (conversation) => {
+      onHandshakeExpired: (conversation, contact) => {
         console.log("Handshake expired:", conversation);
         // You might want to update UI or state here
       },

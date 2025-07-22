@@ -5,7 +5,6 @@ import { useMessagingStore } from "../store/messaging.store";
 import { useNetworkStore } from "../store/network.store";
 import { useUiStore } from "../store/ui.store";
 import { useWalletStore } from "../store/wallet.store";
-import { Contact } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { useIsMobile } from "../utils/useIsMobile";
 import { ContactSection } from "./ContactSection";

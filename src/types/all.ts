@@ -1,30 +1,9 @@
 import { FeeSource, ITransaction } from "kaspa-wasm";
-
-export type Message = {
-  transactionId: string;
-  senderAddress: string;
-  recipientAddress: string;
-  timestamp: number;
-  content: string;
-  amount: number;
-  fee?: number;
-  payload: string;
-  fileData?: {
-    type: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    content: string;
-  };
-};
-
-export type Contact = {
-  address: string;
-  lastMessage: Message;
-  messages: Message[];
-  status?: "active" | "pending" | "rejected";
-  nickname?: string;
-};
+import { Contact } from "../store/repository/contact.repository";
+import { Conversation } from "../store/repository/conversation.repository";
+import { Message } from "../store/repository/message.repository";
+import { Handshake } from "../store/repository/handshake.repository";
+import { Payment } from "../store/repository/payment.repository";
 
 export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet";
 
@@ -136,3 +115,9 @@ export interface PriorityFeeConfig {
   source: FeeSource;
   feerate?: number; // Store the fee rate used for calculation
 }
+
+export type OneOnOneConversation = {
+  contact: Contact;
+  conversation: Conversation;
+  events: (Message | Payment | Handshake)[];
+};

@@ -40,6 +40,18 @@ export class ContactRepository {
     return this._dbContactToContact(result);
   }
 
+  async getContactByKaspaAddress(kaspaAddress: string): Promise<Contact> {
+    const result = await this.getContacts().then((contacts) => {
+      return contacts.find((contact) => contact.kaspaAddress === kaspaAddress);
+    });
+
+    if (!result) {
+      throw new DBNotFoundException();
+    }
+
+    return result;
+  }
+
   async getContacts(): Promise<Contact[]> {
     return this.db
       .getAllFromIndex("contacts", "by-tenant-id", this.tenantId)

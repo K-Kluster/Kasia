@@ -26,7 +26,10 @@ export type PaymentBag = {
   fee?: number;
   content: string;
 };
-export type Payment = PaymentBag & Omit<DbPayment, "encryptedData">;
+export type Payment = PaymentBag &
+  Omit<DbPayment, "encryptedData"> & {
+    __type: "payment";
+  };
 
 export class PaymentRepository {
   constructor(
@@ -105,6 +108,7 @@ export class PaymentRepository {
       fee: paymentBag.fee,
       amount: paymentBag.amount,
       content: paymentBag.content,
+      __type: "payment",
     };
   }
 }

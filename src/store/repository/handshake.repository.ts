@@ -26,7 +26,10 @@ export type HandshakeBag = {
   fee?: number;
   content: string;
 };
-export type Handshake = HandshakeBag & Omit<DbHandshake, "encryptedData">;
+export type Handshake = HandshakeBag &
+  Omit<DbHandshake, "encryptedData"> & {
+    __type: "handshake";
+  };
 
 export class HandshakeRepository {
   constructor(
@@ -105,6 +108,7 @@ export class HandshakeRepository {
       fee: handshakeBag.fee,
       amount: handshakeBag.amount,
       content: handshakeBag.content,
+      __type: "handshake",
     };
   }
 }

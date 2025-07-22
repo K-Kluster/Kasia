@@ -209,6 +209,7 @@ export const useDBStore = create<DBState>((set, get) => ({
             transactionId: m.transactionId,
             fee: m.fee,
             content: m.content ?? "",
+            __type: "payment",
           });
           continue;
         }
@@ -225,6 +226,7 @@ export const useDBStore = create<DBState>((set, get) => ({
             transactionId: m.transactionId,
             fee: m.fee,
             content: m.content ?? "",
+            __type: "handshake",
           });
           continue;
         }
@@ -241,6 +243,7 @@ export const useDBStore = create<DBState>((set, get) => ({
           fee: m.fee,
           fileData: m.fileData,
           content: m.content ?? "",
+          __type: "message",
         });
 
         continue;
@@ -258,5 +261,7 @@ export const useDBStore = create<DBState>((set, get) => ({
         await repositories.handshakeRepository.saveHandshake(handshake);
       }
     }
+
+    localStorage.setItem(`${unlockedWallet.id}_migrate_storage_v2`, "true");
   },
 }));

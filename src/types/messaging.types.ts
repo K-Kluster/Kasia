@@ -1,3 +1,4 @@
+import { Contact } from "../store/repository/contact.repository";
 import { Conversation } from "../store/repository/conversation.repository";
 
 export interface HandshakeState {
@@ -33,8 +34,8 @@ export interface PaymentPayload {
 }
 
 export interface ConversationEvents {
-  onHandshakeInitiated: (conversation: Conversation) => void;
-  onHandshakeCompleted: (conversation: Conversation) => void;
-  onHandshakeExpired: (conversation: Conversation) => void;
+  onHandshakeInitiated: (conversation: Conversation, contact: Contact) => void;
+  onHandshakeCompleted: (conversation: Conversation, contact: Contact) => void;
+  onHandshakeExpired: (conversation: Conversation, contact: Contact) => void;
   onError: (error: unknown) => void;
 }
