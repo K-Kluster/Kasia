@@ -170,10 +170,18 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     g().refreshMessagesOnOpenedRecipient();
   },
   updateMessage: (newMessage: Message) => {
-    const fullMessages = g().messages.map((msg) =>
+    const fullMessages = g().messages;
+    const updatedMessages = fullMessages.map((msg) =>
       msg.timestamp === newMessage.timestamp ? { ...msg, ...newMessage } : msg
     );
-    set({ messages: fullMessages });
+    // used to update the message in the UI
+    const openedRecipient = g().openedRecipient;
+    set({
+      messages: updatedMessages,
+      messagesOnOpenedRecipient: updatedMessages.filter(
+        (m) => m.recipientAddress === openedRecipient
+      ),
+    });
   },
   flushWalletHistory: (address: string) => {
     // 1. Clear wallet messages from localStorage using new per-address system

@@ -36,7 +36,6 @@ import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 import { useIsMobile } from "../utils/useIsMobile";
 import { parseImageFileJson } from "../utils/parse-image-file";
-import { v4 as uuidv4 } from "uuid";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -234,11 +233,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         // Not a file message, use message as is
       }
 
-      let txId: string = "";
+      let txId: string;
 
       // Create the message object for storage
       pendingMessage = {
-        transactionId: uuidv4(),
+        transactionId: `pending-${Date.now()}-${Math.random()}`,
         status: "pending", // Initial status is pending
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipient,
@@ -290,7 +289,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       }
       setIsExpanded(false);
 
-      if (txId === "") {
+      if (txId.startsWith("pending")) {
         pendingMessage = {
           ...pendingMessage,
           status: "failed",
