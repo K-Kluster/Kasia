@@ -3,7 +3,7 @@ import { KasiaDB, DBNotFoundException } from "./db";
 
 export type DbContact = {
   /**
-   * `${walletAddress}_${contactAddress}`
+   * `uuidv4()`
    */
   id: string;
   /**
@@ -18,7 +18,7 @@ export type DbContact = {
 };
 
 export type ContactBag = {
-  name: string;
+  name?: string;
   kaspaAddress: string;
 };
 export type Contact = ContactBag & Omit<DbContact, "encryptedData">;
@@ -50,9 +50,11 @@ export class ContactRepository {
       });
   }
 
-  async saveContact(contact: Contact): Promise<void> {
-    await this.db.put("contacts", this._contactToDbContact(contact));
-    return;
+  async saveContact(contact: Omit<Contact, "tenantId">): Promise<string> {
+    return this.db.put(
+      "contacts",
+      this._contactToDbContact({ ...contact, tenantId: this.tenantId })
+    );
   }
 
   async deleteContact(contactId: string): Promise<void> {
@@ -74,6 +76,7 @@ export class ContactRepository {
       tenantId: this.tenantId,
     };
   }
+
   private _dbContactToContact(dbContact: DbContact): Contact {
     const contactBag = JSON.parse(
       decryptXChaCha20Poly1305(dbContact.encryptedData, this.walletPassword)

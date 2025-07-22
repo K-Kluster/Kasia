@@ -70,6 +70,20 @@ export class ConversationRepository {
     return this._dbConversationToConversation(result);
   }
 
+  async getConversationByContactId(contactId: string): Promise<Conversation> {
+    const result = await this.db.getFromIndex(
+      "conversations",
+      "by-contact-id",
+      contactId
+    );
+
+    if (!result) {
+      throw new DBNotFoundException();
+    }
+
+    return this._dbConversationToConversation(result);
+  }
+
   async getConversations(): Promise<Conversation[]> {
     return this.db
       .getAllFromIndex("conversations", "by-tenant-id", this.tenantId)
@@ -80,10 +94,15 @@ export class ConversationRepository {
       });
   }
 
-  async saveConversation(conversation: Conversation): Promise<void> {
+  async saveConversation(
+    conversation: Omit<Conversation, "tenantId">
+  ): Promise<void> {
     await this.db.put(
       "conversations",
-      this._conversationToDbConversation(conversation)
+      this._conversationToDbConversation({
+        ...conversation,
+        tenantId: this.tenantId,
+      })
     );
     return;
   }

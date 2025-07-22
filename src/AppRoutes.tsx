@@ -39,7 +39,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
 
   useEffect(() => {
     if (unlockedWallet && db) {
-      initRepositories(unlockedWallet.id, unlockedWallet.password);
+      initRepositories(unlockedWallet, unlockedWallet.password);
     }
   }, [unlockedWallet, db, selectedWalletId, initRepositories]);
 

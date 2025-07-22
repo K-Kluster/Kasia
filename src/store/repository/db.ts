@@ -1,14 +1,17 @@
 import { DBSchema, IDBPDatabase, openDB } from "idb";
-import { DbMessage } from "./message.repository";
+import { DbMessage, MessageRepository } from "./message.repository";
 import {
   ConversationRepository,
   ConversationStatus,
   DbConversation,
 } from "./conversation.repository";
-import { DbDecryptionTrial } from "./decryption-trial.repository";
+import {
+  DbDecryptionTrial,
+  DecryptionTrialRepository,
+} from "./decryption-trial.repository";
 import { ContactRepository, DbContact } from "./contact.repository";
-import { DbHandshake } from "./handshake.repository";
-import { DbPayment } from "./payment.repository";
+import { DbHandshake, HandshakeRepository } from "./handshake.repository";
+import { DbPayment, PaymentRepository } from "./payment.repository";
 
 const CURRENT_DB_VERSION = 1;
 
@@ -27,8 +30,8 @@ export interface KasiaDBSchema extends DBSchema {
     indexes: {
       "by-tenant-id": string;
       "by-conversation-id": string;
-      "by-timestamp": number;
-      "by-conversation-timestamp": [string, number];
+      "by-created-at": number;
+      "by-conversation-created-at": [string, number];
     };
   };
   payments: {
@@ -37,8 +40,8 @@ export interface KasiaDBSchema extends DBSchema {
     indexes: {
       "by-tenant-id": string;
       "by-conversation-id": string;
-      "by-timestamp": number;
-      "by-conversation-timestamp": [string, number];
+      "by-created-at": number;
+      "by-conversation-created-at": [string, number];
     };
   };
   handshakes: {
@@ -47,8 +50,8 @@ export interface KasiaDBSchema extends DBSchema {
     indexes: {
       "by-tenant-id": string;
       "by-conversation-id": string;
-      "by-timestamp": number;
-      "by-conversation-timestamp": [string, number];
+      "by-created-at": number;
+      "by-conversation-created-at": [string, number];
     };
   };
   conversations: {
@@ -99,10 +102,10 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         });
         messagesStore.createIndex("by-tenant-id", "tenantId");
         messagesStore.createIndex("by-conversation-id", "conversationId");
-        messagesStore.createIndex("by-timestamp", "timestamp");
-        messagesStore.createIndex("by-conversation-timestamp", [
+        messagesStore.createIndex("by-created-at", "createdAt");
+        messagesStore.createIndex("by-conversation-created-at", [
           "conversationId",
-          "timestamp",
+          "createdAt",
         ]);
 
         // PAYMENTS
@@ -111,10 +114,10 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         });
         paymentsStore.createIndex("by-tenant-id", "tenantId");
         paymentsStore.createIndex("by-conversation-id", "conversationId");
-        paymentsStore.createIndex("by-timestamp", "timestamp");
-        paymentsStore.createIndex("by-conversation-timestamp", [
+        paymentsStore.createIndex("by-created-at", "createdAt");
+        paymentsStore.createIndex("by-conversation-created-at", [
           "conversationId",
-          "timestamp",
+          "createdAt",
         ]);
 
         // HANDSHAKES
@@ -123,10 +126,10 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         });
         handshakesStore.createIndex("by-tenant-id", "tenantId");
         handshakesStore.createIndex("by-conversation-id", "conversationId");
-        handshakesStore.createIndex("by-timestamp", "timestamp");
-        handshakesStore.createIndex("by-conversation-timestamp", [
+        handshakesStore.createIndex("by-created-at", "createdAt");
+        handshakesStore.createIndex("by-conversation-created-at", [
           "conversationId",
-          "timestamp",
+          "createdAt",
         ]);
 
         // CONVERSATIONS
@@ -165,6 +168,10 @@ export const openDatabase = async (): Promise<KasiaDB> => {
 export class Repositories {
   public readonly conversationRepository: ConversationRepository;
   public readonly contactRepository: ContactRepository;
+  public readonly decryptionTrialRepository: DecryptionTrialRepository;
+  public readonly paymentRepository: PaymentRepository;
+  public readonly messageRepository: MessageRepository;
+  public readonly handshakeRepository: HandshakeRepository;
 
   constructor(
     readonly db: KasiaDB,
@@ -178,6 +185,30 @@ export class Repositories {
     );
 
     this.contactRepository = new ContactRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
+
+    this.decryptionTrialRepository = new DecryptionTrialRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
+
+    this.paymentRepository = new PaymentRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
+
+    this.messageRepository = new MessageRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
+
+    this.handshakeRepository = new HandshakeRepository(
       db,
       tenantId,
       walletPassword

@@ -26,7 +26,7 @@ export class DecryptionCache {
   /**
    * Initialize the cache from localStorage
    */
-  private static initCache(walletAddress: string): Set<string> {
+  public static initCache(walletAddress: string): Set<string> {
     if (this.cache !== null) return this.cache;
 
     try {

@@ -26,6 +26,7 @@ export const MessengerContainer: FC = () => {
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
+  const dbStore = useDBStore();
 
   const isMobile = useIsMobile();
   const { closeAllModals } = useUiStore();
@@ -130,6 +131,9 @@ export const MessengerContainer: FC = () => {
           );
 
         const receiveAddressStr = receiveAddress.toString();
+
+        // migrate storage
+        await dbStore.migrateStorage();
 
         // Initialize conversation manager
         messageStore.initializeConversationManager(receiveAddressStr);
