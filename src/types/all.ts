@@ -119,5 +119,7 @@ export interface PriorityFeeConfig {
 export type OneOnOneConversation = {
   contact: Contact;
   conversation: Conversation;
-  events: (Message | Payment | Handshake)[];
+  events: KasiaConversationEvent[];
 };
+
+export type KasiaConversationEvent = Message | Payment | Handshake;

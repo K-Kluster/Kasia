@@ -10,6 +10,7 @@ import { useIsMobile } from "../utils/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
 import { useDBStore } from "../store/db.store";
+import { Contact } from "../store/repository/contact.repository";
 
 export const MessengerContainer: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -134,6 +135,9 @@ export const MessengerContainer: FC = () => {
         // migrate storage
         await dbStore.migrateStorage();
 
+        // load contacts in dbStore
+        await dbStore.loadContacts();
+
         // Initialize conversation manager
         messageStore.initializeConversationManager(receiveAddressStr);
 
@@ -193,7 +197,7 @@ export const MessengerContainer: FC = () => {
       !isMobile &&
       messageStore.isLoaded &&
       !messageStore.openedRecipient &&
-      messageStore.contacts.length > 0
+      dbStore.contacts.length > 0
     ) {
       const walletAddress = walletStore.address?.toString();
       if (walletAddress) {
@@ -203,7 +207,7 @@ export const MessengerContainer: FC = () => {
   }, [
     messageStore.isLoaded,
     messageStore.openedRecipient,
-    messageStore.contacts.length,
+    dbStore.contacts.length,
     walletStore.address,
     messageStore,
     isMobile,

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Message, OneOnOneConversation } from "../types/all";
+import { KasiaConversationEvent, OneOnOneConversation } from "../types/all";
 import { Contact } from "./repository/contact.repository";
 import {
   encrypt_message,
@@ -10,7 +10,7 @@ import { WalletStorage } from "../utils/wallet-storage";
 import { Address, NetworkType } from "kaspa-wasm";
 import { ConversationManager } from "../utils/conversation-manager";
 import { useWalletStore } from "./wallet.store";
-import { ConversationEvents } from "src/types/messaging.types";
+import { ConversationEvents, HandshakeState } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
 import { useDBStore } from "./db.store";
 import {
@@ -26,6 +26,7 @@ import {
   migrateToPerAddressStorage,
   cleanupLegacyStorage,
 } from "../utils/storage-encryption";
+import { Message } from "postcss";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -40,16 +41,12 @@ function getNetworkTypeFromAddress(address: string): NetworkType {
 interface MessagingState {
   isLoaded: boolean;
   isCreatingNewChat: boolean;
-  oneOnOneConversations: { contact: Contact; conversation: Conversation }[];
-  eventsOnOpenedRecipient: OneOnOneConversation["events"][];
-  handshakes: HandshakeState[];
-  addMessages: (messages: Message[]) => void;
+  oneOnOneConversations: OneOnOneConversation[];
+  eventsOnOpenedRecipient: KasiaConversationEvent[];
+  addEvents: (events: KasiaConversationEvent[]) => void;
   flushWalletHistory: (address: string) => void;
-  addConversationWithContact: (conversationWithContact: {
-    contact: Contact;
-    conversation: Conversation;
-  }) => void;
-  loadMessages: (address: string) => Message[];
+  addOneOnOneConversation: (oneOnOneConversation: OneOnOneConversation) => void;
+  loadEvents: (address: string) => KasiaConversationEvent[];
   setIsLoaded: (isLoaded: boolean) => void;
   storeMessage: (message: Message, walletAddress: string) => void;
   exportMessages: (wallet: UnlockedWallet, password: string) => Promise<Blob>;
@@ -80,8 +77,14 @@ interface MessagingState {
     senderAddress: string,
     payload: string
   ) => Promise<unknown>;
-  getActiveConversations: () => Conversation[];
-  getPendingConversations: () => PendingConversation[];
+  getActiveConversationsWithContacts: () => {
+    contact: Contact;
+    conversation: ActiveConversation;
+  }[];
+  getPendingConversationsWithContact: () => {
+    contact: Contact;
+    conversation: PendingConversation;
+  }[];
 
   // New function to manually respond to a handshake
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
@@ -101,7 +104,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   openedRecipient: null,
   oneOnOneConversations: [],
   eventsOnOpenedRecipient: [],
-  addConversationWithContact: (conversationWithContact) => {
+  addOneOnOneConversation: (conversationWithContact) => {
     const oneOnOneConversations = [
       ...g().oneOnOneConversations,
       conversationWithContact,
@@ -113,23 +116,18 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     );
     set({ oneOnOneConversations: oneOnOneConversations });
   },
-  addMessages: (messages) => {
-    const fullMessages = [...g().messages, ...messages];
-    fullMessages.sort((a, b) => a.timestamp - b.timestamp);
-
-    set({ messages: fullMessages });
-
+  addEvents: (events) => {
     // Update contacts with new messages
     const state = g();
     const walletStore = useWalletStore.getState();
     const walletAddress = walletStore.address?.toString();
 
     if (walletAddress) {
-      messages.forEach((message) => {
+      events.forEach((event) => {
         const otherParty =
-          message.senderAddress === walletAddress
-            ? message.recipientAddress
-            : message.senderAddress;
+          event.senderAddress === walletAddress
+            ? event.recipientAddress
+            : event.senderAddress;
 
         // Update existing contact if found
         const existingConversationWithContactIndex =
@@ -223,7 +221,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     console.log("Complete history clear completed - all data wiped");
   },
-  loadMessages: (address): Message[] => {
+  loadEvents: (address): KasiaConversationEvent[] => {
     const walletStore = useWalletStore.getState();
     const password = walletStore.unlockedWallet?.password;
     const walletId = walletStore.selectedWalletId;
@@ -975,13 +973,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
     return await manager.processHandshake(senderAddress, payload);
   },
-  getActiveConversations: () => {
+  getActiveConversationsWithContacts: () => {
     const manager = g().conversationManager;
-    return manager ? manager.getActiveConversations() : [];
+    return manager ? manager.getActiveConversationsWithContact() : [];
   },
-  getPendingConversations: () => {
+  getPendingConversationsWithContact: () => {
     const manager = g().conversationManager;
-    return manager ? manager.getPendingConversations() : [];
+    return manager ? manager.getPendingConversationsWithContact() : [];
   },
   // New function to manually respond to a handshake
   respondToHandshake: async (handshake: HandshakeState) => {

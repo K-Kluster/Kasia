@@ -1,31 +1,38 @@
 import React from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import "./HandshakeManager.css";
-import { HandshakeState, PendingConversation } from "../types/messaging.types";
+import { HandshakeState } from "../types/messaging.types";
+import { PendingConversation } from "../store/repository/conversation.repository";
+import { Contact } from "../store/repository/contact.repository";
 
 const HandshakeManager: React.FC = () => {
   const messagingStore = useMessagingStore();
-  const pendingConversations = messagingStore.getPendingConversations();
+  const pendingConversationsWithContact =
+    messagingStore.getPendingConversationsWithContact();
 
-  const handleAcceptHandshake = async (
-    pendingConversation: PendingConversation
-  ) => {
+  const handleAcceptHandshake = async ({
+    contact,
+    conversation,
+  }: {
+    conversation: PendingConversation;
+    contact: Contact;
+  }) => {
     try {
-      if (!pendingConversation.kaspaAddress) {
+      if (!contact.kaspaAddress) {
         throw new Error("Invalid conversation: missing kaspaAddress");
       }
 
       // Convert Conversation to HandshakeState
       const handshakeState: HandshakeState = {
-        conversationId: pendingConversation.conversationId,
-        myAlias: pendingConversation.myAlias || "Anonymous",
-        theirAlias: pendingConversation.theirAlias || null,
-        senderAddress: pendingConversation.kaspaAddress,
-        kaspaAddress: pendingConversation.kaspaAddress,
-        status: pendingConversation.status,
-        createdAt: pendingConversation.createdAt,
-        lastActivity: pendingConversation.lastActivity,
-        initiatedByMe: pendingConversation.initiatedByMe,
+        conversationId: conversation.id,
+        myAlias: conversation.myAlias || "Anonymous",
+        theirAlias: conversation.theirAlias || null,
+        senderAddress: contact.kaspaAddress,
+        kaspaAddress: contact.kaspaAddress,
+        status: conversation.status,
+        lastActivity: conversation.lastActivityAt.getTime(),
+        initiatedByMe: conversation.initiatedByMe,
+        createdAt: Date.now(),
       };
 
       await messagingStore.respondToHandshake(handshakeState);
@@ -34,7 +41,7 @@ const HandshakeManager: React.FC = () => {
     }
   };
 
-  if (pendingConversations.length === 0) {
+  if (pendingConversationsWithContact.length === 0) {
     return null;
   }
 
@@ -42,24 +49,24 @@ const HandshakeManager: React.FC = () => {
     <div className="handshake-manager">
       <h3>Pending Handshakes</h3>
       <div className="handshake-list">
-        {pendingConversations.map((conv) => (
-          <div key={conv.kaspaAddress} className="handshake-item">
+        {pendingConversationsWithContact.map(({ conversation, contact }) => (
+          <div key={contact.kaspaAddress} className="handshake-item">
             <div className="handshake-info">
-              <p className="address">From: {conv.kaspaAddress}</p>
-              {conv.theirAlias && (
-                <p className="alias">Their Alias: {conv.theirAlias}</p>
+              <p className="address">From: {contact.kaspaAddress}</p>
+              {conversation.theirAlias && (
+                <p className="alias">Their Alias: {conversation.theirAlias}</p>
               )}
-              <p className="status">Status: {conv.status}</p>
+              <p className="status">Status: {conversation.status}</p>
             </div>
-            {!conv.initiatedByMe && (
+            {!conversation.initiatedByMe && (
               <button
-                onClick={() => handleAcceptHandshake(conv)}
+                onClick={() => handleAcceptHandshake({ contact, conversation })}
                 className="accept-button"
               >
                 Accept & Send Response
               </button>
             )}
-            {conv.initiatedByMe && (
+            {conversation.initiatedByMe && (
               <p className="waiting-text">Waiting for their response...</p>
             )}
           </div>

@@ -59,10 +59,6 @@ export const useDBStore = create<DBState>((set, get) => ({
       throw new Error("Tenant ID and wallet password are required");
     }
 
-    console.log({
-      unlockedWallet,
-    });
-
     const repositories = new Repositories(
       db,
       walletPassword,
