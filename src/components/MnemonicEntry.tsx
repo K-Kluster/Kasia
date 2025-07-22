@@ -4,22 +4,26 @@ import clsx from "clsx";
 interface MnemonicEntryProps {
   seedPhraseLength: number;
   mnemonicRef: React.RefObject<HTMLTextAreaElement | null>;
+  passphraseRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const MnemonicEntry = ({
   seedPhraseLength,
   mnemonicRef,
+  passphraseRef,
 }: MnemonicEntryProps) => {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [showPassphrase, setShowPassphrase] = useState(false);
 
   // If the user changes the seed phrase length, reset the input fields
   useEffect(() => {
     if (mnemonicRef.current) mnemonicRef.current.value = "";
+    if (passphraseRef?.current) passphraseRef.current.value = "";
     document
       .querySelectorAll<HTMLInputElement>(".mnemonic-input-grid input")
       .forEach((i) => (i.value = ""));
     setFocusedIndex(null);
-  }, [seedPhraseLength]);
+  }, [seedPhraseLength, mnemonicRef, passphraseRef]);
 
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>, idx: number) => {
     if (idx !== 0) return;
@@ -76,6 +80,48 @@ export const MnemonicEntry = ({
         })}
       </div>
       <textarea ref={mnemonicRef} readOnly className="hidden" />
+
+      <div className="mt-4 mb-4">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={showPassphrase}
+            onChange={(e) => setShowPassphrase(e.target.checked)}
+            className="rounded border-[var(--primary-border)] bg-[var(--input-bg)] text-[var(--color-kas-secondary)] focus:ring-[var(--color-kas-secondary)]"
+          />
+          <span className="text-[var(--text-primary)]">
+            My wallet has a passphrase (BIP39)
+          </span>
+        </label>
+        <p className="mt-1 text-xs text-[var(--text-secondary)]">
+          Check this box if your wallet was created with an additional
+          passphrase for extra security.
+        </p>
+      </div>
+
+      {showPassphrase && (
+        <div className="mt-4 mb-4">
+          <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
+            Passphrase (Optional)
+          </label>
+          <input
+            ref={passphraseRef}
+            type="password"
+            placeholder="Enter passphrase (leave empty if none)"
+            className={clsx(
+              "w-full rounded-xl p-2",
+              "border-primary-border border bg-[var(--primary-bg)]",
+              "text-[var(--text-primary)]",
+              "focus:border-[var(--color-kas-secondary)] focus:outline-none",
+              "placeholder:text-sm"
+            )}
+          />
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+            A passphrase adds an extra layer of security to your wallet. Only
+            enter one if your wallet was created with a passphrase.
+          </p>
+        </div>
+      )}
     </div>
   );
 };
