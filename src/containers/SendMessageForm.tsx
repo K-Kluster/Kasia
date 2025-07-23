@@ -233,11 +233,11 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         // Not a file message, use message as is
       }
 
-      let txId: string = "";
+      let txId: string;
 
       // Create the message object for storage
       pendingMessage = {
-        transactionId: "",
+        transactionId: `pending-${Date.now()}-${Math.random()}`,
         status: "pending", // Initial status is pending
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipient,
@@ -289,7 +289,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       }
       setIsExpanded(false);
 
-      if (txId === "") {
+      if (txId.startsWith("pending")) {
         pendingMessage = {
           ...pendingMessage,
           status: "failed",
