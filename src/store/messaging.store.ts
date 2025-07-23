@@ -96,6 +96,9 @@ interface MessagingState {
 
   // Last opened recipient management
   restoreLastOpenedRecipient: (walletAddress: string) => void;
+
+  // Hydration
+  hydrateOneonOneConversations: () => Promise<void>;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -115,6 +118,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         a.conversation.lastActivityAt.getTime()
     );
     set({ oneOnOneConversations: oneOnOneConversations });
+  },
+  hydrateOneonOneConversations: async () => {
+    const repositories = useDBStore.getState().repositories;
+
+    const contacts = await repositories.contactRepository.getContacts();
+    const conversations =
+      await repositories.conversationRepository.getConversations();
+
+    const oneOnOneConversationPromises = conversations.map(
+      async (conversation): Promise<OneOnOneConversation | null> => {
+        const contact = contacts.find((c) => c.id === conversation.contactId);
+
+        if (!contact) {
+          return null;
+        }
+
+        const events = await repositories.getKasiaEventsByConversationId(
+          conversation.id
+        );
+
+        return { conversation, contact, events };
+      }
+    );
+    const oneOnOneConversations = await Promise.all(
+      oneOnOneConversationPromises
+    );
+    set({
+      oneOnOneConversations: oneOnOneConversations.filter((c) => c !== null),
+    });
   },
   addEvents: (events) => {
     // Update contacts with new messages
@@ -895,7 +927,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       onHandshakeCompleted: (conversation, contact) => {
         console.log("Handshake completed:", conversation);
 
-        g().addContacts([contact]);
+        set({
+          contacts: [...g().contacts, contact],
+        });
       },
       onHandshakeExpired: (conversation, contact) => {
         console.log("Handshake expired:", conversation);

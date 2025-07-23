@@ -25,6 +25,7 @@ export type HandshakeBag = {
   amount: number;
   fee?: number;
   content: string;
+  fromMe: boolean;
 };
 export type Handshake = HandshakeBag &
   Omit<DbHandshake, "encryptedData"> & {
@@ -51,6 +52,18 @@ export class HandshakeRepository {
   async getHandshakes(): Promise<Handshake[]> {
     return this.db
       .getAllFromIndex("handshakes", "by-tenant-id", this.tenantId)
+      .then((dbHandshakes) => {
+        return dbHandshakes.map((dbHandshake) => {
+          return this._dbHandshakeToHandshake(dbHandshake);
+        });
+      });
+  }
+
+  async getHanshakesByConversationId(
+    conversationId: string
+  ): Promise<Handshake[]> {
+    return this.db
+      .getAllFromIndex("handshakes", "by-conversation-id", conversationId)
       .then((dbHandshakes) => {
         return dbHandshakes.map((dbHandshake) => {
           return this._dbHandshakeToHandshake(dbHandshake);
@@ -86,6 +99,7 @@ export class HandshakeRepository {
           amount: handshake.amount,
           fee: handshake.fee,
           content: handshake.content,
+          fromMe: handshake.fromMe,
         } satisfies HandshakeBag),
         this.walletPassword
       ),
@@ -108,6 +122,7 @@ export class HandshakeRepository {
       fee: handshakeBag.fee,
       amount: handshakeBag.amount,
       content: handshakeBag.content,
+      fromMe: handshakeBag.fromMe,
       __type: "handshake",
     };
   }

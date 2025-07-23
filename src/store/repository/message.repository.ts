@@ -32,6 +32,7 @@ export type MessageBag = {
     content: string;
   };
   content: string;
+  fromMe: boolean;
 };
 export type Message = MessageBag &
   Omit<DbMessage, "encryptedData"> & {
@@ -58,6 +59,18 @@ export class MessageRepository {
   async getMessages(): Promise<Message[]> {
     return this.db
       .getAllFromIndex("messages", "by-tenant-id", this.tenantId)
+      .then((dbMessages) => {
+        return dbMessages.map((dbMessage) => {
+          return this._dbMessageToMessage(dbMessage);
+        });
+      });
+  }
+
+  async getMessagesByConversationId(
+    conversationId: string
+  ): Promise<Message[]> {
+    return this.db
+      .getAllFromIndex("messages", "by-conversation-id", conversationId)
       .then((dbMessages) => {
         return dbMessages.map((dbMessage) => {
           return this._dbMessageToMessage(dbMessage);
@@ -94,6 +107,7 @@ export class MessageRepository {
           amount: message.amount,
           fee: message.fee,
           content: message.content,
+          fromMe: message.fromMe,
         } satisfies MessageBag),
         this.walletPassword
       ),
@@ -117,6 +131,7 @@ export class MessageRepository {
       fileData: messageBag.fileData,
       amount: messageBag.amount,
       content: messageBag.content,
+      fromMe: messageBag.fromMe,
       __type: "message",
     };
   }

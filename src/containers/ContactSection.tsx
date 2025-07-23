@@ -2,11 +2,12 @@ import { FC, useState, useMemo } from "react";
 import { Menu, Search, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
-import { Contact } from "../types/all";
+import { OneOnOneConversation } from "../types/all";
 import { useIsMobile } from "../utils/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { DesktopMenu } from "../components/Layout/DesktopMenu";
+import { Contact } from "../store/repository/contact.repository";
 
 interface ContactSectionProps {
   contacts: Contact[];
@@ -21,7 +22,7 @@ interface ContactSectionProps {
 }
 
 export const ContactSection: FC<ContactSectionProps> = ({
-  contacts,
+  contacts: contacts,
   onNewChatClicked,
   onContactClicked,
   openedRecipient,
@@ -38,44 +39,35 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
+  // @TODO: should this be a use effect instead? result seems unused
   // Search through all messages and contacts
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return contacts;
     const q = searchQuery.toLowerCase();
     const matches = new Map<string, Contact>();
 
-    messageStore.messages.forEach((message) => {
-      const text =
-        `${message.content ?? ""} ${message.payload ?? ""}`.toLowerCase();
-      if (text.includes(q)) {
-        const addr =
-          message.senderAddress === walletAddress
-            ? message.recipientAddress
-            : message.senderAddress;
-        const c = contacts.find((cc) => cc.address === addr);
-        if (c) matches.set(c.address, c);
-      }
+    messageStore.oneOnOneConversations.forEach((oneOnOneConversation) => {
+      oneOnOneConversation.events.forEach((event) => {
+        if (event.content.includes(q)) {
+          matches.set(
+            oneOnOneConversation.contact.kaspaAddress,
+            oneOnOneConversation.contact
+          );
+        }
+      });
     });
 
     contacts.forEach((contact) => {
       if (
-        contact.nickname?.toLowerCase().includes(q) ||
-        contact.address.toLowerCase().includes(q)
+        contact.name?.toLowerCase().includes(q) ||
+        contact.kaspaAddress.toLowerCase().includes(q)
       ) {
-        matches.set(contact.address, contact);
+        matches.set(contact.kaspaAddress, contact);
       }
     });
 
     return [...matches.values()];
-  }, [searchQuery, contacts, messageStore.messages, walletAddress]);
-
-  const uniqueContacts = [
-    ...new Map(
-      searchResults
-        .filter((c) => c.address && c.address !== walletAddress)
-        .map((c) => [c.address.trim().toLowerCase(), c])
-    ).values(),
-  ];
+  }, [searchQuery, contacts, messageStore.oneOnOneConversations]);
 
   const containerCls = clsx(
     "flex flex-col bg-bg-primary transition-all duration-200",
@@ -151,12 +143,12 @@ export const ContactSection: FC<ContactSectionProps> = ({
 
       {/* Contacts list */}
       <div className="bg-secondary-bg flex-1 overflow-y-auto">
-        {uniqueContacts.length
-          ? uniqueContacts.map((contact) => (
+        {contacts.length
+          ? contacts.map((contact) => (
               <ContactCard
-                key={contact.address}
+                key={contact.kaspaAddress}
                 contact={contact}
-                isSelected={contact.address === openedRecipient}
+                isSelected={contact.kaspaAddress === openedRecipient}
                 collapsed={contactsCollapsed}
                 onClick={() => {
                   onContactClicked(contact);

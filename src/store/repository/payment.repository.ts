@@ -25,6 +25,7 @@ export type PaymentBag = {
   amount: number;
   fee?: number;
   content: string;
+  fromMe: boolean;
 };
 export type Payment = PaymentBag &
   Omit<DbPayment, "encryptedData"> & {
@@ -51,6 +52,18 @@ export class PaymentRepository {
   async getPayments(): Promise<Payment[]> {
     return this.db
       .getAllFromIndex("payments", "by-tenant-id", this.tenantId)
+      .then((dbPayments) => {
+        return dbPayments.map((dbPayment) => {
+          return this._dbPaymentToPayment(dbPayment);
+        });
+      });
+  }
+
+  async getPaymentsByConversationId(
+    conversationId: string
+  ): Promise<Payment[]> {
+    return this.db
+      .getAllFromIndex("payments", "by-conversation-id", conversationId)
       .then((dbPayments) => {
         return dbPayments.map((dbPayment) => {
           return this._dbPaymentToPayment(dbPayment);
@@ -86,6 +99,7 @@ export class PaymentRepository {
           amount: payment.amount,
           fee: payment.fee,
           content: payment.content,
+          fromMe: payment.fromMe,
         } satisfies PaymentBag),
         this.walletPassword
       ),
@@ -108,6 +122,7 @@ export class PaymentRepository {
       fee: paymentBag.fee,
       amount: paymentBag.amount,
       content: paymentBag.content,
+      fromMe: paymentBag.fromMe,
       __type: "payment",
     };
   }

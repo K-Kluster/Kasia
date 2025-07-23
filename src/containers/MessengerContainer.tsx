@@ -135,8 +135,8 @@ export const MessengerContainer: FC = () => {
         // migrate storage
         await dbStore.migrateStorage();
 
-        // load contacts in dbStore
-        await dbStore.loadContacts();
+        // hydrate 1-1 conversations
+        await messageStore.hydrateOneonOneConversations();
 
         // Initialize conversation manager
         messageStore.initializeConversationManager(receiveAddressStr);
@@ -145,7 +145,6 @@ export const MessengerContainer: FC = () => {
         await walletStore.start(networkStore.kaspaClient);
 
         // Load existing messages
-        messageStore.loadMessages(receiveAddressStr);
         messageStore.setIsLoaded(true);
 
         // Check if we should trigger API message fetching for imported wallets
@@ -197,7 +196,7 @@ export const MessengerContainer: FC = () => {
       !isMobile &&
       messageStore.isLoaded &&
       !messageStore.openedRecipient &&
-      dbStore.contacts.length > 0
+      messageStore.oneOnOneConversations.length > 0
     ) {
       const walletAddress = walletStore.address?.toString();
       if (walletAddress) {
@@ -207,7 +206,7 @@ export const MessengerContainer: FC = () => {
   }, [
     messageStore.isLoaded,
     messageStore.openedRecipient,
-    dbStore.contacts.length,
+    messageStore.oneOnOneConversations.length,
     walletStore.address,
     messageStore,
     isMobile,
@@ -232,7 +231,7 @@ export const MessengerContainer: FC = () => {
       }
 
       messageStore.setIsCreatingNewChat(false);
-      messageStore.setOpenedRecipient(contact.address);
+      messageStore.setOpenedRecipient(contact.kaspaAddress);
     },
     [messageStore, walletStore.address]
   );
@@ -245,7 +244,7 @@ export const MessengerContainer: FC = () => {
           {isWalletReady && messageStore.isLoaded ? (
             <>
               <ContactSection
-                contacts={messageStore.contacts}
+                contacts={messageStore.oneOnOneConversations}
                 onNewChatClicked={onNewChatClicked}
                 onContactClicked={onContactClicked}
                 openedRecipient={messageStore.openedRecipient}

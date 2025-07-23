@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { KasiaDB, openDatabase, Repositories } from "./repository/db";
-import { Contact } from "./repository/contact.repository";
 import { UnlockedWallet } from "../types/wallet.type";
 import { WalletStorage } from "../utils/wallet-storage";
 import { useWalletStore } from "./wallet.store";
@@ -21,8 +20,6 @@ interface DBState {
   repositories: Repositories;
   unlockedWallet: UnlockedWallet;
 
-  contacts: Contact[];
-
   /**
    * Opens the database (indexdb) and sets the `db` state
    */
@@ -35,7 +32,7 @@ interface DBState {
     unlockedWallet: UnlockedWallet,
     walletPassword: string
   ) => void;
-  loadContacts: () => Promise<void>;
+
   migrateStorage: () => Promise<void>;
 }
 
@@ -44,7 +41,7 @@ export const useDBStore = create<DBState>((set, get) => ({
   isDbOpening: false,
   repositories: undefined!,
   unlockedWallet: undefined!,
-  contacts: [],
+
   initDB: async () => {
     const db = await openDatabase();
     set({ db });
@@ -66,15 +63,7 @@ export const useDBStore = create<DBState>((set, get) => ({
     );
     set({ repositories, unlockedWallet });
   },
-  loadContacts: async () => {
-    const repositories = get().repositories;
 
-    const contacts = await repositories.contactRepository.getContacts();
-
-    set({
-      contacts,
-    });
-  },
   migrateStorage: async () => {
     const repositories = get().repositories;
     const unlockedWallet = get().unlockedWallet;

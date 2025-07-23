@@ -12,6 +12,7 @@ import {
 import { ContactRepository, DbContact } from "./contact.repository";
 import { DbHandshake, HandshakeRepository } from "./handshake.repository";
 import { DbPayment, PaymentRepository } from "./payment.repository";
+import { KasiaConversationEvent } from "../../types/all";
 
 const CURRENT_DB_VERSION = 1;
 
@@ -213,5 +214,19 @@ export class Repositories {
       tenantId,
       walletPassword
     );
+  }
+
+  getKasiaEventsByConversationId(
+    conversationId: string
+  ): Promise<KasiaConversationEvent[]> {
+    return Promise.all([
+      this.messageRepository.getMessagesByConversationId(conversationId),
+      this.paymentRepository.getPaymentsByConversationId(conversationId),
+      this.handshakeRepository.getHanshakesByConversationId(conversationId),
+    ]).then(([messages, payments, handshakes]) => {
+      return [...messages, ...payments, ...handshakes].sort((a, b) => {
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      });
+    });
   }
 }
