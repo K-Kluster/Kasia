@@ -503,7 +503,9 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             </a>
           )}
           {status === "pending" && <Loader2 className="size-5 animate-spin" />}
-          {status === "failed" && <X className="size-5 text-red-500" />}
+          {status === "failed" && (
+            <X className="size-5 text-[var(--accent-red)]" />
+          )}
         </div>
       )}
       <div
