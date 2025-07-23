@@ -40,7 +40,7 @@ interface HandshakeState {
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
   if (address.startsWith("kaspatest:")) {
-    return NetworkType.Mainnet;
+    return NetworkType.Testnet;
   } else if (address.startsWith("kaspadev:")) {
     return NetworkType.Devnet;
   }
@@ -162,6 +162,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
             set({ contacts: sortedContacts });
           }
+        } else {
+          // create new contact if it doesn't exist
+          const newContact = {
+            address: otherParty,
+            lastMessage: message,
+            messages: [message],
+          };
+
+          const updatedContacts = [...state.contacts, newContact].sort(
+            (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+          );
+
+          set({ contacts: updatedContacts });
         }
       });
     }
@@ -598,7 +611,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   setIsCreatingNewChat: (isCreatingNewChat) => {
     set({ isCreatingNewChat });
   },
-  exportMessages: async (wallet, password) => {
+  exportMessages: async (wallet) => {
     try {
       console.log("Starting message export process...");
 
@@ -609,7 +622,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         );
       }
 
-      const messagesMap = loadLegacyMessages(password);
+      const walletId = useWalletStore.getState().selectedWalletId;
+      if (!walletId) {
+        throw new Error("No wallet selected for exporting messages.");
+      }
 
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
@@ -620,17 +636,70 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Getting receive key...");
       const receiveKey = privateKeyGenerator.receiveKey(0);
 
-      // Get the current network type from the first message's address
-      let networkType = NetworkType.Mainnet; // Default to mainnet
-      const addresses = Object.keys(messagesMap);
-      if (addresses.length > 0) {
-        networkType = getNetworkTypeFromAddress(addresses[0]);
-      }
-      console.log("Using network type:", networkType);
-
+      const walletStore = useWalletStore.getState();
+      const networkType = walletStore.selectedNetwork || NetworkType.Mainnet;
       const receiveAddress = receiveKey.toAddress(networkType);
       const walletAddress = receiveAddress.toString();
       console.log("Using receive address:", walletAddress);
+
+      // collect all messages from the current store state and per-address storage
+      const messagesMap: Record<string, Message[]> = {};
+
+      // First, try to load legacy messages and migrate them if needed
+      const legacyMessages = loadLegacyMessages(password);
+      if (Object.keys(legacyMessages).length > 0) {
+        console.log(
+          "Found legacy messages, migrating to per-address storage..."
+        );
+        migrateToPerAddressStorage(walletId, password);
+        // after migration, the messages will be available in per-address storage
+      }
+
+      // get all messages from the current store state
+      const currentMessages = g().messages;
+      if (currentMessages.length > 0) {
+        // group messages by the other party (not the current wallet)
+        const messagesByAddress: Record<string, Message[]> = {};
+
+        currentMessages.forEach((message) => {
+          const otherParty =
+            message.senderAddress === walletAddress
+              ? message.recipientAddress
+              : message.senderAddress;
+
+          if (!messagesByAddress[otherParty]) {
+            messagesByAddress[otherParty] = [];
+          }
+          messagesByAddress[otherParty].push(message);
+        });
+
+        // also include messages where the current wallet is both sender and recipient
+        if (messagesByAddress[walletAddress]) {
+          messagesMap[walletAddress] = messagesByAddress[walletAddress];
+        }
+
+        // add messages for each contact
+        Object.entries(messagesByAddress).forEach(([address, messages]) => {
+          if (address !== walletAddress) {
+            messagesMap[address] = messages;
+          }
+        });
+      }
+
+      // if we still don't have messages, try loading from per-address storage
+      if (Object.keys(messagesMap).length === 0) {
+        console.log("No messages in store, trying per-address storage...");
+        const storedMessages = loadMessagesForAddress(
+          walletId,
+          walletAddress,
+          password
+        );
+        if (storedMessages.length > 0) {
+          messagesMap[walletAddress] = storedMessages;
+        }
+      }
+
+      console.log("Collected messages:", messagesMap);
 
       // Export nicknames for this wallet
       const nicknameStorageKey = `contact_nicknames_${walletAddress}`;
@@ -694,7 +763,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const fileContent = await file.text();
       console.log("Parsing backup file...");
       const backupFile = JSON.parse(fileContent);
-
       // Validate backup file format
       if (
         !backupFile.type ||
@@ -725,10 +793,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         encryptedMessage,
         privateKeyBytes
       );
-
       console.log("Parsing decrypted data...");
       const decryptedData = JSON.parse(decryptedStr);
-
       // Validate decrypted data structure
       if (
         !decryptedData.version ||
@@ -754,7 +820,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         ...existingMessages,
         ...decryptedData.data,
       };
-
       // Save merged messages
       saveMessages(mergedMessages, currentPassword);
 
@@ -770,7 +835,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const receiveAddress = privateKey.toAddress(networkType);
       const currentAddress = receiveAddress.toString();
       console.log("Using receive address:", currentAddress);
-
       // Restore nicknames if they exist in the backup
       if (decryptedData.nicknames) {
         console.log("Restoring nicknames...");
@@ -838,16 +902,76 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         });
       }
 
-      // Reload messages using the current address
-      g().loadMessages(currentAddress);
+      // process all imported messages and add them to the store
+      console.log("Processing imported messages...");
+      const allImportedMessages: Message[] = [];
 
-      // Set flag to trigger API fetching after next account service start
+      Object.entries(mergedMessages).forEach(([address, messages]) => {
+        const typedMessages = messages as Message[];
+        console.log(
+          `Processing ${typedMessages.length} messages for address: ${address}`
+        );
+        allImportedMessages.push(...typedMessages);
+      });
+
+      // add all messages to the store
+      if (allImportedMessages.length > 0) {
+        console.log(`Adding ${allImportedMessages.length} messages to store`);
+        g().addMessages(allImportedMessages);
+      }
+
+      // save imported messages to localStorage for persistence
+      console.log("Saving imported messages to localStorage...");
+      const walletStore = useWalletStore.getState();
+      const importPassword = walletStore.unlockedWallet?.password;
+      const walletId = walletStore.selectedWalletId;
+
+      if (importPassword && walletId) {
+        // collect all imported messages into a single array
+        const allImportedMessages: Message[] = [];
+        Object.entries(mergedMessages).forEach(([address, messages]) => {
+          const typedMessages = messages as Message[];
+          if (typedMessages.length > 0) {
+            allImportedMessages.push(...typedMessages);
+          }
+        });
+
+        // save all imported messages under the current wallet address
+        if (allImportedMessages.length > 0) {
+          saveMessagesForAddress(
+            allImportedMessages,
+            walletId,
+            currentAddress,
+            importPassword
+          );
+        }
+      } else {
+        console.error(
+          "Cannot save to localStorage: missing password or walletId"
+        );
+      }
+
+      // // set flag to trigger API fetching after next account service start
       localStorage.setItem("kasia_fetch_api_on_start", "true");
 
       console.log("Import completed successfully");
       console.log(
         "Set flag to fetch API messages on next wallet service start"
       );
+
+      // After restoring nicknames in localStorage, update UI. Otherwise we need to wait till next login
+      const state = g();
+      const nicknameStorageKey = `contact_nicknames_${currentAddress}`;
+      const savedNicknames = JSON.parse(
+        localStorage.getItem(nicknameStorageKey) || "{}"
+      );
+
+      const updatedContacts = state.contacts.map((contact) => ({
+        ...contact,
+        nickname: savedNicknames[contact.address] || undefined,
+      }));
+
+      set({ contacts: updatedContacts });
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
       if (error instanceof Error) {
