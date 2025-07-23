@@ -599,14 +599,29 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       return;
     }
 
-    const messages = g().messages.filter((msg) => {
+    const filtered = g().messages.filter((msg) => {
       return (
         msg.senderAddress === openedRecipient ||
         msg.recipientAddress === openedRecipient
       );
     });
 
-    set({ messagesOnOpenedRecipient: messages });
+    // deduplicate by transactionId
+    const deduped = Object.values(
+      filtered.reduce(
+        (acc, msg) => {
+          acc[msg.transactionId] = acc[msg.transactionId]
+            ? msg.timestamp > acc[msg.transactionId].timestamp
+              ? msg
+              : acc[msg.transactionId]
+            : msg;
+          return acc;
+        },
+        {} as Record<string, Message>
+      )
+    );
+
+    set({ messagesOnOpenedRecipient: deduped });
   },
   setIsCreatingNewChat: (isCreatingNewChat) => {
     set({ isCreatingNewChat });
