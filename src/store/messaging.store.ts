@@ -197,9 +197,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       return;
     }
 
-    // Remove the specific address storage key
-    const storageKey = `msg_${walletId.substring(0, 8)}_${address.replace(/^kaspa[test]?:/, "").slice(-10)}`;
-    localStorage.removeItem(storageKey);
+    // 1. loop through all and delete
+    const prefix = `msg_${walletId.substring(0, 8)}_`;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        localStorage.removeItem(key);
+      }
+    }
 
     // 2. Clear nickname mappings for this wallet
     const nicknameKey = `contact_nicknames_${address}`;
@@ -975,13 +980,33 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       );
 
       // After restoring nicknames in localStorage, update UI. Otherwise we need to wait till next login
-      const state = g();
       const nicknameStorageKey = `contact_nicknames_${currentAddress}`;
       const savedNicknames = JSON.parse(
         localStorage.getItem(nicknameStorageKey) || "{}"
       );
 
-      const updatedContacts = state.contacts.map((contact) => ({
+      // build the full contacts array (including new ones from import)
+      const contacts = [...g().contacts];
+      Object.entries(mergedMessages).forEach(([address, messages]) => {
+        const typedMessages = messages as Message[];
+        if (
+          !contacts.some((c) => c.address === address) &&
+          typedMessages.length > 0
+        ) {
+          const lastMessage = typedMessages.reduce((a, b) =>
+            a.timestamp > b.timestamp ? a : b
+          );
+          contacts.push({
+            address,
+            lastMessage,
+            messages: typedMessages,
+            nickname: savedNicknames[address] || undefined,
+          });
+        }
+      });
+
+      // update all contacts with nicknames
+      const updatedContacts = contacts.map((contact) => ({
         ...contact,
         nickname: savedNicknames[contact.address] || undefined,
       }));
