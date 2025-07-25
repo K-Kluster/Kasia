@@ -16,7 +16,7 @@ import { Textarea } from "@headlessui/react";
 import { Button } from "./Common/Button";
 import { QrScanner } from "./QrScanner";
 import { StringCopy } from "./Common/StringCopy";
-import { Search, X, Clipboard } from "lucide-react";
+import { Clipboard } from "lucide-react";
 
 interface NewChatFormProps {
   onClose: () => void;

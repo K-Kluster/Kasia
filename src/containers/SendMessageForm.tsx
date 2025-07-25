@@ -1,6 +1,5 @@
 import { FC, useCallback, useEffect, useRef, useState, DragEvent } from "react";
 import { useMessagingStore } from "../store/messaging.store";
-import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import {
   Popover,
@@ -27,7 +26,7 @@ import { toast } from "../utils/toast";
 import { SendPaymentPopup } from "../components/SendPaymentPopup";
 import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
-import { PriorityFeeConfig } from "../types/all";
+import { KasiaConversationEvent, PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
@@ -36,6 +35,8 @@ import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 import { useIsMobile } from "../utils/useIsMobile";
 import { parseImageFileJson } from "../utils/parse-image-file";
+import { Message } from "../store/repository/message.repository";
+import { v4 } from "uuid";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -190,10 +191,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       );
 
       // Check if we have an active conversation with this recipient
-      const activeConversations = messageStore.getActiveConversations();
-      const existingConversation = activeConversations.find(
-        (conv) => conv.kaspaAddress === openedRecipient
-      );
+      const activeConversationsWithContact =
+        messageStore.getActiveConversationsWithContacts();
+      const existingConversationAndContact =
+        activeConversationsWithContact.find(
+          (conversationAndContact) =>
+            conversationAndContact.contact.kaspaAddress === openedRecipient
+        );
 
       let messageToSend = message;
       let fileDataForStorage:
@@ -233,11 +237,15 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
       let txId: string;
 
+      // @TODO(indexdb): does it still makes sense to handle non context-aware sending?
       // If we have an active conversation, use the context-aware sending
-      if (existingConversation && existingConversation.theirAlias) {
+      if (
+        existingConversationAndContact &&
+        existingConversationAndContact.conversation.theirAlias
+      ) {
         console.log("Sending message with conversation context:", {
           openedRecipient,
-          theirAlias: existingConversation.theirAlias,
+          theirAlias: existingConversationAndContact.conversation.theirAlias,
           priorityFee: priorityFee.amount.toString(),
         });
 
@@ -250,56 +258,57 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           toAddress: new Address(recipient),
           message: messageToSend,
           password: walletStore.unlockedWallet.password,
-          theirAlias: existingConversation.theirAlias,
+          theirAlias: existingConversationAndContact.conversation.theirAlias,
           priorityFee: priorityFee,
         });
+
+        setIsExpanded(false);
+        console.log("Message sent! Transaction response:", txId);
+
+        // Create the message object for storage
+        const newMessageEvent: KasiaConversationEvent = {
+          transactionId: txId,
+          conversationId: existingConversationAndContact.conversation.id,
+          createdAt: new Date(),
+          id: v4(),
+          tenantId: walletStore.unlockedWallet.id,
+          content: fileDataForStorage
+            ? JSON.stringify(fileDataForStorage)
+            : message, // Store the complete file data in content
+          // @TODO: this is wrong, and shall be calculated from the generator
+          amount: 20000000, // 0.2 KAS in sompi
+          fee: feeEstimate || undefined, // Include the fee estimate if available
+          fileData: fileDataForStorage, // Also store it in fileData for immediate display
+          __type: "message",
+          contactId: existingConversationAndContact.contact.id,
+        };
+
+        messageStore.addEvents([newMessageEvent]);
+
+        // Only reset the message input, keep the recipient
+        if (messageInputRef.current) messageInputRef.current.value = "";
+        setMessage("");
+        setIsExpanded(false);
+        if (messageInputRef.current) {
+          messageInputRef.current.style.height = "";
+        }
+        setFeeEstimate(null);
+
+        // Keep the conversation open with the same recipient
+        messageStore.setOpenedRecipient(recipient);
       } else {
         // If no active conversation or no alias, use regular sending
-        console.log(
-          "No active conversation found, sending regular message with priority fee:",
-          priorityFee.amount.toString()
-        );
-        txId = await walletStore.sendMessage({
-          message: messageToSend,
-          toAddress: new Address(recipient),
-          password: walletStore.unlockedWallet.password,
-          priorityFee,
-        });
+        // console.log(
+        //   "No active conversation found, sending regular message with priority fee:",
+        //   priorityFee.amount.toString()
+        // );
+        // txId = await walletStore.sendMessage({
+        //   message: messageToSend,
+        //   toAddress: new Address(recipient),
+        //   password: walletStore.unlockedWallet.password,
+        //   priorityFee,
+        // });
       }
-      setIsExpanded(false);
-      console.log("Message sent! Transaction response:", txId);
-
-      // Create the message object for storage
-      const newMessageData: Message = {
-        transactionId: txId,
-        senderAddress: walletStore.address.toString(),
-        recipientAddress: recipient,
-        timestamp: Date.now(),
-        content: fileDataForStorage
-          ? JSON.stringify(fileDataForStorage)
-          : message, // Store the complete file data in content
-        amount: 20000000, // 0.2 KAS in sompi
-        fee: feeEstimate || undefined, // Include the fee estimate if available
-        payload: "", // No need to store encrypted payload for sent messages
-        fileData: fileDataForStorage, // Also store it in fileData for immediate display
-      };
-
-      // Store message under both sender and recipient addresses for proper conversation grouping
-      messageStore.storeMessage(newMessageData, walletStore.address.toString());
-      messageStore.storeMessage(newMessageData, recipient);
-      messageStore.addMessages([newMessageData]);
-
-      // Only reset the message input, keep the recipient
-      if (messageInputRef.current) messageInputRef.current.value = "";
-      setMessage("");
-      setIsExpanded(false);
-      if (messageInputRef.current) {
-        messageInputRef.current.style.height = "";
-      }
-      setFeeEstimate(null);
-
-      // Keep the conversation open with the same recipient
-      messageStore.setOpenedRecipient(recipient);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
@@ -315,12 +324,13 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
   const onSendClicked = useCallback(async () => {
     // Check if we have an active conversation with this recipient
-    const activeConversations = messageStore.getActiveConversations();
-    const existingConversation = activeConversations.find(
-      (conv) => conv.kaspaAddress === openedRecipient
+    const activeConversationsWithContact =
+      messageStore.getActiveConversationsWithContacts();
+    const existingConversationWithContact = activeConversationsWithContact.find(
+      ({ contact }) => contact.kaspaAddress === openedRecipient
     );
 
-    if (existingConversation) {
+    if (existingConversationWithContact) {
       return sendMessage();
     }
 

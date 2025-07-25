@@ -1,3 +1,6 @@
+import { Contact } from "../store/repository/contact.repository";
+import { Conversation } from "../store/repository/conversation.repository";
+
 export interface HandshakeState {
   conversationId: string;
   myAlias: string;
@@ -9,34 +12,6 @@ export interface HandshakeState {
   lastActivity: number;
   initiatedByMe: boolean;
 }
-
-export type BaseConversation = {
-  conversationId: string;
-  myAlias: string;
-  theirAlias: string | null; // null if handshake incomplete
-  kaspaAddress: string;
-  createdAt: number;
-  lastActivity: number;
-
-  initiatedByMe: boolean; // track who initiated the handshake
-};
-
-export type ActiveConversation = BaseConversation & {
-  status: "active";
-};
-
-export type RejectedConversation = BaseConversation & {
-  status: "rejected";
-};
-
-export type PendingConversation = BaseConversation & {
-  status: "pending";
-};
-
-export type Conversation =
-  | ActiveConversation
-  | RejectedConversation
-  | PendingConversation;
 
 export interface HandshakePayload {
   type: "handshake";
@@ -59,8 +34,8 @@ export interface PaymentPayload {
 }
 
 export interface ConversationEvents {
-  onHandshakeInitiated: (conversation: Conversation) => void;
-  onHandshakeCompleted: (conversation: Conversation) => void;
-  onHandshakeExpired: (conversation: Conversation) => void;
+  onHandshakeInitiated: (conversation: Conversation, contact: Contact) => void;
+  onHandshakeCompleted: (conversation: Conversation, contact: Contact) => void;
+  onHandshakeExpired: (conversation: Conversation, contact: Contact) => void;
   onError: (error: unknown) => void;
 }

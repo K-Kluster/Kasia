@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
 import { WalletFlow } from "./containers/WalletFlow";
@@ -9,6 +9,7 @@ import type { NetworkType } from "./types/all";
 import type { Step } from "./containers/WalletFlow";
 import { useWalletStore } from "./store/wallet.store";
 import { MessengerContainer } from "./containers/MessengerContainer";
+import { useDBStore } from "./store/db.store";
 
 type WalletFlowRouteConfig = {
   path: string | undefined;
@@ -34,6 +35,18 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
   onNetworkChange,
 }) => {
   const { unlockedWallet, selectedWalletId } = useWalletStore();
+  const { db, initRepositories, repositories } = useDBStore();
+
+  useEffect(() => {
+    if (unlockedWallet && db) {
+      initRepositories(unlockedWallet, unlockedWallet.password);
+    }
+  }, [unlockedWallet, db, selectedWalletId, initRepositories]);
+
+  // @TODO(indexdb): style this, should take long
+  if (unlockedWallet && !db && !repositories) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Routes>

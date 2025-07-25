@@ -1585,24 +1585,25 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     // For self-messages, we still want to encrypt using the conversation partner's address
-    const conversation = conversationManager.getConversationByAlias(
-      sendMessage.theirAlias
-    );
-    if (!conversation) {
+    const conversationWithContact =
+      conversationManager.getConversationWithContactByAlias(
+        sendMessage.theirAlias
+      );
+    if (!conversationWithContact) {
       throw new Error("Could not find conversation for the given alias");
     }
 
     console.log("Encryption details:", {
-      conversationPartnerAddress: conversation.kaspaAddress,
+      conversationPartnerAddress: conversationWithContact.contact.kaspaAddress,
       ourAddress: this.receiveAddress?.toString(),
       theirAlias: sendMessage.theirAlias,
       destinationAddress: this.receiveAddress?.toString(),
-      conversation: conversation,
+      conversation: conversationWithContact,
     });
 
     // Use the conversation partner's address for encryption, even though we're sending to ourselves
     const encryptedMessage = encrypt_message(
-      conversation.kaspaAddress,
+      conversationWithContact.contact.kaspaAddress,
       sendMessage.message
     );
     if (!encryptedMessage) {
