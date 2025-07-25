@@ -141,9 +141,6 @@ export const MessengerContainer: FC = () => {
         // Initialize conversation manager
         messageStore.initializeConversationManager(receiveAddressStr);
 
-        // Start the wallet and get the receive address
-        await walletStore.start(networkStore.kaspaClient);
-
         // Load existing messages
         messageStore.setIsLoaded(true);
 

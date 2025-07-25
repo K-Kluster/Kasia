@@ -33,11 +33,13 @@ export const ContactCard: FC<{
   const [showNewMsgAlert, setNewMsgAlert] = useState(false);
   const prevMessageId = useRef<string | undefined>(undefined);
 
+  const oneOnOneConversation = useMessagingStore((s) =>
+    s.oneOnOneConversations.find((oooc) => oooc.contact.id === contact.id)
+  );
+
   // Use the store selector to get the latest message for this contact
   const lastEvent = useMessagingStore((s) =>
-    s.oneOnOneConversations
-      .find((oooc) => oooc.contact.id === contact.id)
-      ?.events?.at(-1)
+    oneOnOneConversation?.events?.at(-1)
   );
 
   // get last message preview
@@ -52,11 +54,19 @@ export const ContactCard: FC<{
       case "payment":
         return "Payment received";
       case "handshake":
-        return "Handshake completed";
+        if (oneOnOneConversation?.conversation.theirAlias) {
+          return "Handshake completed";
+        }
+
+        if (lastEvent.fromMe) {
+          return "Handshake sent";
+        }
+
+        return "Handshake received";
       default:
         return "";
     }
-  }, [lastEvent]);
+  }, [lastEvent, oneOnOneConversation?.conversation.theirAlias]);
 
   const timestamp = useMemo(() => {
     if (!lastEvent?.createdAt) return "";

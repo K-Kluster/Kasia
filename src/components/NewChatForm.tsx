@@ -235,11 +235,11 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       );
       return false;
     }
-    const existingConversations = messageStore.getActiveConversations();
-    const existingConv = existingConversations.find(
-      (conv) => conv.kaspaAddress === knsRecipientAddress
-    );
-    if (existingConv) {
+    const existingConversationWithContact = messageStore
+      .getActiveConversationsWithContacts()
+      .find((oooc) => oooc.contact.kaspaAddress === knsRecipientAddress);
+
+    if (existingConversationWithContact) {
       setError("You already have an active conversation with this address");
       return false;
     }

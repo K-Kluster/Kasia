@@ -478,6 +478,10 @@ export class ConversationManager {
       tenantId: this.repositories.tenantId,
     };
 
+    await this.repositories.conversationRepository.saveConversation(
+      conversation
+    );
+
     this.inMemorySyncronization(conversation, contact);
 
     return {

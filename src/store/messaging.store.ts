@@ -22,18 +22,12 @@ import {
   PendingConversation,
   ActiveConversation,
 } from "./repository/conversation.repository";
-import {
-  loadLegacyMessages,
-  saveMessages,
-  saveMessagesForAddress,
-  loadMessagesForAddress,
-  migrateToPerAddressStorage,
-  cleanupLegacyStorage,
-} from "../utils/storage-encryption";
+import { loadLegacyMessages, saveMessages } from "../utils/storage-encryption";
 import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
 import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";
 import { AccountService } from "../service/account-service";
+import { Handshake } from "./repository/handshake.repository";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -72,10 +66,7 @@ interface MessagingState {
   initiateHandshake: (
     recipientAddress: string,
     customAmount?: bigint
-  ) => Promise<{
-    payload: string;
-    conversation: Conversation;
-  }>;
+  ) => Promise<void>;
   processHandshake: (
     senderAddress: string,
     payload: string
@@ -168,6 +159,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     for (const transaction of transactions) {
+      const isFromMe = transaction.senderAddress === address.toString();
+      const participantAddress = isFromMe
+        ? transaction.recipientAddress
+        : transaction.senderAddress;
+
       // HANDSHAKE
       if (
         transaction.content.startsWith("ciph_msg:") &&
@@ -187,12 +183,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
             console.log("Skipping self-handshake message");
             return;
           }
-
-          // Move handshake message from content to payload
-          transaction.payload = transaction.content;
-          transaction.content = handshakePayload.isResponse
-            ? "Handshake response received"
-            : "Handshake message received";
 
           // Process handshake if we're the recipient or if this is a response to our handshake
           if (
@@ -221,11 +211,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
           throw error;
         }
       }
-
-      const isFromMe = transaction.senderAddress === address.toString();
-      const participantAddress = isFromMe
-        ? transaction.recipientAddress
-        : transaction.senderAddress;
 
       const existingConversationWithContactIndex =
         state.oneOnOneConversations.findIndex(
@@ -688,7 +673,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     // Create the handshake payload
-    const { payload, conversation } =
+    const { payload, contact, conversation } =
       await manager.initiateHandshake(recipientAddress);
 
     // Send the handshake message
@@ -704,21 +689,48 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Handshake message sent, transaction ID:", txId);
 
       // Create a message object for the handshake
-      const message: Message = {
+      const kasiaTransaction: KasiaTransaction = {
         transactionId: txId,
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipientAddress,
-        timestamp: Date.now(),
+        createdAt: new Date(),
+        // @TODO(indexdb): fix this to use the correct fee
+        fee: 0,
         content: "Handshake initiated",
         amount: Number(customAmount || 20000000n) / 100000000, // Convert bigint to KAS number
         payload: payload,
       };
 
-      // Store the handshake message
-      g().storeMessage(message, walletStore.address.toString());
-      g().addMessages([message]);
+      const handshake: Handshake = {
+        __type: "handshake",
+        id: `${walletStore.unlockedWallet.id}_${txId}`,
+        tenantId: walletStore.unlockedWallet.id,
+        amount: kasiaTransaction.amount,
+        contactId: contact.id,
+        conversationId: conversation.id,
+        content: kasiaTransaction.content,
+        createdAt: kasiaTransaction.createdAt,
+        fromMe: true,
+        transactionId: kasiaTransaction.transactionId,
+        fee: kasiaTransaction.fee,
+      };
 
-      return { payload, conversation };
+      const repositories = useDBStore.getState().repositories;
+
+      await repositories.handshakeRepository.saveHandshake(handshake);
+
+      const oneOnOneConversations = g().oneOnOneConversations;
+
+      // push at the beginning of the array
+      oneOnOneConversations.unshift({
+        conversation,
+        contact,
+        events: [handshake],
+      });
+
+      set({
+        oneOnOneConversations,
+      });
     } catch (error) {
       console.error("Error sending handshake message:", error);
       throw error;

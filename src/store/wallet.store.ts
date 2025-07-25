@@ -17,10 +17,9 @@ import {
   UnlockedWallet,
   WalletBalance,
 } from "../types/wallet.type";
-import { TransactionId, ExplorerTransaction } from "../types/transactions";
+import { TransactionId } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
-import { PROTOCOL_PREFIX } from "../config/protocol";
 
 export interface WalletStoreSendMessageArgs {
   message: string;
@@ -92,7 +91,6 @@ type WalletState = {
   changeWalletName: (walletId: string, newName: string) => void;
 
   // wallet operations
-  start: (client: KaspaClient) => Promise<{ receiveAddress: Address }>;
   stop: () => void;
   sendMessage: (args: WalletStoreSendMessageArgs) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
@@ -248,60 +246,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
           // Balance updates handled by balance event
         });
 
-        _accountService.on("transactionReceived", async (raw) => {
-          const txDetails = raw as ExplorerTransaction;
-          if (txDetails.payload?.startsWith(PROTOCOL_PREFIX)) {
-            const messageOutput = txDetails.outputs.find(
-              (output: { amount: number }) => output.amount === 10000000
-            );
-            const recipientAddress =
-              messageOutput?.script_public_key_address || "Unknown";
-
-            let senderAddress = "Unknown";
-            if (txDetails.outputs && txDetails.outputs.length > 1) {
-              const changeOutput = txDetails.outputs.find(
-                (output: {
-                  amount: number;
-                  script_public_key_address: string;
-                }) =>
-                  output.script_public_key_address !== recipientAddress &&
-                  output.amount !== 10000000
-              );
-              if (changeOutput) {
-                senderAddress = changeOutput.script_public_key_address;
-              }
-            }
-
-            const myAddress = _accountService?.receiveAddress?.toString() || "";
-
-            if (senderAddress === myAddress) {
-              return;
-            }
-
-            const messageData = {
-              transactionId: txDetails.transaction_id,
-              senderAddress: senderAddress,
-              recipientAddress: recipientAddress,
-              timestamp: txDetails.block_time,
-              payload: txDetails.payload,
-              amount: messageOutput?.amount || 0,
-              content: "[New message - click refresh to decrypt]",
-            };
-
-            if (myAddress) {
-              messagingStore.storeMessage(messageData, myAddress);
-              messagingStore.loadMessages(myAddress);
-
-              if (
-                messagingStore.openedRecipient ===
-                (senderAddress === myAddress ? recipientAddress : senderAddress)
-              ) {
-                messagingStore.refreshMessagesOnOpenedRecipient();
-              }
-            }
-          }
-        });
-
         await _accountService.start();
 
         const initialBalance = await _accountService.context.balance;
@@ -333,6 +277,9 @@ export const useWalletStore = create<WalletState>((set, get) => {
           accountService: _accountService,
         });
 
+        // Start fee polling when wallet starts
+        get().startFeeEstimatePolling();
+
         return wallet;
       } catch (error) {
         console.error("Failed to unlock wallet:", error);
@@ -353,113 +300,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
         accountService: null,
       });
     },
-
-    start: async (client: KaspaClient) => {
-      const { unlockedWallet } = get();
-      if (!unlockedWallet) {
-        throw new Error("Wallet not unlocked");
-      }
-
-      _accountService = new AccountService(client, unlockedWallet);
-      _accountService.setPassword(unlockedWallet.password);
-
-      _accountService.on("balance", (balance) => {
-        set({ balance });
-      });
-
-      _accountService.on("utxosChanged", async () => {
-        // Balance updates handled by balance event
-      });
-
-      _accountService.on("transactionReceived", async (raw) => {
-        const txDetails = raw as ExplorerTransaction;
-        if (txDetails.payload?.startsWith(PROTOCOL_PREFIX)) {
-          const messageOutput = txDetails.outputs.find(
-            (output: { amount: number }) => output.amount === 10000000
-          );
-          const recipientAddress =
-            messageOutput?.script_public_key_address || "Unknown";
-
-          let senderAddress = "Unknown";
-          if (txDetails.outputs && txDetails.outputs.length > 1) {
-            const changeOutput = txDetails.outputs.find(
-              (output: { amount: number; script_public_key_address: string }) =>
-                output.script_public_key_address !== recipientAddress &&
-                output.amount !== 10000000
-            );
-            if (changeOutput) {
-              senderAddress = changeOutput.script_public_key_address;
-            }
-          }
-
-          const myAddress = _accountService?.receiveAddress?.toString() || "";
-
-          if (senderAddress === myAddress) {
-            return;
-          }
-
-          const messageData = {
-            transactionId: txDetails.transaction_id,
-            senderAddress: senderAddress,
-            recipientAddress: recipientAddress,
-            timestamp: txDetails.block_time,
-            payload: txDetails.payload,
-            amount: messageOutput?.amount || 0,
-            content: "[New message - click refresh to decrypt]",
-          };
-
-          const messagingStore = useMessagingStore.getState();
-          if (myAddress) {
-            messagingStore.storeMessage(messageData, myAddress);
-            messagingStore.loadMessages(myAddress);
-
-            if (
-              messagingStore.openedRecipient ===
-              (senderAddress === myAddress ? recipientAddress : senderAddress)
-            ) {
-              messagingStore.refreshMessagesOnOpenedRecipient();
-            }
-          }
-        }
-      });
-
-      await _accountService.start();
-
-      const initialBalance = await _accountService.context.balance;
-      if (initialBalance) {
-        const matureUtxos = _accountService.context.getMatureRange(
-          0,
-          _accountService.context.matureLength
-        );
-        const pendingUtxos = _accountService.context.getPending();
-
-        set({
-          balance: {
-            mature: initialBalance.mature,
-            pending: initialBalance.pending,
-            outgoing: initialBalance.outgoing,
-            matureDisplay: sompiToKaspaString(initialBalance.mature),
-            outgoingDisplay: sompiToKaspaString(initialBalance.outgoing),
-            pendingDisplay: sompiToKaspaString(initialBalance.pending),
-            matureUtxoCount: matureUtxos.length,
-            pendingUtxoCount: pendingUtxos.length,
-          },
-        });
-      }
-
-      set({
-        rpcClient: client,
-        address: _accountService.receiveAddress,
-        isAccountServiceRunning: true,
-        accountService: _accountService,
-      });
-
-      // Start fee polling when wallet starts
-      get().startFeeEstimatePolling();
-
-      return { receiveAddress: _accountService.receiveAddress! };
-    },
-
     stop: () => {
       if (_accountService) {
         _accountService.stop();
