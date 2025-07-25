@@ -244,7 +244,9 @@ export const MessengerContainer: FC = () => {
           {isWalletReady && messageStore.isLoaded ? (
             <>
               <ContactSection
-                contacts={messageStore.oneOnOneConversations}
+                contacts={messageStore.oneOnOneConversations.map(
+                  (oooc) => oooc.contact
+                )}
                 onNewChatClicked={onNewChatClicked}
                 onContactClicked={onContactClicked}
                 openedRecipient={messageStore.openedRecipient}

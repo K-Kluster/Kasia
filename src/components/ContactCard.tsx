@@ -1,9 +1,28 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
-import { Contact } from "../types/all";
 import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
 import { AvatarHash } from "./icons/AvatarHash";
 import clsx from "clsx";
+import { Contact } from "../store/repository/contact.repository";
+
+function getMessagePreview(content: string) {
+  // If it's a file message
+
+  if (content.startsWith("[File:")) {
+    // only consider the file name, not the whole content
+    return content;
+  }
+
+  // For regular messages, try to decode if it's encrypted
+  if (content.startsWith("ciph_msg:")) {
+    const decoded = decodePayload(content);
+    return decoded
+      ? decoded.slice(0, 40) + (content.length > 40 ? "..." : "")
+      : "Encrypted message";
+  }
+
+  return content.slice(0, 40) + (content.length > 40 ? "..." : "");
+}
 
 export const ContactCard: FC<{
   contact: Contact;
@@ -15,80 +34,42 @@ export const ContactCard: FC<{
   const prevMessageId = useRef<string | undefined>(undefined);
 
   // Use the store selector to get the latest message for this contact
-  const lastMessage = useMessagingStore((s) =>
-    s.getLastMessageForContact(contact.address)
+  const lastEvent = useMessagingStore((s) =>
+    s.oneOnOneConversations
+      .find((oooc) => oooc.contact.id === contact.id)
+      ?.events?.at(-1)
   );
 
   // get last message preview
   const preview = useMemo(() => {
-    if (!lastMessage) return "";
+    if (!lastEvent) return "";
 
-    const { content, payload } = lastMessage;
+    const { content, __type } = lastEvent;
 
-    // Handle different message types
-    if (content) {
-      // If it's a handshake message
-      if (
-        content.includes("Handshake completed") ||
-        content.includes("handshake")
-      ) {
+    switch (__type) {
+      case "message":
+        return getMessagePreview(content);
+      case "payment":
+        return "Payment received";
+      case "handshake":
         return "Handshake completed";
-      }
-
-      // If it's a file message
-      if (content.startsWith("[File:")) {
-        // only consider the file name, not the whole content
-        return content;
-      }
-
-      // For regular messages, try to decode if it's encrypted
-      if (content.startsWith("ciph_msg:")) {
-        const decoded = decodePayload(content);
-        return decoded
-          ? decoded.slice(0, 40) + (content.length > 40 ? "..." : "")
-          : "Encrypted message";
-      }
-
-      // Check if it's a payment message
-      try {
-        const parsed = JSON.parse(content);
-        if (parsed.type === "payment") {
-          return parsed.message?.trim() || "Payment";
-        }
-      } catch (e) {
-        // Not a payment message, continue with normal handling
-        void e;
-      }
-
-      // Plain text content, take the first 40 characters
-      return content.slice(0, 40) + (content.length > 40 ? "..." : "");
+      default:
+        return "";
     }
-
-    // Fallback to payload if no content
-    if (payload) {
-      if (payload.includes("handshake")) {
-        return "Handshake message";
-      }
-
-      const decoded = decodePayload(payload);
-      return decoded || "Encrypted message";
-    }
-
-    return "No message content";
-  }, [lastMessage]);
+  }, [lastEvent]);
 
   const timestamp = useMemo(() => {
-    if (!lastMessage?.timestamp) return "";
-    return new Date(lastMessage.timestamp).toLocaleString();
-  }, [lastMessage?.timestamp]);
+    if (!lastEvent?.createdAt) return "";
+    return lastEvent.createdAt.toLocaleString();
+  }, [lastEvent?.createdAt]);
 
   const shortAddress = useMemo(() => {
-    if (!contact?.address) return "Unknown";
-    const addr = contact.address;
+    if (!contact?.kaspaAddress) return "Unknown";
+    const addr = contact.kaspaAddress;
     if (addr === "Unknown") {
-      if (lastMessage?.payload?.includes("handshake")) {
+      if (lastEvent?.__type === "handshake") {
         try {
-          const handshakeMatch = lastMessage.payload.match(
+          const handshakeMatch = lastEvent.content.match(
             /ciph_msg:1:handshake:(.+)/
           );
           if (handshakeMatch) {
@@ -108,29 +89,29 @@ export const ContactCard: FC<{
       return `${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}`;
     }
     return addr;
-  }, [contact?.address, lastMessage?.payload]);
+  }, [contact.kaspaAddress, lastEvent]);
 
   const displayName = useMemo(() => {
-    if (contact.nickname?.trim()) {
-      return contact.nickname;
+    if (contact.name) {
+      return contact.name?.trim();
     }
     return shortAddress;
-  }, [contact?.nickname, shortAddress]);
+  }, [contact?.name, shortAddress]);
 
   useEffect(() => {
     if (
       !isSelected &&
-      lastMessage?.transactionId &&
+      lastEvent?.transactionId &&
       prevMessageId.current !== undefined && // Only trigger if not first render
-      prevMessageId.current !== lastMessage.transactionId
+      prevMessageId.current !== lastEvent.transactionId
     ) {
       setNewMsgAlert(true);
       const timeout = setTimeout(() => setNewMsgAlert(false), 20000);
-      prevMessageId.current = lastMessage.transactionId;
+      prevMessageId.current = lastEvent.transactionId;
       return () => clearTimeout(timeout);
     }
-    prevMessageId.current = lastMessage?.transactionId;
-  }, [lastMessage?.transactionId, isSelected]);
+    prevMessageId.current = lastEvent?.transactionId;
+  }, [lastEvent?.transactionId, isSelected]);
 
   useEffect(() => {
     if (isSelected && showNewMsgAlert) {
@@ -138,12 +119,12 @@ export const ContactCard: FC<{
     }
   }, [isSelected, showNewMsgAlert]);
 
-  if (!contact?.address) {
+  if (!contact?.kaspaAddress) {
     return null;
   }
 
   if (collapsed) {
-    const avatarLetter = contact.nickname?.trim()?.[0]?.toUpperCase();
+    const avatarLetter = contact.name?.trim()?.[0]?.toUpperCase();
     return (
       <div
         className="relative flex cursor-pointer justify-center py-2"
@@ -153,7 +134,7 @@ export const ContactCard: FC<{
         <div className="relative h-8 w-8">
           {/* hash */}
           <AvatarHash
-            address={contact.address}
+            address={contact.kaspaAddress}
             size={32}
             selected={isSelected}
             className={clsx(
@@ -184,7 +165,7 @@ export const ContactCard: FC<{
   }
 
   // Expanded (full view)
-  const avatarLetter = contact.nickname?.trim()?.[0]?.toUpperCase();
+  const avatarLetter = contact.name?.trim()?.[0]?.toUpperCase();
 
   return (
     <div
@@ -210,7 +191,7 @@ export const ContactCard: FC<{
         <div className="relative flex-shrink-0">
           <div className="relative h-10 w-10">
             <AvatarHash
-              address={contact.address}
+              address={contact.kaspaAddress}
               size={40}
               selected={isSelected}
               className={clsx({ "opacity-60": !!avatarLetter })}
@@ -240,14 +221,12 @@ export const ContactCard: FC<{
               className={clsx(
                 "block w-full cursor-pointer truncate break-all text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)]",
                 {
-                  "cursor-help": contact.nickname?.trim(),
-                  "cursor-default": !contact.nickname?.trim(),
+                  "cursor-help": contact.name?.trim(),
+                  "cursor-default": !contact.name?.trim(),
                 }
               )}
               title={
-                contact.nickname?.trim()
-                  ? `Address: ${shortAddress}`
-                  : undefined
+                contact.name?.trim() ? `Address: ${shortAddress}` : undefined
               }
             >
               {displayName}

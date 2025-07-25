@@ -112,6 +112,29 @@ export class ConversationRepository {
     return;
   }
 
+  async updateLastActivity(
+    conversationId: string,
+    lastActivityAt: Date
+  ): Promise<void> {
+    const existingDBConversation = await this.db.get(
+      "conversations",
+      conversationId
+    );
+
+    if (!existingDBConversation) {
+      throw new DBNotFoundException();
+    }
+
+    await this.db.put(
+      "conversations",
+      {
+        ...existingDBConversation,
+        lastActivityAt,
+      },
+      conversationId
+    );
+  }
+
   private _conversationToDbConversation(
     conversation: Conversation
   ): DbConversation {

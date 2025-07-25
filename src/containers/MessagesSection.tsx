@@ -7,7 +7,6 @@ import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { KaspaAddress } from "../components/KaspaAddress";
-import { Contact } from "../types/all";
 import styles from "../components/NewChatForm.module.css";
 import clsx from "clsx";
 import { useIsMobile } from "../utils/useIsMobile";
@@ -15,6 +14,7 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { EditNicknamePopover } from "../components/EditNicknamePopover";
 import { useUiStore } from "../store/ui.store";
 import { copyToClipboard } from "../utils/copy-to-clipboard";
+import { Contact } from "../store/repository/contact.repository";
 
 export const MessageSection: FC<{
   mobileView: "contacts" | "messages";
@@ -24,20 +24,24 @@ export const MessageSection: FC<{
   const address = useWalletStore((s) => s.address);
   const isMobile = useIsMobile();
 
-  const contacts = useMessagingStore((s) => s.contacts);
+  const oneOnOneConversations = useMessagingStore(
+    (s) => s.oneOnOneConversations
+  );
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
 
   // Find the current contact for display purposes
   const currentContact = useMemo(() => {
     if (!openedRecipient) return null;
-    return contacts.find((c) => c.address === openedRecipient);
-  }, [contacts, openedRecipient]);
+    return oneOnOneConversations.find(
+      (oooc) => oooc.contact.kaspaAddress === openedRecipient
+    )?.contact;
+  }, [oneOnOneConversations, openedRecipient]);
 
   const boxState = useMemo<"new" | "filtered" | "unfiltered">(() => {
-    if (!contacts.length) return "new";
+    if (!oneOnOneConversations.length) return "new";
     if (!openedRecipient) return "unfiltered";
     return "filtered";
-  }, [contacts, openedRecipient]);
+  }, [oneOnOneConversations, openedRecipient]);
 
   // KNS domain move check state
   const [showKnsMovedModal, setShowKnsMovedModal] = useState(false);
@@ -53,19 +57,22 @@ export const MessageSection: FC<{
 
   const [isEditingInPopover, setIsEditingInPopover] = useState(false);
   const [popoverEditValue, setPopoverEditValue] = useState(
-    currentContact?.nickname || ""
+    currentContact?.name || ""
   );
 
   // Nickname editing handlers
   const handleNicknameSave = () => {
     if (currentContact) {
-      messageStore.setContactNickname(currentContact.address, tempNickname);
+      messageStore.setContactNickname(
+        currentContact.kaspaAddress,
+        tempNickname
+      );
       setIsEditingNickname(false);
     }
   };
 
   const handleNicknameCancel = () => {
-    setTempNickname(currentContact?.nickname || "");
+    setTempNickname(currentContact?.name || "");
     setIsEditingNickname(false);
   };
 
@@ -73,59 +80,68 @@ export const MessageSection: FC<{
     null
   );
 
-  // compute last index of outgoing and incoming messages so we can render the message ui accordingly!
+  // compute last index of outgoing and incoming messages so we can render the message ui accordingly
   const { lastOutgoing, lastIncoming } = useMemo(() => {
-    const msgs = messageStore.messagesOnOpenedRecipient;
+    const conversationEvents = messageStore.oneOnOneConversations.find(
+      (oooc) => oooc.contact.id === currentContact?.id
+    )?.events;
+
+    if (!conversationEvents) return { lastOutgoing: -1, lastIncoming: -1 };
+
     let lastOut = -1;
     let lastIn = -1;
-    msgs.forEach((m, i) => {
-      if (m.senderAddress === address?.toString()) lastOut = i;
+    conversationEvents.forEach((m, i) => {
+      if (!m.fromMe) lastOut = i;
       else lastIn = i;
     });
     return { lastOutgoing: lastOut, lastIncoming: lastIn };
-  }, [messageStore.messagesOnOpenedRecipient, address]);
+  }, [messageStore.oneOnOneConversations, currentContact?.id]);
 
   const messagesScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (boxState !== "filtered" || !openedRecipient) return;
-    const contact = contacts.find((c) => c.address === openedRecipient);
-    if (!contact || !contact.nickname || !contact.nickname.endsWith(".kas"))
+
+    if (
+      !currentContact ||
+      !currentContact.name ||
+      !currentContact.name.endsWith(".kas")
+    )
       return;
     // Check if user has chosen to ignore warnings for this domain
-    const ignoreKey = `ignoreKnsMoved_${contact.nickname}`;
+    const ignoreKey = `ignoreKnsMoved_${currentContact.name}`;
     if (localStorage.getItem(ignoreKey) === "1") return;
     // Only check if nickname/address changed
     if (
       lastKnsCheckRef.current &&
-      lastKnsCheckRef.current.nickname === contact.nickname &&
-      lastKnsCheckRef.current.address === contact.address
+      lastKnsCheckRef.current.nickname === currentContact.name &&
+      lastKnsCheckRef.current.address === currentContact.kaspaAddress
     ) {
       return;
     }
     lastKnsCheckRef.current = {
-      nickname: contact.nickname,
-      address: contact.address,
+      nickname: currentContact.name,
+      address: currentContact.kaspaAddress,
     };
     // Fetch current KNS owner
     fetch(
       `https://api.knsdomains.org/mainnet/api/v1/${encodeURIComponent(
-        contact.nickname
+        currentContact.name
       )}/owner`
     )
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data && data.data.owner) {
-          if (data.data.owner !== contact.address) {
+          if (data.data.owner !== currentContact.kaspaAddress) {
             setKnsMovedNewAddress(data.data.owner);
-            setKnsMovedDomain(contact.nickname || "");
-            setKnsMovedContact(contact);
+            setKnsMovedDomain(currentContact.name || "");
+            setKnsMovedContact(currentContact);
             setShowKnsMovedModal(true);
           }
         }
       })
       .catch(() => {});
-  }, [boxState, openedRecipient, contacts]);
+  }, [boxState, currentContact, openedRecipient]);
 
   // scroll when child calls eg. the chat expansion has collpased
   const scrollToBottom = () => {
@@ -143,7 +159,8 @@ export const MessageSection: FC<{
         behavior: "smooth",
       });
     }
-  }, [messageStore.messagesOnOpenedRecipient, boxState]);
+    // @TODO(indexdb): reintroduce scoll upon message received or sent
+  }, [boxState]);
 
   // Helper to format old domain nickname
   function formatOldDomainNickname(domain: string) {
@@ -219,7 +236,7 @@ export const MessageSection: FC<{
                     wordBreak: "break-all",
                   }}
                 >
-                  Old: {knsMovedContact.address}
+                  Old: {knsMovedContact.kaspaAddress}
                 </span>
                 <br />
                 <span
@@ -244,7 +261,7 @@ export const MessageSection: FC<{
                   className={`${styles.button} ${styles["submit-button"]}`}
                   onClick={() => {
                     messageStore.setContactNickname(
-                      knsMovedContact.address,
+                      knsMovedContact.kaspaAddress,
                       ""
                     );
                     setShowKnsMovedModal(false);
@@ -269,7 +286,7 @@ export const MessageSection: FC<{
                   onClick={() => {
                     messageStore.setIsCreatingNewChat(true);
                     messageStore.setContactNickname(
-                      knsMovedContact.address,
+                      knsMovedContact.kaspaAddress,
                       formatOldDomainNickname(knsMovedDomain || "")
                     );
                     setShowKnsMovedModal(false);
@@ -323,14 +340,14 @@ export const MessageSection: FC<{
                       if (e.key === "Escape") handleNicknameCancel();
                     }}
                     autoFocus
-                    placeholder={currentContact?.address}
+                    placeholder={currentContact?.kaspaAddress}
                     className="h-6 flex-1 rounded-sm border border-gray-600 bg-transparent px-2 text-sm leading-none"
                   />
-                ) : currentContact?.nickname ? (
-                  <span title={currentContact.nickname}>
+                ) : currentContact?.name ? (
+                  <span title={currentContact.name}>
                     {isMobile
-                      ? truncateNickname(currentContact.nickname)
-                      : currentContact.nickname}
+                      ? truncateNickname(currentContact.name)
+                      : currentContact.name}
                   </span>
                 ) : (
                   <KaspaAddress address={openedRecipient ?? ""} />
@@ -355,7 +372,7 @@ export const MessageSection: FC<{
                             <button
                               onClick={() => {
                                 copyToClipboard(
-                                  currentContact?.address ??
+                                  currentContact?.kaspaAddress ??
                                     openedRecipient ??
                                     "",
                                   "Address Copied"
@@ -383,9 +400,7 @@ export const MessageSection: FC<{
                             <button
                               onClick={() => {
                                 setIsEditingInPopover(true);
-                                setPopoverEditValue(
-                                  currentContact?.nickname || ""
-                                );
+                                setPopoverEditValue(currentContact?.name || "");
                               }}
                               className={clsx(
                                 "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]",
@@ -398,15 +413,15 @@ export const MessageSection: FC<{
                               <EditNicknamePopover
                                 value={popoverEditValue}
                                 placeholder={
-                                  currentContact?.nickname ||
-                                  currentContact?.address ||
+                                  currentContact?.name ||
+                                  currentContact?.kaspaAddress ||
                                   ""
                                 }
                                 onChange={setPopoverEditValue}
                                 onSave={() => {
                                   if (currentContact) {
                                     messageStore.setContactNickname(
-                                      currentContact.address,
+                                      currentContact.kaspaAddress,
                                       popoverEditValue
                                     );
                                   }
@@ -444,7 +459,11 @@ export const MessageSection: FC<{
             ref={messagesScrollRef}
           >
             <MessagesList
-              messages={messageStore.messagesOnOpenedRecipient}
+              events={
+                messageStore.oneOnOneConversations.find(
+                  (oooc) => oooc.contact.id === currentContact?.id
+                )?.events ?? []
+              }
               address={address?.toString() || null}
               lastOutgoing={lastOutgoing}
               lastIncoming={lastIncoming}

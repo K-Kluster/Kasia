@@ -195,6 +195,7 @@ export const useDBStore = create<DBState>((set, get) => ({
             fee: m.fee,
             content: m.content ?? "",
             __type: "payment",
+            fromMe: m.senderAddress === address.toString(),
           });
           continue;
         }
@@ -212,6 +213,7 @@ export const useDBStore = create<DBState>((set, get) => ({
             fee: m.fee,
             content: m.content ?? "",
             __type: "handshake",
+            fromMe: m.senderAddress === address.toString(),
           });
           continue;
         }
@@ -229,6 +231,7 @@ export const useDBStore = create<DBState>((set, get) => ({
           fileData: m.fileData,
           content: m.content ?? "",
           __type: "message",
+          fromMe: m.senderAddress === address.toString(),
         });
 
         continue;

@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useRef } from "react";
-import { Message as MessageType } from "../types/all";
+import { KasiaConversationEvent } from "../types/all";
 import { decodePayload } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
@@ -13,14 +13,14 @@ import { parseMessageForDisplay } from "../utils/message-format";
 import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
 
 type MessageDisplayProps = {
-  message: MessageType;
+  event: KasiaConversationEvent;
   isOutgoing: boolean;
   showTimestamp?: boolean;
   groupPosition?: "single" | "top" | "middle" | "bottom";
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
-  message,
+  event,
   isOutgoing,
   showTimestamp,
   groupPosition = "single",
@@ -36,7 +36,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     fee,
     transactionId,
     fileData,
-  } = message;
+  } = event;
 
   const walletStore = useWalletStore();
   const messagingStore = useMessagingStore();

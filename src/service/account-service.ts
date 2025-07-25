@@ -19,7 +19,11 @@ import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
 import { hexToString } from "../utils/format";
-import { BlockAddedData, PriorityFeeConfig } from "../types/all";
+import {
+  BlockAddedData,
+  KasiaTransaction,
+  PriorityFeeConfig,
+} from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
   ExplorerOutput,
@@ -72,7 +76,7 @@ type AccountServiceEvents = {
   }) => void;
   utxosChanged: (utxos: UtxoEntry[]) => void;
   transactionReceived: (transaction: unknown) => void;
-  messageReceived: (message: DecodedMessage) => void;
+  messageReceived: (message: KasiaTransaction) => void;
 };
 
 type SendMessageArgs = {
@@ -1483,11 +1487,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           decryptionSuccess &&
           (isHandshake || isMonitoredAddress || isCommForUs || isPaymentForUs)
         ) {
-          const message: DecodedMessage = {
+          const kasiaTransaction: KasiaTransaction = {
             transactionId: txId,
             senderAddress: senderAddress || "Unknown",
             recipientAddress: recipientAddress || "Unknown",
-            timestamp: blockTime,
+            createdAt: new Date(blockTime),
+            // @TODO(indexdb): how to get fees?
+            fee: 0,
             content: decryptedContent,
             amount:
               Number(
@@ -1496,17 +1502,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             payload: tx.payload,
           };
 
-          const messagingStore = useMessagingStore.getState();
-          if (messagingStore) {
-            messagingStore.storeMessage(message, stringWalletAddress);
-            messagingStore.loadMessages(stringWalletAddress);
-          }
+          // const messagingStore = useMessagingStore.getState();
+          // if (messagingStore) {
+          //   messagingStore.storeKasiaTransactions([kasiaTransaction])
+          // }
 
           if (isHandshake) {
             await this.updateMonitoredConversations();
           }
 
-          this.emit("messageReceived", message);
+          this.emit("messageReceived", kasiaTransaction);
         }
       } catch (error) {
         console.error("Error processing message:", error);

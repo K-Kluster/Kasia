@@ -2,12 +2,11 @@ import { FC, useState, useEffect } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { WalletStorage } from "../utils/wallet-storage";
-import { Transaction } from "../types/all";
+import { KasiaTransaction, Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { hexToString } from "../utils/format";
-import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";
 import { toast } from "../utils/toast";
@@ -45,7 +44,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       );
 
       // Only trigger if this component matches the address
-      if (eventAddress === address && walletStore.unlockedWallet) {
+      if (eventAddress === address && unlockedWallet) {
         console.log("Triggering API fetch due to localStorage flag");
         fetchAndProcessMessages();
       }
@@ -100,9 +99,11 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       });
 
       // Load existing messages to avoid duplicates
-      const existingMessages = messagingStore.loadMessages(address);
-      const existingTxIds = new Set(
-        existingMessages.map((msg) => msg.transactionId)
+      const existingTransactionIds = new Set(
+        ...messagingStore.oneOnOneConversations
+          .map((oooc) => oooc.events)
+          .flat()
+          .map((e) => e.transactionId)
       );
 
       // Fetch and process messages for each address, in parallel
@@ -149,7 +150,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
           // Process each transaction
           for (const tx of messageTxs) {
             // Skip if we already have this transaction
-            if (existingTxIds.has(tx.transaction_id)) {
+            if (existingTransactionIds.has(tx.transaction_id)) {
               console.log(
                 `API Messages: Skipping existing transaction: ${tx.transaction_id}`
               );
@@ -347,10 +348,12 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       }
 
                       // Create and store the decrypted message
-                      const message: Message = {
+                      const kasiaTransaction: KasiaTransaction = {
                         senderAddress: senderAddress,
                         recipientAddress: recipientAddress,
-                        timestamp: tx.block_time || Date.now(),
+                        createdAt: tx.block_time
+                          ? new Date(tx.block_time)
+                          : new Date(),
                         content: result,
                         payload: tx.payload,
                         amount: tx.outputs[0].amount || 0,
@@ -358,10 +361,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         transactionId: tx.transaction_id,
                       };
 
-                      messagingStore.storeMessage(
-                        message,
-                        walletStore.address?.toString() || ""
-                      );
+                      messagingStore.storeKasiaTransactions([kasiaTransaction]);
                       break;
                     }
                   } catch (error) {
@@ -457,10 +457,12 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         }
 
                         // Create and store the decrypted message
-                        const message: Message = {
+                        const kasiaTransaction: KasiaTransaction = {
                           senderAddress: senderAddress,
                           recipientAddress: recipientAddress,
-                          timestamp: tx.block_time || Date.now(),
+                          createdAt: tx.block_time
+                            ? new Date(tx.block_time)
+                            : new Date(),
                           content: result,
                           payload: tx.payload,
                           amount: tx.outputs[0].amount || 0,
@@ -468,10 +470,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                           transactionId: tx.transaction_id,
                         };
 
-                        messagingStore.storeMessage(
-                          message,
-                          walletStore.address?.toString() || ""
-                        );
+                        messagingStore.storeKasiaTransactions([
+                          kasiaTransaction,
+                        ]);
                         break;
                       }
                     } catch (error) {
@@ -541,21 +542,22 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
               // Store the message if it contains our alias or involves our current address
               if (containsMonitoredAlias || currentAddress === address) {
                 // Create message data and store it
-                const messageData = {
-                  transactionId: tx.transaction_id,
+                const kasiaTransaction: KasiaTransaction = {
                   senderAddress: senderAddress,
                   recipientAddress: recipientAddress,
-                  timestamp: tx.block_time,
-                  payload: tx.payload,
-                  amount: tx.outputs[0]?.amount || 0,
+                  createdAt: tx.block_time
+                    ? new Date(tx.block_time)
+                    : new Date(),
                   content: decryptedContent,
+                  payload: tx.payload,
+                  amount: tx.outputs[0].amount || 0,
+                  fee: 0,
+                  transactionId: tx.transaction_id,
                 };
 
-                console.log(`API Messages: Storing message:`, messageData);
+                console.log(`API Messages: Storing message:`, kasiaTransaction);
 
-                // Store the message under our current address
-                // This ensures all messages are accessible from our main wallet
-                messagingStore.storeMessage(messageData, address);
+                messagingStore.storeKasiaTransactions([kasiaTransaction]);
               }
             }
           }
@@ -563,7 +565,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       );
 
       // Update UI with all messages
-      messagingStore.loadMessages(address);
+      messagingStore.hydrateOneonOneConversations();
 
       console.log("API Messages: Fetch and process completed successfully");
     } catch (err) {

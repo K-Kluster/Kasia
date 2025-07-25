@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { KasiaConversationEvent, OneOnOneConversation } from "../types/all";
+import {
+  KasiaConversationEvent,
+  KasiaTransaction,
+  OneOnOneConversation,
+} from "../types/all";
 import { Contact } from "./repository/contact.repository";
 import {
   encrypt_message,
@@ -26,7 +30,10 @@ import {
   migrateToPerAddressStorage,
   cleanupLegacyStorage,
 } from "../utils/storage-encryption";
-import { Message } from "postcss";
+import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
+import { Payment } from "./repository/payment.repository";
+import { Message } from "./repository/message.repository";
+import { AccountService } from "../service/account-service";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -43,12 +50,10 @@ interface MessagingState {
   isCreatingNewChat: boolean;
   oneOnOneConversations: OneOnOneConversation[];
   eventsOnOpenedRecipient: KasiaConversationEvent[];
-  addEvents: (events: KasiaConversationEvent[]) => void;
+  storeKasiaTransactions: (transactions: KasiaTransaction[]) => Promise<void>;
   flushWalletHistory: (address: string) => void;
   addOneOnOneConversation: (oneOnOneConversation: OneOnOneConversation) => void;
-  loadEvents: (address: string) => KasiaConversationEvent[];
   setIsLoaded: (isLoaded: boolean) => void;
-  storeMessage: (message: Message, walletAddress: string) => void;
   exportMessages: (wallet: UnlockedWallet, password: string) => Promise<Blob>;
   importMessages: (
     file: File,
@@ -58,11 +63,9 @@ interface MessagingState {
 
   openedRecipient: string | null;
   setOpenedRecipient: (contact: string | null) => void;
-  refreshMessagesOnOpenedRecipient: () => void;
   setIsCreatingNewChat: (isCreatingNewChat: boolean) => void;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  connectAccountService: (accountService: any) => void;
+  connectAccountService: (accountService: AccountService) => void;
 
   conversationManager: ConversationManager | null;
   initializeConversationManager: (address: string) => void;
@@ -92,7 +95,6 @@ interface MessagingState {
   // Nickname management
   setContactNickname: (address: string, nickname: string) => void;
   removeContactNickname: (address: string) => void;
-  getLastMessageForContact: (contactAddress: string) => Message | null;
 
   // Last opened recipient management
   restoreLastOpenedRecipient: (walletAddress: string) => void;
@@ -148,59 +150,171 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       oneOnOneConversations: oneOnOneConversations.filter((c) => c !== null),
     });
   },
-  addEvents: (events) => {
+  storeKasiaTransactions: async (transactions) => {
     // Update contacts with new messages
     const state = g();
     const walletStore = useWalletStore.getState();
-    const walletAddress = walletStore.address?.toString();
+    const unlockedWallet = walletStore.unlockedWallet;
+    const repositories = useDBStore.getState().repositories;
 
-    if (walletAddress) {
-      events.forEach((event) => {
-        const otherParty =
-          event.senderAddress === walletAddress
-            ? event.recipientAddress
-            : event.senderAddress;
-
-        // Update existing contact if found
-        const existingConversationWithContactIndex =
-          state.oneOnOneConversations.findIndex(
-            (c) => c.contact.kaspaAddress === otherParty
-          );
-
-        if (existingConversationWithContactIndex !== -1) {
-          const existingConversationWithContact =
-            state.oneOnOneConversations[existingConversationWithContactIndex];
-          // Only update if this message is newer than the current lastMessage
-          if (
-            message.timestamp >
-            existingConversationWithContact.conversation.lastActivityAt.getTime()
-          ) {
-            const updatedConversationWithContacts = [
-              ...state.oneOnOneConversations,
-            ];
-            updatedConversationWithContacts[
-              existingConversationWithContactIndex
-            ] = {
-              ...existingConversationWithContact,
-              lastMessage: message,
-              messages: [
-                ...existingConversationWithContact.messages,
-                message,
-              ].sort((a, b) => a.timestamp - b.timestamp),
-            };
-
-            // Sort contacts by most recent message timestamp
-            const sortedContacts = updatedConversationWithContacts.sort(
-              (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
-            );
-
-            set({ contacts: sortedContacts });
-          }
-        }
-      });
+    if (!unlockedWallet) {
+      throw new Error("Wallet is not unlocked");
     }
 
-    g().refreshMessagesOnOpenedRecipient();
+    const address = walletStore.address;
+
+    if (!address) {
+      throw new Error("Address is not available");
+    }
+
+    for (const transaction of transactions) {
+      // HANDSHAKE
+      if (
+        transaction.content.startsWith("ciph_msg:") &&
+        transaction.content.includes(":handshake:")
+      ) {
+        try {
+          // Parse the handshake payload
+          const parts = transaction.content.split(":");
+          const jsonPart = parts.slice(3).join(":");
+          const handshakePayload = JSON.parse(jsonPart);
+
+          // Skip handshake processing if it's a self-message
+          if (
+            transaction.senderAddress === address.toString() &&
+            transaction.recipientAddress === address.toString()
+          ) {
+            console.log("Skipping self-handshake message");
+            return;
+          }
+
+          // Move handshake message from content to payload
+          transaction.payload = transaction.content;
+          transaction.content = handshakePayload.isResponse
+            ? "Handshake response received"
+            : "Handshake message received";
+
+          // Process handshake if we're the recipient or if this is a response to our handshake
+          if (
+            transaction.recipientAddress === address.toString() || // received handshake
+            (handshakePayload.isResponse &&
+              transaction.senderAddress === address.toString()) // our own response
+          ) {
+            console.log("Processing handshake message:", {
+              senderAddress: transaction.senderAddress,
+              recipientAddress: transaction.recipientAddress,
+              isResponse: handshakePayload.isResponse,
+              handshakePayload,
+            });
+            g()
+              .processHandshake(transaction.senderAddress, transaction.payload)
+              .catch((error) => {
+                if (error.message === "Cannot create conversation with self") {
+                  console.log("Skipping self-conversation handshake");
+                  return;
+                }
+                console.error("Error processing handshake:", error);
+              });
+          }
+        } catch (error) {
+          console.error("Error processing handshake message:", error);
+          throw error;
+        }
+      }
+
+      const isFromMe = transaction.senderAddress === address.toString();
+      const participantAddress = isFromMe
+        ? transaction.recipientAddress
+        : transaction.senderAddress;
+
+      const existingConversationWithContactIndex =
+        state.oneOnOneConversations.findIndex(
+          (c) => c.contact.kaspaAddress === participantAddress
+        );
+
+      if (existingConversationWithContactIndex === -1) {
+        throw new Error("Conversation not found, ignoring message");
+      }
+
+      const existingConversationWithContact =
+        state.oneOnOneConversations[existingConversationWithContactIndex];
+
+      const isTransactionAlreadyIngested =
+        existingConversationWithContact.events.some(
+          (e) => e.transactionId === transaction.transactionId
+        );
+
+      if (isTransactionAlreadyIngested) {
+        console.warn("Transaction already ingested, ignoring message");
+        return;
+      }
+
+      let kasiaEvent: KasiaConversationEvent | null = null;
+
+      // PAYMENT
+      if (
+        transaction.payload.startsWith(PROTOCOL_PREFIX) &&
+        transaction.payload.includes(PAYMENT_PREFIX)
+      ) {
+        const payment: Payment = {
+          __type: "payment",
+          amount: transaction.amount,
+          contactId: existingConversationWithContact.contact.id,
+          conversationId: existingConversationWithContact.conversation.id,
+          content: transaction.content ?? "",
+          createdAt: transaction.createdAt,
+          fromMe: transaction.senderAddress === address.toString(),
+          id: `${unlockedWallet.id}_${transaction.transactionId}`,
+          tenantId: unlockedWallet.id,
+          transactionId: transaction.transactionId,
+          fee: transaction.fee,
+        };
+
+        await repositories.paymentRepository.savePayment(payment);
+
+        kasiaEvent = payment;
+      } else {
+        // considering the transaction is a message
+
+        const message: Message = {
+          __type: "message",
+          amount: transaction.amount,
+          contactId: existingConversationWithContact.contact.id,
+          conversationId: existingConversationWithContact.conversation.id,
+          content: transaction.content ?? "",
+          createdAt: transaction.createdAt,
+          fromMe: transaction.senderAddress === address.toString(),
+          id: `${unlockedWallet.id}_${transaction.transactionId}`,
+          tenantId: unlockedWallet.id,
+          transactionId: transaction.transactionId,
+          fee: transaction.fee,
+        };
+
+        await repositories.messageRepository.saveMessage(message);
+
+        kasiaEvent = message;
+      }
+
+      // touch conversation last activity
+      await repositories.conversationRepository.updateLastActivity(
+        existingConversationWithContact.conversation.id,
+        transaction.createdAt
+      );
+
+      const updatedConversationWithContacts = [...state.oneOnOneConversations];
+      updatedConversationWithContacts[existingConversationWithContactIndex] = {
+        contact: existingConversationWithContact.contact,
+        conversation: {
+          ...existingConversationWithContact.conversation,
+          lastActivityAt: transaction.createdAt,
+        },
+        events: [...existingConversationWithContact.events, kasiaEvent].sort(
+          (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+        ),
+      };
+
+      set({ oneOnOneConversations: updatedConversationWithContacts });
+    }
   },
   flushWalletHistory: (address: string) => {
     // 1. Clear wallet messages from localStorage using new per-address system
@@ -236,10 +350,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // 5. Reset all UI state immediately
     set({
-      contacts: [],
-      messages: [],
-      messagesOnOpenedRecipient: [],
-      handshakes: [],
+      oneOnOneConversations: [],
       openedRecipient: null,
       isCreatingNewChat: false,
     });
@@ -252,341 +363,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
 
     console.log("Complete history clear completed - all data wiped");
-  },
-  loadEvents: (address): KasiaConversationEvent[] => {
-    const walletStore = useWalletStore.getState();
-    const password = walletStore.unlockedWallet?.password;
-    const walletId = walletStore.selectedWalletId;
-
-    if (!password) {
-      console.error("Wallet password not available for loading messages.");
-      return [];
-    }
-
-    if (!walletId) {
-      console.error("No wallet selected for loading messages.");
-      return [];
-    }
-
-    // Try to load messages using the new per-address system first
-    let messages: Message[] = [];
-
-    try {
-      messages = loadMessagesForAddress(walletId, address, password);
-    } catch (error) {
-      console.log(
-        "Failed to load messages using per-address system, trying legacy:",
-        error
-      );
-      // fallback to legacy system
-      const legacyMessages: Record<string, Message[]> =
-        loadLegacyMessages(password);
-      messages = legacyMessages[address] || [];
-
-      // if we have legacy messages, migrate them to the new system
-      if (messages.length > 0) {
-        try {
-          migrateToPerAddressStorage(walletId, password);
-          // set a flag to indicate migration was successful
-        } catch (migrationError) {
-          console.error(
-            "Failed to migrate to per-address storage:",
-            migrationError
-          );
-        }
-      }
-    }
-
-    const contacts = new Map();
-
-    // Process messages and organize by conversation
-    messages.forEach((msg: Message) => {
-      // Ensure fileData is properly loaded if it exists
-      if (msg.fileData) {
-        msg.content = `[File: ${msg.fileData.name}]`;
-      }
-
-      // Determine if this is a message we should handle
-      const isSender = msg.senderAddress === address;
-      const isRecipient = msg.recipientAddress === address;
-      const isHandshakeMessage =
-        msg.content?.includes(":handshake:") ||
-        msg.payload?.includes(":handshake:");
-
-      // Skip messages that don't involve us
-      if (!isSender && !isRecipient) {
-        return;
-      }
-
-      // For messages where we are the sender, only create a conversation with the recipient
-      // For messages where we are the recipient, only create a conversation with the sender
-      const otherParty = isSender ? msg.recipientAddress : msg.senderAddress;
-
-      // Allow self-messages
-      if (msg.senderAddress === msg.recipientAddress) {
-        if (!isHandshakeMessage) {
-          // Create or update contact for self-messages
-          const selfParty = msg.senderAddress;
-          if (!contacts.has(selfParty)) {
-            contacts.set(selfParty, {
-              address: selfParty,
-              lastMessage: msg,
-              messages: [],
-            });
-          }
-          const contact = contacts.get(selfParty);
-          contact.messages.push(msg);
-          if (msg.timestamp > contact.lastMessage.timestamp) {
-            contact.lastMessage = msg;
-          }
-          return;
-        }
-        // For handshake messages, ensure we only show them in one conversation
-        if (msg.senderAddress === address) {
-          return;
-        }
-      }
-
-      // Create or update contact
-      if (!contacts.has(otherParty)) {
-        contacts.set(otherParty, {
-          address: otherParty,
-          lastMessage: msg,
-          messages: [],
-        });
-      }
-
-      const contact = contacts.get(otherParty);
-      contact.messages.push(msg);
-
-      // Update last message if this message is more recent
-      if (msg.timestamp > contact.lastMessage.timestamp) {
-        contact.lastMessage = msg;
-      }
-    });
-
-    // Sort messages within each contact by timestamp
-    contacts.forEach((contact) => {
-      contact.messages.sort(
-        (a: Message, b: Message) => a.timestamp - b.timestamp
-      );
-    });
-
-    // Load saved nicknames
-    const storageKey = `contact_nicknames_${address}`;
-    const savedNicknames = JSON.parse(localStorage.getItem(storageKey) || "{}");
-
-    // Update state with sorted contacts and messages
-    const sortedContacts = [...contacts.values()]
-      .map((contact) => ({
-        ...contact,
-        nickname: savedNicknames[contact.address] || undefined,
-      }))
-      .sort((a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp);
-
-    set({
-      contacts: sortedContacts,
-      messages: messages.sort(
-        (a: Message, b: Message) => a.timestamp - b.timestamp
-      ),
-    });
-
-    // Refresh the currently opened conversation
-    g().refreshMessagesOnOpenedRecipient();
-
-    // run cleanup of legacy storage
-    if (walletStore.unlockedWallet?.password) {
-      // get all wallet IDs from the wallet store
-      const allWalletIds = walletStore.wallets?.map((w) => w.id) || [];
-      if (allWalletIds.length > 0) {
-        cleanupLegacyStorage(allWalletIds, walletStore.unlockedWallet.password);
-      }
-    }
-
-    return g().messages;
-  },
-  storeMessage: (message: Message, walletAddress: string) => {
-    const manager = g().conversationManager;
-
-    // Check if this is a handshake message
-    if (
-      message.content.startsWith("ciph_msg:") &&
-      message.content.includes(":handshake:")
-    ) {
-      try {
-        // Parse the handshake payload
-        const parts = message.content.split(":");
-        const jsonPart = parts.slice(3).join(":");
-        const handshakePayload = JSON.parse(jsonPart);
-
-        // Skip handshake processing if it's a self-message
-        if (
-          message.senderAddress === walletAddress &&
-          message.recipientAddress === walletAddress
-        ) {
-          console.log("Skipping self-handshake message");
-          return;
-        }
-
-        // Move handshake message from content to payload
-        message.payload = message.content;
-        message.content = handshakePayload.isResponse
-          ? "Handshake response received"
-          : "Handshake message received";
-
-        // Process handshake if we're the recipient or if this is a response to our handshake
-        if (
-          message.recipientAddress === walletAddress || // received handshake
-          handshakePayload.recipientAddress === walletAddress || // legacy safety
-          (handshakePayload.isResponse &&
-            message.senderAddress === walletAddress) // our own response
-        ) {
-          console.log("Processing handshake message:", {
-            senderAddress: message.senderAddress,
-            recipientAddress: message.recipientAddress,
-            isResponse: handshakePayload.isResponse,
-            handshakePayload,
-          });
-          g()
-            .processHandshake(message.senderAddress, message.payload)
-            .catch((error) => {
-              if (error.message === "Cannot create conversation with self") {
-                console.log("Skipping self-conversation handshake");
-                return;
-              }
-              console.error("Error processing handshake:", error);
-            });
-        }
-      } catch (error) {
-        console.error("Error processing handshake message:", error);
-      }
-    }
-
-    // If we have an active conversation, update its last activity
-    if (manager) {
-      const conv = manager.getConversationByAddress(
-        message.senderAddress === walletAddress
-          ? message.recipientAddress
-          : message.senderAddress
-      );
-      if (conv) {
-        manager.updateLastActivity(conv.conversationId);
-      }
-    }
-
-    const walletStore = useWalletStore.getState();
-    const password = walletStore.unlockedWallet?.password;
-    const walletId = walletStore.selectedWalletId;
-
-    if (!password) {
-      console.error("Wallet password not available for storing message.");
-      return;
-    }
-
-    if (!walletId) {
-      console.error("No wallet selected for storing message.");
-      return;
-    }
-
-    // Load existing messages for this address
-    let existingMessages: Message[] = [];
-    try {
-      existingMessages = loadMessagesForAddress(
-        walletId,
-        walletAddress,
-        password
-      );
-    } catch (error) {
-      console.log(
-        "Failed to load messages using per-address system, using empty array:",
-        error
-      );
-    }
-
-    // Check if we already have a message with this transaction ID
-    const existingMessageIndex = existingMessages.findIndex(
-      (m: Message) => m.transactionId === message.transactionId
-    );
-
-    if (existingMessageIndex !== -1) {
-      // Merge the messages, preferring non-empty values
-      const existingMessage = existingMessages[existingMessageIndex];
-      const mergedMessage = {
-        ...message,
-        content: message.content || existingMessage.content,
-        payload: message.payload || existingMessage.payload,
-        // Use the earliest timestamp if both exist
-        timestamp: Math.min(message.timestamp, existingMessage.timestamp),
-        // Preserve fileData if it exists in either message
-        fileData: message.fileData || existingMessage.fileData,
-        // Ensure we have both addresses
-        senderAddress: message.senderAddress || existingMessage.senderAddress,
-        recipientAddress:
-          message.recipientAddress || existingMessage.recipientAddress,
-      };
-      existingMessages[existingMessageIndex] = mergedMessage;
-    } else {
-      // For outgoing messages with file content, try to parse and store fileData
-      if (!message.fileData && message.content) {
-        try {
-          const parsedContent = JSON.parse(message.content);
-          if (parsedContent.type === "file") {
-            message.fileData = {
-              type: parsedContent.type,
-              name: parsedContent.name,
-              size: parsedContent.size,
-              mimeType: parsedContent.mimeType,
-              content: parsedContent.content,
-            };
-          }
-        } catch (e) {
-          // Not a file message, ignore
-          void e;
-        }
-      }
-      // Add new message
-      existingMessages.push(message);
-    }
-
-    // Save messages using the new per-address system
-    saveMessagesForAddress(existingMessages, walletId, walletAddress, password);
-
-    // Update contacts and conversations
-    const state = g();
-    const otherParty =
-      message.senderAddress === walletAddress
-        ? message.recipientAddress
-        : message.senderAddress;
-
-    // Update or create contact
-    const existingContactIndex = state.contacts.findIndex(
-      (c) => c.address === otherParty
-    );
-    if (existingContactIndex !== -1) {
-      // Update existing contact
-      const updatedContact = {
-        ...state.contacts[existingContactIndex],
-        lastMessage: message,
-        messages: [...state.contacts[existingContactIndex].messages, message],
-      };
-      const newContacts = [...state.contacts];
-      newContacts[existingContactIndex] = updatedContact;
-      set({ contacts: newContacts });
-    } else {
-      // Create new contact
-      const newContact = {
-        address: otherParty,
-        lastMessage: message,
-        messages: [message],
-      };
-      set({ contacts: [...state.contacts, newContact] });
-    }
-
-    // Sort contacts by most recent message
-    const sortedContacts = [...g().contacts].sort(
-      (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
-    );
-    set({ contacts: sortedContacts });
   },
   setIsLoaded: (isLoaded) => {
     set({ isLoaded });
@@ -607,27 +383,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         localStorage.removeItem(`kasia_last_opened_recipient_${walletAddress}`);
       }
     }
-
-    g().refreshMessagesOnOpenedRecipient();
-  },
-  refreshMessagesOnOpenedRecipient: () => {
-    const { openedRecipient, messagesOnOpenedRecipient } = g();
-
-    if (!openedRecipient) {
-      if (messagesOnOpenedRecipient.length) {
-        set({ messagesOnOpenedRecipient: [] });
-      }
-      return;
-    }
-
-    const messages = g().messages.filter((msg) => {
-      return (
-        msg.senderAddress === openedRecipient ||
-        msg.recipientAddress === openedRecipient
-      );
-    });
-
-    set({ messagesOnOpenedRecipient: messages });
   },
   setIsCreatingNewChat: (isCreatingNewChat) => {
     set({ isCreatingNewChat });
@@ -680,7 +435,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         type: "kaspa-messages-backup",
         data: messagesMap,
         nicknames: nicknames,
-        contacts: g().conversationManager.get,
+        // contacts: g().conversationManager.get,
         conversations: {
           active: g().conversationManager?.getActiveConversations() || [],
           pending: g().conversationManager?.getPendingConversations() || [],
@@ -875,47 +630,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     }
   },
   connectAccountService: (accountService) => {
-    // Make the store available globally for the account service
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).messagingStore = g();
-
     // Listen for new messages from the account service
-    accountService.on("messageReceived", (message: Message) => {
-      const state = g();
+    accountService.on(
+      "messageReceived",
+      (kasiaTransaction: KasiaTransaction) => {
+        const state = g();
 
-      // Store the message
-      state.storeMessage(message, message.senderAddress);
-
-      // Add the message to our state
-      state.addMessages([message]);
-
-      // Refresh the UI if this message is for the currently opened chat
-      if (
-        state.openedRecipient === message.senderAddress ||
-        state.openedRecipient === message.recipientAddress
-      ) {
-        state.refreshMessagesOnOpenedRecipient();
+        // Store the message
+        state.storeKasiaTransactions([kasiaTransaction]);
       }
-
-      // Update contacts if needed
-      const otherParty =
-        message.senderAddress === state.openedRecipient
-          ? message.recipientAddress
-          : message.senderAddress;
-
-      const existingContact = state.contacts.find(
-        (c) => c.address === otherParty
-      );
-      if (!existingContact) {
-        state.addContacts([
-          {
-            address: otherParty,
-            lastMessage: message,
-            messages: [message],
-          },
-        ]);
-      }
-    });
+    );
   },
   conversationManager: null,
   initializeConversationManager: (address: string) => {
@@ -1164,18 +888,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     g().setContactNickname(address, "");
   },
 
-  getLastMessageForContact: (contactAddress: string) => {
-    const messages = g().messages;
-    const relevant = messages.filter(
-      (msg) =>
-        msg.senderAddress === contactAddress ||
-        msg.recipientAddress === contactAddress
-    );
-    return relevant.length
-      ? relevant.reduce((a, b) => (a.timestamp > b.timestamp ? a : b))
-      : null;
-  },
-
   // Last opened recipient management
   restoreLastOpenedRecipient: (walletAddress: string) => {
     try {
@@ -1183,38 +895,28 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         `kasia_last_opened_recipient_${walletAddress}`
       );
 
+      const state = g();
+
       if (lastOpenedRecipient) {
         // Check if the contact still exists in the current contacts list
-        const state = g();
-        const contactExists = state.contacts.some(
-          (contact) => contact.address === lastOpenedRecipient
+        const contactExists = state.oneOnOneConversations.some(
+          (oooc) => oooc.contact.kaspaAddress === lastOpenedRecipient
         );
 
         if (contactExists) {
           set({ openedRecipient: lastOpenedRecipient });
-          g().refreshMessagesOnOpenedRecipient();
+          return;
         } else {
           // Contact no longer exists, clear the stored value
           localStorage.removeItem(
             `kasia_last_opened_recipient_${walletAddress}`
           );
-
-          // Fallback: select the first available contact
-          if (state.contacts.length > 0) {
-            const firstContact = state.contacts[0];
-            set({ openedRecipient: firstContact.address });
-            g().refreshMessagesOnOpenedRecipient();
-          }
-        }
-      } else {
-        // Fallback: select the first available contact if we have contacts
-        const state = g();
-        if (state.contacts.length > 0) {
-          const firstContact = state.contacts[0];
-          set({ openedRecipient: firstContact.address });
-          g().refreshMessagesOnOpenedRecipient();
         }
       }
+
+      // Fallback: select the first available contact
+      const firstContact = state.oneOnOneConversations[0]?.contact;
+      set({ openedRecipient: firstContact.kaspaAddress });
     } catch (error) {
       console.error("Error restoring last opened recipient:", error);
     }
