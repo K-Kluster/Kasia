@@ -11,14 +11,13 @@ import {
   EncryptedMessage,
 } from "cipher";
 import { WalletStorage } from "../utils/wallet-storage";
-import { Address, NetworkType } from "kaspa-wasm";
+import { Address, NetworkType, PrivateKeyGenerator } from "kaspa-wasm";
 import { ConversationManager } from "../utils/conversation-manager";
 import { useWalletStore } from "./wallet.store";
 import { ConversationEvents, HandshakeState } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
 import { useDBStore } from "./db.store";
 import {
-  Conversation,
   PendingConversation,
   ActiveConversation,
 } from "./repository/conversation.repository";
@@ -28,6 +27,7 @@ import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";
 import { AccountService } from "../service/account-service";
 import { Handshake } from "./repository/handshake.repository";
+import { get } from "http";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -84,8 +84,8 @@ interface MessagingState {
   respondToHandshake: (handshake: HandshakeState) => Promise<string>;
 
   // Nickname management
-  setContactNickname: (address: string, nickname: string) => void;
-  removeContactNickname: (address: string) => void;
+  setContactNickname: (address: string, nickname?: string) => Promise<void>;
+  removeContactNickname: (address: string) => Promise<void>;
 
   // Last opened recipient management
   restoreLastOpenedRecipient: (walletAddress: string) => void;
@@ -152,7 +152,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       throw new Error("Wallet is not unlocked");
     }
 
-    const address = walletStore.address;
+    // cannot use `walletStore.address` because it is not always already populated
+    const address = WalletStorage.getPrivateKeyGenerator(
+      unlockedWallet,
+      unlockedWallet.password
+    )
+      .receiveKey(0)
+      .toAddress(useWalletStore.getState().selectedNetwork)
+      .toString();
 
     if (!address) {
       throw new Error("Address is not available");
@@ -163,6 +170,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const participantAddress = isFromMe
         ? transaction.recipientAddress
         : transaction.senderAddress;
+
+      console.log("Processing transaction: ", {
+        ...transaction,
+        isFromMe,
+        participantAddress,
+      });
 
       // HANDSHAKE
       if (
@@ -196,8 +209,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
               isResponse: handshakePayload.isResponse,
               handshakePayload,
             });
-            g()
-              .processHandshake(transaction.senderAddress, transaction.payload)
+            await g()
+              .processHandshake(transaction.senderAddress, transaction.content)
               .catch((error) => {
                 if (error.message === "Cannot create conversation with self") {
                   console.log("Skipping self-conversation handshake");
@@ -205,6 +218,61 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
                 }
                 console.error("Error processing handshake:", error);
               });
+
+            const conversationWithContact =
+              g().conversationManager?.getConversationWithContactByAddress(
+                transaction.senderAddress
+              );
+
+            // persist in-memory & db kasia events
+            if (conversationWithContact) {
+              const handshake: Handshake = {
+                __type: "handshake",
+                amount: transaction.amount,
+                contactId: conversationWithContact.contact.id,
+                content: transaction.content,
+                conversationId: conversationWithContact.conversation.id,
+                createdAt: transaction.createdAt,
+                fromMe: isFromMe,
+                id: `${unlockedWallet.id}_${transaction.transactionId}`,
+                tenantId: unlockedWallet.id,
+                transactionId: transaction.transactionId,
+                fee: transaction.fee,
+              };
+              await repositories.handshakeRepository.saveHandshake(handshake);
+
+              // if already exists in memory, add even in place else add new one on one conversation
+              const existingConversationIndex =
+                g().oneOnOneConversations.findIndex(
+                  (c) =>
+                    c.conversation.id ===
+                    conversationWithContact.conversation.id
+                );
+
+              if (existingConversationIndex !== -1) {
+                const updatedConversations = [...g().oneOnOneConversations];
+                updatedConversations[existingConversationIndex] = {
+                  ...updatedConversations[existingConversationIndex],
+                  events: [
+                    ...updatedConversations[existingConversationIndex].events,
+                    handshake,
+                  ],
+                };
+                set({ oneOnOneConversations: updatedConversations });
+              } else {
+                set({
+                  oneOnOneConversations: [
+                    ...g().oneOnOneConversations,
+                    {
+                      contact: conversationWithContact.contact,
+                      events: [handshake],
+                      conversation: conversationWithContact.conversation,
+                    },
+                  ],
+                });
+              }
+            }
+            return;
           }
         } catch (error) {
           console.error("Error processing handshake message:", error);
@@ -635,10 +703,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       },
       onHandshakeCompleted: (conversation, contact) => {
         console.log("Handshake completed:", conversation);
-
-        set({
-          contacts: [...g().contacts, contact],
-        });
       },
       onHandshakeExpired: (conversation, contact) => {
         console.log("Handshake expired:", conversation);
@@ -869,35 +933,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
 
   // Nickname management functions
-  setContactNickname: (address: string, nickname: string) => {
-    const contacts = g().contacts;
-    const contactIndex = contacts.findIndex((c) => c.address === address);
+  setContactNickname: async (address: string, nickname?: string) => {
+    const oneOnOneConversationIndex = g().oneOnOneConversations.findIndex(
+      (oooc) => oooc.contact.kaspaAddress === address
+    );
 
-    if (contactIndex !== -1) {
-      const updatedContacts = [...contacts];
-      updatedContacts[contactIndex] = {
-        ...updatedContacts[contactIndex],
-        nickname: nickname.trim() || undefined,
-      };
-      set({ contacts: updatedContacts });
-
-      // Save to localStorage
-      const walletStore = useWalletStore.getState();
-      if (walletStore.address) {
-        const storageKey = `contact_nicknames_${walletStore.address.toString()}`;
-        const nicknames = JSON.parse(localStorage.getItem(storageKey) || "{}");
-        if (nickname.trim()) {
-          nicknames[address] = nickname.trim();
-        } else {
-          delete nicknames[address];
-        }
-        localStorage.setItem(storageKey, JSON.stringify(nicknames));
-      }
+    if (oneOnOneConversationIndex === -1) {
+      throw new Error("Conversation not found");
     }
+
+    const copiedOneOnOneConversations = [...g().oneOnOneConversations];
+
+    copiedOneOnOneConversations[oneOnOneConversationIndex] = {
+      ...copiedOneOnOneConversations[oneOnOneConversationIndex],
+      contact: {
+        ...copiedOneOnOneConversations[oneOnOneConversationIndex].contact,
+        name: nickname?.trim(),
+      },
+    };
+
+    set({ oneOnOneConversations: copiedOneOnOneConversations });
+
+    await useDBStore.getState().repositories.contactRepository.saveContact({
+      ...copiedOneOnOneConversations[oneOnOneConversationIndex].contact,
+      name: nickname?.trim(),
+    });
   },
 
-  removeContactNickname: (address: string) => {
-    g().setContactNickname(address, "");
+  removeContactNickname: async (address: string) => {
+    return g().setContactNickname(address, undefined);
   },
 
   // Last opened recipient management

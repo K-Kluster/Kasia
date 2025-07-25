@@ -1501,6 +1501,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             payload: tx.payload,
           };
 
+          console.log("kasiaTransaction from account service", {
+            ...kasiaTransaction,
+          });
+
           // const messagingStore = useMessagingStore.getState();
           // if (messagingStore) {
           //   messagingStore.storeKasiaTransactions([kasiaTransaction])
