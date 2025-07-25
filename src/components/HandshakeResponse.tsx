@@ -3,7 +3,7 @@ import { useMessagingStore } from "../store/messaging.store";
 import {
   PendingConversation,
   RejectedConversation,
-} from "src/types/messaging.types";
+} from "../store/repository/conversation.repository";
 
 export const HandshakeResponse: React.FC<{
   conversation: PendingConversation | RejectedConversation;
