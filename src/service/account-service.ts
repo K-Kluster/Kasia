@@ -43,6 +43,7 @@ import {
   COMM_PREFIX,
   PAYMENT_PREFIX,
 } from "../config/protocol";
+import { useDBStore } from "../store/db.store";
 
 // Message related types
 type DecodedMessage = {
@@ -1211,18 +1212,26 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     maxRetries = 10
   ) {
     try {
+      const txId = getTransactionId(tx);
+
+      if (!txId) {
+        console.warn("Transaction ID is missing in real-time processing");
+        return;
+      }
+
+      if (
+        await useDBStore.getState().repositories.doesKasiaEventExistsById(txId)
+      ) {
+        console.log(`Transaction ${txId} already processed`);
+        return;
+      }
+
       const walletAddress =
         this.unlockedWallet.publicKeyGenerator.receiveAddress(
           this.networkId,
           0
         );
       const stringWalletAddress = walletAddress.toString();
-
-      const txId = getTransactionId(tx);
-      if (!txId) {
-        console.warn("Transaction ID is missing in real-time processing");
-        return;
-      }
 
       // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
       if (DecryptionCache.hasFailed(stringWalletAddress, txId)) {

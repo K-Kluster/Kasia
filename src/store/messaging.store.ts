@@ -11,7 +11,7 @@ import {
   EncryptedMessage,
 } from "cipher";
 import { WalletStorage } from "../utils/wallet-storage";
-import { Address, NetworkType, PrivateKeyGenerator } from "kaspa-wasm";
+import { Address, NetworkType } from "kaspa-wasm";
 import { ConversationManager } from "../utils/conversation-manager";
 import { useWalletStore } from "./wallet.store";
 import { ConversationEvents, HandshakeState } from "src/types/messaging.types";
@@ -27,7 +27,6 @@ import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";
 import { AccountService } from "../service/account-service";
 import { Handshake } from "./repository/handshake.repository";
-import { get } from "http";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {

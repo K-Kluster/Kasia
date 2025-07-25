@@ -56,6 +56,10 @@ export class MessageRepository {
     return this._dbMessageToMessage(result);
   }
 
+  async doesExistsById(messageId: string): Promise<boolean> {
+    return this.db.count("messages", messageId).then((count) => count > 0);
+  }
+
   async getMessages(): Promise<Message[]> {
     return this.db
       .getAllFromIndex("messages", "by-tenant-id", this.tenantId)

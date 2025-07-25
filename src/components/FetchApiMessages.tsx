@@ -100,9 +100,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
       // Load existing messages to avoid duplicates
       const existingTransactionIds = new Set(
-        ...messagingStore.oneOnOneConversations
-          .map((oooc) => oooc.events)
-          .flat()
+        messagingStore.oneOnOneConversations
+          .flatMap((oooc) => oooc.events)
           .map((e) => e.transactionId)
       );
 
@@ -563,9 +562,6 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
           }
         })
       );
-
-      // Update UI with all messages
-      messagingStore.hydrateOneonOneConversations();
 
       console.log("API Messages: Fetch and process completed successfully");
     } catch (err) {

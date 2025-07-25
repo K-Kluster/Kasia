@@ -229,4 +229,20 @@ export class Repositories {
       });
     });
   }
+
+  doesKasiaEventExistsById(id: string): Promise<boolean> {
+    return Promise.all([
+      this.messageRepository
+        .doesExistsById(`${this.tenantId}_${id}`)
+        .catch(() => false),
+      this.paymentRepository
+        .doesExistsById(`${this.tenantId}_${id}`)
+        .catch(() => false),
+      this.handshakeRepository
+        .doesExistsById(`${this.tenantId}_${id}`)
+        .catch(() => false),
+    ]).then(([message, payment, handshake]) => {
+      return !!message || !!payment || !!handshake;
+    });
+  }
 }

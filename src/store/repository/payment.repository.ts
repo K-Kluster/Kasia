@@ -49,6 +49,10 @@ export class PaymentRepository {
     return this._dbPaymentToPayment(result);
   }
 
+  async doesExistsById(paymentId: string): Promise<boolean> {
+    return this.db.count("payments", paymentId).then((count) => count > 0);
+  }
+
   async getPayments(): Promise<Payment[]> {
     return this.db
       .getAllFromIndex("payments", "by-tenant-id", this.tenantId)

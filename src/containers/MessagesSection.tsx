@@ -30,11 +30,11 @@ export const MessageSection: FC<{
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
 
   // Find the current contact for display purposes
-  const currentContact = useMemo(() => {
+  const oneOnOneConversation = useMemo(() => {
     if (!openedRecipient) return null;
     return oneOnOneConversations.find(
       (oooc) => oooc.contact.kaspaAddress === openedRecipient
-    )?.contact;
+    );
   }, [oneOnOneConversations, openedRecipient]);
 
   const boxState = useMemo<"new" | "filtered" | "unfiltered">(() => {
@@ -57,14 +57,14 @@ export const MessageSection: FC<{
 
   const [isEditingInPopover, setIsEditingInPopover] = useState(false);
   const [popoverEditValue, setPopoverEditValue] = useState(
-    currentContact?.name || ""
+    oneOnOneConversation?.contact.name || ""
   );
 
   // Nickname editing handlers
   const handleNicknameSave = () => {
-    if (currentContact) {
+    if (oneOnOneConversation) {
       messageStore.setContactNickname(
-        currentContact.kaspaAddress,
+        oneOnOneConversation.contact.kaspaAddress,
         tempNickname
       );
       setIsEditingNickname(false);
@@ -72,7 +72,7 @@ export const MessageSection: FC<{
   };
 
   const handleNicknameCancel = () => {
-    setTempNickname(currentContact?.name || "");
+    setTempNickname(oneOnOneConversation?.contact.name || "");
     setIsEditingNickname(false);
   };
 
@@ -82,9 +82,7 @@ export const MessageSection: FC<{
 
   // compute last index of outgoing and incoming messages so we can render the message ui accordingly
   const { lastOutgoing, lastIncoming } = useMemo(() => {
-    const conversationEvents = messageStore.oneOnOneConversations.find(
-      (oooc) => oooc.contact.id === currentContact?.id
-    )?.events;
+    const conversationEvents = oneOnOneConversation?.events;
 
     if (!conversationEvents) return { lastOutgoing: -1, lastIncoming: -1 };
 
@@ -95,7 +93,7 @@ export const MessageSection: FC<{
       else lastIn = i;
     });
     return { lastOutgoing: lastOut, lastIncoming: lastIn };
-  }, [messageStore.oneOnOneConversations, currentContact?.id]);
+  }, [oneOnOneConversation?.events]);
 
   const messagesScrollRef = useRef<HTMLDivElement>(null);
 
@@ -103,45 +101,46 @@ export const MessageSection: FC<{
     if (boxState !== "filtered" || !openedRecipient) return;
 
     if (
-      !currentContact ||
-      !currentContact.name ||
-      !currentContact.name.endsWith(".kas")
+      !oneOnOneConversation ||
+      !oneOnOneConversation.contact.name ||
+      !oneOnOneConversation.contact.name.endsWith(".kas")
     )
       return;
     // Check if user has chosen to ignore warnings for this domain
-    const ignoreKey = `ignoreKnsMoved_${currentContact.name}`;
+    const ignoreKey = `ignoreKnsMoved_${oneOnOneConversation.contact.name}`;
     if (localStorage.getItem(ignoreKey) === "1") return;
     // Only check if nickname/address changed
     if (
       lastKnsCheckRef.current &&
-      lastKnsCheckRef.current.nickname === currentContact.name &&
-      lastKnsCheckRef.current.address === currentContact.kaspaAddress
+      lastKnsCheckRef.current.nickname === oneOnOneConversation.contact.name &&
+      lastKnsCheckRef.current.address ===
+        oneOnOneConversation.contact.kaspaAddress
     ) {
       return;
     }
     lastKnsCheckRef.current = {
-      nickname: currentContact.name,
-      address: currentContact.kaspaAddress,
+      nickname: oneOnOneConversation.contact.name,
+      address: oneOnOneConversation.contact.kaspaAddress,
     };
     // Fetch current KNS owner
     fetch(
       `https://api.knsdomains.org/mainnet/api/v1/${encodeURIComponent(
-        currentContact.name
+        oneOnOneConversation.contact.name
       )}/owner`
     )
       .then((res) => res.json())
       .then((data) => {
         if (data.success && data.data && data.data.owner) {
-          if (data.data.owner !== currentContact.kaspaAddress) {
+          if (data.data.owner !== oneOnOneConversation.contact.kaspaAddress) {
             setKnsMovedNewAddress(data.data.owner);
-            setKnsMovedDomain(currentContact.name || "");
-            setKnsMovedContact(currentContact);
+            setKnsMovedDomain(oneOnOneConversation.contact.name || "");
+            setKnsMovedContact(oneOnOneConversation.contact);
             setShowKnsMovedModal(true);
           }
         }
       })
       .catch(() => {});
-  }, [boxState, currentContact, openedRecipient]);
+  }, [boxState, oneOnOneConversation, openedRecipient]);
 
   // scroll when child calls eg. the chat expansion has collpased
   const scrollToBottom = () => {
@@ -195,6 +194,10 @@ export const MessageSection: FC<{
 
   const openModal = useUiStore((s) => s.openModal);
   const setContactInfoContact = useUiStore((s) => s.setContactInfoContact);
+
+  if (!oneOnOneConversation) {
+    return null;
+  }
 
   return (
     <div className={finalClassName}>
@@ -340,14 +343,14 @@ export const MessageSection: FC<{
                       if (e.key === "Escape") handleNicknameCancel();
                     }}
                     autoFocus
-                    placeholder={currentContact?.kaspaAddress}
+                    placeholder={oneOnOneConversation.contact.kaspaAddress}
                     className="h-6 flex-1 rounded-sm border border-gray-600 bg-transparent px-2 text-sm leading-none"
                   />
-                ) : currentContact?.name ? (
-                  <span title={currentContact.name}>
+                ) : oneOnOneConversation.contact.name ? (
+                  <span title={oneOnOneConversation.contact.name}>
                     {isMobile
-                      ? truncateNickname(currentContact.name)
-                      : currentContact.name}
+                      ? truncateNickname(oneOnOneConversation.contact.name)
+                      : oneOnOneConversation.contact.name}
                   </span>
                 ) : (
                   <KaspaAddress address={openedRecipient ?? ""} />
@@ -372,7 +375,7 @@ export const MessageSection: FC<{
                             <button
                               onClick={() => {
                                 copyToClipboard(
-                                  currentContact?.kaspaAddress ??
+                                  oneOnOneConversation.contact.kaspaAddress ??
                                     openedRecipient ??
                                     "",
                                   "Address Copied"
@@ -400,7 +403,9 @@ export const MessageSection: FC<{
                             <button
                               onClick={() => {
                                 setIsEditingInPopover(true);
-                                setPopoverEditValue(currentContact?.name || "");
+                                setPopoverEditValue(
+                                  oneOnOneConversation.contact.name || ""
+                                );
                               }}
                               className={clsx(
                                 "hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]",
@@ -413,15 +418,15 @@ export const MessageSection: FC<{
                               <EditNicknamePopover
                                 value={popoverEditValue}
                                 placeholder={
-                                  currentContact?.name ||
-                                  currentContact?.kaspaAddress ||
+                                  oneOnOneConversation.contact.name ||
+                                  oneOnOneConversation.contact.kaspaAddress ||
                                   ""
                                 }
                                 onChange={setPopoverEditValue}
                                 onSave={() => {
-                                  if (currentContact) {
+                                  if (oneOnOneConversation) {
                                     messageStore.setContactNickname(
-                                      currentContact.kaspaAddress,
+                                      oneOnOneConversation.contact.kaspaAddress,
                                       popoverEditValue
                                     );
                                   }
@@ -432,7 +437,9 @@ export const MessageSection: FC<{
                             )}
                             <button
                               onClick={() => {
-                                setContactInfoContact(currentContact ?? null);
+                                setContactInfoContact(
+                                  oneOnOneConversation.contact ?? null
+                                );
                                 openModal("contact-info-modal");
                               }}
                               className="hover:bg-secondary-bg focus:bg-secondary-bg active:bg-secondary-bg flex w-full cursor-pointer items-center justify-start gap-2 px-4 py-2 text-[var(--text-primary)]"
@@ -459,12 +466,7 @@ export const MessageSection: FC<{
             ref={messagesScrollRef}
           >
             <MessagesList
-              events={
-                messageStore.oneOnOneConversations.find(
-                  (oooc) => oooc.contact.id === currentContact?.id
-                )?.events ?? []
-              }
-              address={address?.toString() || null}
+              oneOnOneConversation={oneOnOneConversation}
               lastOutgoing={lastOutgoing}
               lastIncoming={lastIncoming}
             />

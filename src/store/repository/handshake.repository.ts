@@ -49,6 +49,10 @@ export class HandshakeRepository {
     return this._dbHandshakeToHandshake(result);
   }
 
+  async doesExistsById(handshakeId: string): Promise<boolean> {
+    return this.db.count("handshakes", handshakeId).then((count) => count > 0);
+  }
+
   async getHandshakes(): Promise<Handshake[]> {
     return this.db
       .getAllFromIndex("handshakes", "by-tenant-id", this.tenantId)

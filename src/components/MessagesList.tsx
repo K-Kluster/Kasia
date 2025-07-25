@@ -2,18 +2,17 @@ import { FC, memo } from "react";
 import { MessageDisplay } from "./MessageDisplay";
 import { DateSeparator } from "./DateSeparator";
 import { isToday } from "../utils/message-date-format";
-import { KasiaConversationEvent } from "../types/all";
+import { OneOnOneConversation } from "../types/all";
 
 interface MessagesListProps {
-  events: KasiaConversationEvent[];
-  address: string | null;
+  oneOnOneConversation: OneOnOneConversation;
   lastOutgoing: number;
   lastIncoming: number;
 }
 
 export const MessagesList: FC<MessagesListProps> = memo(
-  ({ events, address, lastOutgoing, lastIncoming }) => {
-    if (!events.length) {
+  ({ oneOnOneConversation, lastOutgoing, lastIncoming }) => {
+    if (!oneOnOneConversation.events.length) {
       return (
         <div className="m-5 rounded-xl bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
           No messages in this conversation.
@@ -21,18 +20,22 @@ export const MessagesList: FC<MessagesListProps> = memo(
       );
     }
 
-    const firstTodayIdx = events.findIndex((event) => isToday(event.createdAt));
+    const firstTodayIdx = oneOnOneConversation.events.findIndex((event) =>
+      isToday(event.createdAt)
+    );
+
+    console.log(oneOnOneConversation.events);
 
     return (
       <>
-        {events.map((event, idx) => {
+        {oneOnOneConversation.events.map((event, idx) => {
           const isOutgoing = event.fromMe;
           const showTimestamp = isOutgoing
             ? idx === lastOutgoing
             : idx === lastIncoming;
 
-          const previousEvent = events[idx - 1];
-          const nextEvent = events[idx + 1];
+          const previousEvent = oneOnOneConversation.events[idx - 1];
+          const nextEvent = oneOnOneConversation.events[idx + 1];
           const dateObj = event.createdAt;
 
           // is this the first message of today?
@@ -61,9 +64,9 @@ export const MessagesList: FC<MessagesListProps> = memo(
             !(
               (idx + 1 === firstTodayIdx && isToday(nextEvent.createdAt)) ||
               (idx + 1 > 0 &&
-                events[idx + 1 - 1] &&
+                oneOnOneConversation.events[idx + 1 - 1] &&
                 nextEvent.createdAt.getTime() -
-                  events[idx + 1 - 1].createdAt.getTime() >
+                  oneOnOneConversation.events[idx + 1 - 1].createdAt.getTime() >
                   30 * 60 * 1000) ||
               (idx + 1 === 0 && !isToday(nextEvent.createdAt))
             ) &&
@@ -92,6 +95,8 @@ export const MessagesList: FC<MessagesListProps> = memo(
                 isOutgoing={isOutgoing}
                 showTimestamp={showTimestamp}
                 event={event}
+                contact={oneOnOneConversation.contact}
+                conversation={oneOnOneConversation.conversation}
                 groupPosition={
                   isSingleInGroup
                     ? "single"
