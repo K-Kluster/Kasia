@@ -905,8 +905,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       destinationAddress.toString() === this.receiveAddress?.toString();
 
     const isMessageTransaction =
-      transaction.payload &&
-      transaction.payload.startsWith(PROTOCOL.prefix.hex);
+      transaction.payload && transaction.payload.startsWith(PROTOCOL.prefix.hex);
 
     const isSelfMessage = isMessageTransaction && isDirectSelfMessage;
     console.log("Transaction type:", {
