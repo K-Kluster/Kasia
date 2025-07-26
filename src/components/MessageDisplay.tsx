@@ -10,7 +10,7 @@ import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
-import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -53,17 +53,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Check if this is a handshake message
   const isHandshake =
-    (payload?.startsWith("ciph_msg:") && payload?.includes(":handshake:")) ||
-    (content?.startsWith("ciph_msg:") && content?.includes(":handshake:"));
+    (payload?.startsWith(PROTOCOL.prefix.string) &&
+      payload?.includes(PROTOCOL.headers.HANDSHAKE.string)) ||
+    (content?.startsWith(PROTOCOL.prefix.string) &&
+      content?.includes(PROTOCOL.headers.HANDSHAKE.string));
 
   // Check if this is a payment message by checking the hex payload OR decrypted content
   const isPayment = (() => {
     // First check if it's a hex payload starting with ciph_msg prefix
     if (payload) {
-      if (payload.startsWith(PROTOCOL_PREFIX)) {
+      if (payload.startsWith(PROTOCOL.prefix.hex)) {
         // Extract the message part and check for payment prefix
-        const messageHex = payload.substring(PROTOCOL_PREFIX.length);
-        if (messageHex.startsWith(PAYMENT_PREFIX)) {
+        const messageHex = payload.substring(PROTOCOL.prefix.hex.length);
+        if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
           return true;
         }
       }
