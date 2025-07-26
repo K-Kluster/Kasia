@@ -11,12 +11,7 @@ import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";
 import { toast } from "../utils/toast";
-import {
-  PROTOCOL_PREFIX,
-  HANDSHAKE_PREFIX,
-  COMM_PREFIX,
-  PAYMENT_PREFIX,
-} from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {
@@ -139,7 +134,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
           // Process only encrypted message transactions
           const messageTxs = transactions.filter(
-            (tx) => tx.payload && tx.payload.startsWith(PROTOCOL_PREFIX)
+            (tx) => tx.payload && tx.payload.startsWith(PROTOCOL.prefix.hex)
           );
 
           console.log(
@@ -193,7 +188,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             if (walletStore.unlockedWallet) {
               try {
                 // Extract the encrypted part (remove the "ciph_msg:" prefix)
-                if (!tx.payload.startsWith(PROTOCOL_PREFIX)) {
+                if (!tx.payload.startsWith(PROTOCOL.prefix.hex)) {
                   console.log(
                     `API Messages: Invalid message format, missing prefix: ${tx.payload.substring(
                       0,
@@ -204,7 +199,9 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 }
 
                 console.log(`API Messages: Full payload: ${tx.payload}`);
-                const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
+                const messageHex = tx.payload.substring(
+                  PROTOCOL.prefix.hex.length
+                );
                 console.log(
                   `API Messages: Message hex after prefix: ${messageHex}`
                 );
@@ -212,29 +209,31 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 let messageType = "unknown";
                 let isHandshake = false;
                 let targetAlias = null;
-                let encryptedContent = messageHex; // Default to full message for handshakes
+                let encryptedContent = messageHex;
 
-                if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
-                  messageType = "handshake";
+                if (messageHex.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
+                  messageType = PROTOCOL.headers.HANDSHAKE.type;
                   isHandshake = true;
                   encryptedContent = messageHex;
-                } else if (messageHex.startsWith(COMM_PREFIX)) {
+                } else if (messageHex.startsWith(PROTOCOL.headers.COMM.hex)) {
                   // Parse regular messages
                   const messageStr = hexToString(messageHex);
                   const parts = messageStr.split(":");
 
                   if (parts.length >= 4) {
-                    messageType = "comm";
+                    messageType = PROTOCOL.headers.COMM.type;
                     targetAlias = parts[2];
                     encryptedContent = parts[3];
                   }
-                } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
+                } else if (
+                  messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)
+                ) {
                   // Parse payment messages - simplified format without aliases
                   const messageStr = hexToString(messageHex);
                   const parts = messageStr.split(":");
 
                   if (parts.length >= 3) {
-                    messageType = "payment";
+                    messageType = PROTOCOL.headers.PAYMENT.type;
                     // No alias needed - parts[2] is the encrypted content
                     encryptedContent = parts[2];
                   }
