@@ -8,6 +8,7 @@ import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
 import { Contact } from "../store/repository/contact.repository";
 import { Conversation } from "../store/repository/conversation.repository";
+import { PROTOCOL } from "../config/protocol";
 
 type MessageDisplayProps = {
   event: KasiaConversationEvent;

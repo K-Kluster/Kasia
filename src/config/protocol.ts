@@ -1,7 +1,32 @@
-export const PROTOCOL_PREFIX = "636970685f6d73673a"; //for ciph_message
+type Kind = "ciph_msg" | "handshake" | "comm" | "payment";
+type Prefix = { type: Kind; string: string; hex: string };
 
-export const HANDSHAKE_PREFIX = "313a68616e647368616b653a"; // for 1:handshake
+const VERSION = "1";
+const DELIM = ":";
 
-export const COMM_PREFIX = "313a636f6d6d3a"; // for 1:comm
+// Universal string to hex conversion
+const toHex = (s: string): string =>
+  Array.from(new TextEncoder().encode(s))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
-export const PAYMENT_PREFIX = "313a7061796d656e743a"; // "1:payment:" in hex
+const mk = <K extends Exclude<Kind, "ciph_msg">>(k: K): Prefix => {
+  const str = `${VERSION}${DELIM}${k}${DELIM}`;
+  return { type: k, string: str, hex: toHex(str) };
+};
+
+const PROTOCOL_PREFIX = {
+  // no need for separate type cast
+  type: "ciph_msg",
+  string: `ciph_msg${DELIM}`,
+  hex: toHex(`ciph_msg${DELIM}`),
+} as const;
+
+export const PROTOCOL = {
+  prefix: PROTOCOL_PREFIX,
+  headers: {
+    HANDSHAKE: mk("handshake"),
+    COMM: mk("comm"),
+    PAYMENT: mk("payment"),
+  },
+} as const;

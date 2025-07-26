@@ -37,13 +37,26 @@ import {
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
-import {
-  PROTOCOL_PREFIX,
-  HANDSHAKE_PREFIX,
-  COMM_PREFIX,
-  PAYMENT_PREFIX,
-} from "../config/protocol";
 import { useDBStore } from "../store/db.store";
+import { PROTOCOL } from "../config/protocol";
+
+// Message related types
+type DecodedMessage = {
+  transactionId: string;
+  senderAddress: string;
+  recipientAddress: string;
+  timestamp: number;
+  content: string;
+  amount: number;
+  payload: string;
+  fileData?: {
+    type: string;
+    name: string;
+    size: number;
+    mimeType: string;
+    content: string;
+  };
+};
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -907,7 +920,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       destinationAddress.toString() === this.receiveAddress?.toString();
 
     const isMessageTransaction =
-      transaction.payload && transaction.payload.startsWith(PROTOCOL_PREFIX);
+      transaction.payload && transaction.payload.startsWith(PROTOCOL.prefix.hex);
 
     const isSelfMessage = isMessageTransaction && isDirectSelfMessage;
     console.log("Transaction type:", {
@@ -1056,7 +1069,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private isMessageOrHandshakeTransaction(
     tx: ITransaction | ExplorerTransaction
   ): boolean {
-    return tx?.payload?.startsWith(PROTOCOL_PREFIX) ?? false;
+    return tx?.payload?.startsWith(PROTOCOL.prefix.hex) ?? false;
   }
 
   private async processMessageTransaction(
@@ -1184,7 +1197,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Process the message
       const payload = getTransactionPayload(tx);
-      if (!payload.startsWith(PROTOCOL_PREFIX)) {
+      if (!payload.startsWith(PROTOCOL.prefix.hex)) {
         return;
       }
 
@@ -1194,28 +1207,28 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
+      const messageHex = tx.payload.substring(PROTOCOL.prefix.hex.length);
 
       let messageType = "unknown";
       let isHandshake = false;
       let targetAlias = null;
       let encryptedHex = messageHex;
 
-      if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
-        messageType = "handshake";
+      if (messageHex.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
+        messageType = PROTOCOL.headers.HANDSHAKE.type;
         isHandshake = true;
         encryptedHex = messageHex;
-      } else if (messageHex.startsWith(COMM_PREFIX)) {
+      } else if (messageHex.startsWith(PROTOCOL.headers.COMM.hex)) {
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 
         if (parts.length >= 4) {
-          messageType = "comm";
+          messageType = PROTOCOL.headers.COMM.type;
           targetAlias = parts[2];
           encryptedHex = parts[3];
         }
-      } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
-        messageType = "payment";
+      } else if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
+        messageType = PROTOCOL.headers.PAYMENT.type;
         // For payments, we don't need to parse aliases - just get the encrypted content
         // New format: 1:payment:{encrypted_payload}
         const messageStr = hexToString(messageHex);
