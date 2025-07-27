@@ -11,7 +11,7 @@ import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";
 import { toast } from "../utils/toast";
-import { PROTOCOL } from "../config/protocol";
+import { PROTOCOL, DELIM, VERSION } from "../config/protocol";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {
@@ -303,11 +303,13 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                       // If this is a handshake message and sender is still unknown, try to extract from payload
                       if (
                         senderAddress === "Unknown" &&
-                        result.includes("handshake")
+                        result.includes(PROTOCOL.headers.HANDSHAKE.type)
                       ) {
                         try {
                           const handshakeMatch = result.match(
-                            /ciph_msg:1:handshake:(.+)/
+                            new RegExp(
+                              `${PROTOCOL.prefix.type}${DELIM}${VERSION}${DELIM}${PROTOCOL.headers.HANDSHAKE.type}${DELIM}(.+)`
+                            )
                           );
                           if (handshakeMatch) {
                             const handshakeData = JSON.parse(handshakeMatch[1]);
@@ -411,11 +413,13 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         // If this is a handshake message and sender is still unknown, try to extract from payload
                         if (
                           senderAddress === "Unknown" &&
-                          result.includes("handshake")
+                          result.includes(PROTOCOL.headers.HANDSHAKE.type)
                         ) {
                           try {
                             const handshakeMatch = result.match(
-                              /ciph_msg:1:handshake:(.+)/
+                              new RegExp(
+                                `${PROTOCOL.prefix.type}${DELIM}${VERSION}${DELIM}${PROTOCOL.headers.HANDSHAKE.type}${DELIM}(.+)`
+                              )
                             );
                             if (handshakeMatch) {
                               const handshakeData = JSON.parse(
