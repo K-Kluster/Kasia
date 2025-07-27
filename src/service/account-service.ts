@@ -40,6 +40,7 @@ import { WalletStorage } from "../utils/wallet-storage";
 import { useDBStore } from "../store/db.store";
 import { PROTOCOL, VERSION } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
+import { parseKaspaMessagePayload } from "../utils/message-payload";
 
 // Message related types
 type DecodedMessage = {
@@ -1193,38 +1194,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      const messageHex = tx.payload.substring(PROTOCOL.prefix.hex.length);
-
-      let messageType = "unknown";
-      let isHandshake = false;
-      let targetAlias = null;
-      let encryptedHex = messageHex;
-
-      if (messageHex.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
-        messageType = PROTOCOL.headers.HANDSHAKE.type;
-        isHandshake = true;
-        encryptedHex = messageHex;
-      } else if (messageHex.startsWith(PROTOCOL.headers.COMM.hex)) {
-        const messageStr = hexToString(messageHex);
-        const parts = messageStr.split(":");
-
-        if (parts.length >= 4) {
-          messageType = PROTOCOL.headers.COMM.type;
-          targetAlias = parts[2];
-          encryptedHex = parts[3];
-        }
-      } else if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
-        messageType = PROTOCOL.headers.PAYMENT.type;
-        // For payments, we don't need to parse aliases - just get the encrypted content
-        // New format: 1:payment:{encrypted_payload}
-        const messageStr = hexToString(messageHex);
-        const parts = messageStr.split(":");
-
-        if (parts.length >= 3) {
-          // parts[0] = "1", parts[1] = "payment", parts[2] = encrypted_payload
-          encryptedHex = parts[2];
-        }
-      }
+      const parsed = parseKaspaMessagePayload(tx.payload);
+      let messageType = parsed.type;
+      const targetAlias = parsed.alias;
+      const encryptedHex = parsed.encryptedHex;
+      let isHandshake = parsed.type === PROTOCOL.headers.HANDSHAKE.type;
 
       const isMonitoredAddress =
         (senderAddress && this.monitoredAddresses.has(senderAddress)) ||
