@@ -3,6 +3,7 @@ import { Contact } from "../types/all";
 import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
 import { AvatarHash } from "./icons/AvatarHash";
+import { PROTOCOL, DELIM, VERSION } from "../config/protocol";
 import clsx from "clsx";
 
 export const ContactCard: FC<{
@@ -30,7 +31,7 @@ export const ContactCard: FC<{
       // If it's a handshake message
       if (
         content.includes("Handshake completed") ||
-        content.includes("handshake")
+        content.includes(PROTOCOL.headers.HANDSHAKE.type)
       ) {
         return "Handshake completed";
       }
@@ -42,7 +43,7 @@ export const ContactCard: FC<{
       }
 
       // For regular messages, try to decode if it's encrypted
-      if (content.startsWith("ciph_msg:")) {
+      if (content.startsWith(PROTOCOL.prefix.string)) {
         const decoded = decodePayload(content);
         return decoded
           ? decoded.slice(0, 40) + (content.length > 40 ? "..." : "")
@@ -52,7 +53,7 @@ export const ContactCard: FC<{
       // Check if it's a payment message
       try {
         const parsed = JSON.parse(content);
-        if (parsed.type === "payment") {
+        if (parsed.type === PROTOCOL.headers.PAYMENT.type) {
           return parsed.message?.trim() || "Payment";
         }
       } catch (e) {
@@ -66,7 +67,7 @@ export const ContactCard: FC<{
 
     // Fallback to payload if no content
     if (payload) {
-      if (payload.includes("handshake")) {
+      if (payload.includes(PROTOCOL.headers.HANDSHAKE.type)) {
         return "Handshake message";
       }
 
@@ -86,10 +87,12 @@ export const ContactCard: FC<{
     if (!contact?.address) return "Unknown";
     const addr = contact.address;
     if (addr === "Unknown") {
-      if (lastMessage?.payload?.includes("handshake")) {
+      if (lastMessage?.payload?.includes(PROTOCOL.headers.HANDSHAKE.type)) {
         try {
           const handshakeMatch = lastMessage.payload.match(
-            /ciph_msg:1:handshake:(.+)/
+            new RegExp(
+              `${PROTOCOL.prefix.type}${DELIM}${VERSION}${DELIM}${PROTOCOL.headers.HANDSHAKE.type}${DELIM}(.+)`
+            )
           );
           if (handshakeMatch) {
             const handshakeData = JSON.parse(handshakeMatch[1]);

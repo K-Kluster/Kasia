@@ -1,8 +1,8 @@
 type Kind = "ciph_msg" | "handshake" | "comm" | "payment";
 type Prefix = { type: Kind; string: string; hex: string };
 
-const VERSION = "1";
-const DELIM = ":";
+export const VERSION = "1";
+export const DELIM = ":";
 
 // Universal string to hex conversion
 const toHex = (s: string): string =>
