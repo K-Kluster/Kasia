@@ -6,12 +6,13 @@ import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
-import { hexToString } from "../utils/format";
+
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";
 import { toast } from "../utils/toast";
 import { PROTOCOL, DELIM, VERSION } from "../config/protocol";
+import { parseKaspaMessagePayload } from "../utils/message-payload";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {
@@ -199,45 +200,13 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 }
 
                 console.log(`API Messages: Full payload: ${tx.payload}`);
-                const messageHex = tx.payload.substring(
-                  PROTOCOL.prefix.hex.length
-                );
-                console.log(
-                  `API Messages: Message hex after prefix: ${messageHex}`
-                );
 
-                let messageType = "unknown";
-                let isHandshake = false;
-                let targetAlias = null;
-                let encryptedContent = messageHex;
-
-                if (messageHex.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
-                  messageType = PROTOCOL.headers.HANDSHAKE.type;
-                  isHandshake = true;
-                  encryptedContent = messageHex;
-                } else if (messageHex.startsWith(PROTOCOL.headers.COMM.hex)) {
-                  // Parse regular messages
-                  const messageStr = hexToString(messageHex);
-                  const parts = messageStr.split(":");
-
-                  if (parts.length >= 4) {
-                    messageType = PROTOCOL.headers.COMM.type;
-                    targetAlias = parts[2];
-                    encryptedContent = parts[3];
-                  }
-                } else if (
-                  messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)
-                ) {
-                  // Parse payment messages - simplified format without aliases
-                  const messageStr = hexToString(messageHex);
-                  const parts = messageStr.split(":");
-
-                  if (parts.length >= 3) {
-                    messageType = PROTOCOL.headers.PAYMENT.type;
-                    // No alias needed - parts[2] is the encrypted content
-                    encryptedContent = parts[2];
-                  }
-                }
+                const parsed = parseKaspaMessagePayload(tx.payload);
+                const messageType = parsed.type;
+                const targetAlias = parsed.alias;
+                const encryptedContent = parsed.encryptedHex;
+                const isHandshake =
+                  parsed.type === PROTOCOL.headers.HANDSHAKE.type;
 
                 console.log(`API Messages: Parsed message parts:`);
                 console.log(`- Type: ${messageType}`);
