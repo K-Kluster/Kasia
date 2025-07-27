@@ -10,6 +10,7 @@ import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
+import { parseKaspaMessagePayload } from "../utils/message-payload";
 import { PROTOCOL, DELIM } from "../config/protocol";
 
 type MessageDisplayProps = {
@@ -63,9 +64,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     // First check if it's a hex payload starting with ciph_msg prefix
     if (payload) {
       if (payload.startsWith(PROTOCOL.prefix.hex)) {
-        // Extract the message part and check for payment prefix
-        const messageHex = payload.substring(PROTOCOL.prefix.hex.length);
-        if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
+        const parsed = parseKaspaMessagePayload(payload);
+        if (parsed.type === PROTOCOL.headers.PAYMENT.type) {
           return true;
         }
       }
