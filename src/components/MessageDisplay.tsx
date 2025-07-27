@@ -8,7 +8,7 @@ import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
 import { Contact } from "../store/repository/contact.repository";
 import { Conversation } from "../store/repository/conversation.repository";
-import { PROTOCOL } from "../config/protocol";
+import { PROTOCOL, DELIM } from "../config/protocol";
 
 type MessageDisplayProps = {
   event: KasiaConversationEvent;
@@ -71,7 +71,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     try {
       const paymentPayload = JSON.parse(event.content);
 
-      if (paymentPayload.type === "payment") {
+      if (paymentPayload.type === PROTOCOL.headers.PAYMENT.type) {
         // Check if message is empty or just whitespace
         const hasMessage =
           paymentPayload.message && paymentPayload.message.trim();
