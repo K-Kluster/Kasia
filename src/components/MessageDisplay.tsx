@@ -2,7 +2,7 @@ import { FC, useState, useEffect, useRef } from "react";
 import { Message as MessageType } from "../types/all";
 import { decodePayload } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorage } from "../service/wallet-storage-service";
 import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";

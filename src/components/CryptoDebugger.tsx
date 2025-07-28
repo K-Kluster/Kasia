@@ -1,7 +1,7 @@
 import { FC, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { encrypt_message, decrypt_message, EncryptedMessage } from "cipher";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorage } from "../service/wallet-storage-service";
 
 export const CryptoDebugger: FC = () => {
   const walletStore = useWalletStore();

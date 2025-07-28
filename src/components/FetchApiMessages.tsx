@@ -1,12 +1,11 @@
 import { FC, useState, useEffect } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorage } from "../service/wallet-storage-service";
 import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import { CipherHelper } from "../utils/cipher-helper";
-import { DecryptionCache } from "../utils/decryption-cache";
-
+import { DecryptionCache } from "../service/decryption-cache";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";

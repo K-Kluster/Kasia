@@ -7,7 +7,7 @@ import {
 } from "src/types/messaging.types";
 import { v4 as uuidv4 } from "uuid";
 import { ALIAS_LENGTH } from "../config/constants";
-import { isAlias } from "./alias-validator";
+import { isAlias } from "../utils/alias-validator";
 
 export class ConversationManager {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";

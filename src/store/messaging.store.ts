@@ -5,9 +5,9 @@ import {
   decrypt_with_secret_key,
   EncryptedMessage,
 } from "cipher";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorage } from "../service/wallet-storage-service";
 import { Address, NetworkType } from "kaspa-wasm";
-import { ConversationManager } from "../utils/conversation-manager";
+import { ConversationManager } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
 import {
   ActiveConversation,
@@ -23,7 +23,7 @@ import {
   loadMessagesForAddress,
   migrateToPerAddressStorage,
   cleanupLegacyStorage,
-} from "../utils/storage-encryption";
+} from "../service/storage-encryption";
 
 // Define the HandshakeState interface
 interface HandshakeState {

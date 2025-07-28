@@ -14,9 +14,9 @@ import {
   kaspaToSompi,
   ITransactionOutput,
 } from "kaspa-wasm";
-import { KaspaClient } from "../utils/kaspa-client";
+import { KaspaClient } from "./kaspa-client";
 import { encrypt_message } from "cipher";
-import { DecryptionCache } from "../utils/decryption-cache";
+import { DecryptionCache } from "./decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
 import { hexToString } from "../utils/format";
 import { BlockAddedData, PriorityFeeConfig } from "../types/all";
@@ -32,10 +32,7 @@ import {
 } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "../utils/wallet-storage";
-import { PROTOCOL } from "../config/protocol";
-import { PLACEHOLDER_ALIAS } from "../config/constants";
-import { parseKaspaMessagePayload } from "../utils/message-payload";
+import { WalletStorage } from "./wallet-storage-service";
 
 // Message related types
 type DecodedMessage = {
