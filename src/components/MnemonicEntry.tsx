@@ -1,4 +1,5 @@
 import React, { useState, ClipboardEvent, ChangeEvent, useEffect } from "react";
+import { Switch } from "@headlessui/react";
 import clsx from "clsx";
 
 interface MnemonicEntryProps {
@@ -82,18 +83,33 @@ export const MnemonicEntry = ({
       <textarea ref={mnemonicRef} readOnly className="hidden" />
 
       <div className="mt-4 mb-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-3 text-sm">
+          <Switch
             checked={showPassphrase}
-            onChange={(e) => setShowPassphrase(e.target.checked)}
-            className="rounded border-[var(--primary-border)] bg-[var(--input-bg)] text-[var(--color-kas-secondary)] focus:ring-[var(--color-kas-secondary)]"
-          />
+            onChange={setShowPassphrase}
+            className={clsx(
+              "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:ring-2 focus:ring-[var(--color-kas-secondary)] focus:ring-offset-2 focus:outline-none",
+              {
+                "bg-[var(--color-kas-secondary)]": showPassphrase,
+                "bg-[var(--primary-border)]": !showPassphrase,
+              }
+            )}
+          >
+            <span
+              className={clsx(
+                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                {
+                  "translate-x-6": showPassphrase,
+                  "translate-x-1": !showPassphrase,
+                }
+              )}
+            />
+          </Switch>
           <span className="text-[var(--text-primary)]">
             My wallet has a passphrase (BIP39)
           </span>
         </label>
-        <p className="mt-1 text-xs text-[var(--text-secondary)]">
+        <p className="mt-3 text-xs text-[var(--text-secondary)]">
           Check this box if your wallet was created with an additional
           passphrase for extra security.
         </p>
@@ -116,7 +132,7 @@ export const MnemonicEntry = ({
               "placeholder:text-sm"
             )}
           />
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">
+          <p className="mt-3 text-xs text-[var(--text-secondary)]">
             A passphrase adds an extra layer of security to your wallet. Only
             enter one if your wallet was created with a passphrase.
           </p>
