@@ -3,6 +3,9 @@ import { FC } from "react";
 import { LoaderCircle } from "lucide-react";
 
 export const SplashScreen: FC = () => {
+  // THIS IS NEEDED TO THAT REACT COMPILER DOESN'T TRY TO COMPILE BEFORE REACT IS READY
+  "use no memo";
+
   return (
     <div className="flex h-screen flex-col items-center justify-center gap-6 p-4 sm:p-0">
       <img src="/kasia-logo.png" alt="Kasia Logo" className="h-40 w-40" />
