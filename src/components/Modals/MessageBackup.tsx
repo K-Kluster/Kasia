@@ -23,9 +23,12 @@ export const MessageBackup: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       const now = new Date();
+
+      const walletAddress = walletStore.address?.toString() || "unknown";
+      const walletSuffix = walletAddress.slice(-6);
+      // build file name with prefix, last 6 chars of wallet, short date and short time - YYMMDD-HHMM
       a.href = url;
-      // Build file name with prefix, short date and short time - YYMMDD-HHMM - ty gippity for this
-      a.download = `kasia-message-backup-${now
+      a.download = `kasia-msg-backup-${walletSuffix}-${now
         .getFullYear()
         .toString()
         .slice(2)}${(now.getMonth() + 1).toString().padStart(2, "0")}${now
@@ -55,7 +58,6 @@ export const MessageBackup: React.FC = () => {
         alert("Please unlock your wallet first");
         return;
       }
-
       try {
         await messageStore.importMessages(
           file,
