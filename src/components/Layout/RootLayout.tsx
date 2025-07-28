@@ -7,7 +7,7 @@ import { SlideOutMenu } from "../Layout/SlideOutMenu";
 
 import { ToastContainer } from "../Common/ToastContainer";
 import { useUiStore } from "../../store/ui.store";
-import { toast } from "../../utils/toast";
+import { toast } from "../../utils/toast-helper";
 import { ResizableAppContainer } from "./ResizableAppContainer";
 
 export const RootLayout: FC = () => {

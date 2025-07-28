@@ -3,7 +3,7 @@ import { FC, useState, useEffect, useCallback } from "react";
 import { toDataURL } from "qrcode";
 import { Copy, QrCode } from "lucide-react";
 import { Button } from "../Common/Button";
-import { toast } from "../../utils/toast";
+import { toast } from "../../utils/toast-helper";
 
 type AddressSectionProps = {
   address?: string;

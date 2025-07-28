@@ -1,7 +1,7 @@
 import { FC, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { encrypt_message, decrypt_message, EncryptedMessage } from "cipher";
-import { WalletStorage } from "../service/wallet-storage-service";
+import { WalletStorageService } from "../service/wallet-storage-service";
 
 export const CryptoDebugger: FC = () => {
   const walletStore = useWalletStore();
@@ -70,7 +70,7 @@ export const CryptoDebugger: FC = () => {
       addLog("Preparing to decrypt message...");
 
       // Get private key using WalletStorage
-      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+      const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
         walletStore.unlockedWallet,
         walletStore.unlockedWallet.password
       );

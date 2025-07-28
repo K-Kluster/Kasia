@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ALIAS_LENGTH } from "../config/constants";
 import { isAlias } from "../utils/alias-validator";
 
-export class ConversationManager {
+export class ConversationManagerService {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";
   private static readonly PROTOCOL_VERSION = 1;
 
@@ -25,7 +25,7 @@ export class ConversationManager {
   }
 
   private get storageKey(): string {
-    return `${ConversationManager.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
+    return `${ConversationManagerService.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
   }
 
   private saveToStorage() {
@@ -105,14 +105,14 @@ export class ConversationManager {
             alias: conv.myAlias, // Keep the original alias
             timestamp: Date.now(),
             conversationId: conv.conversationId,
-            version: ConversationManager.PROTOCOL_VERSION,
+            version: ConversationManagerService.PROTOCOL_VERSION,
             recipientAddress: recipientAddress,
             sendToRecipient: true,
           };
 
           // Format for blockchain transaction
           const payload = `ciph_msg:${
-            ConversationManager.PROTOCOL_VERSION
+            ConversationManagerService.PROTOCOL_VERSION
           }:handshake:${JSON.stringify(handshakePayload)}`;
 
           // Update last activity to show it's still active
@@ -133,14 +133,14 @@ export class ConversationManager {
         alias: conversation.myAlias,
         timestamp: Date.now(),
         conversationId: conversation.conversationId,
-        version: ConversationManager.PROTOCOL_VERSION,
+        version: ConversationManagerService.PROTOCOL_VERSION,
         recipientAddress: recipientAddress,
         sendToRecipient: true, // Flag to indicate this should be sent to recipient
       };
 
       // Format for blockchain transaction
       const payload = `ciph_msg:${
-        ConversationManager.PROTOCOL_VERSION
+        ConversationManagerService.PROTOCOL_VERSION
       }:handshake:${JSON.stringify(handshakePayload)}`;
 
       this.events?.onHandshakeInitiated?.(conversation);
@@ -236,14 +236,14 @@ export class ConversationManager {
       theirAlias: conversation.theirAlias, // Include their alias in response
       timestamp: Date.now(),
       conversationId: conversation.conversationId, // Use our conversation ID
-      version: ConversationManager.PROTOCOL_VERSION,
+      version: ConversationManagerService.PROTOCOL_VERSION,
       recipientAddress: conversation.kaspaAddress, // Include their address
       sendToRecipient: false, // Set to false to use standard encryption
       isResponse: true,
     };
 
     return `ciph_msg:${
-      ConversationManager.PROTOCOL_VERSION
+      ConversationManagerService.PROTOCOL_VERSION
     }:handshake:${JSON.stringify(responsePayload)}`;
   }
 
@@ -464,7 +464,7 @@ export class ConversationManager {
     // Version compatibility check
     if (
       payload.version &&
-      payload.version > ConversationManager.PROTOCOL_VERSION
+      payload.version > ConversationManagerService.PROTOCOL_VERSION
     ) {
       throw new Error("Unsupported protocol version");
     }

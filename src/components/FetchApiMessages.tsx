@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
-import { WalletStorage } from "../service/wallet-storage-service";
+import { WalletStorageService } from "../service/wallet-storage-service";
 import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import { CipherHelper } from "../utils/cipher-helper";
@@ -9,9 +9,9 @@ import { DecryptionCache } from "../service/decryption-cache";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { RefreshCcw } from "lucide-react";
-import { toast } from "../utils/toast";
 import { PROTOCOL, DELIM, VERSION } from "../config/protocol";
 import { parseKaspaMessagePayload } from "../utils/message-payload";
+import { toast } from "../utils/toast-helper";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {
@@ -70,7 +70,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
     }
 
     // Get the private key generator
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       walletStore.unlockedWallet,
       walletStore.unlockedWallet.password
     );

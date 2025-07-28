@@ -5,9 +5,9 @@ import {
   decrypt_with_secret_key,
   EncryptedMessage,
 } from "cipher";
-import { WalletStorage } from "../service/wallet-storage-service";
+import { WalletStorageService } from "../service/wallet-storage-service";
 import { Address, NetworkType } from "kaspa-wasm";
-import { ConversationManager } from "../service/conversation-manager-service";
+import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
 import {
   ActiveConversation,
@@ -75,7 +75,7 @@ interface MessagingState {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   connectAccountService: (accountService: any) => void;
 
-  conversationManager: ConversationManager | null;
+  conversationManager: ConversationManagerService | null;
   initializeConversationManager: (address: string) => void;
   initiateHandshake: (
     recipientAddress: string,
@@ -648,7 +648,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
 
       console.log("Getting private key generator...");
-      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+      const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
         wallet,
         password
       );
@@ -793,14 +793,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
 
       console.log("Getting private key for decryption...");
-      const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+      const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
         wallet,
         password
       );
       const privateKey = privateKeyGenerator.receiveKey(0);
 
       // Get private key bytes
-      const privateKeyBytes = WalletStorage.getPrivateKeyBytes(privateKey);
+      const privateKeyBytes =
+        WalletStorageService.getPrivateKeyBytes(privateKey);
       if (!privateKeyBytes) {
         throw new Error("Failed to get private key bytes");
       }
@@ -1098,7 +1099,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       },
     };
 
-    const manager = new ConversationManager(address, events);
+    const manager = new ConversationManagerService(address, events);
     set({ conversationManager: manager });
   },
   initiateHandshake: async (

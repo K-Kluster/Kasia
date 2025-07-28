@@ -32,7 +32,10 @@ import {
 } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "./wallet-storage-service";
+import { WalletStorageService } from "./wallet-storage-service";
+import { PROTOCOL } from "../config/protocol";
+import { parseKaspaMessagePayload } from "../utils/message-payload";
+import { PLACEHOLDER_ALIAS } from "../config/constants";
 
 // Message related types
 type DecodedMessage = {
@@ -422,7 +425,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     );
     console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
 
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
     );
@@ -527,7 +530,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       `Payload length: ${paymentTransaction.payload.length / 2} bytes`
     );
 
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
     );
@@ -689,7 +692,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         withdrawTransaction.amount
       } sompi)`
     );
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
     );
@@ -1327,7 +1330,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           recipientAddress === this.receiveAddress?.toString());
 
       try {
-        const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+        const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
           this.unlockedWallet,
           this.password!
         );

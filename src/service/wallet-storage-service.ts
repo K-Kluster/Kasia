@@ -13,7 +13,7 @@ import {
   WalletDerivationType,
 } from "src/types/wallet.type";
 
-export class WalletStorage {
+export class WalletStorageService {
   private _storageKey: string = "wallets";
 
   constructor() {
