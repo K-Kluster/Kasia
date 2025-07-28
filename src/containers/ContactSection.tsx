@@ -2,7 +2,7 @@ import { FC, useState, useMemo } from "react";
 import { Menu, Search, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
-import { useIsMobile } from "../utils/useIsMobile";
+import { useIsMobile } from "src/hooks/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { DesktopMenu } from "../components/Layout/DesktopMenu";

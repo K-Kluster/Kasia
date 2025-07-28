@@ -9,7 +9,7 @@ import { useWalletStore } from "../store/wallet.store";
 import { KaspaAddress } from "../components/KaspaAddress";
 import styles from "../components/NewChatForm.module.css";
 import clsx from "clsx";
-import { useIsMobile } from "../utils/useIsMobile";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { EditNicknamePopover } from "../components/EditNicknamePopover";
 import { useUiStore } from "../store/ui.store";

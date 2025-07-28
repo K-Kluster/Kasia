@@ -5,7 +5,7 @@ import {
   getInitialCustomColors,
   DEFAULT_COLORS,
   type CustomColorPalette,
-} from "../utils/custom-theme-applier";
+} from "../config/custom-theme-applier";
 import { OneOnOneConversation } from "../types/all";
 
 export type ModalType =

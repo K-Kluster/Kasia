@@ -1,7 +1,7 @@
 import { FC, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useWalletStore } from "../../store/wallet.store";
-import { useIsMobile } from "../../utils/useIsMobile";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { Header } from "../Layout/Header";
 import { SlideOutMenu } from "../Layout/SlideOutMenu";
 

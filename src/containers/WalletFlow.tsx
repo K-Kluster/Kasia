@@ -16,7 +16,7 @@ import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
 import { toast } from "../utils/toast";
 import { Button } from "../components/Common/Button";
-import { useIsMobile } from "../utils/useIsMobile";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { StringCopy } from "../components/Common/StringCopy";
 import { Modal } from "../components/Common/modal";

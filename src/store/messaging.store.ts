@@ -12,9 +12,9 @@ import {
   decrypt_message,
   PrivateKey,
 } from "cipher";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorage } from "../service/wallet-storage-service";
 import { Address, NetworkType } from "kaspa-wasm";
-import { ConversationManager } from "../utils/conversation-manager";
+import { ConversationManager } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
 import { ConversationEvents } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
@@ -23,7 +23,10 @@ import {
   PendingConversation,
   ActiveConversation,
 } from "./repository/conversation.repository";
-import { loadLegacyMessages, saveMessages } from "../utils/storage-encryption";
+import {
+  loadLegacyMessages,
+  saveMessages,
+} from "../service/storage-encryption";
 import { PROTOCOL } from "../config/protocol";
 import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";

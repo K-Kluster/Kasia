@@ -13,11 +13,11 @@ import { ColorPicker } from "../Common/ColorPicker";
 import { NetworkSelector } from "../NetworkSelector";
 import { Switch } from "@headlessui/react";
 import clsx from "clsx";
-import { reencryptMessagesForWallet } from "../../utils/storage-encryption";
+import { reencryptMessagesForWallet } from "../../service/storage-encryption";
 import {
   DEFAULT_COLORS,
   type CustomColorPalette,
-} from "../../utils/custom-theme-applier";
+} from "../../config/custom-theme-applier";
 import {
   User,
   Sun,
