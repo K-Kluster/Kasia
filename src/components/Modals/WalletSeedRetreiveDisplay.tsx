@@ -5,7 +5,7 @@ import { StoredWallet } from "../../types/wallet.type";
 import { Eye, EyeOff } from "lucide-react";
 import clsx from "clsx";
 import { Button } from "../Common/Button";
-import { toast } from "../../utils/toast";
+import { toast } from "../../utils/toast-helper";
 import { StringCopy } from "../Common/StringCopy";
 
 export const WalletSeedRetreiveDisplay: FC = () => {

@@ -13,7 +13,7 @@ import {
 } from "../store/repository/conversation.repository";
 import { Contact } from "../store/repository/contact.repository";
 
-export class ConversationManager {
+export class ConversationManagerService {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";
   private static readonly PROTOCOL_VERSION = 1;
 
@@ -46,7 +46,7 @@ export class ConversationManager {
   }
 
   private get storageKey(): string {
-    return `${ConversationManager.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
+    return `${ConversationManagerService.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
   }
 
   private async loadConversations() {
@@ -139,7 +139,7 @@ export class ConversationManager {
 
           // Format for blockchain transaction
           const payload = `ciph_msg:${
-            ConversationManager.PROTOCOL_VERSION
+            ConversationManagerService.PROTOCOL_VERSION
           }:handshake:${JSON.stringify(handshakePayload)}`;
 
           // Update last activity to show it's still active
@@ -176,7 +176,7 @@ export class ConversationManager {
 
       // Format for blockchain transaction
       const payload = `ciph_msg:${
-        ConversationManager.PROTOCOL_VERSION
+        ConversationManagerService.PROTOCOL_VERSION
       }:handshake:${JSON.stringify(handshakePayload)}`;
 
       this.events?.onHandshakeInitiated?.(conversation, contact);
@@ -301,7 +301,7 @@ export class ConversationManager {
     };
 
     return `ciph_msg:${
-      ConversationManager.PROTOCOL_VERSION
+      ConversationManagerService.PROTOCOL_VERSION
     }:handshake:${JSON.stringify(responsePayload)}`;
   }
 
@@ -614,7 +614,7 @@ export class ConversationManager {
     // Version compatibility check
     if (
       payload.version &&
-      payload.version > ConversationManager.PROTOCOL_VERSION
+      payload.version > ConversationManagerService.PROTOCOL_VERSION
     ) {
       throw new Error("Unsupported protocol version");
     }

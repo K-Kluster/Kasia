@@ -12,9 +12,9 @@ import {
   decrypt_message,
   PrivateKey,
 } from "cipher";
-import { WalletStorage } from "../service/wallet-storage-service";
+import { WalletStorageService } from "../service/wallet-storage-service";
 import { Address, NetworkType } from "kaspa-wasm";
-import { ConversationManager } from "../service/conversation-manager-service";
+import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
 import { ConversationEvents } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";

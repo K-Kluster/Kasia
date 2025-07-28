@@ -1,4 +1,4 @@
-import { toast } from "./toast";
+import { toast } from "./toast-helper";
 
 export async function copyToClipboard(text: string, alertText = "Text copied") {
   try {

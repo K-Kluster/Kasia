@@ -3,7 +3,7 @@ import { createWithdrawTransaction } from "../../service/account-service";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
-import { toast } from "../../utils/toast";
+import { toast } from "../../utils/toast-helper";
 import { QrScanner } from "../QrScanner";
 import { Clipboard } from "lucide-react";
 

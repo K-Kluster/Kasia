@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import jsQR from "jsqr";
 import { QrCode } from "lucide-react";
-import { toast } from "../utils/toast";
+import { toast } from "../utils/toast-helper";
 import clsx from "clsx";
 import { Modal } from "./Common/modal";
 

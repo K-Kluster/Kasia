@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { KaspaClient } from "../service/kaspa-client";
-import { WalletStorage } from "../service/wallet-storage-service";
+import { WalletStorageService } from "../service/wallet-storage-service";
 import {
   Address,
   GeneratorSummary,
@@ -115,7 +115,7 @@ let _accountService: AccountService | null = null;
 let _feeEstimateInterval: NodeJS.Timeout | null = null;
 
 export const useWalletStore = create<WalletState>((set, get) => {
-  const _walletStorage = new WalletStorage();
+  const _walletStorage = new WalletStorageService();
 
   return {
     wallets: [],

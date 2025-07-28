@@ -14,7 +14,7 @@ import { Settings, AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
-import { toast } from "../utils/toast";
+import { toast } from "../utils/toast-helper";
 import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useUiStore } from "../store/ui.store";

@@ -39,7 +39,7 @@ import { useDBStore } from "../store/db.store";
 import { PROTOCOL, VERSION } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
 import { parseKaspaMessagePayload } from "../utils/message-payload";
-import { WalletStorage } from "./wallet-storage-service";
+import { WalletStorageService } from "./wallet-storage-service";
 
 // Message related types
 type DecodedMessage = {
@@ -373,7 +373,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     );
     console.log(`Payload length: ${transaction.payload.length / 2} bytes`);
 
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
     );
@@ -478,7 +478,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       `Payload length: ${paymentTransaction.payload.length / 2} bytes`
     );
 
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
     );
@@ -585,7 +585,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         withdrawTransaction.amount
       } sompi)`
     );
-    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
     );
@@ -1215,7 +1215,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           recipientAddress === this.receiveAddress?.toString());
 
       try {
-        const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+        const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
           this.unlockedWallet,
           this.password!
         );

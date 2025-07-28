@@ -6,7 +6,7 @@ import { FeeSource } from "kaspa-wasm";
 import clsx from "clsx";
 import { useWalletStore } from "../store/wallet.store";
 import { Button } from "./Common/Button";
-import { toast } from "../utils/toast";
+import { toast } from "../utils/toast-helper";
 import { Input } from "@headlessui/react";
 import { DEFAULT_FEE_BUCKETS, MAX_PRIORITY_FEE } from "../config/constants";
 
