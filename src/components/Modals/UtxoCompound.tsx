@@ -1,8 +1,4 @@
-import {
-  ArrowPathIcon,
-  ExclamationTriangleIcon,
-  XCircleIcon,
-} from "@heroicons/react/24/solid";
+import { RefreshCw, AlertTriangle, XCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { Address } from "kaspa-wasm";
 import { FC, useCallback, useEffect, useState } from "react";
@@ -131,7 +127,9 @@ export const UtxoCompound: FC = () => {
   if (!balance) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-400">Loading wallet information...</p>
+        <p className="text-[var(--text-secondary)]">
+          Loading wallet information...
+        </p>
       </div>
     );
   }
@@ -150,24 +148,21 @@ export const UtxoCompound: FC = () => {
   return (
     <div className="space-y-4 p-4">
       <div className="text-center">
-        <h3 className="mb-2 text-lg font-semibold text-white">
-          Compound UTXOs
-        </h3>
-        <p className="mb-4 text-sm text-gray-300">
+        <h3 className="mb-2 text-lg font-semibold">Compound UTXOs</h3>
+        <p className="mb-4 text-base text-[var(--text-secondary)]">
           Combine multiple UTXOs into fewer, larger ones to optimize wallet
           performance
         </p>
       </div>
 
       {/* UTXO Information */}
-      <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="border-primary-border bg-primary-bg rounded-lg border p-4">
+        <div className="grid grid-cols-2 gap-4 text-base">
           <div>
-            <span className="text-gray-400">Mature UTXOs:</span>
+            <span className="text-[var(--text-secondary)]">Mature UTXOs:</span>
             <div
               className={clsx("font-semibold", {
                 "text-orange-400": isHighUtxoCount,
-                "text-white": !isHighUtxoCount,
               })}
             >
               {displayBalance?.matureUtxoCount ?? "-"}
@@ -177,8 +172,8 @@ export const UtxoCompound: FC = () => {
             </div>
           </div>
           <div>
-            <span className="text-gray-400">Total Balance:</span>
-            <div className="font-semibold text-white">
+            <span className="text-[var(--text-secondary)]">Total Balance:</span>
+            <div className="font-semibold">
               {displayBalance?.matureDisplay} KAS
             </div>
           </div>
@@ -189,12 +184,12 @@ export const UtxoCompound: FC = () => {
       {isHighUtxoCount && (
         <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-orange-500 bg-orange-500 p-3">
           <div className="flex items-start gap-2">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
-            <div className="text-sm">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
+            <div className="text-base">
               <p className="font-medium text-orange-400">
                 High UTXO Count Detected
               </p>
-              <p className="mt-1 text-gray-300">
+              <p className="mt-1 text-[var(--text-secondary)]">
                 Having many UTXOs can slow down transactions and increase memory
                 usage. Compounding is recommended for optimal performance.
               </p>
@@ -204,12 +199,12 @@ export const UtxoCompound: FC = () => {
       )}
 
       {/* Information Box */}
-      <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-3">
+      <div className="border-primary-border bg-primary-bg rounded-lg border p-3">
         <div className="flex w-full items-center justify-center gap-2">
-          <p className="text-sm font-medium text-white">How it works:</p>
+          <p className="text-base font-semibold">How it works:</p>
         </div>
-        <ul className="space-y-1 text-xs text-gray-300">
-          <li>• Combines multiple small UTXOs into fewer larger ones</li>
+        <ul className="space-y-1 text-center text-sm text-[var(--text-secondary)]">
+          <li>Combines multiple small UTXOs into fewer larger ones</li>
         </ul>
       </div>
 
@@ -227,10 +222,10 @@ export const UtxoCompound: FC = () => {
 
         {/* Processing State */}
         {(isCompounding || pendingResult) && !compoundResult && (
-          <div className="rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 text-center">
-            <div className="flex items-center justify-center gap-2 text-blue-400">
-              <ArrowPathIcon className="h-5 w-5 animate-spin" />
-              <span className="font-medium text-white">
+          <div className="border-primary-border bg-primary-bg rounded-lg border p-4 text-center">
+            <div className="text-kas-secondary flex items-center justify-center gap-2">
+              <RefreshCw className="h-5 w-5 animate-spin" />
+              <span className="font-medium">
                 Processing compound transaction
               </span>
             </div>
@@ -242,10 +237,10 @@ export const UtxoCompound: FC = () => {
       {error && (
         <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-red-500 bg-red-500 p-3">
           <div className="flex items-start gap-2">
-            <XCircleIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
-            <div className="text-sm">
+            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
+            <div className="text-base">
               <p className="font-medium text-red-400">Error</p>
-              <p className="mt-1 text-gray-300">{error}</p>
+              <p className="text-[var(--text-secondary)]-300 mt-1">{error}</p>
             </div>
           </div>
         </div>
@@ -254,15 +249,17 @@ export const UtxoCompound: FC = () => {
       {compoundResult && (
         <div className="bg-opacity-20 border-opacity-50 rounded-lg border border-green-500 bg-green-600 p-3">
           <div className="flex items-start gap-2">
-            <div className="text-sm text-white">
+            <div className="text-base text-white">
               <p className="font-semibold">Success</p>
               <p className="mt-1">
                 Compound transaction successful! Your {compoundResult.utxoCount}{" "}
                 UTXOs have been consolidated into 1 larger UTXO. The transaction
                 is now confirming on the network.
               </p>
-              <p className="mt-2 text-gray-200">
-                <span className="text-gray-300">Transaction ID:</span>{" "}
+              <p className="text-[var(--text-secondary)]-200 mt-2">
+                <span className="text-[var(--text-secondary)]-300">
+                  Transaction ID:
+                </span>{" "}
                 <a
                   href={getExplorerUrl(compoundResult.txId)}
                   target="_blank"

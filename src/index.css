@@ -1,38 +1,114 @@
 @import "tailwindcss";
 
-@theme {
-  --primary-bg: #0f172a;
-  --secondary-bg: #1e293b;
-  --border-color: #334155;
+/* Default (Dark) Theme */
+:root {
+  --primary-bg: #242424;
+  --secondary-bg: #1b1c1a;
+  --primary-border: #505459;
+  --secondary-border: #3b3b3b;
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
+  --text-secondary: #9ca3af;
   --accent-blue: #3b82f6;
   --accent-purple: #8b5cf6;
   --accent-green: #10b981;
   --accent-yellow: #f59e0b;
-  --color-success: #10b981;
-  --color-bg-primary: #0f172a;
-  --color-bg-secondary: #1e293b;
-  --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-kas-primary: #70c7ba;
+  --accent-red: #ef4444;
+  --input-bg: #3b3b3b;
+  --success: #10b981;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --button-primary: #70c7ba;
+  --kas-primary: #70c7ba;
+  --kas-secondary: #49eacb;
+  --text-warning: #fbb81a;
+  /* amber-300 */
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  --primary-bg: #f2f2f2;
+  --secondary-bg: #ffffff;
+  --primary-border: #e2e8f0;
+  --secondary-border: #cbcbcb;
+  --text-primary: #1e293b;
+  --text-secondary: #6b7280;
+  --accent-blue: #3b82f6;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-yellow: #f59e0b;
+  --accent-red: #dc2626;
+  --input-bg: #f7f7f7;
+  --success: #10b981;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --button-primary: #70c7ba;
+  --kas-primary: #70c7ba;
   --color-kas-secondary: #49eacb;
+  --text-warning: #ee8b00;
+  /* amber-600 */
+}
 
-  --animate-fade-in: fade-in 0.5s ease forwards;
+@theme {
+  --animate-fade-in: fade-in 2s ease forwards;
+  --color-primary-bg: var(--primary-bg);
+  --color-secondary-bg: var(--secondary-bg);
+  --color-primary-border: var(--primary-border);
+  --color-secondary-border: var(--secondary-border);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-purple: var(--accent-purple);
+  --color-accent-green: var(--accent-green);
+  --color-accent-yellow: var(--accent-yellow);
+  --color-input-bg: var(--input-bg);
+  --color-success: var(--success);
+  --color-kas-primary: var(--kas-primary);
+  --color-kas-secondary: var(--kas-secondary);
+  --color-text-warning: var(--text-warning);
+}
 
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 
-    to {
-      opacity: 1;
-    }
+  to {
+    opacity: 1;
   }
 }
 
-input {
-  @apply rounded border border-gray-600 bg-gray-700 px-4 py-2 text-white;
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
 }
 
 body {
@@ -43,8 +119,7 @@ body {
     "Segoe UI",
     Roboto,
     sans-serif;
-  max-width: 1200px;
-  margin: 0 auto;
+  margin: 0;
   background-color: var(--primary-bg);
   color: var(--text-primary);
   line-height: 1.5;
@@ -72,20 +147,6 @@ body {
 
 .amount {
   color: var(--accent-green);
-}
-
-.balance-info {
-  background-color: var(--primary-bg);
-  padding: 10px;
-  border-radius: 6px;
-  margin: 10px 0;
-  border: 1px solid var(--border-color);
-}
-
-.balance-info h4 {
-  margin: 0 0 8px 0;
-  color: var(--text-secondary);
-  font-size: 0.9em;
 }
 
 .balance-list {

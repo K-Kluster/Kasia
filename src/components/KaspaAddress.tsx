@@ -1,11 +1,11 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
-import { Square2StackIcon } from "@heroicons/react/24/outline";
-import { toast } from "../utils/toast";
+
 import { useIsMobile } from "../utils/useIsMobile";
 import { useMessagingStore } from "../store/messaging.store";
 
 interface KaspaAddressProps {
   address: string | { toString: () => string };
+  copyable?: boolean;
 }
 
 export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
@@ -57,11 +57,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
     setIsFullAddress(!isFullAddress);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(addressStr).then(() => {});
-    toast.info("Address copied");
-  };
-
   const isMobile = useIsMobile();
 
   const isLongNickname =
@@ -70,7 +65,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   return (
     <span
       ref={addressRef}
-      className="flex items-center justify-center align-middle"
+      className="flex items-center justify-center gap-1 align-middle"
     >
       {isFullAddress || (nickname && !isLongNickname) ? (
         <span className="">{displayString}</span>
@@ -79,11 +74,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           {displayString.slice(0, NICKNAME_SHORT_LENGTH - 3)}
           <span
             onClick={isMobile ? undefined : handleToggle}
-            className={
-              isMobile
-                ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
-                : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
-            }
+            className="text-kas-secondary cursor-pointer px-0.5 text-xl hover:underline max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
             inert={isMobile ? true : undefined}
           >
             ...
@@ -98,8 +89,8 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
                 onClick={isMobile ? undefined : handleToggle}
                 className={
                   isMobile
-                    ? "px-0.5 text-xl text-blue-500 max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
-                    : "cursor-pointer px-0.5 text-xl text-blue-500 hover:underline sm:cursor-pointer"
+                    ? "px-0.5 text-xl max-sm:pointer-events-none max-sm:cursor-default sm:cursor-pointer"
+                    : "cursor-pointer px-0.5 text-xl hover:underline sm:cursor-pointer"
                 }
                 inert={isMobile ? true : undefined}
               >
@@ -110,13 +101,6 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
           ) : null}
         </span>
       )}
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="mt-auto ml-2 block cursor-pointer focus:outline-none"
-      >
-        <Square2StackIcon className="size-5 text-white hover:opacity-80" />
-      </button>
     </span>
   );
 };

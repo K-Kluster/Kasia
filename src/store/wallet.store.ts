@@ -20,6 +20,7 @@ import {
 import { TransactionId, ExplorerTransaction } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
+import { PROTOCOL_PREFIX } from "../config/protocol";
 
 export interface WalletStoreSendMessageArgs {
   message: string;
@@ -79,6 +80,16 @@ type WalletState = {
     password: string,
     newName?: string
   ) => Promise<string>;
+
+  // password management
+  changePassword: (
+    walletId: string,
+    currentPassword: string,
+    newPassword: string
+  ) => Promise<void>;
+
+  // wallet name management
+  changeWalletName: (walletId: string, newName: string) => void;
 
   // wallet operations
   start: (client: KaspaClient) => Promise<{ receiveAddress: Address }>;
@@ -239,7 +250,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
         _accountService.on("transactionReceived", async (raw) => {
           const txDetails = raw as ExplorerTransaction;
-          if (txDetails.payload?.startsWith("636970685f6d73673a")) {
+          if (txDetails.payload?.startsWith(PROTOCOL_PREFIX)) {
             const messageOutput = txDetails.outputs.find(
               (output: { amount: number }) => output.amount === 10000000
             );
@@ -362,7 +373,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
       _accountService.on("transactionReceived", async (raw) => {
         const txDetails = raw as ExplorerTransaction;
-        if (txDetails.payload?.startsWith("636970685f6d73673a")) {
+        if (txDetails.payload?.startsWith(PROTOCOL_PREFIX)) {
           const messageOutput = txDetails.outputs.find(
             (output: { amount: number }) => output.amount === 10000000
           );
@@ -590,6 +601,47 @@ export const useWalletStore = create<WalletState>((set, get) => {
       );
       get().loadWallets();
       return newWalletId;
+    },
+
+    changePassword: async (
+      walletId: string,
+      currentPassword: string,
+      newPassword: string
+    ) => {
+      await _walletStorage.changePassword(
+        walletId,
+        currentPassword,
+        newPassword
+      );
+
+      // If this is the currently unlocked wallet, update its password
+      const state = get();
+      if (state.unlockedWallet && state.selectedWalletId === walletId) {
+        set({
+          unlockedWallet: {
+            ...state.unlockedWallet,
+            password: newPassword,
+          },
+        });
+      }
+    },
+
+    changeWalletName: (walletId: string, newName: string) => {
+      _walletStorage.changeWalletName(walletId, newName);
+
+      // Reload wallet list to reflect the name change
+      get().loadWallets();
+
+      // If this is the currently unlocked wallet, update its name
+      const state = get();
+      if (state.unlockedWallet && state.selectedWalletId === walletId) {
+        set({
+          unlockedWallet: {
+            ...state.unlockedWallet,
+            name: newName,
+          },
+        });
+      }
     },
   };
 });

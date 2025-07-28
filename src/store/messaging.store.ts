@@ -16,6 +16,14 @@ import {
   PendingConversation,
 } from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
+import {
+  loadLegacyMessages,
+  saveMessages,
+  saveMessagesForAddress,
+  loadMessagesForAddress,
+  migrateToPerAddressStorage,
+  cleanupLegacyStorage,
+} from "../utils/storage-encryption";
 
 // Define the HandshakeState interface
 interface HandshakeState {
@@ -32,7 +40,7 @@ interface HandshakeState {
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
   if (address.startsWith("kaspatest:")) {
-    return NetworkType.Mainnet;
+    return NetworkType.Testnet;
   } else if (address.startsWith("kaspadev:")) {
     return NetworkType.Devnet;
   }
@@ -90,6 +98,9 @@ interface MessagingState {
   setContactNickname: (address: string, nickname: string) => void;
   removeContactNickname: (address: string) => void;
   getLastMessageForContact: (contactAddress: string) => Message | null;
+
+  // Last opened recipient management
+  restoreLastOpenedRecipient: (walletAddress: string) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set, g) => ({
@@ -151,6 +162,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
             set({ contacts: sortedContacts });
           }
+        } else {
+          // create new contact if it doesn't exist
+          const newContact = {
+            address: otherParty,
+            lastMessage: message,
+            messages: [message],
+          };
+
+          const updatedContacts = [...state.contacts, newContact].sort(
+            (a, b) => b.lastMessage.timestamp - a.lastMessage.timestamp
+          );
+
+          set({ contacts: updatedContacts });
         }
       });
     }
@@ -158,17 +182,29 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     g().refreshMessagesOnOpenedRecipient();
   },
   flushWalletHistory: (address: string) => {
-    // 1. Clear wallet messages from localStorage
-    const messagesOnWallet = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
+    // 1. Clear wallet messages from localStorage using new per-address system
+    const walletStore = useWalletStore.getState();
+    const password = walletStore.unlockedWallet?.password;
+    const walletId = walletStore.selectedWalletId;
 
-    delete messagesOnWallet[address];
+    if (!password) {
+      console.error("Wallet password not available for flushing history.");
+      return;
+    }
 
-    localStorage.setItem(
-      "kaspa_messages_by_wallet",
-      JSON.stringify(messagesOnWallet)
-    );
+    if (!walletId) {
+      console.error("No wallet selected for flushing history.");
+      return;
+    }
+
+    // 1. loop through all and delete
+    const prefix = `msg_${walletId.substring(0, 8)}_`;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        localStorage.removeItem(key);
+      }
+    }
 
     // 2. Clear nickname mappings for this wallet
     const nicknameKey = `contact_nicknames_${address}`;
@@ -178,7 +214,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     const conversationKey = `encrypted_conversations_${address}`;
     localStorage.removeItem(conversationKey);
 
-    // 4. Reset all UI state immediately
+    // 4. Clear last opened recipient for this wallet
+    const lastOpenedRecipientKey = `kasia_last_opened_recipient_${address}`;
+    localStorage.removeItem(lastOpenedRecipientKey);
+
+    // 5. Reset all UI state immediately
     set({
       contacts: [],
       messages: [],
@@ -188,7 +228,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       isCreatingNewChat: false,
     });
 
-    // 5. Clear and reinitialize conversation manager
+    // 6. Clear and reinitialize conversation manager
     const manager = g().conversationManager;
     if (manager) {
       // Reinitialize fresh conversation manager
@@ -198,14 +238,53 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     console.log("Complete history clear completed - all data wiped");
   },
   loadMessages: (address): Message[] => {
-    const messages: Record<string, Message[]> = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
+    const walletStore = useWalletStore.getState();
+    const password = walletStore.unlockedWallet?.password;
+    const walletId = walletStore.selectedWalletId;
+
+    if (!password) {
+      console.error("Wallet password not available for loading messages.");
+      return [];
+    }
+
+    if (!walletId) {
+      console.error("No wallet selected for loading messages.");
+      return [];
+    }
+
+    // Try to load messages using the new per-address system first
+    let messages: Message[] = [];
+
+    try {
+      messages = loadMessagesForAddress(walletId, address, password);
+    } catch (error) {
+      console.log(
+        "Failed to load messages using per-address system, trying legacy:",
+        error
+      );
+      // fallback to legacy system
+      const legacyMessages: Record<string, Message[]> =
+        loadLegacyMessages(password);
+      messages = legacyMessages[address] || [];
+
+      // if we have legacy messages, migrate them to the new system
+      if (messages.length > 0) {
+        try {
+          migrateToPerAddressStorage(walletId, password);
+          // set a flag to indicate migration was successful
+        } catch (migrationError) {
+          console.error(
+            "Failed to migrate to per-address storage:",
+            migrationError
+          );
+        }
+      }
+    }
 
     const contacts = new Map();
 
     // Process messages and organize by conversation
-    messages[address]?.forEach((msg) => {
+    messages.forEach((msg: Message) => {
       // Ensure fileData is properly loaded if it exists
       if (msg.fileData) {
         msg.content = `[File: ${msg.fileData.name}]`;
@@ -291,13 +370,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     set({
       contacts: sortedContacts,
-      messages: (messages[address] || []).sort(
+      messages: messages.sort(
         (a: Message, b: Message) => a.timestamp - b.timestamp
       ),
     });
 
     // Refresh the currently opened conversation
     g().refreshMessagesOnOpenedRecipient();
+
+    // run cleanup of legacy storage
+    if (walletStore.unlockedWallet?.password) {
+      // get all wallet IDs from the wallet store
+      const allWalletIds = walletStore.wallets?.map((w) => w.id) || [];
+      if (allWalletIds.length > 0) {
+        cleanupLegacyStorage(allWalletIds, walletStore.unlockedWallet.password);
+      }
+    }
 
     return g().messages;
   },
@@ -370,21 +458,43 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       }
     }
 
-    const messagesMap = JSON.parse(
-      localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-    );
-    if (!messagesMap[walletAddress]) {
-      messagesMap[walletAddress] = [];
+    const walletStore = useWalletStore.getState();
+    const password = walletStore.unlockedWallet?.password;
+    const walletId = walletStore.selectedWalletId;
+
+    if (!password) {
+      console.error("Wallet password not available for storing message.");
+      return;
+    }
+
+    if (!walletId) {
+      console.error("No wallet selected for storing message.");
+      return;
+    }
+
+    // Load existing messages for this address
+    let existingMessages: Message[] = [];
+    try {
+      existingMessages = loadMessagesForAddress(
+        walletId,
+        walletAddress,
+        password
+      );
+    } catch (error) {
+      console.log(
+        "Failed to load messages using per-address system, using empty array:",
+        error
+      );
     }
 
     // Check if we already have a message with this transaction ID
-    const existingMessageIndex = messagesMap[walletAddress].findIndex(
+    const existingMessageIndex = existingMessages.findIndex(
       (m: Message) => m.transactionId === message.transactionId
     );
 
     if (existingMessageIndex !== -1) {
       // Merge the messages, preferring non-empty values
-      const existingMessage = messagesMap[walletAddress][existingMessageIndex];
+      const existingMessage = existingMessages[existingMessageIndex];
       const mergedMessage = {
         ...message,
         content: message.content || existingMessage.content,
@@ -398,7 +508,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         recipientAddress:
           message.recipientAddress || existingMessage.recipientAddress,
       };
-      messagesMap[walletAddress][existingMessageIndex] = mergedMessage;
+      existingMessages[existingMessageIndex] = mergedMessage;
     } else {
       // For outgoing messages with file content, try to parse and store fileData
       if (!message.fileData && message.content) {
@@ -419,13 +529,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         }
       }
       // Add new message
-      messagesMap[walletAddress].push(message);
+      existingMessages.push(message);
     }
 
-    localStorage.setItem(
-      "kaspa_messages_by_wallet",
-      JSON.stringify(messagesMap)
-    );
+    // Save messages using the new per-address system
+    saveMessagesForAddress(existingMessages, walletId, walletAddress, password);
 
     // Update contacts and conversations
     const state = g();
@@ -470,6 +578,20 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   setOpenedRecipient(contact) {
     set({ openedRecipient: contact });
 
+    // Save or clear the last opened recipient to localStorage for persistence
+    const walletStore = useWalletStore.getState();
+    const walletAddress = walletStore.address?.toString();
+    if (walletAddress) {
+      if (contact) {
+        localStorage.setItem(
+          `kasia_last_opened_recipient_${walletAddress}`,
+          contact
+        );
+      } else {
+        localStorage.removeItem(`kasia_last_opened_recipient_${walletAddress}`);
+      }
+    }
+
     g().refreshMessagesOnOpenedRecipient();
   },
   refreshMessagesOnOpenedRecipient: () => {
@@ -482,25 +604,48 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       return;
     }
 
-    const messages = g().messages.filter((msg) => {
+    const filtered = g().messages.filter((msg) => {
       return (
         msg.senderAddress === openedRecipient ||
         msg.recipientAddress === openedRecipient
       );
     });
 
-    set({ messagesOnOpenedRecipient: messages });
+    // deduplicate by transactionId
+    const deduped = Object.values(
+      filtered.reduce(
+        (acc, msg) => {
+          acc[msg.transactionId] = acc[msg.transactionId]
+            ? msg.timestamp > acc[msg.transactionId].timestamp
+              ? msg
+              : acc[msg.transactionId]
+            : msg;
+          return acc;
+        },
+        {} as Record<string, Message>
+      )
+    );
+
+    set({ messagesOnOpenedRecipient: deduped });
   },
   setIsCreatingNewChat: (isCreatingNewChat) => {
     set({ isCreatingNewChat });
   },
-  exportMessages: async (wallet, password) => {
+  exportMessages: async (wallet) => {
     try {
       console.log("Starting message export process...");
 
-      const messagesMap = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
+      const password = useWalletStore.getState().unlockedWallet?.password;
+      if (!password) {
+        throw new Error(
+          "Wallet password not available for exporting messages."
+        );
+      }
+
+      const walletId = useWalletStore.getState().selectedWalletId;
+      if (!walletId) {
+        throw new Error("No wallet selected for exporting messages.");
+      }
 
       console.log("Getting private key generator...");
       const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
@@ -511,17 +656,70 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       console.log("Getting receive key...");
       const receiveKey = privateKeyGenerator.receiveKey(0);
 
-      // Get the current network type from the first message's address
-      let networkType = NetworkType.Mainnet; // Default to mainnet
-      const addresses = Object.keys(messagesMap);
-      if (addresses.length > 0) {
-        networkType = getNetworkTypeFromAddress(addresses[0]);
-      }
-      console.log("Using network type:", networkType);
-
+      const walletStore = useWalletStore.getState();
+      const networkType = walletStore.selectedNetwork || NetworkType.Mainnet;
       const receiveAddress = receiveKey.toAddress(networkType);
       const walletAddress = receiveAddress.toString();
       console.log("Using receive address:", walletAddress);
+
+      // collect all messages from the current store state and per-address storage
+      const messagesMap: Record<string, Message[]> = {};
+
+      // First, try to load legacy messages and migrate them if needed
+      const legacyMessages = loadLegacyMessages(password);
+      if (Object.keys(legacyMessages).length > 0) {
+        console.log(
+          "Found legacy messages, migrating to per-address storage..."
+        );
+        migrateToPerAddressStorage(walletId, password);
+        // after migration, the messages will be available in per-address storage
+      }
+
+      // get all messages from the current store state
+      const currentMessages = g().messages;
+      if (currentMessages.length > 0) {
+        // group messages by the other party (not the current wallet)
+        const messagesByAddress: Record<string, Message[]> = {};
+
+        currentMessages.forEach((message) => {
+          const otherParty =
+            message.senderAddress === walletAddress
+              ? message.recipientAddress
+              : message.senderAddress;
+
+          if (!messagesByAddress[otherParty]) {
+            messagesByAddress[otherParty] = [];
+          }
+          messagesByAddress[otherParty].push(message);
+        });
+
+        // also include messages where the current wallet is both sender and recipient
+        if (messagesByAddress[walletAddress]) {
+          messagesMap[walletAddress] = messagesByAddress[walletAddress];
+        }
+
+        // add messages for each contact
+        Object.entries(messagesByAddress).forEach(([address, messages]) => {
+          if (address !== walletAddress) {
+            messagesMap[address] = messages;
+          }
+        });
+      }
+
+      // if we still don't have messages, try loading from per-address storage
+      if (Object.keys(messagesMap).length === 0) {
+        console.log("No messages in store, trying per-address storage...");
+        const storedMessages = loadMessagesForAddress(
+          walletId,
+          walletAddress,
+          password
+        );
+        if (storedMessages.length > 0) {
+          messagesMap[walletAddress] = storedMessages;
+        }
+      }
+
+      console.log("Collected messages:", messagesMap);
 
       // Export nicknames for this wallet
       const nicknameStorageKey = `contact_nicknames_${walletAddress}`;
@@ -585,7 +783,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const fileContent = await file.text();
       console.log("Parsing backup file...");
       const backupFile = JSON.parse(fileContent);
-
       // Validate backup file format
       if (
         !backupFile.type ||
@@ -616,10 +813,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         encryptedMessage,
         privateKeyBytes
       );
-
       console.log("Parsing decrypted data...");
       const decryptedData = JSON.parse(decryptedStr);
-
       // Validate decrypted data structure
       if (
         !decryptedData.version ||
@@ -631,20 +826,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       console.log("Merging with existing messages...");
       // Merge with existing messages
-      const existingMessages = JSON.parse(
-        localStorage.getItem("kaspa_messages_by_wallet") || "{}"
-      );
+      const currentPassword =
+        useWalletStore.getState().unlockedWallet?.password;
+      if (!currentPassword) {
+        throw new Error(
+          "Wallet password not available for importing messages."
+        );
+      }
+
+      const existingMessages = loadLegacyMessages(currentPassword);
 
       const mergedMessages = {
         ...existingMessages,
         ...decryptedData.data,
       };
-
       // Save merged messages
-      localStorage.setItem(
-        "kaspa_messages_by_wallet",
-        JSON.stringify(mergedMessages)
-      );
+      saveMessages(mergedMessages, currentPassword);
 
       // Get network type and current address first
       let networkType = NetworkType.Mainnet; // Default to mainnet
@@ -658,7 +855,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const receiveAddress = privateKey.toAddress(networkType);
       const currentAddress = receiveAddress.toString();
       console.log("Using receive address:", currentAddress);
-
       // Restore nicknames if they exist in the backup
       if (decryptedData.nicknames) {
         console.log("Restoring nicknames...");
@@ -726,16 +922,96 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         });
       }
 
-      // Reload messages using the current address
-      g().loadMessages(currentAddress);
+      // process all imported messages and add them to the store
+      console.log("Processing imported messages...");
+      const allImportedMessages: Message[] = [];
 
-      // Set flag to trigger API fetching after next account service start
+      Object.entries(mergedMessages).forEach(([address, messages]) => {
+        const typedMessages = messages as Message[];
+        console.log(
+          `Processing ${typedMessages.length} messages for address: ${address}`
+        );
+        allImportedMessages.push(...typedMessages);
+      });
+
+      // add all messages to the store
+      if (allImportedMessages.length > 0) {
+        console.log(`Adding ${allImportedMessages.length} messages to store`);
+        g().addMessages(allImportedMessages);
+      }
+
+      // save imported messages to localStorage for persistence
+      console.log("Saving imported messages to localStorage...");
+      const walletStore = useWalletStore.getState();
+      const importPassword = walletStore.unlockedWallet?.password;
+      const walletId = walletStore.selectedWalletId;
+
+      if (importPassword && walletId) {
+        // collect all imported messages into a single array
+        const allImportedMessages: Message[] = [];
+        Object.entries(mergedMessages).forEach(([address, messages]) => {
+          const typedMessages = messages as Message[];
+          if (typedMessages.length > 0) {
+            allImportedMessages.push(...typedMessages);
+          }
+        });
+
+        // save all imported messages under the current wallet address
+        if (allImportedMessages.length > 0) {
+          saveMessagesForAddress(
+            allImportedMessages,
+            walletId,
+            currentAddress,
+            importPassword
+          );
+        }
+      } else {
+        console.error(
+          "Cannot save to localStorage: missing password or walletId"
+        );
+      }
+
+      // // set flag to trigger API fetching after next account service start
       localStorage.setItem("kasia_fetch_api_on_start", "true");
 
       console.log("Import completed successfully");
       console.log(
         "Set flag to fetch API messages on next wallet service start"
       );
+
+      // After restoring nicknames in localStorage, update UI. Otherwise we need to wait till next login
+      const nicknameStorageKey = `contact_nicknames_${currentAddress}`;
+      const savedNicknames = JSON.parse(
+        localStorage.getItem(nicknameStorageKey) || "{}"
+      );
+
+      // build the full contacts array (including new ones from import)
+      const contacts = [...g().contacts];
+      Object.entries(mergedMessages).forEach(([address, messages]) => {
+        const typedMessages = messages as Message[];
+        if (
+          !contacts.some((c) => c.address === address) &&
+          typedMessages.length > 0
+        ) {
+          const lastMessage = typedMessages.reduce((a, b) =>
+            a.timestamp > b.timestamp ? a : b
+          );
+          contacts.push({
+            address,
+            lastMessage,
+            messages: typedMessages,
+            nickname: savedNicknames[address] || undefined,
+          });
+        }
+      });
+
+      // update all contacts with nicknames
+      const updatedContacts = contacts.map((contact) => ({
+        ...contact,
+        nickname: savedNicknames[contact.address] || undefined,
+      }));
+
+      set({ contacts: updatedContacts });
     } catch (error: unknown) {
       console.error("Error importing messages:", error);
       if (error instanceof Error) {
@@ -1040,6 +1316,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   removeContactNickname: (address: string) => {
     g().setContactNickname(address, "");
   },
+
   getLastMessageForContact: (contactAddress: string) => {
     const messages = g().messages;
     const relevant = messages.filter(
@@ -1050,5 +1327,49 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     return relevant.length
       ? relevant.reduce((a, b) => (a.timestamp > b.timestamp ? a : b))
       : null;
+  },
+
+  // Last opened recipient management
+  restoreLastOpenedRecipient: (walletAddress: string) => {
+    try {
+      const lastOpenedRecipient = localStorage.getItem(
+        `kasia_last_opened_recipient_${walletAddress}`
+      );
+
+      if (lastOpenedRecipient) {
+        // Check if the contact still exists in the current contacts list
+        const state = g();
+        const contactExists = state.contacts.some(
+          (contact) => contact.address === lastOpenedRecipient
+        );
+
+        if (contactExists) {
+          set({ openedRecipient: lastOpenedRecipient });
+          g().refreshMessagesOnOpenedRecipient();
+        } else {
+          // Contact no longer exists, clear the stored value
+          localStorage.removeItem(
+            `kasia_last_opened_recipient_${walletAddress}`
+          );
+
+          // Fallback: select the first available contact
+          if (state.contacts.length > 0) {
+            const firstContact = state.contacts[0];
+            set({ openedRecipient: firstContact.address });
+            g().refreshMessagesOnOpenedRecipient();
+          }
+        }
+      } else {
+        // Fallback: select the first available contact if we have contacts
+        const state = g();
+        if (state.contacts.length > 0) {
+          const firstContact = state.contacts[0];
+          set({ openedRecipient: firstContact.address });
+          g().refreshMessagesOnOpenedRecipient();
+        }
+      }
+    } catch (error) {
+      console.error("Error restoring last opened recipient:", error);
+    }
   },
 }));

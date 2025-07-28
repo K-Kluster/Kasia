@@ -49,7 +49,7 @@ export const MnemonicEntry = ({
 
   return (
     <div>
-      <label className="mb-1 block font-medium text-[var(--text-primary)]">
+      <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
         Mnemonic Phrase
       </label>
       <div className="mnemonic-input-grid mb-2 grid grid-cols-3 gap-2 md:grid-cols-6">
@@ -61,10 +61,10 @@ export const MnemonicEntry = ({
               type={visible ? "text" : "password"}
               placeholder={`Word ${i + 1}`}
               className={clsx(
-                "w-full rounded p-2",
-                "border border-[var(--border-color)] bg-[var(--primary-bg)]",
+                "w-full rounded-xl p-2",
+                "border-primary-border border bg-[var(--primary-bg)]",
                 "text-[var(--text-primary)]",
-                "focus:border-[var(--accent-blue)] focus:outline-none",
+                "focus:border-[var(--color-kas-secondary)] focus:outline-none",
                 "placeholder:text-sm"
               )}
               onFocus={() => setFocusedIndex(i)}

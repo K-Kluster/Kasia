@@ -6,10 +6,17 @@ import { Transaction } from "../types/all";
 import { getApiEndpoint } from "../config/nodes";
 import { CipherHelper } from "../utils/cipher-helper";
 import { DecryptionCache } from "../utils/decryption-cache";
+import { hexToString } from "../utils/format";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { RefreshCcw } from "lucide-react";
 import { toast } from "../utils/toast";
+import {
+  PROTOCOL_PREFIX,
+  HANDSHAKE_PREFIX,
+  COMM_PREFIX,
+  PAYMENT_PREFIX,
+} from "../config/protocol";
 import clsx from "clsx";
 
 type FetchApiMessagesProps = {
@@ -132,7 +139,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
 
           // Process only encrypted message transactions
           const messageTxs = transactions.filter(
-            (tx) => tx.payload && tx.payload.startsWith("636970685f6d73673a")
+            (tx) => tx.payload && tx.payload.startsWith(PROTOCOL_PREFIX)
           );
 
           console.log(
@@ -186,8 +193,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
             if (walletStore.unlockedWallet) {
               try {
                 // Extract the encrypted part (remove the "ciph_msg:" prefix)
-                const prefix = "636970685f6d73673a"; // hex for "ciph_msg:"
-                if (!tx.payload.startsWith(prefix)) {
+                if (!tx.payload.startsWith(PROTOCOL_PREFIX)) {
                   console.log(
                     `API Messages: Invalid message format, missing prefix: ${tx.payload.substring(
                       0,
@@ -198,33 +204,22 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                 }
 
                 console.log(`API Messages: Full payload: ${tx.payload}`);
-                const messageHex = tx.payload.substring(prefix.length);
+                const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
                 console.log(
                   `API Messages: Message hex after prefix: ${messageHex}`
                 );
-
-                const handshakePrefix = "313a68616e647368616b653a"; // "1:handshake:"
-                const commPrefix = "313a636f6d6d3a"; // "1:comm:"
-                const paymentPrefix = "313a7061796d656e743a"; // "1:payment:"
 
                 let messageType = "unknown";
                 let isHandshake = false;
                 let targetAlias = null;
                 let encryptedContent = messageHex; // Default to full message for handshakes
 
-                if (messageHex.startsWith(handshakePrefix)) {
+                if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
                   messageType = "handshake";
                   isHandshake = true;
                   encryptedContent = messageHex;
-                } else if (messageHex.startsWith(commPrefix)) {
+                } else if (messageHex.startsWith(COMM_PREFIX)) {
                   // Parse regular messages
-                  const hexToString = (hex: string) => {
-                    const hexArray = hex.match(/.{1,2}/g) || [];
-                    return hexArray
-                      .map((byte) => String.fromCharCode(parseInt(byte, 16)))
-                      .join("");
-                  };
-
                   const messageStr = hexToString(messageHex);
                   const parts = messageStr.split(":");
 
@@ -233,15 +228,8 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     targetAlias = parts[2];
                     encryptedContent = parts[3];
                   }
-                } else if (messageHex.startsWith(paymentPrefix)) {
+                } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
                   // Parse payment messages - simplified format without aliases
-                  const hexToString = (hex: string) => {
-                    const hexArray = hex.match(/.{1,2}/g) || [];
-                    return hexArray
-                      .map((byte) => String.fromCharCode(parseInt(byte, 16)))
-                      .join("");
-                  };
-
                   const messageStr = hexToString(messageHex);
                   const parts = messageStr.split(":");
 
@@ -597,11 +585,14 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
         )}
         title={"Fetch latest messages from blockDAG"}
       >
-        {loading ? (
-          <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
-        ) : (
-          <ArrowPathIcon className="h-6 w-6 text-[#49EACB] hover:scale-110" />
-        )}
+        <RefreshCcw
+          className={clsx(
+            "h-6 w-6",
+            loading
+              ? "animate-spin text-gray-500"
+              : "text-[var(--button-primary)] hover:scale-110"
+          )}
+        />
       </button>
     </div>
   );

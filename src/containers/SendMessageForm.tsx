@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useRef, useState, DragEvent } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -13,14 +13,18 @@ import { useWalletStore } from "../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { formatKasAmount } from "../utils/format";
 import {
-  PaperClipIcon,
-  PaperAirplaneIcon,
-  PlusIcon,
-  ChevronUpIcon,
-  ChevronDownIcon,
-} from "@heroicons/react/24/outline";
+  Paperclip,
+  SendHorizonal,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  AlertTriangle,
+  Info,
+  Camera,
+  Trash,
+} from "lucide-react";
 import { toast } from "../utils/toast";
-import { SendPayment } from "./SendPayment";
+import { SendPaymentPopup } from "../components/SendPaymentPopup";
 import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { PriorityFeeConfig } from "../types/all";
@@ -28,10 +32,10 @@ import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
-import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
+import { useIsMobile } from "../utils/useIsMobile";
+import { parseImageFileJson } from "../utils/parse-image-file";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -63,14 +67,41 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
   });
 
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { isOpen, closeModal, openModal } = useUiStore();
 
   const messageStore = useMessagingStore();
 
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+  const openCameraDialog = () => cameraInputRef.current?.click();
+
+  const isMobile = useIsMobile();
+  const messageInputEmpty = message.length === 0;
+  const [hasCamera, setHasCamera] = useState(false);
+
+  // check if a camera exists! desktop only really
+  useEffect(() => {
+    async function checkCamera() {
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const hasVideoInput = devices.some(
+            (device) => device.kind === "videoinput"
+          );
+          setHasCamera(hasVideoInput);
+        } catch {
+          setHasCamera(false);
+        }
+      } else {
+        setHasCamera(false);
+      }
+    }
+    checkCamera();
+  }, []);
 
   useEffect(() => {
     if (messageInputRef.current) {
@@ -261,6 +292,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       // Only reset the message input, keep the recipient
       if (messageInputRef.current) messageInputRef.current.value = "";
       setMessage("");
+      setIsExpanded(false);
       if (messageInputRef.current) {
         messageInputRef.current.style.height = "";
       }
@@ -296,37 +328,97 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     openModal("warn-costy-send-message");
   }, [messageStore, openModal, openedRecipient, sendMessage]);
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File, source: string) => {
+    if (isUploading) return;
 
     setIsUploading(true);
     const { fileMessage, error } = await prepareFileForUpload(
       file,
       MAX_PAYLOAD_SIZE,
       {},
-      (status) => toast.info(status)
+      (status) => {
+        toast.info(status);
+      }
     );
     setIsUploading(false);
 
     if (error) {
       toast.error(error);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
+
     if (fileMessage) {
       setMessage(fileMessage);
       if (messageInputRef.current) {
-        messageInputRef.current.value = `[File: ${file.name}]`;
+        messageInputRef.current.value = `[${source}: ${file.name}]`;
       }
+      toast.success(`Attached ${source.toLowerCase()} successfully!`);
     }
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    await processFile(file, "File");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handlePaste = async (
+    event: React.ClipboardEvent<HTMLTextAreaElement>
+  ) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    // Look for image items in the clipboard
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (item.type.startsWith("image/")) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          await processFile(file, "Pasted Image");
+        }
+        break; // Only handle the first image found
+      }
+    }
+  };
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      await processFile(files[0], "Dropped File");
+    }
+  };
+
+  const imageFile = parseImageFileJson(message);
+
   return (
-    <div className="relative flex-col gap-8">
+    <div
+      className="bg-secondary-bg border-primary-border relative flex-col gap-8 border-t transition-colors duration-200"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       {/* Chevron expand/collapse that sorta sits above the textarea */}
       <div className="absolute -top-4 left-1/2 z-10 hidden -translate-x-1/2 sm:block">
         {!isExpanded ? (
@@ -341,7 +433,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               if (onExpand) onExpand();
             }}
           >
-            <ChevronUpIcon className="h-5 w-5 text-gray-400" />
+            <ChevronUp className="h-5 w-5 text-gray-400" />
           </button>
         ) : (
           <button
@@ -357,7 +449,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               }
             }}
           >
-            <ChevronDownIcon className="h-5 w-5 text-gray-400" />
+            <ChevronDown className="h-5 w-5 text-gray-400" />
           </button>
         )}
       </div>
@@ -385,97 +477,194 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           />
         </div>
       )}
-      <div className="flex items-center gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-1">
-        <Textarea
-          ref={messageInputRef}
-          rows={isExpanded ? 6 : 1}
-          placeholder="Type your message..."
-          className="peer flex-1 resize-none overflow-y-auto border-none bg-transparent p-2 text-[0.9em] text-[var(--text-primary)] outline-none"
-          value={message}
-          onChange={(e) => setMessage(e.currentTarget.value)}
-          onInput={(e) => {
-            const t = e.currentTarget;
-            if (!isExpanded) {
-              t.style.height = "auto";
-              t.style.height = `${Math.min(t.scrollHeight, 144)}px`;
-            } else {
-              t.style.height = "144px";
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSendClicked();
-            }
-          }}
-          autoComplete="off"
-          spellCheck="false"
-          data-form-type="other"
-          style={isExpanded ? { height: "144px" } : {}}
-        />
+      <div className="relative my-2 mr-2 rounded-lg p-1 pb-3 sm:pb-0">
+        <div className="relative flex items-center">
+          {/* attachments symbol */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileUpload}
+            accept="image/*,.txt,.json,.md"
+          />
+          <input
+            type="file"
+            ref={cameraInputRef}
+            style={{ display: "none" }}
+            onChange={handleFileUpload}
+            accept="image/*"
+            capture="environment"
+          />
+          <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+            <div className={"flex justify-center"}>
+              <Popover className={clsx("relative")}>
+                {({ close }: { close: () => void }) => (
+                  <>
+                    <PopoverButton className="rounded p-1 hover:bg-white/5">
+                      <Plus className="size-6 cursor-pointer text-[var(--button-primary)]" />
+                    </PopoverButton>
+                    <Transition
+                      enter="transition ease-out duration-100"
+                      enterFrom="opacity-0 translate-y-1"
+                      enterTo="opacity-100 translate-y-0"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="opacity-100 translate-y-0"
+                      leaveTo="opacity-0 translate-y-1"
+                    >
+                      <PopoverPanel className="bg-secondary-bg absolute bottom-full left-0 mb-2 flex flex-col gap-2 rounded p-2 shadow-lg">
+                        <button
+                          onClick={() => {
+                            openFileDialog();
+                            close();
+                          }}
+                          className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5"
+                          disabled={isUploading}
+                        >
+                          <Paperclip className="m-2 size-5" />
+                        </button>
 
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={handleFileUpload}
-          accept="image/*,.txt,.json,.md"
-        />
-        <Popover className="relative">
-          {({ close }) => (
-            <>
-              <PopoverButton className="peer rounded p-2 hover:bg-white/5">
-                <PlusIcon className="size-5" />
-              </PopoverButton>
-              <Transition
-                enter="transition ease-out duration-100"
-                enterFrom="opacity-0 translate-y-1"
-                enterTo="opacity-100 translate-y-0"
-                leave="transition ease-in duration-75"
-                leaveFrom="opacity-100 translate-y-0"
-                leaveTo="opacity-0 translate-y-1"
+                        {openedRecipient && (
+                          <SendPaymentPopup
+                            address={openedRecipient}
+                            onPaymentSent={close}
+                          />
+                        )}
+                      </PopoverPanel>
+                    </Transition>
+                  </>
+                )}
+              </Popover>
+            </div>
+          </div>
+          {/* image preview or message input */}
+          {imageFile ? (
+            <div
+              className="peer border-secondary-border bg-primary-bg relative box-border flex max-h-[144px] min-h-[48px] flex-1 resize-none items-center justify-center overflow-hidden overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none" // height is handled by min-h/max-h, flex for centering
+            >
+              <img
+                src={imageFile.content}
+                alt={imageFile.name}
+                className="m-auto block max-h-32 max-w-full rounded-lg object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setMessage("");
+                  setIsExpanded(false);
+                }}
+                className="ml-2 cursor-pointer rounded-md p-2 text-red-400/80 hover:text-red-400"
+                title="Remove"
               >
-                <PopoverPanel className="absolute right-0 bottom-full mb-2 flex flex-col gap-2 rounded bg-[var(--secondary-bg)] p-2 shadow-lg">
-                  <button
-                    onClick={() => {
-                      openFileDialog();
-                      close();
-                    }}
-                    className="flex items-center gap-2 rounded p-2 hover:bg-white/5"
-                    disabled={isUploading}
-                  >
-                    <PaperClipIcon className="m-2 size-5" />
-                  </button>
-
-                  {openedRecipient && (
-                    <SendPayment
-                      address={openedRecipient}
-                      onPaymentSent={close}
-                    />
-                  )}
-                </PopoverPanel>
-              </Transition>
+                <Trash className="size-6" />
+              </button>
+              {/* Send button for image */}
+              <div className="absolute right-2 flex h-full items-center gap-1">
+                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button
+                      onClick={onSendClicked}
+                      className={clsx(
+                        "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
+                        !messageInputEmpty
+                          ? "pointer-events-auto translate-x-0 opacity-100"
+                          : "pointer-events-none translate-x-4 opacity-0"
+                      )}
+                      aria-label="Send"
+                    >
+                      <SendHorizonal className="size-6" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* message input */}
+              <Textarea
+                ref={messageInputRef}
+                rows={isExpanded ? 6 : 1}
+                placeholder="Type your message..."
+                className={clsx(
+                  "peer border-secondary-border bg-primary-bg box-border flex-1 resize-none overflow-y-auto rounded-3xl border py-3 pr-20 pl-4 text-[0.9em] text-[var(--text-primary)] outline-none",
+                  {
+                    "!border-kas-primary bg-kas-primary/10": isDragOver,
+                  }
+                )}
+                value={message}
+                onChange={(e) => {
+                  setMessage(e.currentTarget.value);
+                }}
+                onInput={(e) => {
+                  const t = e.currentTarget;
+                  const maxHeight = 144;
+                  t.style.height = "auto";
+                  t.style.height = `${Math.min(t.scrollHeight, maxHeight)}px`;
+                  t.style.overflowY =
+                    t.scrollHeight > maxHeight ? "auto" : "hidden";
+                }}
+                onKeyDown={(e) => {
+                  if (!isMobile && e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    onSendClicked();
+                  }
+                }}
+                onPaste={handlePaste}
+                autoComplete="off"
+                spellCheck="false"
+                data-form-type="other"
+                style={{
+                  height: isExpanded ? "144px" : "auto",
+                  maxHeight: "144px",
+                  overflowY:
+                    messageInputRef.current &&
+                    messageInputRef.current.scrollHeight > 144
+                      ? "auto"
+                      : "hidden",
+                }}
+              />
+              {/* send button */}
+              <div className="absolute right-2 flex h-full items-center gap-1">
+                <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <button
+                      onClick={onSendClicked}
+                      className={clsx(
+                        "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
+                        !messageInputEmpty
+                          ? "pointer-events-auto translate-x-0 opacity-100"
+                          : "pointer-events-none translate-x-4 opacity-0"
+                      )}
+                      aria-label="Send"
+                    >
+                      <SendHorizonal className="size-6" />
+                    </button>
+                    {(isMobile || hasCamera) && (
+                      <button
+                        onClick={openCameraDialog}
+                        className={clsx(
+                          "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
+                          messageInputEmpty
+                            ? "pointer-events-auto translate-x-0 opacity-100"
+                            : "pointer-events-none -translate-x-4 opacity-0"
+                        )}
+                        aria-label="Open Camera"
+                      >
+                        <Camera className="size-6" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </>
           )}
-        </Popover>
-
-        <button
-          onClick={onSendClicked}
-          className={clsx(
-            "text-kas-primary hover:text-kas-secondary transition-width flex items-center justify-center overflow-hidden duration-200 ease-out",
-            message.length > 0 ? "mr-2 w-6 cursor-pointer" : "w-0"
-          )}
-          aria-label="Send"
-        >
-          <PaperAirplaneIcon className="h-6 w-6" />
-        </button>
+        </div>
       </div>
 
       {isOpen("warn-costy-send-message") && (
         <Modal onClose={() => closeModal("warn-costy-send-message")}>
           <div className="flex flex-col items-center justify-center gap-8">
             <h2 className="text-lg text-yellow-400">
-              <ExclamationTriangleIcon className="mr-2 inline size-6 text-yellow-400" />
+              <AlertTriangle className="mr-2 inline size-6 text-yellow-400" />
               Your Correspondent hasn't answered yet
             </h2>
 
@@ -486,7 +675,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
               it?
             </p>
             <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
-              <InformationCircleIcon className="mr-2 size-10 text-white" />
+              <Info className="mr-2 size-10 text-white" />
               <p className="">
                 This is occuring because your correspondent hasn't accepted the
                 handshake yet.

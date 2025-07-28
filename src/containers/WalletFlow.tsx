@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
 import { Radio, RadioGroup, Label } from "@headlessui/react";
-import { NetworkSelector } from "./NetworkSelector";
+import { NetworkSelector } from "../components/NetworkSelector";
 import { NetworkType } from "../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
 import {
@@ -10,18 +10,17 @@ import {
   disablePasswordRequirements,
 } from "../config/password";
 import { MnemonicEntry } from "../components/MnemonicEntry";
-import {
-  Cog6ToothIcon,
-  ExclamationTriangleIcon,
-  TrashIcon,
-  ArrowPathIcon,
-} from "@heroicons/react/24/outline";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Settings, AlertTriangle, Trash2, Loader2 } from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { TrustMessage } from "../components/Layout/TrustMessage";
 import { toast } from "../utils/toast";
 import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../utils/useIsMobile";
+import { useUiStore } from "../store/ui.store";
+import { StringCopy } from "../components/Common/StringCopy";
+import { Modal } from "../components/Common/modal";
+import { LockedSettingsModal } from "../components/Modals/LockedSettingsModal";
 
 export type Step = {
   type:
@@ -52,7 +51,9 @@ export const WalletFlow = ({
   isConnected,
 }: WalletFlowProps) => {
   const navigate = useNavigate();
-
+  const openModal = useUiStore((s) => s.openModal);
+  const isOpen = useUiStore((s) => s.isOpen);
+  const closeModal = useUiStore((s) => s.closeModal);
   const { wallet } = useParams<{ wallet: string }>();
 
   const [error, setError] = useState<{ message: string; id: number } | null>(
@@ -77,7 +78,7 @@ export const WalletFlow = ({
   }, []);
 
   const [step, setStep] = useState<Step>({
-    type: initialStep,
+    type: initialStep as Step["type"],
     walletId: wallet,
   });
 
@@ -104,7 +105,15 @@ export const WalletFlow = ({
     toast.error(error.message);
   }, [error]);
 
-  if (!isMounted) return null;
+  // ref for scroll up when step changes, like a page reset
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // scroll to top instantly on step change
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = 0;
+    }
+  }, [step.type]);
 
   const onStepChange = (type: Step["type"], walletId?: string) => {
     if (unlockedWallet) return;
@@ -129,24 +138,6 @@ export const WalletFlow = ({
         break;
       default:
         return;
-    }
-  };
-
-  const handleCopy = async (): Promise<void> => {
-    const text = step.mnemonic!.phrase;
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Seed phrase copied");
-    } catch {
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      textarea.readOnly = true;
-      textarea.style.position = "absolute";
-      textarea.style.left = "-9999px";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
     }
   };
 
@@ -296,19 +287,8 @@ export const WalletFlow = ({
     navigate(`wallet/unlock/${wallet.id}`);
   };
 
-  const getDerivationTypeDisplay = (d?: WalletDerivationType) =>
-    d === "standard" ? (
-      <span className="bg-kas-primary rounded px-2 py-1 text-xs font-medium text-white">
-        Standard (Kaspium Compatible)
-      </span>
-    ) : (
-      <span className="rounded bg-amber-400 px-2 py-1 text-xs font-medium text-white">
-        Legacy
-      </span>
-    );
-
   const wrapperClass = clsx(
-    "w-full bg-[var(--secondary-bg)] p-8",
+    "w-full bg-secondary-bg p-8",
     isMobile
       ? clsx(
           "fixed inset-0 w-full max-h-screen overflow-y-auto flex flex-col",
@@ -318,18 +298,21 @@ export const WalletFlow = ({
               : "justify-center"
             : "justify-start"
         )
-      : "mx-auto my-8 rounded-lg max-w-[600px] border border-[var(--border-color)]",
+      : "mx-auto my-8 rounded-2xl max-w-[700px] min-h-[400px] border border-primary-border",
     { relative: step.type === "home" && !isMobile }
   );
 
   return (
-    <div className={wrapperClass}>
+    <div ref={containerRef} className={wrapperClass}>
       {/* Home wallet 'Route' */}
       {step.type === "home" && (
         <>
-          <Link to="/settings-network">
-            <Cog6ToothIcon className="absolute top-4 right-4 size-6 hover:cursor-pointer hover:opacity-80" />
-          </Link>
+          <button
+            onClick={() => openModal("settings")}
+            className="absolute top-4 right-4 size-6 hover:cursor-pointer hover:opacity-80"
+          >
+            <Settings className="size-6" />
+          </button>
           <div
             className={clsx(
               "mb-1 flex items-center justify-center",
@@ -343,15 +326,15 @@ export const WalletFlow = ({
             />
           </div>
           <TrustMessage />
-          <h2 className="mt-2 mb-2 text-center text-xl font-semibold text-[var(--text-primary)] sm:mt-2 sm:mb-3 sm:text-2xl">
+          <h2 className="text-text-primary mt-2 mb-2 text-center text-xl font-semibold sm:mt-2 sm:mb-3 sm:text-2xl">
             {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
           </h2>
-          <div className="mb-3 flex flex-col gap-2 sm:gap-4">
+          <div className="mb-3 flex flex-col gap-2 overflow-y-auto sm:gap-4">
             {wallets.map((w) => (
               <div
                 key={w.id}
                 onClick={() => onSelectWallet(w)}
-                className="hover:border-kas-secondary/50 relative flex cursor-pointer flex-col items-start gap-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4 hover:bg-slate-900/20 sm:flex-row sm:items-center sm:justify-between"
+                className="hover:border-kas-secondary border-primary-border relative flex cursor-pointer flex-col items-start gap-2 rounded-lg border bg-[var(--primary-bg)] p-4 hover:bg-[var(--primary-bg)]/50 sm:flex-row sm:items-center sm:justify-between"
               >
                 {/* delete icon top-right */}
                 <button
@@ -359,29 +342,45 @@ export const WalletFlow = ({
                     e.stopPropagation();
                     onDeleteWallet(w.id);
                   }}
-                  className="absolute top-2 right-2 cursor-pointer p-1 text-red-400 hover:text-red-700"
+                  className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-400/10 p-[2px] text-red-400/50 hover:scale-110"
                   title="Delete"
                 >
-                  <TrashIcon className="h-6 w-6" />
+                  <Trash2 className="h-4 w-4" />
                 </button>
 
-                <div className="flex flex-col gap-1">
-                  <div className="inline-flex items-center space-x-1 font-semibold text-[var(--text-primary)]">
+                <div className="flex w-full flex-col gap-1">
+                  <div className="font-semibold text-[var(--text-primary)]">
                     <span>{w.name}</span>
                   </div>
-
-                  <div className="text-xs text-[var(--text-secondary)] sm:text-sm">
-                    Created: {new Date(w.createdAt).toLocaleDateString()}
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <span>
+                      Created: {new Date(w.createdAt).toLocaleDateString()}
+                    </span>
+                    <div className="ml-2">
+                      {w.derivationType === "standard" ? (
+                        <span
+                          className={clsx({
+                            "bg-kas-secondary/20 border-kas-secondary rounded-3xl border px-2 py-1 text-xs font-medium": true,
+                          })}
+                          title="Kaspium Compatible"
+                        >
+                          Standard
+                        </span>
+                      ) : (
+                        <span className="rounded bg-amber-400 px-2 py-1 text-xs font-medium text-[var(--text-primary)]">
+                          Legacy
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-1 flex items-center gap-2">
-                    {getDerivationTypeDisplay(w.derivationType)}
                     {w.derivationType === "legacy" && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onStepChange("migrate", w.id);
                         }}
-                        className="animate-pulse cursor-pointer rounded bg-blue-500 px-2 py-1 text-xs text-white transition-colors duration-200 hover:bg-blue-600"
+                        className="bg-kas-secondary/20 hover:bg-kas-secondary/50 animate-pulse cursor-pointer rounded px-2 py-1 text-xs transition-colors duration-200"
                         title="Migrate to standard derivation"
                       >
                         Migrate
@@ -393,7 +392,7 @@ export const WalletFlow = ({
             ))}
           </div>
 
-          <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
+          <div className="mt-8 flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button variant="primary" onClick={() => onStepChange("create")}>
               Create New Wallet
             </Button>
@@ -407,7 +406,7 @@ export const WalletFlow = ({
       {/* Create wallet 'Route' */}
       {step.type === "create" && (
         <>
-          <h2 className="mb-1 text-center text-lg font-bold">
+          <h2 className="mb-3 text-center text-lg font-bold">
             Create New Wallet
           </h2>
 
@@ -417,7 +416,7 @@ export const WalletFlow = ({
             onChange={setDerivationType}
             className="mb-2 sm:mb-3"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="mb-3 block text-base font-semibold">
               Derivation Standard
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -438,9 +437,9 @@ export const WalletFlow = ({
                   key={opt.value}
                   as="label"
                   value={opt.value}
-                  className="group hover:border-kas-secondary/50 flex cursor-pointer flex-col items-start gap-y-1 rounded-md border border-[var(--border-color)] bg-slate-900 p-3 transition-colors duration-200 hover:bg-slate-900/20 data-checked:border-[var(--color-kas-primary)] data-checked:bg-[var(--color-kas-primary)]/5"
+                  className="group border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-md border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {opt.label}
                   </span>
                   <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)] sm:text-sm">
@@ -451,15 +450,15 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+          <div className="my-1">
+            <label className="mb-3 block text-base font-semibold">
               Wallet Name
             </label>
             <input
               ref={nameRef}
               type="text"
               placeholder="My Wallet"
-              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
+              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
             />
           </div>
 
@@ -467,9 +466,9 @@ export const WalletFlow = ({
             name="seedLength"
             value={seedPhraseLength}
             onChange={setSeedPhraseLength}
-            className="mb-3"
+            className="my-1"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Seed Phrase Length
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -489,7 +488,7 @@ export const WalletFlow = ({
                   key={opt.value}
                   as="label"
                   value={opt.value}
-                  className="group hover:border-kas-secondary/50 flex cursor-pointer flex-col items-start gap-y-1 rounded-md border border-[var(--border-color)] bg-slate-900 p-3 transition-colors duration-200 hover:bg-slate-900/20 data-checked:border-[var(--color-kas-primary)] data-checked:bg-[var(--color-kas-primary)]/5"
+                  className="group border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-md border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
                   <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {opt.label}
@@ -502,15 +501,16 @@ export const WalletFlow = ({
             </div>
           </RadioGroup>
 
-          <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+          <div className="mt-1 mb-6">
+            <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Password
             </label>
             <input
+              autoComplete="new-password"
               ref={passwordRef}
               type="password"
               placeholder="Enter password"
-              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
+              className="border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
             />
           </div>
 
@@ -529,12 +529,12 @@ export const WalletFlow = ({
       {step.type === "seed" && step.mnemonic && (
         <>
           <h2 className="text-center text-lg font-bold">Wallet Created</h2>
-          <div className="my-5 flex w-full flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] px-4 py-4">
+          <div className="border-primary-border my-5 flex w-full flex-col items-center rounded-2xl border bg-[var(--primary-bg)] px-4 py-4">
             <p className="font-semibold">
               Please save your mnemonic phrase securely:
             </p>
-            <div className="my-2 flex flex-col items-center rounded-lg p-2 text-center text-base text-amber-300">
-              <ExclamationTriangleIcon className="h-8 w-8" />
+            <div className="text-text-warning my-2 flex flex-col items-center rounded-2xl p-2 text-center text-base">
+              <AlertTriangle className="h-8 w-8" />
               Please keep your seed phrase safe, if you lose your seed phrase
               there is no recovery.
             </div>
@@ -542,10 +542,10 @@ export const WalletFlow = ({
             <button
               type="button"
               onClick={() => setRevealed(!revealed)}
-              className="bg-kas-primary/20 mx-auto my-4 cursor-pointer rounded border border-[rgba(76,175,80,0.3)] px-4 py-2 text-sm font-bold text-white"
+              className="bg-kas-primary/20 border-primary-border mx-auto my-4 cursor-pointer rounded rounded-2xl border px-4 py-2 text-sm font-bold"
             >
               Anyone with your seed phrase can access your wallet
-              <div className="my-1 font-semibold text-amber-300 underline">
+              <div className="text-text-warning my-1 font-semibold underline">
                 {revealed ? "Hide seed phrase" : "Show seed phrase"}
               </div>
             </button>
@@ -560,7 +560,7 @@ export const WalletFlow = ({
               {step.mnemonic!.phrase.split(" ").map((word, i) => (
                 <span
                   key={i}
-                  className="text-kas-secondary flex flex-col items-center rounded bg-gray-800 p-2 font-mono text-sm sm:text-base"
+                  className="text-kas-secondary flex flex-col items-center rounded bg-[var(--secondary-bg)] p-2 font-mono text-sm sm:text-base"
                 >
                   <span className="text-text-secondary text-xs font-bold">
                     {i + 1}
@@ -570,15 +570,15 @@ export const WalletFlow = ({
               ))}
             </div>
 
-            <Button
-              type="button"
-              onClick={handleCopy}
-              disabled={!revealed}
-              variant="primary"
-              className="mx-auto mt-2 px-4 py-2 text-sm disabled:cursor-not-allowed"
-            >
-              Copy Seed Phrase
-            </Button>
+            <div className="flex justify-center">
+              <StringCopy
+                text={step.mnemonic!.phrase}
+                alertText="Seed phrase copied"
+                titleText="Copy seed phrase"
+                className="px-4 py-2 text-sm"
+                iconClass="size-8"
+              />
+            </div>
           </div>
 
           <Button
@@ -606,7 +606,7 @@ export const WalletFlow = ({
             onChange={setDerivationType}
             className="mb-3"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="my-3 block text-base font-semibold text-[var(--text-primary)]">
               Derivation Standard
             </Label>
 
@@ -628,9 +628,9 @@ export const WalletFlow = ({
                   key={opt.value}
                   as="label"
                   value={opt.value}
-                  className="group hover:border-kas-secondary/50 flex cursor-pointer flex-col items-start gap-y-1 rounded-md border border-[var(--border-color)] bg-slate-900 p-3 transition-colors duration-200 hover:bg-slate-900/20 data-checked:border-[var(--color-kas-primary)] data-checked:bg-[var(--color-kas-primary)]/5"
+                  className="group hover:border-kas-secondary/50 border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-2xl border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {opt.label}
                   </span>
                   <small className="text-xs text-[var(--text-secondary)] group-data-checked:text-[var(--color-kas-primary)] sm:text-sm">
@@ -642,14 +642,14 @@ export const WalletFlow = ({
           </RadioGroup>
 
           <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+            <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Wallet Name
             </label>
             <input
               ref={nameRef}
               type="text"
               placeholder="My Wallet"
-              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
+              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:outline-none"
             />
           </div>
 
@@ -659,7 +659,7 @@ export const WalletFlow = ({
             onChange={(val) => setSeedPhraseLength(val === "24" ? 24 : 12)}
             className="mb-2 sm:mb-3"
           >
-            <Label className="mb-3 block text-base font-semibold text-white">
+            <Label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Seed Phrase Length
             </Label>
             <div className="flex flex-col gap-2 sm:gap-3">
@@ -668,9 +668,9 @@ export const WalletFlow = ({
                   key={val}
                   as="label"
                   value={val}
-                  className="group hover:border-kas-secondary/50 flex cursor-pointer flex-col items-start gap-y-1 rounded-md border border-[var(--border-color)] bg-slate-900 p-3 transition-colors duration-200 hover:bg-slate-900/20 data-checked:border-[var(--color-kas-primary)] data-checked:bg-[var(--color-kas-primary)]/5"
+                  className="group hover:border-kas-secondary/50 border-primary-border flex cursor-pointer flex-col items-start gap-y-1 rounded-2xl border bg-[var(--primary-bg)] p-3 transition-colors duration-200 hover:bg-[var(--primary-bg)]/50 data-checked:border-[var(--color-kas-secondary)] data-checked:bg-[var(--color-kas-secondary)]/5"
                 >
-                  <span className="text-sm font-medium text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] group-data-checked:text-[var(--color-kas-secondary)] sm:text-base">
                     {val} words
                   </span>
                 </Radio>
@@ -682,15 +682,15 @@ export const WalletFlow = ({
             mnemonicRef={mnemonicRef}
           />
 
-          <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+          <div className="mb-6">
+            <label className="mb-3 block text-base font-semibold">
               Password
             </label>
             <input
               ref={passwordRef}
               type="password"
               placeholder="Enter password"
-              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
+              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
             />
           </div>
 
@@ -727,7 +727,7 @@ export const WalletFlow = ({
           <h2 className="mb-1 text-center text-lg font-bold sm:mb-3">
             Migrate Legacy Wallet
           </h2>
-          <div className="mb-4 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4">
+          <div className="border-primary-border mb-4 rounded-lg border bg-[var(--primary-bg)] p-4">
             <p className="mb-2 font-semibold text-[var(--text-primary)]">
               Migrating wallet:{" "}
               <strong className="text-[var(--accent-blue)]">
@@ -740,14 +740,14 @@ export const WalletFlow = ({
               standard wallets.
             </p>
             <div className="mt-5 mb-1 flex flex-col items-center rounded-lg border border-[#2a3042] bg-[#1a1f2e] p-4 text-center text-amber-300">
-              <ExclamationTriangleIcon className="h-5 w-5" /> Your original
-              wallet will remain unchanged. You'll need to transfer funds to the
-              new wallet addresses.
+              <AlertTriangle className="h-5 w-5" /> Your original wallet will
+              remain unchanged. You'll need to transfer funds to the new wallet
+              addresses.
             </div>
           </div>
 
           <div className="mb-2 sm:mb-3">
-            <label className="mb-1 block text-base font-semibold text-white sm:mb-3">
+            <label className="mb-1 block text-base font-semibold text-[var(--text-primary)] sm:mb-3">
               New Wallet Name
             </label>
             <input
@@ -755,19 +755,19 @@ export const WalletFlow = ({
               type="text"
               placeholder={`${wallets.find((w) => w.id === step.walletId)?.name} (Standard)`}
               defaultValue={`${wallets.find((w) => w.id === step.walletId)?.name} (Standard)`}
-              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
+              className="focus:!border-kas-primary border-primary-border w-full rounded border bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
             />
           </div>
 
           <div className="mb-3">
-            <label className="mb-3 block text-base font-semibold text-white">
+            <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
               Password
             </label>
             <input
               ref={passwordRef}
               type="password"
               placeholder="Enter your current wallet password"
-              className="focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
+              className="focus:!border-kas-primary border-primary-border w-full rounded border bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none"
             />
           </div>
 
@@ -792,13 +792,14 @@ export const WalletFlow = ({
               isConnected={isConnected}
             />
           </div>
-          <h2 className="text-center text-lg font-bold">Unlock Wallet</h2>
 
           {wallets.find((w) => w.id === selectedWalletId) && (
-            <div className="mb-5 rounded bg-[#2c3e50] p-2.5 text-center">
-              <span className="font-semibold text-[var(--text-primary)]">
-                {wallets.find((w) => w.id === selectedWalletId)?.name}
-              </span>
+            <div className="mt-16 mb-5 flex justify-center">
+              <div className="border-kas-secondary bg-kas-secondary/10 rounded-md border px-4 py-2 text-center">
+                <span className="text-lg font-bold">
+                  {wallets.find((w) => w.id === selectedWalletId)?.name}
+                </span>
+              </div>
             </div>
           )}
 
@@ -807,24 +808,19 @@ export const WalletFlow = ({
               <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
                 Unlocking Wallet…
               </span>
-              <ArrowPathIcon className="my-2 h-14 w-14 animate-spin text-gray-500" />
+              <Loader2 className="my-2 h-14 w-14 animate-spin text-gray-500" />
             </div>
           ) : (
             <>
               <div className="mb-3.5">
-                <label className="mb-3.5 block font-medium text-white">
-                  Password
-                </label>
+                <label className="mb-3.5 block font-medium">Password</label>
                 <input
-                  data-1p-ignore
-                  data-lpignore="true"
-                  data-protonpass-ignore="true"
-                  autoComplete="off"
+                  autoComplete="current-password"
                   ref={usePasswordRef}
                   type="password"
                   placeholder="Enter your password"
                   className={clsx(
-                    "focus:!border-kas-primary w-full rounded border border-slate-700 bg-slate-900 p-2.5 text-base text-slate-100 transition-all duration-200 focus:!bg-slate-800 focus:outline-none",
+                    "focus:!border-kas-primary border-primary-border bg-input-bg w-full rounded-3xl border p-2.5 px-4 text-base transition-all duration-200 focus:outline-none",
                     { "!border-red-500": error }
                   )}
                   onKeyDown={(e) => e.key === "Enter" && onUnlockWallet()}
@@ -855,6 +851,13 @@ export const WalletFlow = ({
             </>
           )}
         </>
+      )}
+
+      {/* rendered at wallet flow so it works on all steps, */}
+      {isOpen("settings") && (
+        <Modal onClose={() => closeModal("settings")}>
+          <LockedSettingsModal />
+        </Modal>
       )}
     </div>
   );

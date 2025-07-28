@@ -1,14 +1,6 @@
-import { ArrowPathIcon } from "@heroicons/react/24/solid";
+import { LoaderCircle } from "lucide-react";
 import { FC, useState, useEffect, useCallback } from "react";
-import { Modal } from "../components/Common/modal";
 import { ErrorCard } from "../components/ErrorCard";
-import { MessageBackup } from "../components/Modals/MessageBackup";
-import { UtxoCompound } from "../components/Modals/UtxoCompound";
-import { WalletAddressSection } from "../components/Modals/WalletAddressSection";
-import { WalletInfo } from "../components/Modals/WalletInfo";
-import { WalletSeedRetreiveDisplay } from "../components/Modals/WalletSeedRetreiveDisplay";
-import { WalletWithdrawal } from "../components/Modals/WalletWithdrawal";
-import { NewChatForm } from "../components/NewChatForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useNetworkStore } from "../store/network.store";
 import { useUiStore } from "../store/ui.store";
@@ -35,7 +27,33 @@ export const MessengerContainer: FC = () => {
   const walletStore = useWalletStore();
 
   const isMobile = useIsMobile();
-  const { isOpen, closeModal, closeAllModals } = useUiStore();
+  const { closeAllModals } = useUiStore();
+
+  // while we load and start message client, keep it interesting
+  const loadingMessages = [
+    { delay: 0, message: "Starting the message client..." },
+    { delay: 5000, message: "Loading your message history..." },
+    {
+      delay: 10000,
+      message:
+        "Still loading... \nFun Fact: Kaspa has processed 100 blocks since you started loading.",
+    },
+    { delay: 14000, message: "Still loading... \nActually.. 140..." },
+    { delay: 18000, message: "Still loading... \nNow.. 180..." },
+    {
+      delay: 20000,
+      message: "Yep, still loading... \nOk, now its too many blocks to count.",
+    },
+    {
+      delay: 25000,
+      message:
+        "Yep, still loading... \nWe just didnt expect you to talk to so many people.\nDon't worry, we will fix this long wait soon.",
+    },
+  ];
+
+  const [loadingMessage, setLoadingMessage] = useState(
+    loadingMessages[0].message
+  );
 
   useEffect(() => {
     if (walletStore.unlockedWallet) setIsWalletReady(true);
@@ -46,7 +64,12 @@ export const MessengerContainer: FC = () => {
     const syncToWidth = () => {
       if (isMobile) {
         if (contactsCollapsed) setContactsCollapsed(false);
-        if (!messageStore.openedRecipient) setMobileView("contacts");
+        // On mobile, show messages if there's an opened recipient, otherwise show contacts
+        if (messageStore.openedRecipient) {
+          setMobileView("messages");
+        } else {
+          setMobileView("contacts");
+        }
       } else {
         setMobileView("contacts");
       }
@@ -146,6 +169,53 @@ export const MessengerContainer: FC = () => {
     startMessageClient();
   }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
+  useEffect(() => {
+    if (isWalletReady && !messageStore.isLoaded) {
+      setLoadingMessage(loadingMessages[0].message);
+      const timeouts = loadingMessages
+        .slice(1)
+        .map(({ delay, message }) =>
+          setTimeout(() => setLoadingMessage(message), delay)
+        );
+      return () => {
+        timeouts.forEach(clearTimeout);
+      };
+    }
+  }, [isWalletReady, messageStore.isLoaded]);
+
+  // Effect to restore last opened conversation after messages are loaded (desktop only)
+  useEffect(() => {
+    if (
+      !isMobile &&
+      messageStore.isLoaded &&
+      !messageStore.openedRecipient &&
+      messageStore.contacts.length > 0
+    ) {
+      const walletAddress = walletStore.address?.toString();
+      if (walletAddress) {
+        messageStore.restoreLastOpenedRecipient(walletAddress);
+      }
+    }
+  }, [
+    messageStore.isLoaded,
+    messageStore.openedRecipient,
+    messageStore.contacts.length,
+    walletStore.address,
+    messageStore,
+    isMobile,
+  ]);
+
+  // Effect to update mobile view when opened recipient changes
+  useEffect(() => {
+    if (isMobile && messageStore.isLoaded) {
+      if (messageStore.openedRecipient) {
+        setMobileView("messages");
+      } else {
+        setMobileView("contacts");
+      }
+    }
+  }, [isMobile, messageStore.openedRecipient, messageStore.isLoaded]);
+
   const onContactClicked = useCallback(
     (contact: Contact) => {
       if (!walletStore.address) {
@@ -162,102 +232,53 @@ export const MessengerContainer: FC = () => {
   return (
     <>
       {/* Main Message Section*/}
-      <div className="bg-[var(--primary-bg)] sm:px-8 sm:py-4">
-        <div className="flex items-center gap-4">
-          {isWalletReady &&
-            (isWalletReady && messageStore.isLoaded ? (
-              <div className="flex h-[100vh] min-h-[300px] w-full min-w-[320px] overflow-hidden rounded-xl border border-[var(--border-color)] bg-[var(--secondary-bg)] shadow-md sm:mx-auto sm:h-[85vh] sm:max-w-[1200px]">
-                <ContactSection
-                  contacts={messageStore.contacts}
-                  onNewChatClicked={onNewChatClicked}
-                  onContactClicked={onContactClicked}
-                  openedRecipient={messageStore.openedRecipient}
-                  walletAddress={walletStore.address?.toString()}
-                  mobileView={mobileView}
-                  contactsCollapsed={contactsCollapsed}
-                  setContactsCollapsed={setContactsCollapsed}
-                  setMobileView={setMobileView}
-                />
-                <MessageSection
-                  mobileView={mobileView}
-                  setMobileView={setMobileView}
-                />
-              </div>
-            ) : (
-              <div className="flex w-full flex-col items-center text-xs">
-                {/* If wallet is unlocked but message are not loaded, show the loading state*/}
-                <div className="relative mx-auto h-[100vh] min-h-[300px] w-full min-w-[320px] overflow-hidden rounded-xl border border-[var(--border-color)] shadow-md sm:h-[85vh] sm:max-w-[1200px]">
-                  <div className="absolute inset-0 animate-pulse bg-[var(--secondary-bg)]/20" />
-                  <div className="relative flex h-full flex-col items-center justify-center space-y-4">
-                    <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
-                      Starting the message client...
-                    </span>
-                    <ArrowPathIcon className="h-14 w-14 animate-spin text-gray-500" />
-                  </div>
+      <div className="bg-primary-bg flex items-center">
+        <div className="flex h-[100dvh] min-h-[300px] w-full overflow-hidden sm:h-[calc(100dvh-69px)]">
+          {isWalletReady && messageStore.isLoaded ? (
+            <>
+              <ContactSection
+                contacts={messageStore.contacts}
+                onNewChatClicked={onNewChatClicked}
+                onContactClicked={onContactClicked}
+                openedRecipient={messageStore.openedRecipient}
+                walletAddress={walletStore.address?.toString()}
+                mobileView={mobileView}
+                contactsCollapsed={contactsCollapsed}
+                setContactsCollapsed={setContactsCollapsed}
+                setMobileView={setMobileView}
+              />
+              <MessageSection
+                mobileView={mobileView}
+                setMobileView={setMobileView}
+              />
+            </>
+          ) : isWalletReady ? (
+            <div className="flex w-full flex-col items-center text-xs">
+              {/* If wallet is unlocked but message are not loaded, show the loading state*/}
+              <div className="border-primary-border bg-secondary-bg relative h-full w-full overflow-hidden border-t">
+                <div className="bg-secondary-bg/20 absolute inset-0" />
+                <div className="relative flex h-full flex-col items-center justify-center space-y-4 select-none">
+                  <span className="text-text-secondary text-center text-sm font-medium tracking-wide whitespace-pre-line sm:text-lg">
+                    {loadingMessage}
+                  </span>
+                  <LoaderCircle className="text-text-secondary h-14 w-14 animate-spin" />
                 </div>
               </div>
-            ))}
+            </div>
+          ) : (
+            <div className="flex w-full flex-col items-center justify-center">
+              <div className="text-center">
+                <p className="mb-2 text-lg font-semibold">Wallet not ready</p>
+                <p className="text-text-primary text-sm">
+                  Please unlock your wallet first
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       {/* Global Error Section*/}
       <ErrorCard error={errorMessage} onDismiss={() => setErrorMessage(null)} />
-
-      {/* Address Modal */}
-      {isOpen("address") && (
-        <Modal onClose={() => closeModal("address")}>
-          {walletStore.address ? (
-            <WalletAddressSection address={walletStore.address.toString()} />
-          ) : (
-            <div className="flex justify-center py-6">
-              <ArrowPathIcon className="h-6 w-6 animate-spin text-gray-500" />
-            </div>
-          )}
-        </Modal>
-      )}
-
-      {/* Withdraw Modal */}
-      {isOpen("withdraw") && (
-        <Modal onClose={() => closeModal("withdraw")}>
-          <WalletWithdrawal />
-        </Modal>
-      )}
-
-      {/* Backup Modal */}
-      {isOpen("backup") && (
-        <Modal onClose={() => closeModal("backup")}>
-          <MessageBackup />
-        </Modal>
-      )}
-
-      {/* Seed Modal */}
-      {isOpen("seed") && (
-        <Modal onClose={() => closeModal("seed")}>
-          <WalletSeedRetreiveDisplay />
-        </Modal>
-      )}
-
-      {/* UTXO Compound Modal */}
-      {isOpen("utxo-compound") && (
-        <Modal onClose={() => closeModal("utxo-compound")}>
-          <UtxoCompound />
-        </Modal>
-      )}
-
-      {/* Wallet Info Modal */}
-      {isOpen("walletInfo") && (
-        <Modal onClose={() => closeModal("walletInfo")}>
-          <WalletInfo />
-        </Modal>
-      )}
-
-      {/* Start New Conversation Modal */}
-      {messageStore.isCreatingNewChat && (
-        <Modal onClose={() => messageStore.setIsCreatingNewChat(false)}>
-          <NewChatForm
-            onClose={() => messageStore.setIsCreatingNewChat(false)}
-          />
-        </Modal>
-      )}
     </>
   );
 };

@@ -33,7 +33,7 @@ Some guidelines and notes on where we want to take the initial (current) Kasia d
 
 ### UI Stack & Styling
 
-- **TailwindCSS** is the **preferred styling approach**.  
+- **TailwindCSS** is the **required styling approach**.  
   All new UI code must be written in Tailwind.
 
 - There is legacy **CSS in the codebase**, but we are actively migrating.  
@@ -48,8 +48,8 @@ Some guidelines and notes on where we want to take the initial (current) Kasia d
 
 ### Icons & Assets
 
-- We mostly use:
-  - **Heroicons**
+- We use:
+  - **Lucid React**
   - Some additional SVG and images for Kasia and Kaspa content
 
 ### Component Architecture
@@ -76,8 +76,7 @@ If you're building a reusable UI element, check if a common component already ex
 ### Design & Theming
 
 - There is **no formal design system theme set** in place yet.
-- Color usage can be inconsistent across the app, but look around anad try to mimic what you see. There should but not much of a reason to implement new colours *yet*.
-- We welcome contributions toward a standardized color system or theme guide.
+- For the meantime, styles and UI are set and do not need refreshing or reworking. Although, this doesn't include UI tweaks or bugs that need fixing.
 
 ## Submitting Changes
 

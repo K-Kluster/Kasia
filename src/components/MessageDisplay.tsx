@@ -7,19 +7,23 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
-import { PaperClipIcon } from "@heroicons/react/24/solid";
+import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
+import { parseMessageForDisplay } from "../utils/message-format";
+import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
 
 type MessageDisplayProps = {
   message: MessageType;
   isOutgoing: boolean;
   showTimestamp?: boolean;
+  groupPosition?: "single" | "top" | "middle" | "bottom";
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
   message,
   isOutgoing,
   showTimestamp,
+  groupPosition = "single",
 }) => {
   const [showMeta, setShowMeta] = useState(false);
 
@@ -56,12 +60,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const isPayment = (() => {
     // First check if it's a hex payload starting with ciph_msg prefix
     if (payload) {
-      const prefix = "636970685f6d73673a"; // hex for "ciph_msg:"
-      if (payload.startsWith(prefix)) {
+      if (payload.startsWith(PROTOCOL_PREFIX)) {
         // Extract the message part and check for payment prefix
-        const messageHex = payload.substring(prefix.length);
-        const paymentPrefix = "313a7061796d656e743a"; // "1:payment:" in hex
-        if (messageHex.startsWith(paymentPrefix)) {
+        const messageHex = payload.substring(PROTOCOL_PREFIX.length);
+        if (messageHex.startsWith(PAYMENT_PREFIX)) {
           return true;
         }
       }
@@ -146,8 +148,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const formatAmountAndFee = () => {
     if (isOutgoing && fee !== undefined) {
       return (
-        <div className="message-transaction-info">
-          <div className="message-fee">Fee: {fee.toFixed(8)} KAS</div>
+        <div className="w-full">
+          <div className="message-fee text-right">
+            Fee: {fee.toFixed(8)} KAS
+          </div>
         </div>
       );
     }
@@ -177,25 +181,25 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
             paymentPayload.message && paymentPayload.message.trim();
 
           return (
-            <div className={clsx("flex items-center gap-1 p-2")}>
+            <div className={clsx("flex items-center gap-1")}>
               <div
                 className={clsx(
                   "mr-2 flex h-18 w-18 animate-pulse items-center justify-center drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]"
                 )}
               >
                 <KasIcon
-                  className="h-18 w-18 scale-140 drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                  className="h-18 w-18 scale-140 cursor-pointer drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
                   circleClassName="fill-white"
-                  kClassName="fill-[#70C7BA]"
+                  kClassName="fill-[var(--kas-primary)]"
                 />
               </div>
               <div className="flex-1">
                 {hasMessage && (
-                  <div className="mb-1 text-sm font-medium break-all text-white drop-shadow-sm">
+                  <div className="mb-1 text-sm font-medium break-all drop-shadow-sm">
                     {paymentPayload.message}
                   </div>
                 )}
-                <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
+                <div className="text-xs font-semibold drop-shadow-sm">
                   {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
                 </div>
               </div>
@@ -221,10 +225,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           />
         </div>
         <div className="flex-1">
-          <div className="mb-1 text-sm font-medium text-white drop-shadow-sm">
+          <div className="mb-1 text-sm font-medium drop-shadow-sm">
             Payment message
           </div>
-          <div className="text-xs font-semibold text-white/80 drop-shadow-sm">
+          <div className="text-xs font-semibold drop-shadow-sm">
             {isOutgoing ? "Sent" : "Received"} payment
           </div>
         </div>
@@ -287,7 +291,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return (
         <div className="file-message">
           <div className="file-info">
-            <PaperClipIcon className="h-4 w-4" /> {fileData.name} (
+            <Paperclip className="h-4 w-4 cursor-pointer" /> {fileData.name} (
             {Math.round(fileData.size / 1024)}
             KB)
           </div>
@@ -323,7 +327,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         return (
           <div key={`file-${transactionId}`} className="file-message">
             <div className="file-info">
-              <PaperClipIcon className="h-4 w-4" /> {parsedContent.name} (
+              <Paperclip className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>
             <button
@@ -343,6 +347,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     } catch (e) {
       // Not a JSON message, render as text
       void e;
+    }
+
+    // render plain text with newlines as <br /> and \\n as literal text
+    if (typeof messageToRender === "string") {
+      return parseMessageForDisplay(messageToRender);
     }
 
     return messageToRender;
@@ -452,57 +461,89 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     };
   }, []);
 
+  // determine the 'chat' style that we apply
+  const bubbleClass = (() => {
+    if (isOutgoing) {
+      if (groupPosition === "middle")
+        return "rounded-2xl rounded-tr-sm rounded-br-sm";
+      if (groupPosition === "bottom")
+        return "rounded-2xl rounded-tr-sm rounded-br-2xl";
+      // top and single: default (one square edge)
+      return "rounded-2xl rounded-br-sm";
+    } else {
+      if (groupPosition === "middle")
+        return "rounded-2xl rounded-tl-sm rounded-bl-sm";
+      if (groupPosition === "bottom")
+        return "rounded-2xl rounded-tl-sm rounded-bl-2xl";
+      // top and single: default (one square edge)
+      return "rounded-2xl rounded-bl-sm";
+    }
+  })();
+
   return (
     <div
       className={clsx(
-        "my-2 flex w-full",
+        "flex w-full",
         isOutgoing
           ? "justify-end pr-0.5 sm:pr-2"
           : "justify-start pl-0.5 sm:pl-2"
       )}
     >
+      {showMeta && transactionId && isOutgoing && (
+        <div className="mr-2 flex items-center">
+          <a
+            href={getExplorerUrl(transactionId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs opacity-80 transition-opacity hover:opacity-100"
+          >
+            <Tickets className="size-5" />
+          </a>
+        </div>
+      )}
       <div
         onClick={() => setShowMeta((prev) => !prev)}
         className={clsx(
-          "relative z-0 mb-4 max-w-[70%] cursor-pointer px-4 py-3 text-left break-words hyphens-auto",
+          "relative z-0 mb-1 max-w-[70%] cursor-pointer px-4 py-1 text-left break-words hyphens-auto",
           isOutgoing
-            ? "rounded-2xl rounded-br-none bg-[#007aff] text-white"
-            : "rounded-2xl rounded-bl-none bg-[var(--secondary-bg)]"
+            ? "border border-[var(--button-primary)] bg-[var(--button-primary)]/20"
+            : "bg-[var(--secondary-bg)]",
+          bubbleClass
         )}
       >
+        <div className="my-0.5 text-base leading-relaxed">
+          {renderMessageContent()}
+        </div>
         {(showMeta || showTimestamp) && (
-          <div className="mb-[6px] flex items-center justify-between truncate text-[0.8em]">
+          <div className="mb-1.5 flex justify-end truncate text-xs">
             <div className="opacity-70">{displayStamp}</div>
           </div>
         )}
-
-        <div className="my-2 text-[1em] leading-[1.4]">
-          {renderMessageContent()}
-        </div>
-
         {showMeta && (
           <div
             className={clsx(
-              "mt-[6px] text-[0.75em] whitespace-nowrap opacity-80",
+              "mt-1.5 text-xs whitespace-nowrap opacity-80",
               isOutgoing
                 ? "flex flex-col items-start space-y-1"
                 : "flex flex-col items-start space-x-4 sm:flex-row sm:items-center sm:justify-between"
             )}
           >
             {formatAmountAndFee()}
-            {transactionId && (
-              <a
-                href={getExplorerUrl(transactionId)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="transaction-link"
-              >
-                View Transaction
-              </a>
-            )}
           </div>
         )}
       </div>
+      {showMeta && transactionId && !isOutgoing && (
+        <div className="ml-2 flex items-center">
+          <a
+            href={getExplorerUrl(transactionId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs opacity-80 transition-opacity hover:opacity-100"
+          >
+            <Tickets className="size-5" />
+          </a>
+        </div>
+      )}
     </div>
   );
 };

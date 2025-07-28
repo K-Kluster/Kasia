@@ -13,11 +13,11 @@ export const Button: FC<ButtonProps> = ({
   ...props
 }) => {
   const base =
-    "cursor-pointer w-full text-gray-100 font-bold py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200";
+    "cursor-pointer w-full font-bold py-3 px-4 sm:px-6 rounded-3xl transition-colors duration-200 select-none";
   const variantClasses =
     variant === "primary"
-      ? "bg-[var(--accent-blue)] hover:bg-[var(--accent-blue)]/70 active:bg-[var(--accent-blue)]/20 disabled:bg-[var(--accent-blue)]/50"
-      : "bg-[var(--primary-bg)] hover:bg-[var(--primary-bg)]/70 active:bg-[var(--primary-bg)]/20 disabled:bg-[var(--primary-bg)]/50";
+      ? "bg-[var(--button-primary)] text-white hover:bg-[var(--button-primary)]/80"
+      : "bg-primary-bg/80 hover:bg-primary-bg/20 border border-primary-border";
   return (
     <button
       {...props}
