@@ -49,6 +49,10 @@ type UiState = {
   // Contact Info Modal state
   contactInfoContact: Contact | null;
   setContactInfoContact: (c: Contact | null) => void;
+
+  // Warn Costy Send Message Modal callback
+  sendMessageCallback: (() => void) | null;
+  setSendMessageCallback: (callback: (() => void) | null) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -196,4 +200,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   // Contact Info Modal state
   contactInfoContact: null,
   setContactInfoContact: (c) => set({ contactInfoContact: c }),
+
+  // Warn Costy Send Message Modal callback
+  sendMessageCallback: null,
+  setSendMessageCallback: (callback) => set({ sendMessageCallback: callback }),
 }));
