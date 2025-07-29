@@ -63,16 +63,25 @@ export function loadMessagesForAddress(
 // migration function to convert from legacy format to new per-address format
 export function migrateToPerAddressStorage(
   walletId: string,
+  walletAddress: string,
   password: string
 ): void {
   try {
-    const legacyMessages = loadLegacyMessages();
+    const legacyMessagesOnThisWallet =
+      loadLegacyMessages()["walletAddress"] ?? [];
 
-    // for each address in the legacy storage, create a separate storage entry
-    for (const [address, messages] of Object.entries(legacyMessages)) {
-      if (messages && messages.length > 0) {
-        saveMessagesForAddress(messages, walletId, address, password);
-      }
+    if (legacyMessagesOnThisWallet.length > 0) {
+      console.log(
+        `Migrating ${legacyMessagesOnThisWallet.length} messages for wallet ${walletId}`
+      );
+      saveMessagesForAddress(
+        legacyMessagesOnThisWallet,
+        walletId,
+        walletAddress,
+        password
+      );
+    } else {
+      console.log("No legacy messages found for migration");
     }
 
     // set migration success flag for tracking

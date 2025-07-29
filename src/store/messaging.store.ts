@@ -238,18 +238,31 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
   },
   loadMessages: (address): Message[] => {
     const walletStore = useWalletStore.getState();
-    const password = walletStore.unlockedWallet?.password;
-    const walletId = walletStore.selectedWalletId;
+    const unlockedWallet = walletStore.unlockedWallet;
+    const selectedNetwork = walletStore.selectedNetwork;
 
-    if (!password) {
+    if (!unlockedWallet || !unlockedWallet.password) {
       console.error("Wallet password not available for loading messages.");
       return [];
     }
 
-    if (!walletId) {
+    if (!unlockedWallet.id) {
       console.error("No wallet selected for loading messages.");
       return [];
     }
+
+    console.log("Getting private key generator...");
+    const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+      unlockedWallet,
+      unlockedWallet.password
+    );
+
+    console.log("Getting receive key...");
+    const receiveKey = privateKeyGenerator.receiveKey(0);
+
+    const receiveAddress = receiveKey.toAddress(selectedNetwork);
+    const walletAddress = receiveAddress.toString();
+    console.log("Using receive address:", walletAddress);
 
     let messages: Message[] = [];
 
@@ -263,7 +276,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       // migrate the dogs to the new system
       try {
-        migrateToPerAddressStorage(walletId, password);
+        migrateToPerAddressStorage(
+          unlockedWallet.id,
+          walletAddress,
+          unlockedWallet.password
+        );
       } catch (migrationError) {
         console.error(
           "Failed to migrate to per-address storage:",
@@ -273,7 +290,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     } else {
       // no legacy messages, lets load them with encryption
       try {
-        messages = loadMessagesForAddress(walletId, address, password);
+        messages = loadMessagesForAddress(
+          unlockedWallet.id,
+          address,
+          unlockedWallet.password
+        );
       } catch (error) {
         console.error("Error loading encrypted messages:", error);
         messages = [];
@@ -630,8 +651,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         );
       }
 
-      const walletId = useWalletStore.getState().selectedWalletId;
-      if (!walletId) {
+      if (!wallet || !wallet.id) {
         throw new Error("No wallet selected for exporting messages.");
       }
 
@@ -659,7 +679,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         console.log(
           "Found legacy messages, migrating to per-address storage..."
         );
-        migrateToPerAddressStorage(walletId, password);
+        migrateToPerAddressStorage(wallet.id, walletAddress, password);
         // after migration, the messages will be available in per-address storage
       }
 
@@ -698,7 +718,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       if (Object.keys(messagesMap).length === 0) {
         console.log("No messages in store, trying per-address storage...");
         const storedMessages = loadMessagesForAddress(
-          walletId,
+          wallet.id,
           walletAddress,
           password
         );
