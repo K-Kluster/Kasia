@@ -7,6 +7,7 @@ import {
   type CustomColorPalette,
 } from "../config/custom-theme-applier";
 import { OneOnOneConversation } from "../types/all";
+import { Contact } from "./repository/contact.repository";
 
 export type ModalType =
   | "address"
@@ -49,6 +50,12 @@ type UiState = {
   // Contact Info Modal state
   oneOnOneConversation: OneOnOneConversation | null;
   setOneOnOneConversation: (oooc: OneOnOneConversation | null) => void;
+  contactInfoContact: Contact | null;
+  setContactInfoContact: (c: Contact | null) => void;
+
+  // Warn Costy Send Message Modal callback
+  sendMessageCallback: (() => void) | null;
+  setSendMessageCallback: (callback: (() => void) | null) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -196,4 +203,10 @@ export const useUiStore = create<UiState>()((set, get) => ({
   // Contact Info Modal state
   oneOnOneConversation: null,
   setOneOnOneConversation: (c) => set({ oneOnOneConversation: c }),
+  contactInfoContact: null,
+  setContactInfoContact: (c) => set({ contactInfoContact: c }),
+
+  // Warn Costy Send Message Modal callback
+  sendMessageCallback: null,
+  setSendMessageCallback: (callback) => set({ sendMessageCallback: callback }),
 }));
