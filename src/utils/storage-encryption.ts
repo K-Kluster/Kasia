@@ -11,22 +11,15 @@ export function generateStorageKey(walletId: string, address: string): string {
   return `msg_${walletIdPrefix}_${addressSuffix}`;
 }
 
-// legacy function for backward compatibility - loads all messages for a wallet
-export function loadLegacyMessages(
-  password: string
-): Record<string, Message[]> {
-  const encrypted = localStorage.getItem(LEGACY_STORAGE_KEY);
-  if (!encrypted) return {};
+export function loadLegacyMessages(): Record<string, Message[]> {
+  const messages = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (!messages) return {};
+
   try {
-    const decrypted = decryptXChaCha20Poly1305(encrypted, password);
-    return JSON.parse(decrypted);
+    return JSON.parse(messages);
   } catch {
-    // try to parse as plaintext, sorta makes this backwards compatible
-    try {
-      return JSON.parse(encrypted);
-    } catch {
-      return {};
-    }
+    console.error("Failed to parse legacy messages:", messages);
+    return {};
   }
 }
 
@@ -73,7 +66,7 @@ export function migrateToPerAddressStorage(
   password: string
 ): void {
   try {
-    const legacyMessages = loadLegacyMessages(password);
+    const legacyMessages = loadLegacyMessages();
 
     // for each address in the legacy storage, create a separate storage entry
     for (const [address, messages] of Object.entries(legacyMessages)) {
@@ -98,7 +91,7 @@ export function cleanupLegacyStorage(
   password: string
 ): void {
   try {
-    const legacyMessages = loadLegacyMessages(password);
+    const legacyMessages = loadLegacyMessages();
     if (!legacyMessages || Object.keys(legacyMessages).length === 0) {
       return; // no legacy data to clean up
     }
@@ -241,7 +234,7 @@ export async function reencryptMessagesForWallet(
 
     // also handle legacy storage if it exists
     try {
-      const legacyMessages = loadLegacyMessages(oldPassword);
+      const legacyMessages = loadLegacyMessages();
       if (Object.keys(legacyMessages).length > 0) {
         // save legacy messages with new password
         saveMessages(legacyMessages, newPassword);

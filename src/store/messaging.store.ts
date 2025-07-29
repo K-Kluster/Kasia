@@ -252,40 +252,39 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       return [];
     }
 
-    // Try to load messages using the new per-address system first
     let messages: Message[] = [];
 
-    try {
-      messages = loadMessagesForAddress(walletId, address, password);
-    } catch (error) {
-      console.log(
-        "Failed to load messages using per-address system, trying legacy:",
-        error
-      );
-      // fallback to legacy system
-      const legacyMessages: Record<string, Message[]> =
-        loadLegacyMessages(password);
+    // load legacy messages first, try to migrate if they exist
+    // we can remove this in v0.4.0
+    const legacyMessages: Record<string, Message[]> = loadLegacyMessages();
+
+    if (Object.keys(legacyMessages).length > 0) {
+      // we have legacy messages - use them and migrate
       messages = legacyMessages[address] || [];
 
-      // if we have legacy messages, migrate them to the new system
-      if (messages.length > 0) {
-        try {
-          migrateToPerAddressStorage(walletId, password);
-          // set a flag to indicate migration was successful
-        } catch (migrationError) {
-          console.error(
-            "Failed to migrate to per-address storage:",
-            migrationError
-          );
-        }
+      // migrate the dogs to the new system
+      try {
+        migrateToPerAddressStorage(walletId, password);
+      } catch (migrationError) {
+        console.error(
+          "Failed to migrate to per-address storage:",
+          migrationError
+        );
+      }
+    } else {
+      // no legacy messages, lets load them with encryption
+      try {
+        messages = loadMessagesForAddress(walletId, address, password);
+      } catch (error) {
+        console.error("Error loading encrypted messages:", error);
+        messages = [];
       }
     }
 
     const contacts = new Map();
-
-    // Process messages and organize by conversation
+    // process messages and organize by conversation
     messages.forEach((msg: Message) => {
-      // Ensure fileData is properly loaded if it exists
+      // ensure fileData is properly loaded if it exists
       if (msg.fileData) {
         msg.content = `[File: ${msg.fileData.name}]`;
       }
@@ -348,7 +347,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         contact.lastMessage = msg;
       }
     });
-
     // Sort messages within each contact by timestamp
     contacts.forEach((contact) => {
       contact.messages.sort(
@@ -666,7 +664,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const messagesMap: Record<string, Message[]> = {};
 
       // First, try to load legacy messages and migrate them if needed
-      const legacyMessages = loadLegacyMessages(password);
+      const legacyMessages = loadLegacyMessages();
       if (Object.keys(legacyMessages).length > 0) {
         console.log(
           "Found legacy messages, migrating to per-address storage..."
@@ -834,7 +832,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         );
       }
 
-      const existingMessages = loadLegacyMessages(currentPassword);
+      const existingMessages = loadLegacyMessages();
 
       const mergedMessages = {
         ...existingMessages,
