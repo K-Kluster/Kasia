@@ -7,7 +7,7 @@ import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
-import { Paperclip, Tickets } from "lucide-react";
+import { Paperclip, Tickets, Loader2, X } from "lucide-react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
 import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
@@ -28,6 +28,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const [showMeta, setShowMeta] = useState(false);
 
   const {
+    status,
     senderAddress,
     recipientAddress,
     timestamp,
@@ -489,16 +490,22 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           : "justify-start pl-0.5 sm:pl-2"
       )}
     >
-      {showMeta && transactionId && isOutgoing && (
+      {showMeta && isOutgoing && (
         <div className="mr-2 flex items-center">
-          <a
-            href={getExplorerUrl(transactionId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs opacity-80 transition-opacity hover:opacity-100"
-          >
-            <Tickets className="size-5" />
-          </a>
+          {status === "sent" && transactionId && (
+            <a
+              href={getExplorerUrl(transactionId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs opacity-80 transition-opacity hover:opacity-100"
+            >
+              <Tickets className="size-5" />
+            </a>
+          )}
+          {status === "pending" && <Loader2 className="size-5 animate-spin" />}
+          {status === "failed" && (
+            <X className="size-5 text-[var(--accent-red)]" />
+          )}
         </div>
       )}
       <div
@@ -508,6 +515,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           isOutgoing
             ? "border border-[var(--button-primary)] bg-[var(--button-primary)]/20"
             : "bg-[var(--secondary-bg)]",
+          status !== "sent" && "bg-text-secondary/10",
           bubbleClass
         )}
       >

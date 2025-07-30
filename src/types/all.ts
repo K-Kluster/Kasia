@@ -1,6 +1,7 @@
 import { FeeSource, ITransaction } from "kaspa-wasm";
 
 export type Message = {
+  status?: "sent" | "pending" | "failed";
   transactionId: string;
   senderAddress: string;
   recipientAddress: string;
