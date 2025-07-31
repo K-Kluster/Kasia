@@ -23,9 +23,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
         clearTimeout(blurTimeout);
       }
     };
-    // it is expected that this cleanup phase is only executed on component unmount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [blurTimeout]);
 
   const handleBlurToggle = (shouldBlur: boolean) => {
     // Clear any existing timeout
