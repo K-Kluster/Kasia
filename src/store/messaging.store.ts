@@ -21,6 +21,7 @@ import {
   saveMessages,
   saveMessagesForAddress,
   loadMessagesForAddress,
+  loadMessagesFromMultipleAddresses,
   migrateToPerAddressStorage,
 } from "../utils/storage-encryption";
 
@@ -255,7 +256,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
     // load legacy messages first, try to migrate if they exist
     // we can remove this in v0.4.0
-    const legacyMessages: Record<string, Message[]> = loadLegacyMessages();
+    const legacyMessages: Record<string, Message[]> =
+      loadLegacyMessages(walletId);
 
     if (Object.keys(legacyMessages).length > 0) {
       // we have legacy messages - use them and migrate
@@ -263,7 +265,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
 
       // migrate the dogs to the new system
       try {
-        migrateToPerAddressStorage(walletId, password);
+        migrateToPerAddressStorage(walletId, password, [address]);
       } catch (migrationError) {
         console.error(
           "Failed to migrate to per-address storage:",
@@ -273,7 +275,32 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
     } else {
       // no legacy messages, lets load them with encryption
       try {
-        messages = loadMessagesForAddress(walletId, address, password);
+        const walletIdPrefix = walletId.substring(0, 8);
+        const contactAddresses: string[] = [];
+
+        // find all storage keys for this wallet that might contain contact messages
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith(`msg_${walletIdPrefix}_`)) {
+            // extract the address from the storage key
+            const addressSuffix = key.replace(`msg_${walletIdPrefix}_`, "");
+            // try to reconstruct the full address
+            const fullAddress = `kaspa:${addressSuffix}`;
+            contactAddresses.push(fullAddress);
+          }
+        }
+
+        // always load from multiple addresses since messages are stored per-contact
+        if (contactAddresses.length > 0) {
+          messages = loadMessagesFromMultipleAddresses(
+            walletId,
+            contactAddresses,
+            password
+          );
+        } else {
+          // fallback to single address only if no contact addresses found
+          messages = loadMessagesForAddress(walletId, address, password);
+        }
       } catch (error) {
         console.error("Error loading encrypted messages:", error);
         messages = [];
@@ -659,7 +686,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         console.log(
           "Found legacy messages, migrating to per-address storage..."
         );
-        migrateToPerAddressStorage(walletId, password);
+        migrateToPerAddressStorage(walletId, password, [walletAddress]);
         // after migration, the messages will be available in per-address storage
       }
 
@@ -812,24 +839,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
         throw new Error("Invalid backup data structure");
       }
 
-      console.log("Merging with existing messages...");
-      // Merge with existing messages
-      const currentPassword =
-        useWalletStore.getState().unlockedWallet?.password;
-      if (!currentPassword) {
-        throw new Error(
-          "Wallet password not available for importing messages."
-        );
-      }
-
-      const existingMessages = loadLegacyMessages();
-
-      const mergedMessages = {
-        ...existingMessages,
-        ...decryptedData.data,
-      };
-      // Save merged messages
-      saveMessages(mergedMessages, currentPassword);
+      console.log("Processing imported messages...");
+      // Use only the imported data, don't merge with legacy storage
+      const mergedMessages = decryptedData.data;
 
       // Get network type and current address first
       let networkType = NetworkType.Mainnet; // Default to mainnet
@@ -935,24 +947,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => ({
       const walletId = walletStore.selectedWalletId;
 
       if (importPassword && walletId) {
-        // collect all imported messages into a single array
-        const allImportedMessages: Message[] = [];
-        Object.entries(mergedMessages).forEach(([address, messages]) => {
+        // save messages under each contact address to maintain per-contact organization
+        Object.entries(mergedMessages).forEach(([contactAddress, messages]) => {
           const typedMessages = messages as Message[];
           if (typedMessages.length > 0) {
-            allImportedMessages.push(...typedMessages);
+            // save messages under the contact's address, not the wallet address
+            saveMessagesForAddress(
+              typedMessages,
+              walletId,
+              contactAddress,
+              importPassword
+            );
           }
         });
-
-        // save all imported messages under the current wallet address
-        if (allImportedMessages.length > 0) {
-          saveMessagesForAddress(
-            allImportedMessages,
-            walletId,
-            currentAddress,
-            importPassword
-          );
-        }
       } else {
         console.error(
           "Cannot save to localStorage: missing password or walletId"
