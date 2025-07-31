@@ -67,8 +67,8 @@ export const WalletFlow = ({
   const [revealed, setRevealed] = useState(false);
 
   const [unlocking, setUnlocking] = useState(false);
+  const [mnemonicValue, setMnemonicValue] = useState("");
   const passwordRef = useRef<HTMLInputElement>(null);
-  const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const isMobile = useIsMobile();
@@ -190,7 +190,7 @@ export const WalletFlow = ({
   const onImportWallet = async () => {
     if (
       !nameRef.current?.value ||
-      !mnemonicRef.current?.value ||
+      !mnemonicValue ||
       !passwordRef.current?.value
     ) {
       setError({ message: "Please enter all fields", id: Date.now() });
@@ -205,7 +205,7 @@ export const WalletFlow = ({
       return;
     }
     try {
-      const mnemonic = new Mnemonic(mnemonicRef.current.value);
+      const mnemonic = new Mnemonic(mnemonicValue);
       await createWallet(nameRef.current.value, mnemonic, pw, derivationType);
       setStep({ type: "success" });
     } catch (err) {
@@ -214,7 +214,7 @@ export const WalletFlow = ({
         id: Date.now(),
       });
     } finally {
-      if (mnemonicRef.current.value) mnemonicRef.current.value = "";
+      setMnemonicValue("");
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
@@ -680,7 +680,7 @@ export const WalletFlow = ({
           </RadioGroup>
           <MnemonicEntry
             seedPhraseLength={seedPhraseLength}
-            mnemonicRef={mnemonicRef}
+            onMnemonicChange={setMnemonicValue}
           />
 
           <div className="mb-6">
