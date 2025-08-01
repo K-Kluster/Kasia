@@ -1,4 +1,4 @@
-import { FC, useMemo } from "react";
+import { FC } from "react";
 import { NetworkType } from "../types/all";
 import { Menu, MenuButton, MenuItems, MenuItem } from "@headlessui/react";
 import { getDisplayableNetworkFromNetworkString } from "../utils/network-display";
@@ -14,7 +14,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
   selectedNetwork,
   isConnected,
 }) => {
-  const networkDisplay = useMemo(() => {
+  const networkDisplay = () => {
     if (!isConnected) {
       return "Connecting...";
     }
@@ -22,18 +22,16 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
     return getDisplayableNetworkFromNetworkString(
       selectedNetwork as NetworkType
     );
-  }, [selectedNetwork, isConnected]);
+  };
 
-  const allowedNetworks = useMemo<
-    { id: NetworkType; displayableString: string }[]
-  >(() => {
-    return (import.meta.env.VITE_ALLOWED_KASPA_NETWORKS ?? "mainnet")
-      .split(",")
-      .map((s: string) => ({
-        id: s,
-        displayableString: getDisplayableNetworkFromNetworkString(s),
-      }));
-  }, []);
+  const allowedNetworks = (
+    import.meta.env.VITE_ALLOWED_KASPA_NETWORKS ?? "mainnet"
+  )
+    .split(",")
+    .map((s: string) => ({
+      id: s,
+      displayableString: getDisplayableNetworkFromNetworkString(s),
+    }));
 
   return (
     <Menu>
@@ -49,26 +47,28 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
             transformOrigin: "center",
           }}
         />
-        {networkDisplay}
+        {networkDisplay()}
       </MenuButton>
       <MenuItems
         className="absolute top-full left-0 z-10 min-w-[140px] rounded-sm border border-[var(--border-color)] bg-[var(--secondary-bg)] shadow-md"
         anchor="bottom"
       >
-        {allowedNetworks.map((allowedNetwork) => (
-          <MenuItem key={allowedNetwork.id}>
-            <div
-              onClick={() => onNetworkChange(allowedNetwork.id)}
-              className={`block w-full cursor-pointer border-none bg-none px-3 py-2 text-left text-[0.8125rem] text-[var(--text-primary)] transition-colors duration-200 ${
-                selectedNetwork === allowedNetwork.id
-                  ? "bg-[var(--kas-primary)] text-white"
-                  : "hover:bg-[var(--kas-secondary)]"
-              }`}
-            >
-              {allowedNetwork.displayableString}
-            </div>
-          </MenuItem>
-        ))}
+        {allowedNetworks.map(
+          (allowedNetwork: { id: NetworkType; displayableString: string }) => (
+            <MenuItem key={allowedNetwork.id}>
+              <div
+                onClick={() => onNetworkChange(allowedNetwork.id)}
+                className={`block w-full cursor-pointer border-none bg-none px-3 py-2 text-left text-[0.8125rem] text-[var(--text-primary)] transition-colors duration-200 ${
+                  selectedNetwork === allowedNetwork.id
+                    ? "bg-[var(--kas-primary)] text-white"
+                    : "hover:bg-[var(--kas-secondary)]"
+                }`}
+              >
+                {allowedNetwork.displayableString}
+              </div>
+            </MenuItem>
+          )
+        )}
       </MenuItems>
     </Menu>
   );

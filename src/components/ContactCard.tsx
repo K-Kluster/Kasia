@@ -1,4 +1,4 @@
-import { FC, useMemo, useState, useEffect, useRef } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 import { Contact } from "../types/all";
 import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
@@ -21,7 +21,7 @@ export const ContactCard: FC<{
   );
 
   // get last message preview
-  const preview = useMemo(() => {
+  const preview = () => {
     if (!lastMessage) return "";
 
     const { content, payload } = lastMessage;
@@ -76,14 +76,14 @@ export const ContactCard: FC<{
     }
 
     return "No message content";
-  }, [lastMessage]);
+  };
 
-  const timestamp = useMemo(() => {
+  const timestamp = () => {
     if (!lastMessage?.timestamp) return "";
     return new Date(lastMessage.timestamp).toLocaleString();
-  }, [lastMessage?.timestamp]);
+  };
 
-  const shortAddress = useMemo(() => {
+  const shortAddress = () => {
     if (!contact?.address) return "Unknown";
     const addr = contact.address;
     if (addr === "Unknown") {
@@ -111,14 +111,14 @@ export const ContactCard: FC<{
       return `${addr.substring(0, 12)}...${addr.substring(addr.length - 8)}`;
     }
     return addr;
-  }, [contact?.address, lastMessage?.payload]);
+  };
 
-  const displayName = useMemo(() => {
+  const displayName = () => {
     if (contact.nickname?.trim()) {
       return contact.nickname;
     }
-    return shortAddress;
-  }, [contact?.nickname, shortAddress]);
+    return shortAddress();
+  };
 
   useEffect(() => {
     if (
@@ -150,7 +150,7 @@ export const ContactCard: FC<{
     return (
       <div
         className="relative flex cursor-pointer justify-center py-2"
-        title={displayName}
+        title={displayName()}
         onClick={() => onClick?.(contact)}
       >
         <div className="relative h-8 w-8">
@@ -253,7 +253,7 @@ export const ContactCard: FC<{
                   : undefined
               }
             >
-              {displayName}
+              {displayName()}
             </span>
           </div>
           <div className="overflow-hidden text-sm text-ellipsis whitespace-nowrap text-[var(--text-secondary)]">
@@ -263,11 +263,11 @@ export const ContactCard: FC<{
                 showNewMsgAlert && "text-kas-secondary animate-pulse"
               )}
             >
-              {preview}
+              {preview()}
             </span>
           </div>
           <div className="mt-1 text-xs text-[var(--text-secondary)]">
-            {timestamp}
+            {timestamp()}
           </div>
         </div>
       </div>

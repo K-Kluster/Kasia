@@ -1,4 +1,4 @@
-import { FC, useMemo, useState, useEffect, useRef } from "react";
+import { FC, useState, useEffect, useRef } from "react";
 
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useMessagingStore } from "../store/messaging.store";
@@ -25,7 +25,7 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   const displayString = nickname || addressStr;
   const isNickname = !!nickname;
 
-  const [firstSubPart, secondSubPart] = useMemo(() => {
+  const getAddressParts = () => {
     const indexOfColon = addressStr.indexOf(":");
     if (indexOfColon === -1) {
       return [addressStr, ""];
@@ -35,7 +35,9 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
       `${prefix}:${addressStr.slice(indexOfColon + 1, indexOfColon + 6)}`,
       addressStr.slice(-5),
     ];
-  }, [addressStr]);
+  };
+
+  const [firstSubPart, secondSubPart] = getAddressParts();
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
