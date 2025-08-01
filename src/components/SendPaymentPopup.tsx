@@ -2,12 +2,12 @@ import { Input } from "@headlessui/react";
 import clsx from "clsx";
 import { FC, useCallback, useEffect, useRef, useState } from "react";
 import { KasIcon } from "./icons/KasCoin";
-import { sompiToKaspaString, kaspaToSompi } from "kaspa-wasm";
+import { sompiToKaspaString, kaspaToSompi, Address } from "kaspa-wasm";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { encrypt_message } from "cipher";
-import { Address } from "kaspa-wasm";
 import { toast } from "../utils/toast";
+import { validateAddress } from "../utils/address-validator";
 
 export const SendPaymentPopup: FC<{
   address: string;
@@ -186,6 +186,18 @@ export const SendPaymentPopup: FC<{
 
     if (!walletStore.unlockedWallet?.password) {
       toast.error("Wallet is locked. Please unlock your wallet first.");
+      return;
+    }
+
+    // additional safety checks
+    if (!walletStore.accountService || !walletStore.accountService.isStarted) {
+      toast.error("Account service not available. Refresh App.");
+      return;
+    }
+
+    if (!address || !validateAddress(address)) {
+      console.error(address);
+      toast.error("Receivers address not valid.");
       return;
     }
 
