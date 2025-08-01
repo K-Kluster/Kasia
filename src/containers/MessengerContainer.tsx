@@ -11,6 +11,7 @@ import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
 import { useDBStore } from "../store/db.store";
 import { Contact } from "../store/repository/contact.repository";
+import { HistoricalSyncer } from "../service/historical-syncer";
 
 export const MessengerContainer: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -85,6 +86,8 @@ export const MessengerContainer: FC = () => {
   // Clean up useEffect
   useEffect(() => {
     return () => {
+      // @TODO(indexdb): Stops historical polling when message client starts
+
       // Called when MessagingContainer unmounts (user leaves route), so we can reset all the states
       walletStore.lock();
       uiStore.setSettingsOpen(false);
@@ -135,30 +138,7 @@ export const MessengerContainer: FC = () => {
         // migrate storage
         await dbStore.migrateStorage();
 
-        // hydrate 1-1 conversations
-        await messageStore.hydrateOneonOneConversations();
-
-        // Initialize conversation manager
-        messageStore.initializeConversationManager(receiveAddressStr);
-
-        // Load existing messages
-        messageStore.setIsLoaded(true);
-
-        // Check if we should trigger API message fetching for imported wallets
-        const shouldFetchApi = localStorage.getItem("kasia_fetch_api_on_start");
-        if (shouldFetchApi === "true") {
-          console.log("Triggering API message fetch for imported wallet...");
-          // Set a flag to trigger API fetching after a short delay
-          setTimeout(() => {
-            const event = new CustomEvent("kasia-trigger-api-fetch", {
-              detail: { address: receiveAddressStr },
-            });
-            window.dispatchEvent(event);
-          }, 1000);
-
-          // Clear the flag after use
-          localStorage.removeItem("kasia_fetch_api_on_start");
-        }
+        await messageStore.load(receiveAddressStr);
 
         // Clear error message on success
         setErrorMessage(null);

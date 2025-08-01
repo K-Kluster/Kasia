@@ -1,18 +1,6 @@
 import { Contact } from "../store/repository/contact.repository";
 import { Conversation } from "../store/repository/conversation.repository";
 
-export interface HandshakeState {
-  conversationId: string;
-  myAlias: string;
-  theirAlias: string | null;
-  senderAddress: string;
-  kaspaAddress: string;
-  status: "pending" | "active" | "rejected";
-  createdAt: number;
-  lastActivity: number;
-  initiatedByMe: boolean;
-}
-
 export interface HandshakePayload {
   type: "handshake";
   alias: string;

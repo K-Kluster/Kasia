@@ -66,6 +66,7 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
   }, [address, unlockedWallet]);
 
   const fetchAndProcessMessages = async () => {
+    return;
     setLoading(true);
     toast.removeAll();
 
@@ -106,183 +107,289 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
       );
 
       // Fetch and process messages for each address, in parallel
-      await Promise.allSettled(
-        [...uniqueAddresses].map(async (currentAddress) => {
-          // Ensure the address is properly formatted for the API
-          const formattedAddress = currentAddress.includes(":")
-            ? encodeURIComponent(currentAddress)
-            : encodeURIComponent(
-                `${
-                  networkId === "mainnet" ? "kaspa:" : "kaspatest:"
-                }${currentAddress}`
-              );
-
-          const apiUrl = `${baseUrl}/addresses/${formattedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=light`;
-
-          console.log(
-            `API Messages: Fetching from URL for address ${currentAddress}:`,
-            apiUrl
-          );
-
-          const response = await fetch(apiUrl);
-          if (!response.ok) {
-            console.error(
-              `API error for address ${currentAddress}: ${response.status} ${response.statusText}`
+      for (const currentAddress of uniqueAddresses) {
+        // Ensure the address is properly formatted for the API
+        const formattedAddress = currentAddress.includes(":")
+          ? encodeURIComponent(currentAddress)
+          : encodeURIComponent(
+              `${
+                networkId === "mainnet" ? "kaspa:" : "kaspatest:"
+              }${currentAddress}`
             );
-            return;
+
+        const apiUrl = `${baseUrl}/addresses/${formattedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=light`;
+
+        console.log(
+          `API Messages: Fetching from URL for address ${currentAddress}:`,
+          apiUrl
+        );
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          console.error(
+            `API error for address ${currentAddress}: ${response.status} ${response.statusText}`
+          );
+          return;
+        }
+
+        const transactions: Transaction[] = await response.json();
+        console.log(
+          `API Messages: Fetched ${transactions.length} transactions for ${currentAddress}`
+        );
+
+        // Process only encrypted message transactions
+        const messageTxs = transactions.filter(
+          (tx) => tx.payload && tx.payload.startsWith(PROTOCOL_PREFIX)
+        );
+
+        console.log(
+          `API Messages: Found ${messageTxs.length} encrypted message transactions for ${currentAddress}`
+        );
+
+        // Process each transaction
+        for (const tx of messageTxs) {
+          // Skip if we already have this transaction
+          if (existingTransactionIds.has(tx.transaction_id)) {
+            console.log(
+              `API Messages: Skipping existing transaction: ${tx.transaction_id}`
+            );
+            continue;
           }
 
-          const transactions: Transaction[] = await response.json();
-          console.log(
-            `API Messages: Fetched ${transactions.length} transactions for ${currentAddress}`
-          );
-
-          // Process only encrypted message transactions
-          const messageTxs = transactions.filter(
-            (tx) => tx.payload && tx.payload.startsWith(PROTOCOL_PREFIX)
-          );
+          // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
+          if (DecryptionCache.hasFailed(currentAddress, tx.transaction_id)) {
+            console.log(
+              `API Messages: Skipping known failed decryption: ${tx.transaction_id}`
+            );
+            continue;
+          }
 
           console.log(
-            `API Messages: Found ${messageTxs.length} encrypted message transactions for ${currentAddress}`
+            `API Messages: Processing new transaction: ${tx.transaction_id}`,
+            { tx }
           );
 
-          // Process each transaction
-          for (const tx of messageTxs) {
-            // Skip if we already have this transaction
-            if (existingTransactionIds.has(tx.transaction_id)) {
-              console.log(
-                `API Messages: Skipping existing transaction: ${tx.transaction_id}`
-              );
-              continue;
-            }
+          // For each transaction, determine if this is incoming or outgoing
+          // Use the original logic to preserve existing functionality
+          const recipientAddress =
+            tx.outputs[0]?.script_public_key_address || "Unknown";
+          const isIncoming = recipientAddress === currentAddress;
+          let senderAddress = isIncoming
+            ? tx.inputs[0]?.previous_outpoint_address || "Unknown"
+            : currentAddress;
 
-            // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
-            if (DecryptionCache.hasFailed(currentAddress, tx.transaction_id)) {
-              console.log(
-                `API Messages: Skipping known failed decryption: ${tx.transaction_id}`
-              );
-              continue;
-            }
+          console.log(`API Messages: Transaction ${tx.transaction_id}:`);
+          console.log(`- Current address: ${currentAddress}`);
+          console.log(`- Recipient address: ${recipientAddress}`);
+          console.log(`- Is incoming: ${isIncoming}`);
+          console.log(
+            `- Input[0] previous_outpoint_address: ${tx.inputs[0]?.previous_outpoint_address}`
+          );
+          console.log(`- Determined sender address: ${senderAddress}`);
 
-            console.log(
-              `API Messages: Processing new transaction: ${tx.transaction_id}`,
-              { tx }
-            );
+          // Try to decrypt the message
+          let decryptedContent = "";
 
-            // For each transaction, determine if this is incoming or outgoing
-            // Use the original logic to preserve existing functionality
-            const recipientAddress =
-              tx.outputs[0]?.script_public_key_address || "Unknown";
-            const isIncoming = recipientAddress === currentAddress;
-            let senderAddress = isIncoming
-              ? tx.inputs[0]?.previous_outpoint_address || "Unknown"
-              : currentAddress;
-
-            console.log(`API Messages: Transaction ${tx.transaction_id}:`);
-            console.log(`- Current address: ${currentAddress}`);
-            console.log(`- Recipient address: ${recipientAddress}`);
-            console.log(`- Is incoming: ${isIncoming}`);
-            console.log(
-              `- Input[0] previous_outpoint_address: ${tx.inputs[0]?.previous_outpoint_address}`
-            );
-            console.log(`- Determined sender address: ${senderAddress}`);
-
-            // Try to decrypt the message
-            let decryptedContent = "";
-
-            if (walletStore.unlockedWallet) {
-              try {
-                // Extract the encrypted part (remove the "ciph_msg:" prefix)
-                if (!tx.payload.startsWith(PROTOCOL_PREFIX)) {
-                  console.log(
-                    `API Messages: Invalid message format, missing prefix: ${tx.payload.substring(
-                      0,
-                      20
-                    )}...`
-                  );
-                  continue;
-                }
-
-                console.log(`API Messages: Full payload: ${tx.payload}`);
-                const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
+          if (walletStore.unlockedWallet) {
+            try {
+              // Extract the encrypted part (remove the "ciph_msg:" prefix)
+              if (!tx.payload.startsWith(PROTOCOL_PREFIX)) {
                 console.log(
-                  `API Messages: Message hex after prefix: ${messageHex}`
-                );
-
-                let messageType = "unknown";
-                let isHandshake = false;
-                let targetAlias = null;
-                let encryptedContent = messageHex; // Default to full message for handshakes
-
-                if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
-                  messageType = "handshake";
-                  isHandshake = true;
-                  encryptedContent = messageHex;
-                } else if (messageHex.startsWith(COMM_PREFIX)) {
-                  // Parse regular messages
-                  const messageStr = hexToString(messageHex);
-                  const parts = messageStr.split(":");
-
-                  if (parts.length >= 4) {
-                    messageType = "comm";
-                    targetAlias = parts[2];
-                    encryptedContent = parts[3];
-                  }
-                } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
-                  // Parse payment messages - simplified format without aliases
-                  const messageStr = hexToString(messageHex);
-                  const parts = messageStr.split(":");
-
-                  if (parts.length >= 3) {
-                    messageType = "payment";
-                    // No alias needed - parts[2] is the encrypted content
-                    encryptedContent = parts[2];
-                  }
-                }
-
-                console.log(`API Messages: Parsed message parts:`);
-                console.log(`- Type: ${messageType}`);
-                console.log(`- Is Handshake: ${isHandshake}`);
-                console.log(`- Target Alias: ${targetAlias}`);
-                console.log(
-                  `- Encrypted content (first 40 chars): ${encryptedContent?.substring(
+                  `API Messages: Invalid message format, missing prefix: ${tx.payload.substring(
                     0,
-                    40
+                    20
                   )}...`
                 );
+                continue;
+              }
 
-                if (!encryptedContent) {
-                  console.log("API Messages: No encrypted content found");
-                  continue;
+              console.log(`API Messages: Full payload: ${tx.payload}`);
+              const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
+              console.log(
+                `API Messages: Message hex after prefix: ${messageHex}`
+              );
+
+              let messageType = "unknown";
+              let isHandshake = false;
+              let targetAlias = null;
+              let encryptedContent = messageHex; // Default to full message for handshakes
+
+              if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
+                messageType = "handshake";
+                isHandshake = true;
+                encryptedContent = messageHex;
+              } else if (messageHex.startsWith(COMM_PREFIX)) {
+                // Parse regular messages
+                const messageStr = hexToString(messageHex);
+                const parts = messageStr.split(":");
+
+                if (parts.length >= 4) {
+                  messageType = "comm";
+                  targetAlias = parts[2];
+                  encryptedContent = parts[3];
                 }
+              } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
+                // Parse payment messages - simplified format without aliases
+                const messageStr = hexToString(messageHex);
+                const parts = messageStr.split(":");
 
-                console.log(
-                  `API Messages: Using wallet derivation type: ${walletStore.unlockedWallet.derivationType}`
-                );
+                if (parts.length >= 3) {
+                  messageType = "payment";
+                  // No alias needed - parts[2] is the encrypted content
+                  encryptedContent = parts[2];
+                }
+              }
 
-                // Try multiple private keys
-                const maxKeys = 1; // Try up to 20 keys for each type
-                let decryptionSuccess = false;
-                let successfulKeyType = "";
-                let successfulKeyIndex = -1;
+              console.log(`API Messages: Parsed message parts:`);
+              console.log(`- Type: ${messageType}`);
+              console.log(`- Is Handshake: ${isHandshake}`);
+              console.log(`- Target Alias: ${targetAlias}`);
+              console.log(
+                `- Encrypted content (first 40 chars): ${encryptedContent?.substring(
+                  0,
+                  40
+                )}...`
+              );
 
-                // First try with receive keys (standard addresses)
+              if (!encryptedContent) {
+                console.log("API Messages: No encrypted content found");
+                continue;
+              }
+
+              console.log(
+                `API Messages: Using wallet derivation type: ${walletStore.unlockedWallet.derivationType}`
+              );
+
+              // Try multiple private keys
+              const maxKeys = 1; // Try up to 20 keys for each type
+              let decryptionSuccess = false;
+              let successfulKeyType = "";
+              let successfulKeyIndex = -1;
+
+              // First try with receive keys (standard addresses)
+              for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
+                try {
+                  console.log(`API Messages: Trying receive key at index ${i}`);
+                  const privateKey = privateKeyGenerator.receiveKey(i);
+                  const privateKeyHex = privateKey.toString();
+                  console.log(
+                    `API Messages: Using receive key ${privateKeyHex.substring(
+                      0,
+                      8
+                    )}...`
+                  );
+
+                  // Use CipherHelper for robust decryption
+                  const messageId = `${tx.transaction_id}_receive_${i}`;
+                  const result = await CipherHelper.tryDecrypt(
+                    encryptedContent,
+                    privateKeyHex,
+                    messageId
+                  );
+
+                  if (result) {
+                    decryptedContent = result;
+                    decryptionSuccess = true;
+                    successfulKeyType = "receive";
+                    successfulKeyIndex = i;
+                    console.log(
+                      `API Messages: Successfully decrypted with receive key at index ${i} (${privateKeyHex.substring(
+                        0,
+                        8
+                      )}...)`
+                    );
+
+                    // If this is a handshake message and sender is still unknown, try to extract from payload
+                    if (
+                      senderAddress === "Unknown" &&
+                      result.includes("handshake")
+                    ) {
+                      try {
+                        const handshakeMatch = result.match(
+                          /ciph_msg:1:handshake:(.+)/
+                        );
+                        if (handshakeMatch) {
+                          const handshakeData = JSON.parse(handshakeMatch[1]);
+                          // For handshake responses, look for the original recipient address
+                          if (
+                            handshakeData.isResponse &&
+                            handshakeData.recipientAddress
+                          ) {
+                            // In a handshake response, the recipientAddress field contains the original initiator's address
+                            console.log(
+                              `API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`
+                            );
+                            senderAddress = handshakeData.recipientAddress;
+                          } else if (!handshakeData.isResponse) {
+                            // For initial handshakes, try to find sender from transaction outputs
+                            const changeOutput = tx.outputs.find(
+                              (output) =>
+                                output.script_public_key_address !==
+                                currentAddress
+                            );
+                            if (changeOutput) {
+                              console.log(
+                                `API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`
+                              );
+                              senderAddress =
+                                changeOutput.script_public_key_address ||
+                                "Unknown";
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        console.log(
+                          `API Messages: Could not extract sender from handshake payload: ${e}`
+                        );
+                      }
+                    }
+
+                    // Create and store the decrypted message
+                    const kasiaTransaction: KasiaTransaction = {
+                      senderAddress: senderAddress,
+                      recipientAddress: recipientAddress,
+                      createdAt: tx.block_time
+                        ? new Date(tx.block_time)
+                        : new Date(),
+                      content: result,
+                      payload: tx.payload,
+                      amount: tx.outputs[0].amount || 0,
+                      fee: 0,
+                      transactionId: tx.transaction_id,
+                    };
+
+                    await messagingStore.storeKasiaTransactions([
+                      kasiaTransaction,
+                    ]);
+                    break;
+                  }
+                } catch (error) {
+                  console.log(
+                    `API Messages: Failed to decrypt with receive key at index ${i}: ${
+                      unknownErrorToErrorLike(error).message
+                    }`
+                  );
+                }
+              }
+
+              // If still not decrypted, try with change keys
+              if (!decryptionSuccess) {
                 for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
                   try {
                     console.log(
-                      `API Messages: Trying receive key at index ${i}`
+                      `API Messages: Trying change key at index ${i}`
                     );
-                    const privateKey = privateKeyGenerator.receiveKey(i);
+                    const privateKey = privateKeyGenerator.changeKey(i);
                     const privateKeyHex = privateKey.toString();
                     console.log(
-                      `API Messages: Using receive key ${privateKeyHex.substring(
+                      `API Messages: Using change key ${privateKeyHex.substring(
                         0,
                         8
                       )}...`
                     );
 
                     // Use CipherHelper for robust decryption
-                    const messageId = `${tx.transaction_id}_receive_${i}`;
+                    const messageId = `${tx.transaction_id}_change_${i}`;
                     const result = await CipherHelper.tryDecrypt(
                       encryptedContent,
                       privateKeyHex,
@@ -292,10 +399,10 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                     if (result) {
                       decryptedContent = result;
                       decryptionSuccess = true;
-                      successfulKeyType = "receive";
+                      successfulKeyType = "change";
                       successfulKeyIndex = i;
                       console.log(
-                        `API Messages: Successfully decrypted with receive key at index ${i} (${privateKeyHex.substring(
+                        `API Messages: Successfully decrypted with change key at index ${i} (${privateKeyHex.substring(
                           0,
                           8
                         )}...)`
@@ -360,208 +467,60 @@ export const FetchApiMessages: FC<FetchApiMessagesProps> = ({ address }) => {
                         transactionId: tx.transaction_id,
                       };
 
-                      messagingStore.storeKasiaTransactions([kasiaTransaction]);
+                      await messagingStore.storeKasiaTransactions([
+                        kasiaTransaction,
+                      ]);
                       break;
                     }
                   } catch (error) {
                     console.log(
-                      `API Messages: Failed to decrypt with receive key at index ${i}: ${
+                      `API Messages: Failed to decrypt with change key at index ${i}: ${
                         unknownErrorToErrorLike(error).message
                       }`
                     );
                   }
                 }
+              }
 
-                // If still not decrypted, try with change keys
-                if (!decryptionSuccess) {
-                  for (let i = 0; i < maxKeys && !decryptionSuccess; i++) {
-                    try {
-                      console.log(
-                        `API Messages: Trying change key at index ${i}`
-                      );
-                      const privateKey = privateKeyGenerator.changeKey(i);
-                      const privateKeyHex = privateKey.toString();
-                      console.log(
-                        `API Messages: Using change key ${privateKeyHex.substring(
-                          0,
-                          8
-                        )}...`
-                      );
+              // If still not decrypted and we're using standard derivation, try legacy derivation
+              if (
+                !decryptionSuccess &&
+                walletStore.unlockedWallet.derivationType === "standard"
+              ) {
+                console.log(
+                  `API Messages: Trying legacy derivation keys as fallback...`
+                );
+              }
 
-                      // Use CipherHelper for robust decryption
-                      const messageId = `${tx.transaction_id}_change_${i}`;
-                      const result = await CipherHelper.tryDecrypt(
-                        encryptedContent,
-                        privateKeyHex,
-                        messageId
-                      );
-
-                      if (result) {
-                        decryptedContent = result;
-                        decryptionSuccess = true;
-                        successfulKeyType = "change";
-                        successfulKeyIndex = i;
-                        console.log(
-                          `API Messages: Successfully decrypted with change key at index ${i} (${privateKeyHex.substring(
-                            0,
-                            8
-                          )}...)`
-                        );
-
-                        // If this is a handshake message and sender is still unknown, try to extract from payload
-                        if (
-                          senderAddress === "Unknown" &&
-                          result.includes("handshake")
-                        ) {
-                          try {
-                            const handshakeMatch = result.match(
-                              /ciph_msg:1:handshake:(.+)/
-                            );
-                            if (handshakeMatch) {
-                              const handshakeData = JSON.parse(
-                                handshakeMatch[1]
-                              );
-                              // For handshake responses, look for the original recipient address
-                              if (
-                                handshakeData.isResponse &&
-                                handshakeData.recipientAddress
-                              ) {
-                                // In a handshake response, the recipientAddress field contains the original initiator's address
-                                console.log(
-                                  `API Messages: Extracted sender from handshake response: ${handshakeData.recipientAddress}`
-                                );
-                                senderAddress = handshakeData.recipientAddress;
-                              } else if (!handshakeData.isResponse) {
-                                // For initial handshakes, try to find sender from transaction outputs
-                                const changeOutput = tx.outputs.find(
-                                  (output) =>
-                                    output.script_public_key_address !==
-                                    currentAddress
-                                );
-                                if (changeOutput) {
-                                  console.log(
-                                    `API Messages: Extracted sender from transaction outputs: ${changeOutput.script_public_key_address}`
-                                  );
-                                  senderAddress =
-                                    changeOutput.script_public_key_address ||
-                                    "Unknown";
-                                }
-                              }
-                            }
-                          } catch (e) {
-                            console.log(
-                              `API Messages: Could not extract sender from handshake payload: ${e}`
-                            );
-                          }
-                        }
-
-                        // Create and store the decrypted message
-                        const kasiaTransaction: KasiaTransaction = {
-                          senderAddress: senderAddress,
-                          recipientAddress: recipientAddress,
-                          createdAt: tx.block_time
-                            ? new Date(tx.block_time)
-                            : new Date(),
-                          content: result,
-                          payload: tx.payload,
-                          amount: tx.outputs[0].amount || 0,
-                          fee: 0,
-                          transactionId: tx.transaction_id,
-                        };
-
-                        messagingStore.storeKasiaTransactions([
-                          kasiaTransaction,
-                        ]);
-                        break;
-                      }
-                    } catch (error) {
-                      console.log(
-                        `API Messages: Failed to decrypt with change key at index ${i}: ${
-                          unknownErrorToErrorLike(error).message
-                        }`
-                      );
-                    }
-                  }
-                }
-
-                // If still not decrypted and we're using standard derivation, try legacy derivation
-                if (
-                  !decryptionSuccess &&
-                  walletStore.unlockedWallet.derivationType === "standard"
-                ) {
-                  console.log(
-                    `API Messages: Trying legacy derivation keys as fallback...`
-                  );
-                }
-
-                // 🚀 OPTIMIZATION: Mark decryption result in cache
-                if (!decryptionSuccess) {
-                  DecryptionCache.markFailed(currentAddress, tx.transaction_id);
-                  console.log(
-                    `API Messages: Could not decrypt message for transaction ${
-                      tx.transaction_id
-                    } after trying ${maxKeys} receive keys and ${maxKeys} change keys${
-                      walletStore.unlockedWallet.derivationType === "standard"
-                        ? " and legacy keys"
-                        : ""
-                    } - marked as failed in cache`
-                  );
-                  decryptedContent = "[Could not decrypt message]";
-                } else {
-                  DecryptionCache.markSuccess(
-                    currentAddress,
+              // 🚀 OPTIMIZATION: Mark decryption result in cache
+              if (!decryptionSuccess) {
+                DecryptionCache.markFailed(currentAddress, tx.transaction_id);
+                console.log(
+                  `API Messages: Could not decrypt message for transaction ${
                     tx.transaction_id
-                  );
-                  console.log(
-                    `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex} - removed from failed cache if present`
-                  );
-                  console.log(
-                    `API Messages: Decrypted content: ${decryptedContent}`
-                  );
-                }
-              } catch (error) {
-                console.error("API Messages: Error decrypting message:", error);
-                decryptedContent = "[Decryption error]";
+                  } after trying ${maxKeys} receive keys and ${maxKeys} change keys${
+                    walletStore.unlockedWallet.derivationType === "standard"
+                      ? " and legacy keys"
+                      : ""
+                  } - marked as failed in cache`
+                );
+                decryptedContent = "[Could not decrypt message]";
+              } else {
+                DecryptionCache.markSuccess(currentAddress, tx.transaction_id);
+                console.log(
+                  `API Messages: Successfully decrypted message using ${successfulKeyType} key at index ${successfulKeyIndex} - removed from failed cache if present`
+                );
+                console.log(
+                  `API Messages: Decrypted content: ${decryptedContent}`
+                );
               }
-            }
-
-            // Only store messages that:
-            // 1. We can decrypt, and
-            // 2. Either contain one of our monitored aliases or are from/to our current address
-            if (
-              decryptedContent !== "[Could not decrypt message]" &&
-              decryptedContent !== "[Decryption error]" &&
-              decryptedContent !== "[Wallet locked]"
-            ) {
-              // Check if the message contains any of our monitored aliases
-              const containsMonitoredAlias = Array.from(
-                aliasToConversation.keys()
-              ).some((alias) => decryptedContent.includes(alias));
-
-              // Store the message if it contains our alias or involves our current address
-              if (containsMonitoredAlias || currentAddress === address) {
-                // Create message data and store it
-                const kasiaTransaction: KasiaTransaction = {
-                  senderAddress: senderAddress,
-                  recipientAddress: recipientAddress,
-                  createdAt: tx.block_time
-                    ? new Date(tx.block_time)
-                    : new Date(),
-                  content: decryptedContent,
-                  payload: tx.payload,
-                  amount: tx.outputs[0].amount || 0,
-                  fee: 0,
-                  transactionId: tx.transaction_id,
-                };
-
-                console.log(`API Messages: Storing message:`, kasiaTransaction);
-
-                messagingStore.storeKasiaTransactions([kasiaTransaction]);
-              }
+            } catch (error) {
+              console.error("API Messages: Error decrypting message:", error);
+              decryptedContent = "[Decryption error]";
             }
           }
-        })
-      );
+        }
+      }
 
       console.log("API Messages: Fetch and process completed successfully");
     } catch (err) {

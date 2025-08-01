@@ -72,6 +72,10 @@ VITE_ALLOWED_KASPA_NETWORKS=mainnet,testnet-10
 VITE_DISABLE_PASSWORD_REQUIREMENTS=true
 # info, warn, error, silent
 VITE_LOG_LEVEL=info
+
+# if unset, the public indexers will be used
+VITE_INDEXER_MAINNET_URL=
+VITE_INDEXER_TESTNET_URL=
 ```
 
 ## Contributing

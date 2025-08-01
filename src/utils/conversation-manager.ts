@@ -24,12 +24,25 @@ export class ConversationManager {
   private aliasToConversation: Map<string, string> = new Map(); // alias -> conversationId
   private addressToConversation: Map<string, string> = new Map(); // kaspaAddress -> conversationId
 
-  constructor(
+  private constructor(
     private currentAddress: string,
     readonly repositories: Repositories,
     private events?: Partial<ConversationEvents>
+  ) {}
+
+  static async init(
+    currentAddress: string,
+    repositories: Repositories,
+    events?: Partial<ConversationEvents>
   ) {
-    this.loadConversations();
+    const manager = new ConversationManager(
+      currentAddress,
+      repositories,
+      events
+    );
+    await manager.loadConversations();
+
+    return manager;
   }
 
   private get storageKey(): string {
@@ -326,6 +339,18 @@ export class ConversationManager {
         conversation: conversation as PendingConversation,
         contact,
       }));
+  }
+
+  public getAllConversationsWithContact(): {
+    conversation: Conversation;
+    contact: Contact;
+  }[] {
+    return Array.from(
+      this.conversationWithContactByConversationId.values()
+    ).map(({ conversation, contact }) => ({
+      conversation: conversation,
+      contact,
+    }));
   }
 
   public updateLastActivity(conversationId: string): void {

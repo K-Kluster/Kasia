@@ -152,7 +152,13 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           "Rendering handshake response for conversation:",
           conversation
         );
-        return <HandshakeResponse conversation={conversation} />;
+        return (
+          <HandshakeResponse
+            conversation={conversation}
+            contact={contact}
+            handshakeId={event.id}
+          />
+        );
       }
       // For other handshake messages, just show the status text
       return conversation.status === "active"
@@ -260,13 +266,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     }
 
     return messageToRender;
-  }, [
-    conversation,
-    event.__type,
-    event.content,
-    event.transactionId,
-    renderPaymentMessage,
-  ]);
+  }, [conversation, renderPaymentMessage, contact, event]);
 
   const [decryptedContent, setDecryptedContent] = useState<string>("");
   const [isDecrypting, setIsDecrypting] = useState<boolean>(false);

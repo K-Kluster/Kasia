@@ -7,6 +7,7 @@
     "dev": "vite",
     "build:production": "tsc -b && vite build ",
     "build:staging": "tsc -b && vite build --mode staging",
+    "generate:openapi": "openapi-ts -f src/service/indexer/generator.config.ts",
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:fix": "prettier --write ./src",
@@ -15,7 +16,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd ..",
-    "prepare": "node .husky/install.mjs"
+    "prepare": "node .husky/install.mjs && npm run generate:openapi"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.1",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@hey-api/openapi-ts": "0.80.1",
     "@tailwindcss/postcss": "^4.1.8",
     "@tauri-apps/cli": "^2.5.0",
     "@types/node": "^22.15.18",

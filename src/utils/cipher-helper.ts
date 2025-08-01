@@ -126,21 +126,7 @@ export class CipherHelper {
       CipherHelper.log("Standard decryption attempt failed");
     }
 
-    // Method 2: Try different message parsing
-    try {
-      // Create message using the constructor provided by the WASM module
-      const encryptedMessage = new EncryptedMessage(encryptedHex);
-      const privateKey = new PrivateKey(privateKeyHex);
-
-      const decrypted = await decrypt_message(encryptedMessage, privateKey);
-      CipherHelper.log("Component-based decryption successful");
-      return decrypted;
-    } catch (err) {
-      errors.push(err as Error);
-      CipherHelper.log("Component-based decryption attempt failed");
-    }
-
-    // Method 3: Convert private key to bytes and try the secret key approach
+    // Method 2: Convert private key to bytes and try the secret key approach
     try {
       // Convert private key to bytes
       const privateKeyBytes = new Uint8Array(

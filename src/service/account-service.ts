@@ -44,6 +44,7 @@ import {
   PAYMENT_PREFIX,
 } from "../config/protocol";
 import { useDBStore } from "../store/db.store";
+import { HistoricalSyncer } from "./historical-syncer";
 
 // Message related types
 type DecodedMessage = {
@@ -267,58 +268,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     return null;
   }
 
-  private async fetchHistoricalMessages() {
-    if (!this.receiveAddress) return;
-
-    try {
-      console.log("Fetching historical messages...");
-      const address = this.receiveAddress.toString();
-
-      // Use the network-appropriate API endpoint
-      const baseUrl =
-        this.networkId === "mainnet"
-          ? "https://api.kaspa.org"
-          : "https://api-tn10.kaspa.org";
-      const encodedAddress = encodeURIComponent(address);
-      const response = await fetch(
-        `${baseUrl}/addresses/${encodedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch historical transactions: ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      const transactions: ExplorerTransaction[] = data || [];
-
-      console.log(`Found ${transactions.length} historical transactions`);
-
-      // Update monitored conversations BEFORE processing messages
-      await this.updateMonitoredConversations();
-
-      // Process each transaction
-      for (const tx of transactions) {
-        const txId = tx.transaction_id;
-        if (!txId || this.processedMessageIds.has(txId)) continue;
-
-        // Check if this is a message transaction and involves our address
-        if (
-          this.isMessageOrHandshakeTransaction(tx) &&
-          this.isTransactionForUs(tx)
-        ) {
-          console.log(`Processing historical message transaction: ${txId}`);
-          await this.processMessageTransaction(tx, txId, Number(tx.block_time));
-        }
-      }
-
-      console.log("Historical message fetch complete");
-    } catch (error) {
-      console.error("Error fetching historical messages:", error);
-    }
-  }
-
   async start() {
     try {
       // Get the receive address from the wallet
@@ -363,9 +312,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         void this.processBlockEvent(event as unknown as BlockAddedData);
       });
       console.log("Successfully subscribed to block events");
-
-      // Fetch historical messages after setup is complete
-      await this.fetchHistoricalMessages();
 
       // Get initial state one more time to ensure we're up to date
       this._emitBalanceUpdate();
@@ -1514,10 +1460,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             ...kasiaTransaction,
           });
 
-          // const messagingStore = useMessagingStore.getState();
-          // if (messagingStore) {
-          //   messagingStore.storeKasiaTransactions([kasiaTransaction])
-          // }
+          const messagingStore = useMessagingStore.getState();
+          if (messagingStore) {
+            await messagingStore.storeKasiaTransactions([kasiaTransaction]);
+          }
 
           if (isHandshake) {
             await this.updateMonitoredConversations();

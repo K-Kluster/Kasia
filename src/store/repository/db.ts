@@ -29,6 +29,7 @@ export interface KasiaDBSchema extends DBSchema {
     key: string;
     value: DbMessage;
     indexes: {
+      "by-id": string;
       "by-tenant-id": string;
       "by-conversation-id": string;
       "by-created-at": number;
@@ -39,6 +40,7 @@ export interface KasiaDBSchema extends DBSchema {
     key: string;
     value: DbPayment;
     indexes: {
+      "by-id": string;
       "by-tenant-id": string;
       "by-conversation-id": string;
       "by-created-at": number;
@@ -49,6 +51,7 @@ export interface KasiaDBSchema extends DBSchema {
     key: string;
     value: DbHandshake;
     indexes: {
+      "by-id": string;
       "by-tenant-id": string;
       "by-conversation-id": string;
       "by-created-at": number;
@@ -70,6 +73,7 @@ export interface KasiaDBSchema extends DBSchema {
     key: string;
     value: DbDecryptionTrial;
     indexes: {
+      "by-id": string;
       "by-tenant-id": string;
       "by-timestamp": number;
     };
@@ -101,6 +105,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         const messagesStore = db.createObjectStore("messages", {
           keyPath: "id",
         });
+        messagesStore.createIndex("by-id", "id", { unique: true });
         messagesStore.createIndex("by-tenant-id", "tenantId");
         messagesStore.createIndex("by-conversation-id", "conversationId");
         messagesStore.createIndex("by-created-at", "createdAt");
@@ -113,6 +118,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         const paymentsStore = db.createObjectStore("payments", {
           keyPath: "id",
         });
+        paymentsStore.createIndex("by-id", "id", { unique: true });
         paymentsStore.createIndex("by-tenant-id", "tenantId");
         paymentsStore.createIndex("by-conversation-id", "conversationId");
         paymentsStore.createIndex("by-created-at", "createdAt");
@@ -125,6 +131,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         const handshakesStore = db.createObjectStore("handshakes", {
           keyPath: "id",
         });
+        handshakesStore.createIndex("by-id", "id", { unique: true });
         handshakesStore.createIndex("by-tenant-id", "tenantId");
         handshakesStore.createIndex("by-conversation-id", "conversationId");
         handshakesStore.createIndex("by-created-at", "createdAt");
@@ -150,6 +157,7 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         const decryptionTrialsStore = db.createObjectStore("decryptionTrials", {
           keyPath: "id",
         });
+        decryptionTrialsStore.createIndex("by-id", "id", { unique: true });
         decryptionTrialsStore.createIndex("by-tenant-id", "tenantId");
         decryptionTrialsStore.createIndex("by-timestamp", "timestamp");
 
