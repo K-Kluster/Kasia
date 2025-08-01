@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
 import { Radio, RadioGroup, Label } from "@headlessui/react";
@@ -52,8 +52,6 @@ export const WalletFlow = ({
 
   // Simplified approach - use the original Zustand hooks but force re-renders
   const openModal = useUiStore((s) => s.openModal);
-  const isOpen = useUiStore((s) => s.isOpen);
-  const closeModal = useUiStore((s) => s.closeModal);
 
   const { wallet } = useParams<{ wallet: string }>();
 
@@ -73,10 +71,10 @@ export const WalletFlow = ({
 
   const isMobile = useIsMobile();
 
-  const usePasswordRef = useCallback((node: HTMLInputElement | null) => {
+  const usePasswordRef = (node: HTMLInputElement | null) => {
     passwordRef.current = node;
     node?.focus();
-  }, []);
+  };
 
   const [step, setStep] = useState<Step>({
     type: initialStep as Step["type"],

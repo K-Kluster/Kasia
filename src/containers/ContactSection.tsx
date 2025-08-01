@@ -1,4 +1,4 @@
-import { FC, useState, useMemo } from "react";
+import { FC, useState } from "react";
 import { Menu, Search, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
@@ -39,7 +39,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const [showSearch, setShowSearch] = useState(false);
 
   // Search through all messages and contacts
-  const searchResults = useMemo(() => {
+  const searchResults = () => {
     if (!searchQuery.trim()) return contacts;
     const q = searchQuery.toLowerCase();
     const matches = new Map<string, Contact>();
@@ -67,11 +67,11 @@ export const ContactSection: FC<ContactSectionProps> = ({
     });
 
     return [...matches.values()];
-  }, [searchQuery, contacts, messageStore.messages, walletAddress]);
+  };
 
   const uniqueContacts = [
     ...new Map(
-      searchResults
+      searchResults()
         .filter((c) => c.address && c.address !== walletAddress)
         .map((c) => [c.address.trim().toLowerCase(), c])
     ).values(),

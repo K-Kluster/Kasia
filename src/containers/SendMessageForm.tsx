@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState, DragEvent } from "react";
+import { FC, useEffect, useRef, useState, DragEvent } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -18,8 +18,6 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
-  AlertTriangle,
-  Info,
   Camera,
   Trash,
 } from "lucide-react";
@@ -30,8 +28,6 @@ import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
-import { Modal } from "../components/Common/modal";
-import { Button } from "../components/Common/Button";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../service/upload-file-service";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -111,47 +107,47 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }
   }, []);
 
-  const estimateFee = useCallback(async () => {
-    if (!walletStore.unlockedWallet) {
-      console.log("Cannot estimate fee: missing wallet");
-      return;
-    }
-
-    if (!message || !openedRecipient) {
-      console.log("Cannot estimate fee: missing message or recipient");
-      return;
-    }
-
-    try {
-      console.log("Estimating fee for message:", {
-        length: message.length,
-        openedRecipient,
-        priorityFee: {
-          amount: priorityFee.amount.toString(),
-          feerate: priorityFee.feerate || "none",
-          source: priorityFee.source,
-        },
-      });
-
-      setIsEstimating(true);
-      const estimate = await walletStore.estimateSendMessageFees(
-        message,
-        new Address(openedRecipient),
-        priorityFee
-      );
-
-      console.log("Fee estimate received:", estimate);
-      setFeeEstimate(Number(estimate.fees) / 100_000_000);
-      setIsEstimating(false);
-    } catch (error) {
-      console.error("Error estimating fee:", error);
-      setIsEstimating(false);
-      setFeeEstimate(null);
-    }
-  }, [walletStore, message, openedRecipient, priorityFee]);
-
   // Use effect to trigger fee estimation when message, recipient, or priority fee changes
   useEffect(() => {
+    const estimateFee = async () => {
+      if (!walletStore.unlockedWallet) {
+        console.log("Cannot estimate fee: missing wallet");
+        return;
+      }
+
+      if (!message || !openedRecipient) {
+        console.log("Cannot estimate fee: missing message or recipient");
+        return;
+      }
+
+      try {
+        console.log("Estimating fee for message:", {
+          length: message.length,
+          openedRecipient,
+          priorityFee: {
+            amount: priorityFee.amount.toString(),
+            feerate: priorityFee.feerate || "none",
+            source: priorityFee.source,
+          },
+        });
+
+        setIsEstimating(true);
+        const estimate = await walletStore.estimateSendMessageFees(
+          message,
+          new Address(openedRecipient),
+          priorityFee
+        );
+
+        console.log("Fee estimate received:", estimate);
+        setFeeEstimate(Number(estimate.fees) / 100_000_000);
+        setIsEstimating(false);
+      } catch (error) {
+        console.error("Error estimating fee:", error);
+        setIsEstimating(false);
+        setFeeEstimate(null);
+      }
+    };
+
     const delayEstimation = setTimeout(() => {
       if (openedRecipient && message) {
         console.log("Triggering fee estimation after delay");
@@ -160,9 +156,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }, 500);
 
     return () => clearTimeout(delayEstimation);
-  }, [message, openedRecipient, priorityFee, estimateFee]);
+  }, [message, openedRecipient, priorityFee]);
 
-  const sendMessage = useCallback(async () => {
+  const sendMessage = async () => {
     const recipient = openedRecipient;
     if (!walletStore.address) {
       toast.error("Unexpected error: No selected address.");
@@ -305,16 +301,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [
-    messageStore,
-    walletStore,
-    message,
-    openedRecipient,
-    feeEstimate,
-    priorityFee,
-  ]);
+  };
 
-  const onSendClicked = useCallback(async () => {
+  const onSendClicked = async () => {
     // Check if we have an active conversation with this recipient
     const activeConversations = messageStore.getActiveConversations();
     const existingConversation = activeConversations.find(
@@ -328,13 +317,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     // If no active conversation, display a warning modal
     setSendMessageCallback(() => sendMessage);
     openModal("warn-costy-send-message");
-  }, [
-    messageStore,
-    openModal,
-    openedRecipient,
-    sendMessage,
-    setSendMessageCallback,
-  ]);
+  };
 
   const processFile = async (file: File, source: string) => {
     if (isUploading) return;
