@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import { useNetworkStore } from "./store/network.store";
 import { useUiStore } from "./store/ui.store";
 import type { NetworkType } from "./types/all";
@@ -10,19 +10,16 @@ import {
   resetCustomColors,
 } from "./config/custom-theme-applier";
 
-const App: React.FC = () => {
+const App = () => {
   const networkStore = useNetworkStore();
   const { theme, getEffectiveTheme, customColors } = useUiStore();
   const connect = useNetworkStore((s) => s.connect);
   const isMobile = useIsMobile();
 
-  const onNetworkChange = useCallback(
-    (n: NetworkType) => {
-      networkStore.setNetwork(n);
-      connect();
-    },
-    [connect, networkStore]
-  );
+  const onNetworkChange = (n: NetworkType) => {
+    networkStore.setNetwork(n);
+    connect();
+  };
 
   useEffect(() => {
     const meta = document.querySelector<HTMLMetaElement>(

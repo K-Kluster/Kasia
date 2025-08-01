@@ -1,7 +1,7 @@
 import { RefreshCw, AlertTriangle, XCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { Address } from "kaspa-wasm";
-import { FC, useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
 
@@ -19,7 +19,7 @@ type FrozenBalance = {
 // Constants
 const HIGH_UTXO_THRESHOLD = 100; // Threshold for showing high UTXO warning
 
-export const UtxoCompound: FC = () => {
+export const UtxoCompound = () => {
   const [isCompounding, setIsCompounding] = useState(false);
   const [compoundResult, setCompoundResult] = useState<CompoundResult | null>(
     null
@@ -47,23 +47,20 @@ export const UtxoCompound: FC = () => {
   }, [balance?.matureUtxoCount, isCompounding, pendingResult]);
 
   // Helper functions
-  const getExplorerUrl = useCallback(
-    (txId: string) => {
-      return selectedNetwork === "mainnet"
-        ? `https://explorer.kaspa.org/txs/${txId}`
-        : `https://explorer-tn10.kaspa.org/txs/${txId}`;
-    },
-    [selectedNetwork]
-  );
+  const getExplorerUrl = (txId: string) => {
+    return selectedNetwork === "mainnet"
+      ? `https://explorer.kaspa.org/txs/${txId}`
+      : `https://explorer-tn10.kaspa.org/txs/${txId}`;
+  };
 
-  const resetAllStates = useCallback(() => {
+  const resetAllStates = () => {
     setError(null);
     setCompoundResult(null);
     setFrozenBalance(null);
     setPendingResult(null);
-  }, []);
+  };
 
-  const getUserFriendlyErrorMessage = useCallback((err: unknown): string => {
+  const getUserFriendlyErrorMessage = (err: unknown): string => {
     if (!(err instanceof Error)) return "Transaction failed. Please try again.";
 
     if (err.message.includes("insufficient")) {
@@ -76,9 +73,9 @@ export const UtxoCompound: FC = () => {
       return "Wallet connection lost. Please refresh and try again.";
     }
     return "Transaction failed. Please check your connection and try again.";
-  }, []);
+  };
 
-  const handleCompoundUtxos = useCallback(async () => {
+  const handleCompoundUtxos = async () => {
     if (!accountService || !unlockedWallet || !address) {
       setError("Wallet not properly initialized");
       return;
@@ -115,14 +112,7 @@ export const UtxoCompound: FC = () => {
     } finally {
       setIsCompounding(false);
     }
-  }, [
-    accountService,
-    unlockedWallet,
-    balance,
-    address,
-    resetAllStates,
-    getUserFriendlyErrorMessage,
-  ]);
+  };
 
   if (!balance) {
     return (
