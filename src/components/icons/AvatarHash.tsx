@@ -1,4 +1,4 @@
-import { FC, useEffect, useMemo, useRef, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 
 const palette = ["#49EACB", "#70C7BA", "#9CA3AF", "#1F2937"];
@@ -45,15 +45,15 @@ export const AvatarHash: FC<{
   }, [selected]);
 
   /* deterministic 32-bit hash */
-  const hash = useMemo(() => {
+  const hash = () => {
     let h = 0;
     for (let i = 0; i < address.length; i++)
       h = ((h << 5) - h + address.charCodeAt(i)) | 0;
     return h >>> 0;
-  }, [address]);
+  };
 
   // rotation offset so different hashes shift the ring
-  const angleOffset = useMemo(() => (hash / 0xffffffff) * 2 * Math.PI, [hash]);
+  const angleOffset = () => (hash() / 0xffffffff) * 2 * Math.PI;
 
   const c = size / 2,
     rDot = size * 0.09,
@@ -61,14 +61,10 @@ export const AvatarHash: FC<{
     start = -Math.PI / 2;
 
   /* precalculate all 32 dots with per-dot visibility */
-  const base = useMemo(
-    () =>
-      Array.from({ length: SEGMENTS }, (_, i) => {
-        const θ = start + angleOffset + (2 * Math.PI * i) / SEGMENTS;
-        return { cx: c + rRing * Math.cos(θ), cy: c + rRing * Math.sin(θ) };
-      }),
-    [c, rRing, angleOffset]
-  );
+  const base = Array.from({ length: SEGMENTS }, (_, i) => {
+    const θ = start + angleOffset() + (2 * Math.PI * i) / SEGMENTS;
+    return { cx: c + rRing * Math.cos(θ), cy: c + rRing * Math.sin(θ) };
+  });
 
   return (
     <svg
@@ -84,7 +80,7 @@ export const AvatarHash: FC<{
       {base.map(({ cx, cy }, i) => {
         const idx = i % (SEGMENTS / 2);
         const on = idx < segments;
-        const col = palette[(hash >> (idx + 7)) & 3];
+        const col = palette[(hash() >> (idx + 7)) & 3];
         return (
           <circle
             key={i}

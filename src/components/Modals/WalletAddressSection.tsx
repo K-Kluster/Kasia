@@ -1,5 +1,5 @@
 // src/components/AddressSection.tsx
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect } from "react";
 import { toDataURL } from "qrcode";
 import { Copy, QrCode } from "lucide-react";
 import { Button } from "../Common/Button";
@@ -25,7 +25,7 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
     });
   }, [address]);
 
-  const handleCopyAddress = useCallback(async () => {
+  const handleCopyAddress = async () => {
     if (!address) {
       toast.error("No address available");
       console.log("No address to copy");
@@ -59,12 +59,12 @@ export const WalletAddressSection: FC<AddressSectionProps> = ({
       toast.error("Copy failed");
       console.log("Fallback copy failed");
     }
-  }, [address]);
+  };
 
-  const toggleQRCode = useCallback(() => {
+  const toggleQRCode = () => {
     setShowQRCode((prev) => !prev);
     console.log("QR code visibility toggled");
-  }, []);
+  };
 
   if (!address) return null;
   return (

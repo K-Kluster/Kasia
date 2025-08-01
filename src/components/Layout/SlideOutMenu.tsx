@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect } from "react";
 import clsx from "clsx";
 import {
   RefreshCcw,
@@ -31,7 +31,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
   const open = useUiStore((s) => s.isSettingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
-  const msgStore = useMessagingStore();
   const [actionsOpen, setActionsOpen] = useState(false);
   const { openModal } = useUiStore();
   const [showSettingsModal, setShowSettingsModal] = useState(false);

@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React from "react";
 import { useWalletStore } from "../../store/wallet.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { Button } from "../Common/Button";
@@ -8,7 +8,7 @@ export const MessageBackup: React.FC = () => {
   const walletStore = useWalletStore();
   const messageStore = useMessagingStore();
 
-  const onExportMessages = useCallback(async () => {
+  const onExportMessages = async () => {
     if (!walletStore.unlockedWallet?.password) {
       alert("Please unlock your wallet first");
       return;
@@ -47,36 +47,35 @@ export const MessageBackup: React.FC = () => {
       console.error("Error exporting messages:", error);
       alert("Failed to export messages");
     }
-  }, [messageStore, walletStore.unlockedWallet]);
+  };
 
-  const onImportMessages = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
+  const onImportMessages = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-      if (!walletStore.unlockedWallet?.password) {
-        alert("Please unlock your wallet first");
-        return;
-      }
-      try {
-        await messageStore.importMessages(
-          file,
-          walletStore.unlockedWallet,
-          walletStore.unlockedWallet.password
-        );
-        alert("Messages imported successfully!");
-      } catch (error: unknown) {
-        console.error("Error importing messages:", error);
-        alert(
-          error instanceof Error ? error.message : "Failed to import messages"
-        );
-      }
+    if (!walletStore.unlockedWallet?.password) {
+      alert("Please unlock your wallet first");
+      return;
+    }
+    try {
+      await messageStore.importMessages(
+        file,
+        walletStore.unlockedWallet,
+        walletStore.unlockedWallet.password
+      );
+      alert("Messages imported successfully!");
+    } catch (error: unknown) {
+      console.error("Error importing messages:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to import messages"
+      );
+    }
 
-      // Clear the input
-      event.target.value = "";
-    },
-    [messageStore, walletStore.unlockedWallet]
-  );
+    // Clear the input
+    event.target.value = "";
+  };
 
   return (
     <div className="mx-auto flex h-full max-w-3/4 flex-col items-center justify-center space-y-2">

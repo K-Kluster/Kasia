@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NetworkSelector } from "../NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
@@ -36,22 +36,19 @@ export const LockedSettingsModal: React.FC = () => {
     connect();
   }, [isConnected, connect]);
 
-  const onNetworkChange = useCallback(
-    (network: NetworkType) => {
-      setConnectionSuccess(false);
+  const onNetworkChange = (network: NetworkType) => {
+    setConnectionSuccess(false);
 
-      networkStore.setNetwork(network);
+    networkStore.setNetwork(network);
 
-      const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`);
+    const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`);
 
-      setNodeUrl(savedNetwork ?? "");
+    setNodeUrl(savedNetwork ?? "");
 
-      connect();
-    },
-    [connect, networkStore]
-  );
+    connect();
+  };
 
-  const handleSaveNodeUrl = useCallback(async () => {
+  const handleSaveNodeUrl = async () => {
     setConnectionSuccess(false);
 
     if (isConnecting) {
@@ -63,7 +60,7 @@ export const LockedSettingsModal: React.FC = () => {
     const isSuccess = await connect();
 
     setConnectionSuccess(isSuccess);
-  }, [connect, isConnecting, networkStore, nodeUrl]);
+  };
 
   return (
     <div className="w-full max-w-[600px]">
