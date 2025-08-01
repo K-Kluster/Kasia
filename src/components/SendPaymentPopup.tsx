@@ -1,6 +1,6 @@
 import { Input } from "@headlessui/react";
 import clsx from "clsx";
-import { FC, useCallback, useEffect, useRef, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { KasIcon } from "./icons/KasCoin";
 import { sompiToKaspaString, kaspaToSompi } from "kaspa-wasm";
 import { useWalletStore } from "../store/wallet.store";
@@ -48,114 +48,105 @@ export const SendPaymentPopup: FC<{
     setPanelOpen(false);
   }, [address]);
 
-  const handlePayAmountChange = useCallback((value: string) => {
+  const handlePayAmountChange = (value: string) => {
     // Allow decimal numbers
     if (/^\d*\.?\d*$/.test(value)) {
       setPayAmount(value);
     }
-  }, []);
+  };
 
-  const handlePayMessageChange = useCallback((value: string) => {
+  const handlePayMessageChange = (value: string) => {
     setPayMessage(value);
-  }, []);
+  };
 
-  const handleMaxPayClick = useCallback(() => {
+  const handleMaxPayClick = () => {
     if (balance?.mature) {
       const maxAmount = sompiToKaspaString(balance.mature);
       setPayAmount(maxAmount);
     }
-  }, [balance]);
+  };
 
   // New function to send payment with encrypted message using payment protocol
-  const sendPaymentWithMessage = useCallback(
-    async (recipientAddress: string, amountSompi: bigint, message?: string) => {
-      if (
-        !walletStore.unlockedWallet?.password ||
-        !walletStore.accountService
-      ) {
-        throw new Error("Wallet not unlocked or account service not running");
-      }
+  const sendPaymentWithMessage = async (
+    recipientAddress: string,
+    amountSompi: bigint,
+    message?: string
+  ) => {
+    if (!walletStore.unlockedWallet?.password || !walletStore.accountService) {
+      throw new Error("Wallet not unlocked or account service not running");
+    }
 
-      // Create simplified payment payload without aliases
-      const paymentPayload = {
-        type: PROTOCOL.headers.PAYMENT.type,
-        message: message,
-        amount: Number(amountSompi) / 100000000, // Convert sompi to KAS for payload
-        timestamp: Date.now(),
-        version: 1,
-      };
+    // Create simplified payment payload without aliases
+    const paymentPayload = {
+      type: PROTOCOL.headers.PAYMENT.type,
+      message: message,
+      amount: Number(amountSompi) / 100000000, // Convert sompi to KAS for payload
+      timestamp: Date.now(),
+      version: 1,
+    };
 
-      // Encrypt the payment message for the recipient
-      const encryptedMessage = await encrypt_message(
-        recipientAddress,
-        JSON.stringify(paymentPayload)
-      );
+    // Encrypt the payment message for the recipient
+    const encryptedMessage = await encrypt_message(
+      recipientAddress,
+      JSON.stringify(paymentPayload)
+    );
 
-      if (!encryptedMessage) {
-        throw new Error("Failed to encrypt payment message");
-      }
+    if (!encryptedMessage) {
+      throw new Error("Failed to encrypt payment message");
+    }
 
-      // Create the simplified payment protocol payload (no alias needed)
-      const payload = `${PROTOCOL.prefix.string}${PROTOCOL.headers.PAYMENT.string}${encryptedMessage.to_hex()}`;
+    // Create the simplified payment protocol payload (no alias needed)
+    const payload = `${PROTOCOL.prefix.string}${PROTOCOL.headers.PAYMENT.string}${encryptedMessage.to_hex()}`;
 
-      // Convert the payload to hex
-      const payloadHex = payload
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
+    // Convert the payload to hex
+    const payloadHex = payload
+      .split("")
+      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
+      .join("");
 
-      // Send payment directly to recipient with message payload using new method
-      const txId = await walletStore.accountService.createPaymentWithMessage(
-        {
-          address: new Address(recipientAddress),
-          amount: amountSompi,
-          payload: payloadHex,
-          originalMessage: message, // Pass the original message for outgoing record
-        },
-        walletStore.unlockedWallet.password
-      );
-
-      // Create and store outgoing payment message record (simplified)
-      const paymentContent = JSON.stringify({
-        type: PROTOCOL.headers.PAYMENT.type,
-        message: message ?? "",
-        amount: Number(amountSompi) / 100000000,
-        timestamp: Date.now(),
-        version: 1,
-      });
-
-      if (!walletStore.address) {
-        throw new Error("Wallet address not available");
-      }
-
-      const outgoingMessage = {
-        transactionId: txId,
-        senderAddress: walletStore.address.toString(),
-        recipientAddress: recipientAddress,
-        timestamp: Date.now(),
-        content: paymentContent,
-        amount: Number(amountSompi) / 100000000,
+    // Send payment directly to recipient with message payload using new method
+    const txId = await walletStore.accountService.createPaymentWithMessage(
+      {
+        address: new Address(recipientAddress),
+        amount: amountSompi,
         payload: payloadHex,
-      };
+        originalMessage: message, // Pass the original message for outgoing record
+      },
+      walletStore.unlockedWallet.password
+    );
 
-      // Store the outgoing message
-      const messageStore = useMessagingStore.getState();
-      messageStore.storeMessage(
-        outgoingMessage,
-        walletStore.address.toString()
-      );
-      messageStore.loadMessages(walletStore.address.toString());
+    // Create and store outgoing payment message record (simplified)
+    const paymentContent = JSON.stringify({
+      type: PROTOCOL.headers.PAYMENT.type,
+      message: message ?? "",
+      amount: Number(amountSompi) / 100000000,
+      timestamp: Date.now(),
+      version: 1,
+    });
 
-      return txId;
-    },
-    [
-      walletStore.accountService,
-      walletStore.address,
-      walletStore.unlockedWallet?.password,
-    ]
-  );
+    if (!walletStore.address) {
+      throw new Error("Wallet address not available");
+    }
 
-  const handleSendPayment = useCallback(async () => {
+    const outgoingMessage = {
+      transactionId: txId,
+      senderAddress: walletStore.address.toString(),
+      recipientAddress: recipientAddress,
+      timestamp: Date.now(),
+      content: paymentContent,
+      amount: Number(amountSompi) / 100000000,
+      payload: payloadHex,
+    };
+
+    // Store the outgoing message
+    const messageStore = useMessagingStore.getState();
+    messageStore.storeMessage(outgoingMessage, walletStore.address.toString());
+    messageStore.loadMessages(walletStore.address.toString());
+
+    return txId;
+  };
+
+  const handleSendPayment = async () => {
     if (!payAmount || parseFloat(payAmount) <= 0) {
       toast.error("Please enter a valid amount");
       return;
@@ -219,28 +210,16 @@ export const SendPaymentPopup: FC<{
     } finally {
       setIsSendingPayment(false);
     }
-  }, [
-    payAmount,
-    balance?.mature,
-    balance?.matureDisplay,
-    walletStore.unlockedWallet?.password,
-    payMessage,
-    onPaymentSent,
-    address,
-    sendPaymentWithMessage,
-  ]);
+  };
 
   // Check if user can send messages with payments (now simplified - no conversation required)
   const canSendMessageWithPayment = true; // Anyone can send payment messages now
 
-  const useInputRef = useCallback(
-    (node: HTMLInputElement | null) => {
-      if (node && panelOpen) {
-        node.focus();
-      }
-    },
-    [panelOpen]
-  );
+  const useInputRef = (node: HTMLInputElement | null) => {
+    if (node && panelOpen) {
+      node.focus();
+    }
+  };
 
   return (
     <div className="relative">

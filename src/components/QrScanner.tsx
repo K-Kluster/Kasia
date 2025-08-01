@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import jsQR from "jsqr";
 import { QrCode } from "lucide-react";
 import { toast } from "../utils/toast-helper";
@@ -9,7 +9,7 @@ interface QrScannerProps {
   onScan: (data: string) => void;
 }
 
-export const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
+export const QrScanner = ({ onScan }: QrScannerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -22,6 +22,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({ onScan }) => {
       setHasCamera(hasCam);
     });
   }, []);
+
   // start camera when modal opens
   useEffect(() => {
     if (!showModal) return;
