@@ -11,29 +11,22 @@ export function generateStorageKey(walletId: string, address: string): string {
   return `msg_${walletIdPrefix}_${addressSuffix}`;
 }
 
+// legacy function for backward compatibility - loads all messages for a wallet
 export function loadLegacyMessages(
-  walletId?: string | null
+  password: string
 ): Record<string, Message[]> {
-  const messages = localStorage.getItem(LEGACY_STORAGE_KEY);
-  if (!messages) return {};
-
-  // if walletId is provided and not null, check if this wallet has already been migrated
-  if (walletId) {
-    const walletIdPrefix = walletId.substring(0, 8);
-    const migrationFlag = localStorage.getItem(
-      `success_migrated_${walletIdPrefix}`
-    );
-    if (migrationFlag) {
-      // this wallet has already been migrated, return empty object
+  const encrypted = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (!encrypted) return {};
+  try {
+    const decrypted = decryptXChaCha20Poly1305(encrypted, password);
+    return JSON.parse(decrypted);
+  } catch {
+    // try to parse as plaintext, sorta makes this backwards compatible
+    try {
+      return JSON.parse(encrypted);
+    } catch {
       return {};
     }
-  }
-
-  try {
-    return JSON.parse(messages);
-  } catch {
-    console.error("Failed to parse legacy messages:", messages);
-    return {};
   }
 }
 
@@ -74,114 +67,110 @@ export function loadMessagesForAddress(
   }
 }
 
-// new function to load messages from multiple contact addresses and aggregate them
-export function loadMessagesFromMultipleAddresses(
-  walletId: string,
-  addresses: string[],
-  password: string
-): Message[] {
-  const allMessages: Message[] = [];
-
-  for (const address of addresses) {
-    try {
-      const messages = loadMessagesForAddress(walletId, address, password);
-      allMessages.push(...messages);
-    } catch (error) {
-      console.error(`Failed to load messages for address ${address}:`, error);
-    }
-  }
-
-  return allMessages;
-}
-
 // migration function to convert from legacy format to new per-address format
 export function migrateToPerAddressStorage(
   walletId: string,
-  password: string,
-  walletAddresses: string[] = []
+  password: string
 ): void {
   try {
-    const legacyMessages = loadLegacyMessages();
+    const legacyMessages = loadLegacyMessages(password);
 
-    // filter messages to only include those relevant to this wallet
-    const filteredMessages: Record<string, Message[]> = {};
-
+    // for each address in the legacy storage, create a separate storage entry
     for (const [address, messages] of Object.entries(legacyMessages)) {
       if (messages && messages.length > 0) {
-        // filter messages where wallet is involved as sender or recipient
-        const relevantMessages = messages.filter((message) => {
-          return walletAddresses.some(
-            (walletAddr) =>
-              message.senderAddress === walletAddr ||
-              message.recipientAddress === walletAddr
-          );
-        });
-
-        if (relevantMessages.length > 0) {
-          filteredMessages[address] = relevantMessages;
-        }
+        saveMessagesForAddress(messages, walletId, address, password);
       }
     }
 
-    // for each filtered address, create a separate storage entry
-    for (const [address, messages] of Object.entries(filteredMessages)) {
-      saveMessagesForAddress(messages, walletId, address, password);
-    }
-
+    // we cannot remove the entire legacy storage as it may contain other wallets
     // set migration success flag for tracking
-    const walletIdPrefix = walletId.substring(0, 8);
+    const walletIdPrefix = walletId.substring(0, 10);
     localStorage.setItem(`success_migrated_${walletIdPrefix}`, "true");
-
-    // check if all wallets have been migrated
-    checkAndCleanupLegacyStorage();
-
-    console.log(
-      `Successfully migrated ${Object.keys(filteredMessages).length} addresses with relevant messages to per-address storage format`
-    );
+    console.log("Successfully migrated to per-address storage format");
   } catch (error) {
     console.error("Error during migration to per-address storage:", error);
   }
 }
 
-// helper function to check if all wallets are migrated and cleanup legacy storage
-function checkAndCleanupLegacyStorage(): void {
+// cleanup function to remove migrated addresses from legacy storage
+export function cleanupLegacyStorage(
+  walletIds: string[],
+  password: string
+): void {
   try {
-    // get all wallets from localStorage
-    const walletsData = localStorage.getItem("wallets");
-    if (!walletsData) return;
+    const legacyMessages = loadLegacyMessages(password);
+    if (!legacyMessages || Object.keys(legacyMessages).length === 0) {
+      return; // no legacy data to clean up
+    }
 
-    const wallets = JSON.parse(walletsData);
-    if (!Array.isArray(wallets)) return;
+    const addressesToRemove: string[] = [];
+    const updatedLegacyMessages = { ...legacyMessages };
 
-    // check if all wallets have migration success flags
-    let allWalletsMigrated = true;
-    for (const wallet of wallets) {
-      const walletIdPrefix = wallet.id.substring(0, 8);
-      const migrationFlag = localStorage.getItem(
-        `success_migrated_${walletIdPrefix}`
-      );
-      if (!migrationFlag) {
-        allWalletsMigrated = false;
-        break;
+    // check each address in legacy storage
+    const migratedWalletIds = new Set<string>();
+
+    for (const [address] of Object.entries(legacyMessages)) {
+      let addressMigrated = false;
+      let walletExists = false;
+      let migratedWalletId = "";
+
+      // check if any existing wallet has migrated this address
+      for (const walletId of walletIds) {
+        const storageKey = generateStorageKey(walletId, address);
+        const newStorageData = localStorage.getItem(storageKey);
+
+        if (newStorageData) {
+          addressMigrated = true;
+          walletExists = true;
+          migratedWalletId = walletId;
+          break;
+        }
+      }
+
+      // if address is migrated or wallet doesn't exist, mark for removal
+      if (addressMigrated || !walletExists) {
+        addressesToRemove.push(address);
+        delete updatedLegacyMessages[address];
+
+        // track which wallet was migrated
+        if (addressMigrated && migratedWalletId) {
+          migratedWalletIds.add(migratedWalletId);
+        }
       }
     }
 
-    // if all wallets are migrated, delete legacy storage and cleanup flags
-    if (allWalletsMigrated) {
-      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    // if we have addresses to remove, update legacy storage
+    if (addressesToRemove.length > 0) {
+      if (Object.keys(updatedLegacyMessages).length === 0) {
+        // all addresses removed, delete entire legacy storage
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
 
-      // clean up all migration flags
-      for (const wallet of wallets) {
-        const walletIdPrefix = wallet.id.substring(0, 8);
-        localStorage.removeItem(`success_migrated_${walletIdPrefix}`);
+        // clean up all migration flags
+        for (const walletId of walletIds) {
+          const walletIdPrefix = walletId.substring(0, 10);
+          localStorage.removeItem(`success_migrated_${walletIdPrefix}`);
+        }
+
+        console.log(
+          "All addresses migrated - legacy storage and migration flags deleted"
+        );
+      } else {
+        // some addresses remain, update legacy storage
+        saveMessages(updatedLegacyMessages, password);
+
+        // clean up migration flags for wallets that were actually migrated
+        for (const walletId of migratedWalletIds) {
+          const walletIdPrefix = walletId.substring(0, 10);
+          localStorage.removeItem(`success_migrated_${walletIdPrefix}`);
+        }
+
+        console.log(
+          `Cleaned up ${addressesToRemove.length} migrated addresses from legacy storage`
+        );
       }
-
-      console.log(
-        "All wallets migrated - legacy storage and migration flags deleted"
-      );
     }
   } catch (error) {
-    console.error("Error checking migration status:", error);
+    console.error("Error during legacy storage cleanup:", error);
   }
 }
 
@@ -252,7 +241,7 @@ export async function reencryptMessagesForWallet(
 
     // also handle legacy storage if it exists
     try {
-      const legacyMessages = loadLegacyMessages();
+      const legacyMessages = loadLegacyMessages(oldPassword);
       if (Object.keys(legacyMessages).length > 0) {
         // save legacy messages with new password
         saveMessages(legacyMessages, newPassword);

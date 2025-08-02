@@ -11,16 +11,6 @@ export function formatKasAmount(amount: number, isSompi: boolean = false) {
 
 // hex to string conversion utility
 export function hexToString(hex: string): string {
-  // null/undefined checks
-  if (!hex || typeof hex !== "string") {
-    throw new Error("Invalid hex string provided");
-  }
-
-  // validate hex format
-  if (!/^[0-9a-fA-F]*$/.test(hex)) {
-    throw new Error("Invalid hex format");
-  }
-
   let str = "";
   for (let i = 0; i < hex.length; i += 2) {
     str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
