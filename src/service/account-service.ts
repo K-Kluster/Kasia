@@ -33,12 +33,8 @@ import {
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
-import {
-  PROTOCOL_PREFIX,
-  HANDSHAKE_PREFIX,
-  COMM_PREFIX,
-  PAYMENT_PREFIX,
-} from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
+import { PLACEHOLDER_ALIAS } from "../config/constants";
 
 // Message related types
 type DecodedMessage = {
@@ -601,12 +597,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       if (this.receiveAddress) {
         try {
           // Remove the ciph_msg: prefix and parse the message
-          const prefixLength = "636970685f6d73673a".length; // "ciph_msg:" in hex
+          const prefixLength = PROTOCOL.prefix.hex.length;
           const messageHex = paymentTransaction.payload.substring(prefixLength);
           const messageStr = hexToString(messageHex);
           const parts = messageStr.split(":");
 
-          if (parts.length >= 3 && parts[1] === "payment") {
+          if (parts.length >= 3 && parts[1] === PROTOCOL.headers.PAYMENT.type) {
             // For outgoing messages, we don't decrypt - we already know the content!
             // New simplified format: parts[0] = "1", parts[1] = "payment", parts[2] = encrypted_payload
 
@@ -616,7 +612,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
             // Create payment content using the original message if available
             const paymentContent = JSON.stringify({
-              type: "payment",
+              type: PROTOCOL.headers.PAYMENT.type,
               message: paymentTransaction.originalMessage || "Payment sent",
               amount: paymentAmount,
               timestamp: Math.floor(Date.now() / 1000),
@@ -805,11 +801,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     let payload;
     if (isPreEncrypted) {
       // Message is already encrypted, just add the prefix
-      const prefix = "ciph_msg:"
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
-      payload = prefix + sendMessage.message;
+      payload = PROTOCOL.prefix.hex + sendMessage.message;
     } else {
       console.log("ENCRYPT MESSAGE", sendMessage.message);
       // Message needs to be encrypted
@@ -820,11 +812,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       if (!encryptedMessage) {
         throw new Error("Failed to encrypt message");
       }
-      const prefix = "ciph_msg:"
-        .split("")
-        .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-        .join("");
-      payload = prefix + encryptedMessage.to_hex();
+      payload = PROTOCOL.prefix.hex + encryptedMessage.to_hex();
     }
 
     if (!payload) {
@@ -873,10 +861,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Failed to encrypt message");
     }
 
-    const prefix = "ciph_msg";
-    const version = "1";
-    const messageType = "comm";
-    const payload = `${prefix}:${version}:${messageType}:b4e3da89391b:${encryptedMessage.to_hex()}`;
+    const payload = `${PROTOCOL.prefix.string}${PROTOCOL.headers.COMM.string}${PLACEHOLDER_ALIAS}:${encryptedMessage.to_hex()}`;
 
     const payloadHex = payload
       .split("")
@@ -960,13 +945,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     // Ensure the pre-encrypted message is compatible with the Rust code
     const adjustedHex = this.adjustForSEC1Format(preEncryptedHex);
 
-    const prefix = "ciph_msg:"
-      .split("")
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-      .join("");
-
     // Use the provided pre-encrypted hex directly
-    const payload = prefix + adjustedHex;
+    const payload = PROTOCOL.prefix.hex + adjustedHex;
     console.log("Final transaction payload:", payload);
 
     return this.createTransaction(
@@ -1033,7 +1013,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     let isMessageTransaction = false;
     if (transaction.payload) {
       // Check if this is a message transaction by looking for the message prefix
-      isMessageTransaction = transaction.payload.startsWith(PROTOCOL_PREFIX);
+      isMessageTransaction = transaction.payload.startsWith(
+        PROTOCOL.prefix.hex
+      );
     }
 
     // Check if we have an active conversation with this address
@@ -1198,7 +1180,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private isMessageOrHandshakeTransaction(
     tx: ITransaction | ExplorerTransaction
   ): boolean {
-    return tx?.payload?.startsWith(PROTOCOL_PREFIX) ?? false;
+    return tx?.payload?.startsWith(PROTOCOL.prefix.hex) ?? false;
   }
 
   private async processMessageTransaction(
@@ -1315,7 +1297,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Process the message
       const payload = getTransactionPayload(tx);
-      if (!payload.startsWith(PROTOCOL_PREFIX)) {
+      if (!payload.startsWith(PROTOCOL.prefix.hex)) {
         return;
       }
 
@@ -1325,28 +1307,28 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         return;
       }
 
-      const messageHex = tx.payload.substring(PROTOCOL_PREFIX.length);
+      const messageHex = tx.payload.substring(PROTOCOL.prefix.hex.length);
 
       let messageType = "unknown";
       let isHandshake = false;
       let targetAlias = null;
       let encryptedHex = messageHex;
 
-      if (messageHex.startsWith(HANDSHAKE_PREFIX)) {
-        messageType = "handshake";
+      if (messageHex.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
+        messageType = PROTOCOL.headers.HANDSHAKE.type;
         isHandshake = true;
         encryptedHex = messageHex;
-      } else if (messageHex.startsWith(COMM_PREFIX)) {
+      } else if (messageHex.startsWith(PROTOCOL.headers.COMM.hex)) {
         const messageStr = hexToString(messageHex);
         const parts = messageStr.split(":");
 
         if (parts.length >= 4) {
-          messageType = "comm";
+          messageType = PROTOCOL.headers.COMM.type;
           targetAlias = parts[2];
           encryptedHex = parts[3];
         }
-      } else if (messageHex.startsWith(PAYMENT_PREFIX)) {
-        messageType = "payment";
+      } else if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
+        messageType = PROTOCOL.headers.PAYMENT.type;
         // For payments, we don't need to parse aliases - just get the encrypted content
         // New format: 1:payment:{encrypted_payload}
         const messageStr = hexToString(messageHex);
@@ -1362,14 +1344,14 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         (senderAddress && this.monitoredAddresses.has(senderAddress)) ||
         (recipientAddress && this.monitoredAddresses.has(recipientAddress));
       const isCommForUs =
-        messageType === "comm" &&
+        messageType === PROTOCOL.headers.COMM.type &&
         targetAlias &&
         this.monitoredConversations.has(targetAlias);
 
       // For payments, check if the sender address is one we're monitoring
       // (i.e., we have a conversation with them OR they sent us a payment)
       const isPaymentForUs =
-        messageType === "payment" &&
+        messageType === PROTOCOL.headers.PAYMENT.type &&
         (isMonitoredAddress ||
           recipientAddress === this.receiveAddress?.toString());
 
@@ -1396,15 +1378,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           decryptedContent = result;
           decryptionSuccess = true;
 
-          if (decryptedContent.includes('"type":"handshake"')) {
-            messageType = "handshake";
+          if (
+            decryptedContent.includes(
+              `"type":"${PROTOCOL.headers.HANDSHAKE.type}"`
+            )
+          ) {
+            messageType = PROTOCOL.headers.HANDSHAKE.type;
             isHandshake = true;
             try {
               // extract the JSON part
               let jsonContent = decryptedContent;
-              if (decryptedContent.includes("ciph_msg:1:handshake:")) {
+              if (
+                decryptedContent.includes(
+                  `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}`
+                )
+              ) {
                 jsonContent = decryptedContent.split(
-                  "ciph_msg:1:handshake:"
+                  `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}`
                 )[1];
               }
               const handshakeData = JSON.parse(jsonContent);
@@ -1436,15 +1426,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             decryptedContent = result;
             decryptionSuccess = true;
 
-            if (decryptedContent.includes('"type":"handshake"')) {
-              messageType = "handshake";
+            if (
+              decryptedContent.includes(
+                `"type":"${PROTOCOL.headers.HANDSHAKE.type}"`
+              )
+            ) {
+              messageType = PROTOCOL.headers.HANDSHAKE.type;
               isHandshake = true;
               try {
                 // extract the JSON part
                 let jsonContent = decryptedContent;
-                if (decryptedContent.includes("ciph_msg:1:handshake:")) {
+                if (
+                  decryptedContent.includes(
+                    `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}`
+                  )
+                ) {
                   jsonContent = decryptedContent.split(
-                    "ciph_msg:1:handshake:"
+                    `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}`
                   )[1];
                 }
                 const handshakeData = JSON.parse(jsonContent);

@@ -10,7 +10,7 @@ import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
-import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
+import { PROTOCOL, DELIM } from "../config/protocol";
 
 type MessageDisplayProps = {
   message: MessageType;
@@ -53,17 +53,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Check if this is a handshake message
   const isHandshake =
-    (payload?.startsWith("ciph_msg:") && payload?.includes(":handshake:")) ||
-    (content?.startsWith("ciph_msg:") && content?.includes(":handshake:"));
+    (payload?.startsWith(PROTOCOL.prefix.string) &&
+      payload?.includes(PROTOCOL.headers.HANDSHAKE.string)) ||
+    (content?.startsWith(PROTOCOL.prefix.string) &&
+      content?.includes(PROTOCOL.headers.HANDSHAKE.string));
 
   // Check if this is a payment message by checking the hex payload OR decrypted content
   const isPayment = (() => {
     // First check if it's a hex payload starting with ciph_msg prefix
     if (payload) {
-      if (payload.startsWith(PROTOCOL_PREFIX)) {
+      if (payload.startsWith(PROTOCOL.prefix.hex)) {
         // Extract the message part and check for payment prefix
-        const messageHex = payload.substring(PROTOCOL_PREFIX.length);
-        if (messageHex.startsWith(PAYMENT_PREFIX)) {
+        const messageHex = payload.substring(PROTOCOL.prefix.hex.length);
+        if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
           return true;
         }
       }
@@ -73,7 +75,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     if (content) {
       try {
         const parsed = JSON.parse(content);
-        if (parsed.type === "payment") {
+        if (parsed.type === PROTOCOL.headers.PAYMENT.type) {
           return true;
         }
       } catch (e) {
@@ -90,20 +92,20 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     ? (() => {
         try {
           // Parse the handshake payload using the same method as ConversationManager
-          const handshakeMessage = payload?.startsWith("ciph_msg:")
+          const handshakeMessage = payload?.startsWith(PROTOCOL.prefix.string)
             ? payload
             : content;
-          const parts = handshakeMessage.split(":");
+          const parts = handshakeMessage.split(DELIM);
           if (
             parts.length < 4 ||
-            parts[0] !== "ciph_msg" ||
-            parts[2] !== "handshake"
+            parts[0] !== PROTOCOL.prefix.type ||
+            parts[2] !== PROTOCOL.headers.HANDSHAKE.type
           ) {
             console.error("Invalid handshake payload format");
             return null;
           }
 
-          const jsonPart = parts.slice(3).join(":"); // Handle colons in JSON
+          const jsonPart = parts.slice(3).join(DELIM); // Handle delimiters in JSON
           const handshakePayload = JSON.parse(jsonPart);
 
           // Get all conversations
@@ -175,7 +177,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       if (messageToRender) {
         const paymentPayload = JSON.parse(messageToRender);
 
-        if (paymentPayload.type === "payment") {
+        if (paymentPayload.type === PROTOCOL.headers.PAYMENT.type) {
           // Check if message is empty or just whitespace
           const hasMessage =
             paymentPayload.message && paymentPayload.message.trim();
@@ -392,10 +394,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         if (!mounted.current) return;
 
         // Check if the payload starts with the cipher prefix
-        const prefix = "ciph_msg:"
-          .split("")
-          .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-          .join("");
+        const prefix = PROTOCOL.prefix.hex;
 
         if (payload.startsWith(prefix)) {
           // Extract the encrypted message hex
