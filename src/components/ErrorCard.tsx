@@ -6,7 +6,7 @@ export const ErrorCard: FC<{
 }> = ({ error, onDismiss }) => {
   return error ? (
     <div
-      className="error"
+      className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800"
       style={{
         display: "flex",
         alignItems: "center",

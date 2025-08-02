@@ -20,19 +20,25 @@ export const WalletInfo = () => {
         <ul className="m-0 list-none p-0 text-sm">
           <li>
             <strong>Total:</strong>{" "}
-            <span className="amount">{currentBalance?.matureDisplay} KAS</span>
+            <span className="text-[var(--accent-green)]">
+              {currentBalance?.matureDisplay} KAS
+            </span>
           </li>
           <li>
             <strong>Confirmed:</strong>{" "}
-            <span className="amount">{currentBalance?.matureDisplay} KAS</span>
+            <span className="text-[var(--accent-green)]">
+              {currentBalance?.matureDisplay} KAS
+            </span>
           </li>
           <li>
             <strong>Unconfirmed:</strong>{" "}
-            <span className="amount">{currentBalance?.pendingDisplay} KAS</span>
+            <span className="text-[var(--accent-green)]">
+              {currentBalance?.pendingDisplay} KAS
+            </span>
           </li>
           <li>
             <strong>Outgoing:</strong>{" "}
-            <span className="amount">
+            <span className="text-[var(--accent-green)]">
               {currentBalance?.outgoingDisplay} KAS
             </span>
           </li>
