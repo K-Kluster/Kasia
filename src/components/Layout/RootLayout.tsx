@@ -1,13 +1,13 @@
 import { FC, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useWalletStore } from "../../store/wallet.store";
-import { useIsMobile } from "../../utils/useIsMobile";
+import { useIsMobile } from "../../hooks/useIsMobile";
 import { Header } from "../Layout/Header";
 import { SlideOutMenu } from "../Layout/SlideOutMenu";
 
 import { ToastContainer } from "../Common/ToastContainer";
 import { useUiStore } from "../../store/ui.store";
-import { toast } from "../../utils/toast";
+import { toast } from "../../utils/toast-helper";
 import { ResizableAppContainer } from "./ResizableAppContainer";
 
 export const RootLayout: FC = () => {

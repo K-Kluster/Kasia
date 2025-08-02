@@ -7,7 +7,7 @@ import { useUiStore } from "../store/ui.store";
 import { useWalletStore } from "../store/wallet.store";
 import { Contact } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { useIsMobile } from "../utils/useIsMobile";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
 

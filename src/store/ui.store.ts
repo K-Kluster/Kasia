@@ -6,7 +6,7 @@ import {
   getInitialCustomColors,
   DEFAULT_COLORS,
   type CustomColorPalette,
-} from "../utils/custom-theme-applier";
+} from "../config/custom-theme-applier";
 
 export type ModalType =
   | "address"

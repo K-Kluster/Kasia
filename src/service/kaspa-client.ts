@@ -5,7 +5,7 @@ import {
   Encoding,
   Resolver,
 } from "kaspa-wasm";
-import { unknownErrorToErrorLike } from "./errors";
+import { unknownErrorToErrorLike } from "../utils/errors";
 import { NetworkType } from "../types/all";
 
 export interface KaspaClientArgs {

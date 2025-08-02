@@ -2,7 +2,7 @@ import { FC, useState, useEffect, useRef } from "react";
 import { Message as MessageType } from "../types/all";
 import { decodePayload } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "../utils/wallet-storage";
+import { WalletStorageService } from "../service/wallet-storage-service";
 import { CipherHelper } from "../utils/cipher-helper";
 import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
@@ -91,7 +91,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const conversation = isHandshake
     ? (() => {
         try {
-          // Parse the handshake payload using the same method as ConversationManager
+          // Parse the handshake payload using the same method as ConversationManagerService
           const handshakeMessage = payload?.startsWith(PROTOCOL.prefix.string)
             ? payload
             : content;
@@ -401,10 +401,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           const encryptedHex = CipherHelper.stripPrefix(payload);
 
           // Get the private key generator
-          const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
-            walletStore.unlockedWallet,
-            walletStore.unlockedWallet.password
-          );
+          const privateKeyGenerator =
+            WalletStorageService.getPrivateKeyGenerator(
+              walletStore.unlockedWallet,
+              walletStore.unlockedWallet.password
+            );
 
           let decrypted: string | null = null;
 

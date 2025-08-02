@@ -7,8 +7,8 @@ import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
 import { encrypt_message } from "cipher";
 import { Address } from "kaspa-wasm";
-import { toast } from "../utils/toast";
 import { PROTOCOL } from "../config/protocol";
+import { toast } from "../utils/toast-helper";
 
 export const SendPaymentPopup: FC<{
   address: string;

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { NetworkType } from "../types/all";
-import { KaspaClient } from "../utils/kaspa-client";
+import { KaspaClient } from "../service/kaspa-client";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { useWalletStore } from "./wallet.store";
 import { unstable_batchedUpdates } from "react-dom";
