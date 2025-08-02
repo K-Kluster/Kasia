@@ -513,15 +513,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Transaction amount is required");
     }
 
-    // additional null checks
-    if (!password || password.trim() === "") {
-      throw new Error("Password is required");
-    }
-
-    if (!paymentTransaction.payload) {
-      throw new Error("Transaction payload is required");
-    }
-
     console.log("=== CREATING PAYMENT WITH MESSAGE ===");
     const primaryAddress = this.receiveAddress;
     console.log(
