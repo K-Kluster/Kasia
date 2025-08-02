@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useWalletStore } from "../store/wallet.store";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useWalletStore } from "../../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
 import { Radio, RadioGroup, Label } from "@headlessui/react";
-import { NetworkSelector } from "../components/NetworkSelector";
-import { NetworkType } from "../types/all";
+import { NetworkSelector } from "../NetworkSelector";
+import { NetworkType } from "../../types/all";
 import { Wallet, WalletDerivationType } from "src/types/wallet.type";
 import {
   PASSWORD_MIN_LENGTH,
   disablePasswordRequirements,
-} from "../config/password";
-import { MnemonicEntry } from "../components/MnemonicEntry";
+} from "../../config/password";
+import { MnemonicEntry } from "../MnemonicEntry";
 import { Settings, AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import clsx from "clsx";
-import { TrustMessage } from "../components/Layout/TrustMessage";
-import { toast } from "../utils/toast-helper";
-import { Button } from "../components/Common/Button";
-import { useIsMobile } from "../hooks/useIsMobile";
-import { useUiStore } from "../store/ui.store";
-import { StringCopy } from "../components/Common/StringCopy";
+import { TrustMessage } from "../Layout/TrustMessage";
+import { toast } from "../../utils/toast-helper";
+import { Button } from "../Common/Button";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { useUiStore } from "../../store/ui.store";
+import { StringCopy } from "../Common/StringCopy";
 
 export type Step = {
   type:
@@ -60,7 +60,6 @@ export const WalletFlow = ({
   const [error, setError] = useState<{ message: string; id: number } | null>(
     null
   );
-  const [isMounted, setIsMounted] = useState(false);
   const [seedPhraseLength, setSeedPhraseLength] = useState<12 | 24>(24); // Default to 24 words
   const [derivationType, setDerivationType] =
     useState<WalletDerivationType>("standard");
@@ -96,9 +95,7 @@ export const WalletFlow = ({
   } = useWalletStore();
 
   useEffect(() => {
-    setIsMounted(true);
     loadWallets();
-    return () => setIsMounted(false);
   }, [loadWallets]);
 
   useEffect(() => {
@@ -459,7 +456,7 @@ export const WalletFlow = ({
               ref={nameRef}
               type="text"
               placeholder="My Wallet"
-              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
+              className="border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
             />
           </div>
 
@@ -543,7 +540,7 @@ export const WalletFlow = ({
             <button
               type="button"
               onClick={() => setRevealed(!revealed)}
-              className="bg-kas-primary/20 border-primary-border mx-auto my-4 cursor-pointer rounded rounded-2xl border px-4 py-2 text-sm font-bold"
+              className="bg-kas-primary/20 border-primary-border mx-auto my-4 cursor-pointer rounded-2xl border px-4 py-2 text-sm font-bold"
             >
               Anyone with your seed phrase can access your wallet
               <div className="text-text-warning my-1 font-semibold underline">
@@ -691,7 +688,7 @@ export const WalletFlow = ({
               ref={passwordRef}
               type="password"
               placeholder="Enter password"
-              className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
+              className="border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"
             />
           </div>
 
