@@ -24,7 +24,9 @@ export const MessagesList: FC<MessagesListProps> = memo(
       isToday(event.createdAt)
     );
 
-    console.log(oneOnOneConversation.events);
+    console.log("message list - oooc", {
+      oneOnOneConversation,
+    });
 
     return (
       <>

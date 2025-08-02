@@ -176,7 +176,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       );
 
       const ooocs = g().oneOnOneConversations;
-      console.log({ ooocs });
       const ooocsByAddress: Map<string, OneOnOneConversation> = new Map();
       const handshakesBySenderAddress: Map<string, HandshakeResponse[]> =
         new Map();
@@ -213,11 +212,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
               const encryptedMessage = new EncryptedMessage(
                 handshake.message_payload
               );
-
-              console.log({
-                encryptedMessage: encryptedMessage.toString(),
-                hex: encryptedMessage.to_hex(),
-              });
 
               try {
                 const decrypted = decrypt_message(encryptedMessage, privateKey);
@@ -261,11 +255,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           }
 
           // transform raw handshake to kasia handshake and persist them if they are new
-          const unknownHandshakes = handshakes.filter(
-            (handshake) =>
-              oooc!.events.find((e) => e.transactionId === handshake.tx_id) ===
-              undefined
-          );
+          const unknownHandshakes = handshakes
+            .filter(
+              (handshake) =>
+                oooc!.events.find(
+                  (e) => e.transactionId === handshake.tx_id
+                ) === undefined
+            )
+            // sort by most recent first, so the first successful decryptable handshake is supposedly the most accurate (alias-wise)
+            .sort((a, b) => Number(b.block_time) - Number(a.block_time));
 
           for (const unknownHandshake of unknownHandshakes) {
             try {
@@ -321,6 +319,91 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       });
 
       // 4. lazily trigger historical polling of events for each conversation
+      console.log("Lazy historical polling of events for each conversation");
+
+      Promise.all(
+        Array.from(ooocsByAddress.values()).map(async (oooc) => {
+          // optimization possibility: fetch only events that are after last known conversation event
+          const [indexerPayments, indexerMessages] = await Promise.all([
+            _historicalSyncer.fetchHistoricalPaymentsFromAddress(
+              oooc.contact.kaspaAddress
+            ),
+            _historicalSyncer.fetchHistoricalMessagesToAddress(
+              oooc.contact.kaspaAddress,
+              oooc.conversation.myAlias
+            ),
+          ]);
+
+          const knownEventIds = new Set(oooc.events.map((e) => e.id));
+
+          // readability improvement possibility: define a type for indexer events with a discriminator field
+          // filter out events that are already known
+          const newIndexerPayments = indexerPayments.filter(
+            (p) => !knownEventIds.has(p.tx_id)
+          );
+          const newIndexerMessages = indexerMessages.filter(
+            (m) => !knownEventIds.has(m.tx_id)
+          );
+
+          if (newIndexerPayments.length > 0 || newIndexerMessages.length > 0) {
+            console.log("found new indexer events", {
+              newIndexerMessages,
+              newIndexerPayments,
+            });
+          }
+
+          const newKasiaTransactions: KasiaTransaction[] = [];
+
+          // try to transform payments and messages into kasia transaction
+          for (const newIndexerMessage of newIndexerMessages) {
+            try {
+              newKasiaTransactions.push({
+                amount: 0,
+                content: decrypt_message(
+                  new EncryptedMessage(newIndexerMessage.message_payload),
+                  privateKey
+                ),
+                createdAt: new Date(Number(newIndexerMessage.block_time)),
+                fee: 0,
+                payload: newIndexerMessage.message_payload,
+                recipientAddress: address,
+                senderAddress: newIndexerMessage.sender,
+                transactionId: newIndexerMessage.tx_id,
+              });
+            } catch {
+              // ignore errors
+              continue;
+            }
+          }
+
+          for (const newIndexerPayment of newIndexerPayments) {
+            if (!newIndexerPayment.sender) {
+              continue;
+            }
+
+            try {
+              newKasiaTransactions.push({
+                amount: 0,
+                content: decrypt_message(
+                  new EncryptedMessage(newIndexerPayment.message),
+                  privateKey
+                ),
+                createdAt: new Date(Number(newIndexerPayment.block_time)),
+                fee: 0,
+                payload: newIndexerPayment.message,
+                recipientAddress: address,
+                senderAddress: newIndexerPayment.sender,
+                transactionId: newIndexerPayment.tx_id,
+              });
+            } catch {
+              // ignore errors
+              continue;
+            }
+          }
+
+          g().storeKasiaTransactions(newKasiaTransactions);
+        })
+      );
 
       set({
         isLoaded: true,

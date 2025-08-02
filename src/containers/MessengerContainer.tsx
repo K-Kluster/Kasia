@@ -86,7 +86,7 @@ export const MessengerContainer: FC = () => {
   // Clean up useEffect
   useEffect(() => {
     return () => {
-      // @TODO(indexdb): Stops historical polling when message client starts
+      messageStore.stop();
 
       // Called when MessagingContainer unmounts (user leaves route), so we can reset all the states
       walletStore.lock();
@@ -94,7 +94,6 @@ export const MessengerContainer: FC = () => {
       closeAllModals();
 
       setMessageClientStarted(false);
-      messageStore.setIsLoaded(false);
       messageStore.setOpenedRecipient(null);
       messageStore.setIsCreatingNewChat(false);
     };

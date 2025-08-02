@@ -1,9 +1,6 @@
 import { FC, useState, useEffect, useRef, useMemo } from "react";
 import { KasiaConversationEvent } from "../types/all";
-import { decodePayload } from "../utils/format";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "../utils/wallet-storage";
-import { CipherHelper } from "../utils/cipher-helper";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
@@ -52,6 +49,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       : `https://explorer-tn10.kaspa.org/txs/${txId}`;
   };
 
+  const [decryptedContent, setDecryptedContent] = useState<string>("");
+
   // Format amount or fee for display
   const formatAmountAndFee = () => {
     if (isOutgoing && event.fee !== undefined) {
@@ -68,14 +67,6 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Render payment message content
   const renderPaymentMessage = () => {
-    if (isDecrypting) {
-      return (
-        <div className="rounded-md bg-teal-50 px-3 py-2 text-xs text-gray-600 italic">
-          Decrypting payment message...
-        </div>
-      );
-    }
-
     try {
       const paymentPayload = JSON.parse(event.content);
 
@@ -173,18 +164,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       return renderPaymentMessage();
     }
 
-    // Wait for decryption attempt before showing content
-    if (isDecrypting) {
-      return (
-        <div className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 italic">
-          Decrypting message...
-        </div>
-      );
-    }
-
     // Only use decrypted content if decryption was attempted and successful
-    const messageToRender =
-      (decryptionAttempted && decryptedContent) || event.content;
+    const messageToRender = decryptedContent || event.content;
 
     if (event.__type === "message") {
       // Handle file/image messages
@@ -268,95 +249,19 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     return messageToRender;
   }, [conversation, renderPaymentMessage, contact, event]);
 
-  const [decryptedContent, setDecryptedContent] = useState<string>("");
-  const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
-  const [decryptionAttempted, setDecryptionAttempted] =
-    useState<boolean>(false);
-
   useEffect(() => {
     const decryptMessage = async () => {
       if (!mounted.current || !walletStore.unlockedWallet) {
-        setDecryptionAttempted(true);
         return;
       }
 
-      // If we already have decrypted content from the account service, use that
+      // legacy, probably need to be cleanuped
       if (event.content) {
         setDecryptedContent(event.content);
-        setDecryptionAttempted(true);
         return;
       }
 
-      setIsDecrypting(true);
-      setDecryptionAttempted(false);
-
-      try {
-        // Add a small delay to ensure wallet is fully initialized
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        if (!mounted.current) return;
-
-        // Check if the payload starts with the cipher prefix
-        const prefix = "ciph_msg:"
-          .split("")
-          .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-          .join("");
-
-        if (event.content.startsWith(prefix)) {
-          // Extract the encrypted message hex
-          const encryptedHex = CipherHelper.stripPrefix(event.content);
-
-          // Get the private key generator
-          const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
-            walletStore.unlockedWallet,
-            walletStore.unlockedWallet.password
-          );
-
-          let decrypted: string | null = null;
-
-          // Try decryption with receive key first
-          try {
-            const privateKey = privateKeyGenerator.receiveKey(0);
-            decrypted = await CipherHelper.tryDecrypt(
-              encryptedHex,
-              privateKey.toString(),
-              event.transactionId ||
-                `${contact.kaspaAddress}-${event.createdAt.getTime()}`
-            );
-          } catch {
-            // Try with change key as fallback
-            try {
-              const changeKey = privateKeyGenerator.changeKey(0);
-              decrypted = await CipherHelper.tryDecrypt(
-                encryptedHex,
-                changeKey.toString(),
-                event.transactionId ||
-                  `${contact.kaspaAddress}-${event.createdAt.getTime()}`
-              );
-            } catch {
-              throw new Error(
-                "Failed to decrypt with both receive and change keys"
-              );
-            }
-          }
-
-          if (mounted.current && decrypted) {
-            setDecryptedContent(decrypted);
-          }
-        } else {
-          const decoded = decodePayload(event.content);
-          if (mounted.current) {
-            setDecryptedContent(decoded || "");
-          }
-        }
-      } catch (error) {
-        console.error("Error decrypting message:", error);
-      } finally {
-        if (mounted.current) {
-          setIsDecrypting(false);
-          setDecryptionAttempted(true);
-        }
-      }
+      console.error("No decrypted content available");
     };
 
     decryptMessage();

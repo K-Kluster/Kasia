@@ -1,5 +1,7 @@
 import {
+  getContextualMessagesBySender,
   getHandshakesByReceiver,
+  getPaymentsBySender,
   HandshakeResponse,
 } from "./indexer/generated";
 
@@ -24,5 +26,36 @@ export class HistoricalSyncer {
     }
 
     return handshakeResponses.data;
+  }
+
+  async fetchHistoricalMessagesToAddress(from: string, alias: string) {
+    const messages = await getContextualMessagesBySender({
+      query: {
+        address: from,
+        alias,
+      },
+    });
+
+    if (messages.error) {
+      console.error("Error fetching messages", messages.error);
+      return [];
+    }
+
+    return messages.data;
+  }
+
+  async fetchHistoricalPaymentsFromAddress(from: string) {
+    const payments = await getPaymentsBySender({
+      query: {
+        address: from,
+      },
+    });
+
+    if (payments.error) {
+      console.error("Error fetching payments", payments.error);
+      return [];
+    }
+
+    return payments.data;
   }
 }
