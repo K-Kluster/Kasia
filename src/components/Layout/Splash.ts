@@ -1,9 +1,38 @@
 // WARNING: this file CANNOT use any imports from the app code, it must be a standalone file
 
+// helper function to get theme from localStorage and apply it
+const initializeTheme = (): void => {
+  if (typeof window === "undefined") return;
+
+  const saved = localStorage.getItem("kasia-theme");
+  let theme: "light" | "dark" = "dark"; // default
+
+  if (saved === "light") {
+    theme = "light";
+  } else if (saved === "dark") {
+    theme = "dark";
+  } else if (saved === "system") {
+    theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  // apply theme to document element so CSS variables work
+  if (theme === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+  } else {
+    // remove attribute for dark theme (default)
+    document.documentElement.removeAttribute("data-theme");
+  }
+};
+
 export const createSplashScreen = (): HTMLElement => {
+  // initialize theme before creating elements
+  initializeTheme();
+
   const container = document.createElement("div");
   container.className =
-    "flex h-screen flex-col items-center justify-center gap-6 p-4 sm:p-0";
+    "flex h-screen flex-col items-center justify-center gap-6 p-4 sm:p-0 text-[var(--text-primary)]";
 
   const logo = document.createElement("img");
   logo.src = "/kasia-logo.png";
@@ -28,7 +57,7 @@ export const createSplashScreen = (): HTMLElement => {
 
   const spinner = document.createElement("div");
   spinner.className =
-    "text-kas-primary h-8 w-8 animate-spin border-2 border-current border-t-transparent rounded-full";
+    "h-8 w-8 animate-spin border-2 border-current border-t-transparent rounded-full";
 
   const loadingText = document.createTextNode("Loading Kasia SDKs...");
 
