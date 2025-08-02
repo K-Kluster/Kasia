@@ -3,6 +3,7 @@ import { useWalletStore } from "../../store/wallet.store";
 import { AlertTriangle } from "lucide-react";
 import { Button } from "../Common/Button";
 import { Wallet } from "../../types/wallet.type";
+import { ErrorMessage } from "./ErrorMessage";
 
 type MigrateWalletProps = {
   walletId: string | undefined;
@@ -98,11 +99,7 @@ export const Migrate = ({
         />
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
-          {error}
-        </div>
-      )}
+      {error && <ErrorMessage message={error} />}
 
       <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
         <Button onClick={onMigrateWallet} variant="primary">

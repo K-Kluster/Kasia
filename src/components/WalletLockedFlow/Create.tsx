@@ -8,6 +8,7 @@ import {
   disablePasswordRequirements,
 } from "../../config/password";
 import { Button } from "../Common/Button";
+import { ErrorMessage } from "./ErrorMessage";
 
 type CreateWalletProps = {
   onSuccess: (walletId: string, mnemonic: Mnemonic) => void;
@@ -177,11 +178,7 @@ export const CreateWallet = ({ onSuccess, onBack }: CreateWalletProps) => {
         />
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
-          {error}
-        </div>
-      )}
+      {error && <ErrorMessage message={error} />}
 
       <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
         <Button onClick={onCreateWallet} variant="primary">
