@@ -1,14 +1,14 @@
 import { create } from "zustand";
-import { Dices, LucideIcon } from "lucide-react";
+import { PencilRuler, LucideIcon } from "lucide-react";
 
 export enum FeatureFlags {
-  GAME_FRAME = "gameframe",
+  RICH_TEXT = "richtext",
 }
 
 export type FeatureFlagsTable = Record<FeatureFlags, boolean>;
 
 const defaultFeatureFlagsTable: FeatureFlagsTable = {
-  [FeatureFlags.GAME_FRAME]: false,
+  [FeatureFlags.RICH_TEXT]: false,
 };
 
 export interface FeatureDescription {
@@ -20,10 +20,10 @@ export interface FeatureDescription {
 export type FeatureFlips = Record<FeatureFlags, FeatureDescription>;
 
 const featureFlips: FeatureFlips = {
-  [FeatureFlags.GAME_FRAME]: {
+  [FeatureFlags.RICH_TEXT]: {
     label: "Game Frame",
     desc: "NOT IMPLEMENTED - JUST FOR FLAG DEMO.",
-    icon: Dices,
+    icon: PencilRuler,
   },
 };
 

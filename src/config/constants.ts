@@ -34,3 +34,9 @@ export const DEFAULT_FEE_BUCKETS: FeeBucket[] = [
     amount: BigInt(10000), // 0.0001 KAS (fallback)
   },
 ];
+
+// message composer height constants
+export const MESSAGE_COMPOSER_MIN_HEIGHT = 47;
+export const MESSAGE_COMPOSER_MAX_ROWS = 3;
+export const MESSAGE_COMPOSER_MAX_HEIGHT =
+  MESSAGE_COMPOSER_MIN_HEIGHT * MESSAGE_COMPOSER_MAX_ROWS;

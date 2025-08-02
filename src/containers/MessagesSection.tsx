@@ -3,7 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { Pencil, Info, Copy, Check, UserCog } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
 import { MessagesList } from "../components/MessagesList";
-import { SendMessageForm } from "./SendMessageForm";
+import { MessageComposerShell } from "../components/MessageComposer/MessageComposerShell";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { KaspaAddress } from "../components/KaspaAddress";
@@ -442,7 +442,10 @@ export const MessageSection: FC<{
               lastIncoming={lastIncoming}
             />
           </div>
-          <SendMessageForm onExpand={scrollToBottom} />
+          <MessageComposerShell
+            recipient={openedRecipient || undefined}
+            onExpand={scrollToBottom}
+          />
         </>
       )}
 
