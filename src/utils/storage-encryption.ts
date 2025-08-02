@@ -11,23 +11,9 @@ export function generateStorageKey(walletId: string, address: string): string {
   return `msg_${walletIdPrefix}_${addressSuffix}`;
 }
 
-export function loadLegacyMessages(
-  walletId?: string | null
-): Record<string, Message[]> {
+export function loadLegacyMessages(): Record<string, Message[]> {
   const messages = localStorage.getItem(LEGACY_STORAGE_KEY);
   if (!messages) return {};
-
-  // if walletId is provided and not null, check if this wallet has already been migrated
-  if (walletId) {
-    const walletIdPrefix = walletId.substring(0, 8);
-    const migrationFlag = localStorage.getItem(
-      `success_migrated_${walletIdPrefix}`
-    );
-    if (migrationFlag) {
-      // this wallet has already been migrated, return empty object
-      return {};
-    }
-  }
 
   try {
     return JSON.parse(messages);
@@ -74,70 +60,29 @@ export function loadMessagesForAddress(
   }
 }
 
-// new function to load messages from multiple contact addresses and aggregate them
-export function loadMessagesFromMultipleAddresses(
-  walletId: string,
-  addresses: string[],
-  password: string
-): Message[] {
-  const allMessages: Message[] = [];
-
-  for (const address of addresses) {
-    try {
-      const messages = loadMessagesForAddress(walletId, address, password);
-      allMessages.push(...messages);
-    } catch (error) {
-      console.error(`Failed to load messages for address ${address}:`, error);
-    }
-  }
-
-  return allMessages;
-}
-
 // migration function to convert from legacy format to new per-address format
 export function migrateToPerAddressStorage(
   walletId: string,
-  password: string,
-  walletAddresses: string[] = []
+  password: string
 ): void {
   try {
     const legacyMessages = loadLegacyMessages();
 
-    // filter messages to only include those relevant to this wallet
-    const filteredMessages: Record<string, Message[]> = {};
-
+    // for each address in the legacy storage, create a separate storage entry
     for (const [address, messages] of Object.entries(legacyMessages)) {
       if (messages && messages.length > 0) {
-        // filter messages where wallet is involved as sender or recipient
-        const relevantMessages = messages.filter((message) => {
-          return walletAddresses.some(
-            (walletAddr) =>
-              message.senderAddress === walletAddr ||
-              message.recipientAddress === walletAddr
-          );
-        });
-
-        if (relevantMessages.length > 0) {
-          filteredMessages[address] = relevantMessages;
-        }
+        saveMessagesForAddress(messages, walletId, address, password);
       }
     }
 
-    // for each filtered address, create a separate storage entry
-    for (const [address, messages] of Object.entries(filteredMessages)) {
-      saveMessagesForAddress(messages, walletId, address, password);
-    }
-
     // set migration success flag for tracking
-    const walletIdPrefix = walletId.substring(0, 8);
+    const walletIdPrefix = walletId.substring(0, 10);
     localStorage.setItem(`success_migrated_${walletIdPrefix}`, "true");
 
     // check if all wallets have been migrated
     checkAndCleanupLegacyStorage();
 
-    console.log(
-      `Successfully migrated ${Object.keys(filteredMessages).length} addresses with relevant messages to per-address storage format`
-    );
+    console.log("Successfully migrated to per-address storage format");
   } catch (error) {
     console.error("Error during migration to per-address storage:", error);
   }
@@ -156,7 +101,7 @@ function checkAndCleanupLegacyStorage(): void {
     // check if all wallets have migration success flags
     let allWalletsMigrated = true;
     for (const wallet of wallets) {
-      const walletIdPrefix = wallet.id.substring(0, 8);
+      const walletIdPrefix = wallet.id.substring(0, 10);
       const migrationFlag = localStorage.getItem(
         `success_migrated_${walletIdPrefix}`
       );
@@ -172,7 +117,7 @@ function checkAndCleanupLegacyStorage(): void {
 
       // clean up all migration flags
       for (const wallet of wallets) {
-        const walletIdPrefix = wallet.id.substring(0, 8);
+        const walletIdPrefix = wallet.id.substring(0, 10);
         localStorage.removeItem(`success_migrated_${walletIdPrefix}`);
       }
 
