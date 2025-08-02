@@ -26,8 +26,6 @@ export async function boot() {
 
   console.log("Kaspa SDK initialized successfully");
 
-  // unmount splash screen and create react root
-  unmountSplashScreen(splashElement);
   root = createRoot(container);
 
   // lazy load main
@@ -38,6 +36,9 @@ export async function boot() {
   const { useNetworkStore } = await import("./store/network.store");
   const { connect, isConnected } = useNetworkStore.getState();
   if (!isConnected) connect();
+
+  // unmount splash screen after everything is loaded and ready
+  unmountSplashScreen(splashElement);
 }
 
 boot();
