@@ -291,8 +291,8 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         );
       }
       return (
-        <div className="file-message">
-          <div className="file-info">
+        <div className="mt-1 rounded-lg bg-[var(--primary-bg)]/10 p-2">
+          <div className="mb-2 flex items-center gap-2 text-sm">
             <Paperclip className="h-4 w-4 cursor-pointer" /> {fileData.name} (
             {Math.round(fileData.size / 1024)}
             KB)
@@ -327,8 +327,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           );
         }
         return (
-          <div key={`file-${transactionId}`} className="file-message">
-            <div className="file-info">
+          <div
+            key={`file-${transactionId}`}
+            className="mt-1 rounded-lg bg-[var(--primary-bg)]/10 p-2"
+          >
+            <div className="mb-2 flex items-center gap-2 text-sm">
               <Paperclip className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>

@@ -29,7 +29,7 @@ export const Modal: FC<{
       onClick={onClose}
     >
       <div
-        className="border-primary-border bg-secondary-bg relative mx-4 w-full max-w-2xl rounded-2xl border p-6"
+        className="border-primary-border bg-secondary-bg animate-modal-fadein relative mx-4 w-full max-w-2xl rounded-2xl border p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <button
