@@ -1,11 +1,13 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { RootLayout } from "./components/Layout/RootLayout";
-import { WalletFlow } from "./containers/WalletFlow";
+import {
+  WalletLockedFlowContainer,
+  Step,
+} from "./containers/WalletLockedFlowContainer";
 import { RequireUnlockedWallet } from "./containers/RequireUnlockedWallet";
 
 import type { NetworkType } from "./types/all";
-import type { Step } from "./containers/WalletFlow";
 import { useWalletStore } from "./store/wallet.store";
 import { MessengerContainer } from "./containers/MessengerContainer";
 
@@ -41,7 +43,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
         <Route
           index
           element={
-            <WalletFlow
+            <WalletLockedFlowContainer
               initialStep="home"
               selectedNetwork={network}
               onNetworkChange={onNetworkChange}
@@ -63,7 +65,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
                 selectedWalletId ? (
                   <Navigate to={`/${selectedWalletId}`} replace />
                 ) : (
-                  <WalletFlow
+                  <WalletLockedFlowContainer
                     initialStep={initialStep}
                     selectedNetwork={network}
                     onNetworkChange={onNetworkChange}
