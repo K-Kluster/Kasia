@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWalletStore } from "../store/wallet.store";
 import { Mnemonic } from "kaspa-wasm";
 import { Radio, RadioGroup, Label } from "@headlessui/react";
@@ -19,8 +19,6 @@ import { Button } from "../components/Common/Button";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { useUiStore } from "../store/ui.store";
 import { StringCopy } from "../components/Common/StringCopy";
-import { Modal } from "../components/Common/modal";
-import { LockedSettingsModal } from "../components/Modals/LockedSettingsModal";
 
 export type Step = {
   type:
@@ -51,9 +49,10 @@ export const WalletFlow = ({
   isConnected,
 }: WalletFlowProps) => {
   const navigate = useNavigate();
+
+  // Simplified approach - use the original Zustand hooks but force re-renders
   const openModal = useUiStore((s) => s.openModal);
-  const isOpen = useUiStore((s) => s.isOpen);
-  const closeModal = useUiStore((s) => s.closeModal);
+
   const { wallet } = useParams<{ wallet: string }>();
 
   const [error, setError] = useState<{ message: string; id: number } | null>(
@@ -66,16 +65,16 @@ export const WalletFlow = ({
   const [revealed, setRevealed] = useState(false);
 
   const [unlocking, setUnlocking] = useState(false);
+  const [mnemonicValue, setMnemonicValue] = useState("");
   const passwordRef = useRef<HTMLInputElement>(null);
-  const mnemonicRef = useRef<HTMLTextAreaElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const isMobile = useIsMobile();
 
-  const usePasswordRef = useCallback((node: HTMLInputElement | null) => {
+  const usePasswordRef = (node: HTMLInputElement | null) => {
     passwordRef.current = node;
     node?.focus();
-  }, []);
+  };
 
   const [step, setStep] = useState<Step>({
     type: initialStep as Step["type"],
@@ -189,7 +188,7 @@ export const WalletFlow = ({
   const onImportWallet = async () => {
     if (
       !nameRef.current?.value ||
-      !mnemonicRef.current?.value ||
+      !mnemonicValue ||
       !passwordRef.current?.value
     ) {
       setError({ message: "Please enter all fields", id: Date.now() });
@@ -204,7 +203,7 @@ export const WalletFlow = ({
       return;
     }
     try {
-      const mnemonic = new Mnemonic(mnemonicRef.current.value);
+      const mnemonic = new Mnemonic(mnemonicValue);
       await createWallet(nameRef.current.value, mnemonic, pw, derivationType);
       setStep({ type: "success" });
     } catch (err) {
@@ -213,7 +212,7 @@ export const WalletFlow = ({
         id: Date.now(),
       });
     } finally {
-      if (mnemonicRef.current.value) mnemonicRef.current.value = "";
+      setMnemonicValue("");
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
@@ -679,7 +678,7 @@ export const WalletFlow = ({
           </RadioGroup>
           <MnemonicEntry
             seedPhraseLength={seedPhraseLength}
-            mnemonicRef={mnemonicRef}
+            onMnemonicChange={setMnemonicValue}
           />
 
           <div className="mb-6">
@@ -851,13 +850,6 @@ export const WalletFlow = ({
             </>
           )}
         </>
-      )}
-
-      {/* rendered at wallet flow so it works on all steps, */}
-      {isOpen("settings") && (
-        <Modal onClose={() => closeModal("settings")}>
-          <LockedSettingsModal />
-        </Modal>
       )}
     </div>
   );

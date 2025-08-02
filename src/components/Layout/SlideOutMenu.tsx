@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect } from "react";
 import clsx from "clsx";
 import {
   RefreshCcw,
@@ -31,7 +31,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
   const open = useUiStore((s) => s.isSettingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
-  const msgStore = useMessagingStore();
   const [actionsOpen, setActionsOpen] = useState(false);
   const { openModal } = useUiStore();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -41,18 +40,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
       setActionsOpen(false);
     }
   }, [open]);
-
-  const clearHistory = useCallback(() => {
-    if (!address) return;
-    if (
-      confirm(
-        "Are you sure you want to clear ALL message history? This will completely wipe all conversations, messages, nicknames, and handshakes. This cannot be undone."
-      )
-    ) {
-      msgStore.flushWalletHistory(address);
-      setActionsOpen(false);
-    }
-  }, [address, msgStore]);
 
   if (!open || !isWalletReady) return null;
 
@@ -65,7 +52,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
       />
 
       {/* Draw type thing */}
-      <aside className="bg-secondary-bg fixed inset-y-0 left-0 z-50 flex w-full max-w-xs flex-col shadow-xl">
+      <aside className="bg-secondary-bg fixed inset-y-0 left-0 z-45 flex w-full max-w-xs flex-col shadow-xl">
         <header className="border-primary-border flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
             <img

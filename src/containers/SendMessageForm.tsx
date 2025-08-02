@@ -1,4 +1,4 @@
-import { FC, useCallback, useEffect, useRef, useState, DragEvent } from "react";
+import { FC, useEffect, useRef, useState, DragEvent } from "react";
 import { useMessagingStore } from "../store/messaging.store";
 import { Message } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
@@ -18,8 +18,6 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
-  AlertTriangle,
-  Info,
   Camera,
   Trash,
 } from "lucide-react";
@@ -30,8 +28,6 @@ import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
-import { Modal } from "../components/Common/modal";
-import { Button } from "../components/Common/Button";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../service/upload-file-service";
 import { useIsMobile } from "../hooks/useIsMobile";
@@ -68,7 +64,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const { isOpen, closeModal, openModal } = useUiStore();
+  const { isOpen, closeModal, openModal, setSendMessageCallback } =
+    useUiStore();
 
   const messageStore = useMessagingStore();
 
@@ -110,47 +107,47 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }
   }, []);
 
-  const estimateFee = useCallback(async () => {
-    if (!walletStore.unlockedWallet) {
-      console.log("Cannot estimate fee: missing wallet");
-      return;
-    }
-
-    if (!message || !openedRecipient) {
-      console.log("Cannot estimate fee: missing message or recipient");
-      return;
-    }
-
-    try {
-      console.log("Estimating fee for message:", {
-        length: message.length,
-        openedRecipient,
-        priorityFee: {
-          amount: priorityFee.amount.toString(),
-          feerate: priorityFee.feerate || "none",
-          source: priorityFee.source,
-        },
-      });
-
-      setIsEstimating(true);
-      const estimate = await walletStore.estimateSendMessageFees(
-        message,
-        new Address(openedRecipient),
-        priorityFee
-      );
-
-      console.log("Fee estimate received:", estimate);
-      setFeeEstimate(Number(estimate.fees) / 100_000_000);
-      setIsEstimating(false);
-    } catch (error) {
-      console.error("Error estimating fee:", error);
-      setIsEstimating(false);
-      setFeeEstimate(null);
-    }
-  }, [walletStore, message, openedRecipient, priorityFee]);
-
   // Use effect to trigger fee estimation when message, recipient, or priority fee changes
   useEffect(() => {
+    const estimateFee = async () => {
+      if (!walletStore.unlockedWallet) {
+        console.log("Cannot estimate fee: missing wallet");
+        return;
+      }
+
+      if (!message || !openedRecipient) {
+        console.log("Cannot estimate fee: missing message or recipient");
+        return;
+      }
+
+      try {
+        console.log("Estimating fee for message:", {
+          length: message.length,
+          openedRecipient,
+          priorityFee: {
+            amount: priorityFee.amount.toString(),
+            feerate: priorityFee.feerate || "none",
+            source: priorityFee.source,
+          },
+        });
+
+        setIsEstimating(true);
+        const estimate = await walletStore.estimateSendMessageFees(
+          message,
+          new Address(openedRecipient),
+          priorityFee
+        );
+
+        console.log("Fee estimate received:", estimate);
+        setFeeEstimate(Number(estimate.fees) / 100_000_000);
+        setIsEstimating(false);
+      } catch (error) {
+        console.error("Error estimating fee:", error);
+        setIsEstimating(false);
+        setFeeEstimate(null);
+      }
+    };
+
     const delayEstimation = setTimeout(() => {
       if (openedRecipient && message) {
         console.log("Triggering fee estimation after delay");
@@ -159,9 +156,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }, 500);
 
     return () => clearTimeout(delayEstimation);
-  }, [message, openedRecipient, priorityFee, estimateFee]);
+  }, [message, openedRecipient, priorityFee]);
 
-  const sendMessage = useCallback(async () => {
+  const sendMessage = async () => {
     const recipient = openedRecipient;
     if (!walletStore.address) {
       toast.error("Unexpected error: No selected address.");
@@ -304,16 +301,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
-  }, [
-    messageStore,
-    walletStore,
-    message,
-    openedRecipient,
-    feeEstimate,
-    priorityFee,
-  ]);
+  };
 
-  const onSendClicked = useCallback(async () => {
+  const onSendClicked = async () => {
     // Check if we have an active conversation with this recipient
     const activeConversations = messageStore.getActiveConversations();
     const existingConversation = activeConversations.find(
@@ -325,8 +315,9 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }
 
     // If no active conversation, display a warning modal
+    setSendMessageCallback(() => sendMessage);
     openModal("warn-costy-send-message");
-  }, [messageStore, openModal, openedRecipient, sendMessage]);
+  };
 
   const processFile = async (file: File, source: string) => {
     if (isUploading) return;
@@ -659,40 +650,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           )}
         </div>
       </div>
-
-      {isOpen("warn-costy-send-message") && (
-        <Modal onClose={() => closeModal("warn-costy-send-message")}>
-          <div className="flex flex-col items-center justify-center gap-8">
-            <h2 className="text-lg text-yellow-400">
-              <AlertTriangle className="mr-2 inline size-6 text-yellow-400" />
-              Your Correspondent hasn't answered yet
-            </h2>
-
-            <p className="text-center">
-              Sending this message will carry an{" "}
-              <span className="font-bold">extra cost of 0.2 KAS</span>, that
-              will be sent to your correspondent. Are you sure you want to send
-              it?
-            </p>
-            <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
-              <Info className="mr-2 size-10 text-white" />
-              <p className="">
-                This is occuring because your correspondent hasn't accepted the
-                handshake yet.
-              </p>
-            </div>
-
-            <Button
-              onClick={() => {
-                closeModal("warn-costy-send-message");
-                sendMessage();
-              }}
-            >
-              Send anyway
-            </Button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

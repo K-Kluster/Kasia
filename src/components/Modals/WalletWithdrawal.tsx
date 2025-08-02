@@ -1,4 +1,4 @@
-import { ChangeEvent, FC, useCallback, useState } from "react";
+import { ChangeEvent, FC, useState } from "react";
 import { createWithdrawTransaction } from "../../service/account-service";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
@@ -17,67 +17,64 @@ export const WalletWithdrawal: FC = () => {
   const [amountInputError, setAmountInputError] = useState<string | null>(null);
 
   const balance = useWalletStore((store) => store.balance);
-  const inputAmountUpdated = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      if (/^-?\d*\.?\d*$/.test(event.target.value) === false) {
-        return;
-      }
+  const inputAmountUpdated = (event: ChangeEvent<HTMLInputElement>) => {
+    if (/^-?\d*\.?\d*$/.test(event.target.value) === false) {
+      return;
+    }
 
-      // update input value
-      setWithdrawAmount(event.target.value);
+    // update input value
+    setWithdrawAmount(event.target.value);
 
-      const unValidatedAmountAsSompi = kaspaToSompi(event.target.value);
+    const unValidatedAmountAsSompi = kaspaToSompi(event.target.value);
 
-      if (unValidatedAmountAsSompi === undefined) {
-        setAmountInputError("Invalid amount.");
-      }
+    if (unValidatedAmountAsSompi === undefined) {
+      setAmountInputError("Invalid amount.");
+    }
 
-      const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0);
-      const matureBalanceAmount = balance?.mature ?? BigInt(0);
+    const validatedAmountAsSompi = unValidatedAmountAsSompi ?? BigInt(0);
+    const matureBalanceAmount = balance?.mature ?? BigInt(0);
 
-      // if value is empty, clear any errors
-      if (validatedAmountAsSompi === BigInt(0)) {
-        setAmountInputError(null);
-        return;
-      }
-
-      // Check if amount exceeds balance first
-      if (validatedAmountAsSompi > matureBalanceAmount) {
-        setAmountInputError("Amount exceeds available balance.");
-        return;
-      }
-
-      // Check if amount is too small
-      if (validatedAmountAsSompi < maxDustAmount) {
-        setAmountInputError("Amount must be greater than 0.19 KAS.");
-        return;
-      }
-
-      // Amount is valid
+    // if value is empty, clear any errors
+    if (validatedAmountAsSompi === BigInt(0)) {
       setAmountInputError(null);
       return;
-    },
-    [balance]
-  );
+    }
 
-  const handleMaxClick = useCallback(() => {
+    // Check if amount exceeds balance first
+    if (validatedAmountAsSompi > matureBalanceAmount) {
+      setAmountInputError("Amount exceeds available balance.");
+      return;
+    }
+
+    // Check if amount is too small
+    if (validatedAmountAsSompi < maxDustAmount) {
+      setAmountInputError("Amount must be greater than 0.19 KAS.");
+      return;
+    }
+
+    // Amount is valid
+    setAmountInputError(null);
+    return;
+  };
+
+  const handleMaxClick = () => {
     const matureBalance = balance?.mature ?? BigInt(0);
     const maxAmount = sompiToKaspaString(matureBalance);
     setWithdrawAmount(maxAmount);
     // Clear any existing errors since max amount is always valid
     setAmountInputError(null);
-  }, [balance]);
+  };
 
-  const handlePaste = useCallback(async () => {
+  const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setWithdrawAddress(text.toLowerCase());
     } catch {
       toast.error("Failed to paste from clipboard");
     }
-  }, []);
+  };
 
-  const handleWithdraw = useCallback(async () => {
+  const handleWithdraw = async () => {
     if (amountInputError !== null) {
       return;
     }
@@ -123,7 +120,7 @@ export const WalletWithdrawal: FC = () => {
     } finally {
       setIsSending(false);
     }
-  }, [withdrawAddress, withdrawAmount, amountInputError, balance]);
+  };
 
   return (
     <>

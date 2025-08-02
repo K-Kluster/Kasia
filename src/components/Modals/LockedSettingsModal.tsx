@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { NetworkSelector } from "../NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
@@ -17,6 +17,7 @@ export const LockedSettingsModal: React.FC = () => {
 
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
+  const hasAttemptedInitialConnection = useRef(false);
 
   const [nodeUrl, setNodeUrl] = useState(
     networkStore.nodeUrl ??
@@ -24,34 +25,30 @@ export const LockedSettingsModal: React.FC = () => {
       ""
   );
 
-  // Network connection effect
+  // Network connection effect - only run once on mount
   useEffect(() => {
-    // Skip if no network selected or connection attempt in progress
-    if (isConnected) {
+    // Skip if already connected or if we've already attempted initial connection
+    if (isConnected || hasAttemptedInitialConnection.current) {
       return;
     }
 
+    hasAttemptedInitialConnection.current = true;
     connect();
-    // this is on purpose, we only want to run this once upon component mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isConnected, connect]);
 
-  const onNetworkChange = useCallback(
-    (network: NetworkType) => {
-      setConnectionSuccess(false);
+  const onNetworkChange = (network: NetworkType) => {
+    setConnectionSuccess(false);
 
-      networkStore.setNetwork(network);
+    networkStore.setNetwork(network);
 
-      const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`);
+    const savedNetwork = localStorage.getItem(`kasia_node_url_${network}`);
 
-      setNodeUrl(savedNetwork ?? "");
+    setNodeUrl(savedNetwork ?? "");
 
-      connect();
-    },
-    [connect, networkStore]
-  );
+    connect();
+  };
 
-  const handleSaveNodeUrl = useCallback(async () => {
+  const handleSaveNodeUrl = async () => {
     setConnectionSuccess(false);
 
     if (isConnecting) {
@@ -63,7 +60,7 @@ export const LockedSettingsModal: React.FC = () => {
     const isSuccess = await connect();
 
     setConnectionSuccess(isSuccess);
-  }, [connect, isConnecting, networkStore, nodeUrl]);
+  };
 
   return (
     <div className="w-full max-w-[600px]">

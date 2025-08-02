@@ -1,5 +1,5 @@
 import { LoaderCircle } from "lucide-react";
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect } from "react";
 import { ErrorCard } from "../components/ErrorCard";
 import { useMessagingStore } from "../store/messaging.store";
 import { useNetworkStore } from "../store/network.store";
@@ -95,7 +95,7 @@ export const MessengerContainer: FC = () => {
     };
   }, []);
 
-  const onNewChatClicked = useCallback(async () => {
+  const onNewChatClicked = async () => {
     try {
       if (!walletStore.unlockedWallet?.password) {
         setErrorMessage("Please unlock your wallet first");
@@ -109,7 +109,7 @@ export const MessengerContainer: FC = () => {
         `Failed to start new chat: ${unknownErrorToErrorLike(error)}`
       );
     }
-  }, [walletStore.unlockedWallet, messageStore]);
+  };
 
   useEffect(() => {
     const startMessageClient = async () => {
@@ -216,18 +216,15 @@ export const MessengerContainer: FC = () => {
     }
   }, [isMobile, messageStore.openedRecipient, messageStore.isLoaded]);
 
-  const onContactClicked = useCallback(
-    (contact: Contact) => {
-      if (!walletStore.address) {
-        console.error("No wallet address");
-        return;
-      }
+  const onContactClicked = (contact: Contact) => {
+    if (!walletStore.address) {
+      console.error("No wallet address");
+      return;
+    }
 
-      messageStore.setIsCreatingNewChat(false);
-      messageStore.setOpenedRecipient(contact.address);
-    },
-    [messageStore, walletStore.address]
-  );
+    messageStore.setIsCreatingNewChat(false);
+    messageStore.setOpenedRecipient(contact.address);
+  };
 
   return (
     <>

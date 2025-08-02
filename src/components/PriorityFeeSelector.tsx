@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useMemo, useCallback } from "react";
+import { FC, useState, useEffect } from "react";
 import { Modal } from "./Common/modal";
 import { Info, ArrowUpDown } from "lucide-react";
 import { FeeBucket, PriorityFeeConfig } from "../types/all";
@@ -20,6 +20,16 @@ interface FeeSettings {
   fee: PriorityFeeConfig;
   isPersistent: boolean;
   selectedBucket?: string; // Track which bucket was selected
+}
+
+interface ParsedSettings {
+  fee: {
+    amount: string;
+    source: FeeSource;
+    feerate?: number;
+  };
+  isPersistent: boolean;
+  selectedBucket?: string;
 }
 
 export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
@@ -49,14 +59,14 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     }));
   }, [currentFee]);
 
-  const parsedSettings = useMemo(() => {
+  const parsedSettings = (): ParsedSettings | null => {
     const saved = sessionStorage.getItem("priorityFeeSettings");
     if (!saved) return null;
     try {
-      const parsed = JSON.parse(saved);
+      const parsed = JSON.parse(saved) as ParsedSettings;
       return {
         fee: {
-          amount: BigInt(parsed.fee.amount ?? "0"),
+          amount: parsed.fee.amount ?? "0",
           source: parsed.fee.source,
           feerate: parsed.fee.feerate,
         },
@@ -67,24 +77,31 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       console.error("Failed to load priority fee settings");
       return null;
     }
-  }, []);
+  };
 
   // Load persistent settings on mount
   useEffect(() => {
-    if (parsedSettings) {
-      setSettings(parsedSettings);
-      if (parsedSettings.selectedBucket === "Custom") {
-        setCustomAmount(
-          (Number(parsedSettings.fee.amount) / 100_000_000).toString()
-        );
+    const settings = parsedSettings();
+    if (settings) {
+      setSettings({
+        fee: {
+          amount: BigInt(settings.fee.amount ?? "0"),
+          source: settings.fee.source,
+          feerate: settings.fee.feerate,
+        },
+        isPersistent: settings.isPersistent,
+        selectedBucket: settings.selectedBucket,
+      });
+      if (settings.selectedBucket === "Custom") {
+        setCustomAmount((Number(settings.fee.amount) / 100_000_000).toString());
       }
       onFeeChange({
-        amount: parsedSettings.fee.amount,
-        source: parsedSettings.fee.source,
+        amount: BigInt(settings.fee.amount ?? "0"),
+        source: settings.fee.source,
         feerate:
-          parsedSettings.selectedBucket === "Custom"
+          settings.selectedBucket === "Custom"
             ? undefined
-            : parsedSettings.fee.feerate,
+            : settings.fee.feerate,
       });
     } else {
       // Initialize with Low bucket (0 fee) as default
@@ -96,10 +113,10 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       }));
       onFeeChange(defaultFee);
     }
-  }, [parsedSettings, onFeeChange]);
+  }, [onFeeChange]);
 
   // Get dynamic fee buckets from network data
-  const dynamicFeeBuckets = useMemo(() => {
+  const dynamicFeeBuckets = (): FeeBucket[] => {
     const buckets: FeeBucket[] = [];
     const estimate = feeEstimate?.estimate || null;
 
@@ -155,7 +172,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     }
 
     return buckets;
-  }, [feeEstimate]);
+  };
 
   const handleFeeSelect = (bucket: FeeBucket) => {
     const newFee: PriorityFeeConfig = {
@@ -184,14 +201,14 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     setIsModalOpen(false);
   };
 
-  const handleCustomAmountChange = useCallback((value: string) => {
+  const handleCustomAmountChange = (value: string) => {
     // Allow decimal numbers
     if (/^\d*\.?\d*$/.test(value)) {
       setCustomAmount(value);
     } else {
       toast.warning("Amount must be a number", 1500);
     }
-  }, []);
+  };
 
   const handleCustomFee = () => {
     const kasValue = parseFloat(customAmount);
@@ -256,7 +273,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     );
   };
 
-  const getCurrentBucketLabel = () => {
+  const getCurrentBucketLabel = (): string => {
     // Use the explicitly selected bucket if available
     if (settings.selectedBucket) {
       return settings.selectedBucket;
@@ -266,7 +283,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     return "Custom";
   };
 
-  const formatTime = (seconds: number | undefined) => {
+  const formatTime = (seconds: number | undefined): string => {
     if (seconds === undefined || seconds === null) return "";
     const value = Number(seconds);
     if (isNaN(value)) return "";
@@ -316,7 +333,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
             </div>
 
             <div className="space-y-2">
-              {dynamicFeeBuckets.map((bucket, index) => (
+              {dynamicFeeBuckets().map((bucket, index) => (
                 <button
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}

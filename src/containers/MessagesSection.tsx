@@ -1,4 +1,4 @@
-import { FC, useMemo, useEffect, useState, useRef } from "react";
+import { FC, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Pencil, Info, Copy, Check, UserCog } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
@@ -28,16 +28,17 @@ export const MessageSection: FC<{
   const openedRecipient = useMessagingStore((s) => s.openedRecipient);
 
   // Find the current contact for display purposes
-  const currentContact = useMemo(() => {
-    if (!openedRecipient) return null;
-    return contacts.find((c) => c.address === openedRecipient);
-  }, [contacts, openedRecipient]);
+  const currentContact = openedRecipient
+    ? contacts.find((c) => c.address === openedRecipient)
+    : null;
 
-  const boxState = useMemo<"new" | "filtered" | "unfiltered">(() => {
+  const boxState = (): "new" | "filtered" | "unfiltered" => {
     if (!contacts.length) return "new";
     if (!openedRecipient) return "unfiltered";
     return "filtered";
-  }, [contacts, openedRecipient]);
+  };
+
+  const currentBoxState = boxState();
 
   // KNS domain move check state
   const [showKnsMovedModal, setShowKnsMovedModal] = useState(false);
@@ -74,21 +75,22 @@ export const MessageSection: FC<{
   );
 
   // compute last index of outgoing and incoming messages so we can render the message ui accordingly!
-  const { lastOutgoing, lastIncoming } = useMemo(() => {
-    const msgs = messageStore.messagesOnOpenedRecipient;
-    let lastOut = -1;
-    let lastIn = -1;
-    msgs.forEach((m, i) => {
-      if (m.senderAddress === address?.toString()) lastOut = i;
-      else lastIn = i;
-    });
-    return { lastOutgoing: lastOut, lastIncoming: lastIn };
-  }, [messageStore.messagesOnOpenedRecipient, address]);
+  const msgs = messageStore.messagesOnOpenedRecipient;
+  let lastOut = -1;
+  let lastIn = -1;
+  msgs.forEach((m, i) => {
+    if (m.senderAddress === address?.toString()) lastOut = i;
+    else lastIn = i;
+  });
+  const { lastOutgoing, lastIncoming } = {
+    lastOutgoing: lastOut,
+    lastIncoming: lastIn,
+  };
 
   const messagesScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (boxState !== "filtered" || !openedRecipient) return;
+    if (currentBoxState !== "filtered" || !openedRecipient) return;
     const contact = contacts.find((c) => c.address === openedRecipient);
     if (!contact || !contact.nickname || !contact.nickname.endsWith(".kas"))
       return;
@@ -137,7 +139,7 @@ export const MessageSection: FC<{
 
   // scroll if the conversation is open or box state changes
   useEffect(() => {
-    if (boxState === "filtered" && messagesScrollRef.current) {
+    if (currentBoxState === "filtered" && messagesScrollRef.current) {
       messagesScrollRef.current.scrollTo({
         top: messagesScrollRef.current.scrollHeight,
         behavior: "smooth",
@@ -281,7 +283,7 @@ export const MessageSection: FC<{
             </div>
           </div>
         )}
-      {boxState === "new" && (
+      {currentBoxState === "new" && (
         /* ONBOARDING ─ show help when no contacts exist */
         <>
           <div className="border-primary-border h-[60px] border-b bg-[var(--secondary-bg)] p-4" />
@@ -295,7 +297,7 @@ export const MessageSection: FC<{
         </>
       )}
 
-      {boxState === "filtered" && (
+      {currentBoxState === "filtered" && (
         /* A CONVERSATION IS OPEN */
         <>
           <div className="flex h-[60px] items-center justify-between bg-[var(--secondary-bg)] px-4">
