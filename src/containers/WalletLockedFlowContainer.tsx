@@ -12,8 +12,8 @@ import { CreateWallet } from "../components/WalletLockedFlow/Create";
 import { Home } from "../components/WalletLockedFlow/Home";
 import { Import } from "../components/WalletLockedFlow/Import";
 import { Unlock } from "../components/WalletLockedFlow/Unlock";
-import { Migrate } from "../components/WalletLockedFlow/MIgrate";
-import { Unlocked } from "../components/WalletLockedFlow/unlocked";
+import { Migrate } from "../components/WalletLockedFlow/Migrate";
+import { Unlocked } from "../components/WalletLockedFlow/Unlocked";
 import { SeedPhraseDisplay } from "../components/WalletLockedFlow/SeedDisplay";
 
 export type Step = {
