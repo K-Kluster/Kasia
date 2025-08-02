@@ -9,7 +9,7 @@ import {
 } from "../../config/password";
 import { MnemonicEntry } from "../MnemonicEntry";
 import { Button } from "../Common/Button";
-import { ErrorMessage } from "./ErrorMessage";
+import { WalletFlowErrorMessage } from "./WalletFlowErrorMessage";
 
 type ImportWalletProps = {
   onSuccess: () => void;
@@ -157,7 +157,7 @@ export const Import = ({ onSuccess, onBack }: ImportWalletProps) => {
         />
       </div>
 
-      {error && <ErrorMessage message={error} />}
+      {error && <WalletFlowErrorMessage message={error} />}
 
       <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
         <Button onClick={onImportWallet} variant="primary">

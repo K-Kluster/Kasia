@@ -4,7 +4,7 @@ import { NetworkSelector } from "../NetworkSelector";
 import { NetworkType } from "../../types/all";
 import { Wallet } from "../../types/wallet.type";
 import { Button } from "../Common/Button";
-import { ErrorMessage } from "./ErrorMessage";
+import { WalletFlowErrorMessage } from "./WalletFlowErrorMessage";
 import { Loader2 } from "lucide-react";
 import clsx from "clsx";
 
@@ -118,7 +118,7 @@ export const Unlock = ({
             />
           </div>
 
-          {error && <ErrorMessage message={error} />}
+          {error && <WalletFlowErrorMessage message={error} />}
 
           <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button
