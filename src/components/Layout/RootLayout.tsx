@@ -35,7 +35,7 @@ export const RootLayout: FC = () => {
   }, [location]);
 
   return (
-    <div className="m-0 bg-[var(--primary-bg)] p-0 font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] leading-relaxed text-[var(--text-primary)]">
+    <div className="m-0 p-0 font-['Inter',-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] leading-relaxed text-[var(--text-primary)]">
       <ToastContainer />
       <ModalHost />
       <ResizableAppContainer>
