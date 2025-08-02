@@ -4,6 +4,7 @@ import { NetworkSelector } from "../NetworkSelector";
 import { NetworkType } from "../../types/all";
 import { Wallet } from "../../types/wallet.type";
 import { Button } from "../Common/Button";
+import { ErrorMessage } from "./ErrorMessage";
 import { Loader2 } from "lucide-react";
 import clsx from "clsx";
 
@@ -117,11 +118,7 @@ export const Unlock = ({
             />
           </div>
 
-          {error && (
-            <div className="mb-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-500">
-              {error}
-            </div>
-          )}
+          {error && <ErrorMessage message={error} />}
 
           <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
             <Button

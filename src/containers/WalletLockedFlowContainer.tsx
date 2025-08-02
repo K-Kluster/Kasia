@@ -8,7 +8,6 @@ import clsx from "clsx";
 import { NetworkType } from "../types/all";
 import { Wallet } from "../types/wallet.type";
 
-// Import the individual components
 import { CreateWallet } from "../components/WalletLockedFlow/Create";
 import { Home } from "../components/WalletLockedFlow/Home";
 import { Import } from "../components/WalletLockedFlow/Import";
@@ -97,9 +96,6 @@ export const WalletLockedFlowContainer = ({
       case "migrate":
         navigate(`/wallet/migrate/${walletId ?? ""}`);
         break;
-      case "unlocked":
-        console.log("Navigated to Messaging container");
-        break;
       default:
         return;
     }
@@ -133,18 +129,20 @@ export const WalletLockedFlowContainer = ({
   };
 
   const wrapperClass = clsx(
-    "w-full bg-secondary-bg p-8 overflow-x-hidden",
+    "w-full bg-secondary-bg overflow-x-hidden",
     isMobile
-      ? clsx(
-          "fixed inset-0 w-full max-h-screen overflow-y-auto flex flex-col",
-          step.type === "home"
-            ? wallets.length > 2
-              ? "justify-start"
-              : "justify-center"
-            : "justify-start"
-        )
-      : "mx-auto my-8 rounded-2xl max-w-[700px] min-h-[400px] border border-primary-border",
-    { relative: step.type === "home" && !isMobile }
+      ? [
+          "fixed inset-0 w-full max-h-screen overflow-y-auto flex flex-col p-4",
+          (step.type === "home" && wallets.length <= 2) ||
+          step.type === "success" ||
+          step.type === "create"
+            ? "justify-center"
+            : "justify-start",
+        ]
+      : [
+          "mx-auto my-8 rounded-2xl max-w-[700px] border border-primary-border p-8",
+          step.type === "home" && "relative",
+        ]
   );
 
   return (
