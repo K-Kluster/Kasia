@@ -68,6 +68,7 @@ export const WalletFlow = ({
   const [unlocking, setUnlocking] = useState(false);
   const passwordRef = useRef<HTMLInputElement>(null);
   const mnemonicRef = useRef<HTMLTextAreaElement>(null);
+  const passphraseRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
 
   const isMobile = useIsMobile();
@@ -205,7 +206,14 @@ export const WalletFlow = ({
     }
     try {
       const mnemonic = new Mnemonic(mnemonicRef.current.value);
-      await createWallet(nameRef.current.value, mnemonic, pw, derivationType);
+      const passphrase = passphraseRef.current?.value || undefined;
+      await createWallet(
+        nameRef.current.value,
+        mnemonic,
+        pw,
+        derivationType,
+        passphrase
+      );
       setStep({ type: "success" });
     } catch (err) {
       setError({
@@ -214,6 +222,7 @@ export const WalletFlow = ({
       });
     } finally {
       if (mnemonicRef.current.value) mnemonicRef.current.value = "";
+      if (passphraseRef.current?.value) passphraseRef.current.value = "";
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
@@ -677,9 +686,11 @@ export const WalletFlow = ({
               ))}
             </div>
           </RadioGroup>
+
           <MnemonicEntry
             seedPhraseLength={seedPhraseLength}
             mnemonicRef={mnemonicRef}
+            passphraseRef={passphraseRef}
           />
 
           <div className="mb-6">
