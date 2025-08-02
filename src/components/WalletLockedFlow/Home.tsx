@@ -78,7 +78,7 @@ export const Home = ({
                 e.stopPropagation();
                 onDeleteWallet(w.id);
               }}
-              className="absolute top-2 right-2 cursor-pointer rounded-md bg-red-400/10 p-[2px] text-red-400/50 hover:scale-110"
+              className="absolute top-2 right-2 cursor-pointer rounded-md bg-[var(--accent-red)]/10 p-[2px] text-[var(--accent-red)]/50 hover:scale-110"
               title="Delete"
             >
               <Trash2 className="h-4 w-4" />
