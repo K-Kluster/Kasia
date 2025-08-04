@@ -6,7 +6,6 @@ export interface HandshakePayload {
   alias: string;
   theirAlias?: string; // Used in response to confirm both aliases
   timestamp: number;
-  conversationId: string;
   version: number; // for future protocol upgrades
   recipientAddress?: string; // Only used for initial handshake
   sendToRecipient?: boolean; // Flag to indicate if message should be sent to recipient

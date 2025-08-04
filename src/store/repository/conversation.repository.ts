@@ -22,7 +22,7 @@ export type Conversation =
 
 export type DbConversation = {
   /**
-   * conversation ID
+   * unique uuidv4
    */
   id: string;
   /**
@@ -125,14 +125,10 @@ export class ConversationRepository {
       throw new DBNotFoundException();
     }
 
-    await this.db.put(
-      "conversations",
-      {
-        ...existingDBConversation,
-        lastActivityAt,
-      },
-      conversationId
-    );
+    await this.db.put("conversations", {
+      ...existingDBConversation,
+      lastActivityAt,
+    });
   }
 
   private _conversationToDbConversation(

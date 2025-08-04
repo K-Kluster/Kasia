@@ -132,7 +132,6 @@ export class ConversationManager {
             type: "handshake",
             alias: conversationAndContact.conversation.myAlias, // Keep the original alias
             timestamp: Date.now(),
-            conversationId: conversationAndContact.conversation.id,
             version: ConversationManager.PROTOCOL_VERSION,
             recipientAddress: recipientAddress,
             sendToRecipient: true,
@@ -170,7 +169,6 @@ export class ConversationManager {
         type: "handshake",
         alias: conversation.myAlias,
         timestamp: Date.now(),
-        conversationId: conversation.id,
         version: ConversationManager.PROTOCOL_VERSION,
         recipientAddress: recipientAddress,
         sendToRecipient: true, // Flag to indicate this should be sent to recipient
@@ -199,46 +197,34 @@ export class ConversationManager {
       this.validateHandshakePayload(payload);
 
       // STEP 1 – look up strictly by conversationId only
-      const existingConversationAndContactByConversationId =
-        this.conversationWithContactByConversationId.get(
-          payload.conversationId
-        );
+      const existingConversationAndContactByAddress =
+        this.getConversationWithContactByAddress(senderAddress);
 
-      if (existingConversationAndContactByConversationId) {
+      if (existingConversationAndContactByAddress) {
         // ------- this is a replay of a message we already handled -------
         // keep the guard so we don't downgrade on refresh
         if (
           payload.isResponse &&
-          existingConversationAndContactByConversationId.conversation.status ===
+          existingConversationAndContactByAddress.conversation.status ===
             "pending"
         ) {
           // Promote the existing pending conversation to active *in-place* so any listeners that hold the original object see the change immediately.
           (
-            existingConversationAndContactByConversationId as unknown as ActiveConversation
+            existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
           ).status = "active";
+          await this.repositories.conversationRepository.saveConversation(
+            existingConversationAndContactByAddress.conversation
+          );
           this.inMemorySyncronization(
-            existingConversationAndContactByConversationId.conversation,
-            existingConversationAndContactByConversationId.contact
+            existingConversationAndContactByAddress.conversation,
+            existingConversationAndContactByAddress.contact
           );
           this.events?.onHandshakeCompleted?.(
-            existingConversationAndContactByConversationId.conversation,
-            existingConversationAndContactByConversationId.contact
+            existingConversationAndContactByAddress.conversation,
+            existingConversationAndContactByAddress.contact
           );
         }
         return; // ⬅ nothing else to do
-      }
-
-      // STEP 2 – we didn't find that ID, but do we know the address?
-      const existingByAddress =
-        this.addressToConversation.get(senderAddress) &&
-        this.conversationWithContactByConversationId.get(
-          this.addressToConversation.get(senderAddress)!
-        );
-
-      if (existingByAddress && !payload.isResponse) {
-        // ---------- peer lost cache & is initiating again ----------
-        // create a *new* pending conversation linked to the new ID
-        return this.processNewHandshake(payload, senderAddress);
       }
 
       // STEP 3 – completely unknown (first contact ever)
@@ -249,7 +235,9 @@ export class ConversationManager {
     }
   }
 
-  public createHandshakeResponse(conversationId: string): string {
+  public async createHandshakeResponse(
+    conversationId: string
+  ): Promise<string> {
     const conversationAndContact =
       this.conversationWithContactByConversationId.get(conversationId);
     if (!conversationAndContact) {
@@ -274,11 +262,17 @@ export class ConversationManager {
         status: "active",
         lastActivityAt: new Date(),
       };
+      await this.repositories.conversationRepository.saveConversation(
+        activatedConversation
+      );
       this.inMemorySyncronization(activatedConversation, contact);
       this.events?.onHandshakeCompleted?.(activatedConversation, contact);
     } else {
-      // For active conversations, just update last activity
       conversation.lastActivityAt = new Date();
+      // For active conversations, just update last activity
+      await this.repositories.conversationRepository.saveConversation(
+        conversation
+      );
       this.inMemorySyncronization(conversation, contact);
     }
 
@@ -287,7 +281,6 @@ export class ConversationManager {
       alias: conversation.myAlias,
       theirAlias: conversation.theirAlias, // Include their alias in response
       timestamp: Date.now(),
-      conversationId: conversation.id, // Use our conversation ID
       version: ConversationManager.PROTOCOL_VERSION,
       recipientAddress: contact.kaspaAddress, // Include their address
       sendToRecipient: false, // Set to false to use standard encryption
@@ -575,7 +568,7 @@ export class ConversationManager {
       await this.repositories.contactRepository.saveContact(newContact);
 
     const conversation: Conversation = {
-      id: payload.conversationId,
+      id: uuidv4(),
       myAlias,
       theirAlias: payload.alias,
       contactId,
@@ -603,10 +596,6 @@ export class ConversationManager {
 
     if (!payload.alias.match(/^[0-9a-f]+$/i)) {
       throw new Error("Alias must be hexadecimal");
-    }
-
-    if (!payload.conversationId || typeof payload.conversationId !== "string") {
-      throw new Error("Invalid conversation ID");
     }
 
     // Version compatibility check

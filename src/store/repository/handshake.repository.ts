@@ -67,7 +67,10 @@ export class HandshakeRepository {
     conversationId: string
   ): Promise<Handshake[]> {
     return this.db
-      .getAllFromIndex("handshakes", "by-conversation-id", conversationId)
+      .getAllFromIndex("handshakes", "by-conversation-id-tenant-id", [
+        conversationId,
+        this.tenantId,
+      ])
       .then((dbHandshakes) => {
         return dbHandshakes.map((dbHandshake) => {
           return this._dbHandshakeToHandshake(dbHandshake);

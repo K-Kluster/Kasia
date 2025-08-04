@@ -24,7 +24,7 @@ export class WalletStorage {
   }
 
   static getPrivateKeyGenerator(
-    wallet: UnlockedWallet,
+    wallet: Pick<UnlockedWallet, "encryptedXPrv" | "derivationType">,
     password: string
   ): PrivateKeyGenerator {
     try {
@@ -157,15 +157,20 @@ export class WalletStorage {
         BigInt(derivationType === "standard" ? 0 : 1)
       );
 
+      const encryptedXPrv = encryptXChaCha20Poly1305(seed, password);
+
+      const receivePublicKey = publicKeyGenerator.receivePubkey(0);
+
       // Create the unlocked wallet with the encrypted seed
       return {
         id: wallet.id,
         name: wallet.name,
         activeAccount: 1,
-        encryptedXPrv: encryptXChaCha20Poly1305(seed, password),
+        encryptedXPrv: encryptedXPrv,
         publicKeyGenerator,
         password,
         derivationType,
+        receivePublicKey,
       };
     } catch (error) {
       console.error("Error decrypting wallet:", error);

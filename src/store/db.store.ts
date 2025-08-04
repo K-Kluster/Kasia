@@ -70,12 +70,7 @@ export const useDBStore = create<DBState>((set, get) => ({
 
     // migrate to storage v2
     if (!localStorage.getItem(`${unlockedWallet.id}_migrate_storage_v2`)) {
-      const address = WalletStorage.getPrivateKeyGenerator(
-        unlockedWallet,
-        unlockedWallet.password
-      )
-        .receiveKey(0)
-        .toAddress(useWalletStore.getState().selectedNetwork);
+      const address = unlockedWallet.receiveAddress;
 
       // CONVERSATION and CONTACT
       const conversationString = localStorage.getItem(

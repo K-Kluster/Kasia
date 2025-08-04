@@ -10,7 +10,6 @@ import {
 } from "kaspa-wasm";
 import { AccountService } from "../service/account-service";
 import { encrypt_message } from "cipher";
-import { useMessagingStore } from "./messaging.store";
 import { NetworkType } from "../types/all";
 import {
   WalletDerivationType,
@@ -262,6 +261,8 @@ export const useWalletStore = create<WalletState>((set, get) => {
             },
           });
         }
+
+        console.log("account service", _accountService);
 
         set({
           rpcClient: currentRpcClient,

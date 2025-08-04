@@ -44,25 +44,6 @@ import {
   PAYMENT_PREFIX,
 } from "../config/protocol";
 import { useDBStore } from "../store/db.store";
-import { HistoricalSyncer } from "./historical-syncer";
-
-// Message related types
-type DecodedMessage = {
-  transactionId: string;
-  senderAddress: string;
-  recipientAddress: string;
-  timestamp: number;
-  content: string;
-  amount: number;
-  payload: string;
-  fileData?: {
-    type: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    content: string;
-  };
-};
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -547,61 +528,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       await this.context.clear();
       await this.context.trackAddresses([this.receiveAddress!]);
 
-      // Create a message record for the sender to show they sent this payment
-      if (this.receiveAddress) {
-        try {
-          // Remove the ciph_msg: prefix and parse the message
-          const prefixLength = "636970685f6d73673a".length; // "ciph_msg:" in hex
-          const messageHex = paymentTransaction.payload.substring(prefixLength);
-          const messageStr = hexToString(messageHex);
-          const parts = messageStr.split(":");
-
-          if (parts.length >= 3 && parts[1] === "payment") {
-            // For outgoing messages, we don't decrypt - we already know the content!
-            // New simplified format: parts[0] = "1", parts[1] = "payment", parts[2] = encrypted_payload
-
-            // We need to recreate the payment payload that was originally encrypted
-            // This should match the structure that was passed to createPaymentWithMessage
-            const paymentAmount = Number(paymentTransaction.amount) / 100000000;
-
-            // Create payment content using the original message if available
-            const paymentContent = JSON.stringify({
-              type: "payment",
-              message: paymentTransaction.originalMessage || "Payment sent",
-              amount: paymentAmount,
-              timestamp: Math.floor(Date.now() / 1000),
-              version: 1,
-            });
-
-            // Create outgoing message record - no decryption needed!
-            const outgoingMessage: DecodedMessage = {
-              transactionId: txId,
-              senderAddress: this.receiveAddress.toString(),
-              recipientAddress: paymentTransaction.address.toString(),
-              timestamp: Math.floor(Date.now() / 1000),
-              content: paymentContent,
-              amount: paymentAmount,
-              payload: paymentTransaction.payload,
-            };
-            const messagingStore = useMessagingStore.getState();
-            if (messagingStore) {
-              const myAddress = this.receiveAddress.toString();
-              messagingStore.storeMessage(outgoingMessage, myAddress);
-              messagingStore.loadMessages(myAddress);
-            }
-
-            console.log("Created outgoing payment message record for sender");
-          }
-        } catch (error) {
-          console.warn(
-            "Could not create outgoing payment message record:",
-            error
-          );
-        }
-      }
-
-      console.log("========================");
-
       return txId;
     } catch (error) {
       console.error("Error creating payment with message:", error);
@@ -980,35 +906,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const isDirectSelfMessage =
       destinationAddress.toString() === this.receiveAddress?.toString();
 
-    let isMessageTransaction = false;
-    if (transaction.payload) {
-      // Check if this is a message transaction by looking for the message prefix
-      isMessageTransaction = transaction.payload.startsWith(PROTOCOL_PREFIX);
-    }
+    const isMessageTransaction =
+      transaction.payload && transaction.payload.startsWith(PROTOCOL_PREFIX);
 
-    // Check if we have an active conversation with this address
-    const messagingStore = useMessagingStore.getState();
-    const conversationManager = messagingStore?.conversationManager;
-    let hasActiveConversation = false;
-
-    if (conversationManager) {
-      const conversations = conversationManager.getMonitoredConversations();
-      hasActiveConversation = conversations.some(
-        (conv) => conv.address === destinationAddress.toString()
-      );
-      console.log("Active conversation check:", {
-        destinationAddress: destinationAddress.toString(),
-        hasActiveConversation,
-        conversations: conversations,
-      });
-    }
-
-    // Only treat as self-message if it's a message transaction AND either direct self-message or has active conversation
-    const isSelfMessage =
-      isMessageTransaction && (isDirectSelfMessage || hasActiveConversation);
+    const isSelfMessage = isMessageTransaction && isDirectSelfMessage;
     console.log("Transaction type:", {
       isDirectSelfMessage,
-      hasActiveConversation,
       isMessageTransaction,
       isSelfMessage,
     });
@@ -1073,7 +976,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     console.log("Using destination address:", transaction.address.toString());
 
     const generateSummary = await this.estimateTransaction({
-      address: transaction.address,
+      address: new Address(transaction.address.toString()),
       amount: transaction.amount,
       payload: transaction.payload,
       priorityFee: transaction.priorityFee,
@@ -1110,7 +1013,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     return new Generator({
       changeAddress,
       entries: this.context,
-      outputs: [new PaymentOutput(transaction.address, transaction.amount)],
+      outputs: [
+        new PaymentOutput(
+          new Address(transaction.address.toString()),
+          transaction.amount
+        ),
+      ],
       networkId: this.networkId,
       priorityFee,
       payload: transaction.payload,
@@ -1203,6 +1111,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             );
             if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
               const output = prevTx.outputs[prevOutputIndex];
+              console.log("resolved sender address from prevTx: ", output);
               senderAddress = output.script_public_key_address;
             }
           } catch (error) {
@@ -1226,6 +1135,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       }
 
+      console.log({ tx });
+
       // Get the recipient address from the outputs
       let recipientAddress = null;
       if (tx.outputs && tx.outputs.length > 0) {
@@ -1235,6 +1146,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           recipientAddress = tx.outputs[0].script_public_key_address;
         }
       }
+
+      console.log({ senderAddress, recipientAddress });
 
       // If we still don't have a sender address, try to fetch it from the previous transaction
       if (

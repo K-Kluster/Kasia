@@ -48,7 +48,6 @@ interface MessagingState {
   eventsOnOpenedRecipient: KasiaConversationEvent[];
   storeKasiaTransactions: (transactions: KasiaTransaction[]) => Promise<void>;
   flushWalletHistory: (address: string) => void;
-  addOneOnOneConversation: (oneOnOneConversation: OneOnOneConversation) => void;
   exportMessages: (wallet: UnlockedWallet, password: string) => Promise<Blob>;
   importMessages: (
     file: File,
@@ -166,14 +165,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       if (!unlockedWallet) {
         throw new Error("Wallet not unlocked");
       }
-      const privateKey = new PrivateKey(
-        WalletStorage.getPrivateKeyGenerator(
-          unlockedWallet,
-          unlockedWallet.password
-        )
-          .receiveKey(0)
-          .toString()
-      );
+      const privateKeyString = WalletStorage.getPrivateKeyGenerator(
+        unlockedWallet,
+        unlockedWallet.password
+      )
+        .receiveKey(0)
+        .toString();
 
       const ooocs = g().oneOnOneConversations;
       const ooocsByAddress: Map<string, OneOnOneConversation> = new Map();
@@ -214,6 +211,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
               );
 
               try {
+                const privateKey = new PrivateKey(privateKeyString);
                 const decrypted = decrypt_message(encryptedMessage, privateKey);
 
                 // create new conversation
@@ -271,6 +269,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 unknownHandshake.message_payload
               );
 
+              const privateKey = new PrivateKey(privateKeyString);
+
               const decrypted = decrypt_message(encryptedMessage, privateKey);
 
               const kasiaHandshake: Handshake = {
@@ -313,6 +313,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       await Promise.all(promises);
 
       console.log("all handshake history loaded");
+
+      console.log({
+        oneOnOneConversations: Array.from(ooocsByAddress.values()),
+      });
 
       set({
         oneOnOneConversations: Array.from(ooocsByAddress.values()),
@@ -361,7 +365,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 amount: 0,
                 content: decrypt_message(
                   new EncryptedMessage(newIndexerMessage.message_payload),
-                  privateKey
+                  new PrivateKey(privateKeyString)
                 ),
                 createdAt: new Date(Number(newIndexerMessage.block_time)),
                 fee: 0,
@@ -386,7 +390,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 amount: 0,
                 content: decrypt_message(
                   new EncryptedMessage(newIndexerPayment.message),
-                  privateKey
+                  new PrivateKey(privateKeyString)
                 ),
                 createdAt: new Date(Number(newIndexerPayment.block_time)),
                 fee: 0,
@@ -401,7 +405,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             }
           }
 
-          g().storeKasiaTransactions(newKasiaTransactions);
+          if (newKasiaTransactions.length > 0) {
+            g().storeKasiaTransactions(newKasiaTransactions);
+          }
         })
       );
 
@@ -412,18 +418,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     // @TODO(indexdb): verify stop messenger client service is called properly
     stop() {
       _historicalSyncer = null!;
-    },
-    addOneOnOneConversation: (conversationWithContact) => {
-      const oneOnOneConversations = [
-        ...g().oneOnOneConversations,
-        conversationWithContact,
-      ];
-      oneOnOneConversations.sort(
-        (a, b) =>
-          b.conversation.lastActivityAt.getTime() -
-          a.conversation.lastActivityAt.getTime()
-      );
-      set({ oneOnOneConversations: oneOnOneConversations });
     },
     hydrateOneonOneConversations: async () => {
       const repositories = useDBStore.getState().repositories;
@@ -444,12 +438,17 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             conversation.id
           );
 
+          console.trace({ events });
+
           return { conversation, contact, events };
         }
       );
       const oneOnOneConversations = await Promise.all(
         oneOnOneConversationPromises
       );
+      console.trace("oooc hydrated", {
+        oneOnOneConversations,
+      });
       set({
         oneOnOneConversations: oneOnOneConversations.filter((c) => c !== null),
       });
@@ -477,6 +476,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       if (!address) {
         throw new Error("Address is not available");
       }
+
+      console.log("messaging store - trying to store received transactions", {
+        transactions,
+      });
 
       for (const transaction of transactions) {
         const isFromMe = transaction.senderAddress === address.toString();
@@ -1138,7 +1141,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         console.log("Using recipient address:", recipientAddress);
 
         // Create handshake response
-        const handshakeResponse = manager.createHandshakeResponse(
+        const handshakeResponse = await manager.createHandshakeResponse(
           conversation.id
         );
 
@@ -1179,6 +1182,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             transactionId: txId,
             fee: 0,
           };
+
+          console.log({ eventToAdd });
 
           await repositories.handshakeRepository.saveHandshake(eventToAdd);
 

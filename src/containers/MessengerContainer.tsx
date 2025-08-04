@@ -153,7 +153,10 @@ export const MessengerContainer: FC = () => {
   }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
   useEffect(() => {
-    if (isWalletReady && !messageStore.isLoaded) {
+    if (
+      isWalletReady &&
+      (!messageStore.isLoaded || !walletStore.isAccountServiceRunning)
+    ) {
       setLoadingMessage(loadingMessages[0].message);
       const timeouts = loadingMessages
         .slice(1)
@@ -164,13 +167,18 @@ export const MessengerContainer: FC = () => {
         timeouts.forEach(clearTimeout);
       };
     }
-  }, [isWalletReady, messageStore.isLoaded]);
+  }, [
+    isWalletReady,
+    messageStore.isLoaded,
+    walletStore.isAccountServiceRunning,
+  ]);
 
   // Effect to restore last opened conversation after messages are loaded (desktop only)
   useEffect(() => {
     if (
       !isMobile &&
       messageStore.isLoaded &&
+      walletStore.isAccountServiceRunning &&
       !messageStore.openedRecipient &&
       messageStore.oneOnOneConversations.length > 0
     ) {
@@ -183,6 +191,7 @@ export const MessengerContainer: FC = () => {
     messageStore.isLoaded,
     messageStore.openedRecipient,
     messageStore.oneOnOneConversations.length,
+    walletStore.isAccountServiceRunning,
     walletStore.address,
     messageStore,
     isMobile,
@@ -217,7 +226,9 @@ export const MessengerContainer: FC = () => {
       {/* Main Message Section*/}
       <div className="bg-primary-bg flex items-center">
         <div className="flex h-[100dvh] min-h-[300px] w-full overflow-hidden sm:h-[calc(100dvh-69px)]">
-          {isWalletReady && messageStore.isLoaded ? (
+          {isWalletReady &&
+          messageStore.isLoaded &&
+          walletStore.isAccountServiceRunning ? (
             <>
               <ContactSection
                 contacts={messageStore.oneOnOneConversations.map(

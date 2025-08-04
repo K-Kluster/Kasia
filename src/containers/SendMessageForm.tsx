@@ -26,7 +26,11 @@ import { toast } from "../utils/toast";
 import { SendPaymentPopup } from "../components/SendPaymentPopup";
 import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
-import { KasiaConversationEvent, PriorityFeeConfig } from "../types/all";
+import {
+  KasiaConversationEvent,
+  KasiaTransaction,
+  PriorityFeeConfig,
+} from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
@@ -265,26 +269,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
         setIsExpanded(false);
         console.log("Message sent! Transaction response:", txId);
 
-        // Create the message object for storage
-        const newMessageEvent: KasiaConversationEvent = {
-          transactionId: txId,
-          conversationId: existingConversationAndContact.conversation.id,
-          createdAt: new Date(),
-          id: v4(),
-          tenantId: walletStore.unlockedWallet.id,
-          content: fileDataForStorage
-            ? JSON.stringify(fileDataForStorage)
-            : message, // Store the complete file data in content
-          // @TODO: this is wrong, and shall be calculated from the generator
-          amount: 20000000, // 0.2 KAS in sompi
-          fee: feeEstimate || undefined, // Include the fee estimate if available
-          fileData: fileDataForStorage, // Also store it in fileData for immediate display
-          __type: "message",
-          contactId: existingConversationAndContact.contact.id,
-        };
-
-        messageStore.addEvents([newMessageEvent]);
-
         // Only reset the message input, keep the recipient
         if (messageInputRef.current) messageInputRef.current.value = "";
         setMessage("");
@@ -293,22 +277,37 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           messageInputRef.current.style.height = "";
         }
         setFeeEstimate(null);
-
-        // Keep the conversation open with the same recipient
-        messageStore.setOpenedRecipient(recipient);
       } else {
-        // If no active conversation or no alias, use regular sending
-        // console.log(
-        //   "No active conversation found, sending regular message with priority fee:",
-        //   priorityFee.amount.toString()
-        // );
-        // txId = await walletStore.sendMessage({
-        //   message: messageToSend,
-        //   toAddress: new Address(recipient),
-        //   password: walletStore.unlockedWallet.password,
-        //   priorityFee,
-        // });
+        console.log(
+          "No active conversation found, sending regular message with priority fee:",
+          priorityFee.amount.toString()
+        );
+        txId = await walletStore.sendMessage({
+          message: messageToSend,
+          toAddress: new Address(recipient),
+          password: walletStore.unlockedWallet.password,
+          priorityFee,
+        });
       }
+
+      // Create the message object for storage
+      const newMessageEvent: KasiaTransaction = {
+        payload: "",
+        recipientAddress: recipient,
+        senderAddress: walletStore.unlockedWallet.receivePublicKey
+          .toAddress(walletStore.selectedNetwork)
+          .toString(),
+        transactionId: txId,
+        createdAt: new Date(),
+        content: fileDataForStorage
+          ? JSON.stringify(fileDataForStorage)
+          : message, // Store the complete file data in content
+        // @TODO: this is wrong, and shall be calculated from the generator
+        amount: 20000000, // 0.2 KAS in sompi
+        fee: feeEstimate || 0, // Include the fee estimate if available
+      };
+
+      await messageStore.storeKasiaTransactions([newMessageEvent]);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
