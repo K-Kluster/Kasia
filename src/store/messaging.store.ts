@@ -29,7 +29,10 @@ import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";
 import { Handshake } from "./repository/handshake.repository";
 import { HistoricalSyncer } from "../service/historical-syncer";
-import { HandshakeResponse } from "../service/indexer/generated";
+import {
+  ContextualMessageResponse,
+  HandshakeResponse,
+} from "../service/indexer/generated";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -192,6 +195,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       const promises: Promise<void>[] = [];
+      const resolvedUnknownHandshakesAliases: Set<string> = new Set();
 
       for (const [
         senderAddress,
@@ -205,7 +209,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
             // ingest the first decryptable handshake to create oooc
             let atLeastOneHandshakeDecrypted = false;
-            for (const handshake of handshakes) {
+            for (const handshake of handshakes.sort(
+              (a, b) => Number(b.block_time) - Number(a.block_time)
+            )) {
+              console.log({ handshake });
               const encryptedMessage = new EncryptedMessage(
                 handshake.message_payload
               );
@@ -253,15 +260,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           }
 
           // transform raw handshake to kasia handshake and persist them if they are new
-          const unknownHandshakes = handshakes
-            .filter(
-              (handshake) =>
-                oooc!.events.find(
-                  (e) => e.transactionId === handshake.tx_id
-                ) === undefined
-            )
-            // sort by most recent first, so the first successful decryptable handshake is supposedly the most accurate (alias-wise)
-            .sort((a, b) => Number(b.block_time) - Number(a.block_time));
+          const unknownHandshakes = handshakes.filter(
+            (handshake) =>
+              oooc!.events.find((e) => e.transactionId === handshake.tx_id) ===
+              undefined
+          );
 
           for (const unknownHandshake of unknownHandshakes) {
             try {
@@ -294,6 +297,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
               );
 
               oooc!.events.push(kasiaHandshake);
+
+              // keep a record of the resolved unknown hanshake, to fetch historical events for it later
+              try {
+                const alias = g().conversationManager?.parseHandshakePayload(
+                  kasiaHandshake.content
+                )?.alias;
+                console.log({ alias });
+                if (alias) {
+                  resolvedUnknownHandshakesAliases.add(alias);
+                }
+              } catch (e) {
+                console.warn(
+                  `failed to parse historical handshake payload for ${unknownHandshake.tx_id}`,
+                  e
+                );
+              }
             } catch (e) {
               console.error("error decrypting handshake", e);
               continue;
@@ -324,14 +343,31 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       Promise.all(
         Array.from(ooocsByAddress.values()).map(async (oooc) => {
           // optimization possibility: fetch only events that are after last known conversation event
+
+          // also included previously unknown handhshakes message history fetching
+          // this is useful mainly on a new device, where we have no history of received messages
+
+          // include current conversation alias
+          resolvedUnknownHandshakesAliases.add(oooc.conversation.myAlias);
+
           const [indexerPayments, indexerMessages] = await Promise.all([
             _historicalSyncer.fetchHistoricalPaymentsFromAddress(
               oooc.contact.kaspaAddress
             ),
-            _historicalSyncer.fetchHistoricalMessagesToAddress(
-              oooc.contact.kaspaAddress,
-              oooc.conversation.myAlias
-            ),
+            Promise.allSettled(
+              [...resolvedUnknownHandshakesAliases].map((alias) =>
+                _historicalSyncer.fetchHistoricalMessagesToAddress(
+                  oooc.contact.kaspaAddress,
+                  alias
+                )
+              )
+            ).then((results) => {
+              // filter out rejected promises
+              const fulfilledResults = results.filter(
+                (result) => result.status === "fulfilled"
+              ) as PromiseFulfilledResult<ContextualMessageResponse[]>[];
+              return fulfilledResults.flatMap((result) => result.value);
+            }),
           ]);
 
           const knownEventIds = new Set(
@@ -695,22 +731,36 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         );
 
         set((state) => {
-          const updatedConversationWithContacts = state.oneOnOneConversations;
+          const updatedConversationWithContacts = [
+            ...state.oneOnOneConversations,
+          ];
 
-          const ooocToUpdate = state.oneOnOneConversations.find(
+          console.log({ updatedConversationWithContacts });
+
+          const ooocToUpdateIndex = updatedConversationWithContacts.findIndex(
             (oooc) => oooc.contact.kaspaAddress === participantAddress
           );
 
-          if (!ooocToUpdate) {
-            console.log("ooocToUpdate not found", participantAddress);
+          if (ooocToUpdateIndex === -1) {
+            console.log("ooocToUpdateIndex not found", participantAddress);
             return state;
           }
 
-          ooocToUpdate.conversation.lastActivityAt = transaction.createdAt;
-          ooocToUpdate.events.push(kasiaEvent);
-          ooocToUpdate.events.sort(
-            (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-          );
+          const updatedConversation = {
+            ...updatedConversationWithContacts[ooocToUpdateIndex],
+            conversation: {
+              ...updatedConversationWithContacts[ooocToUpdateIndex]
+                .conversation,
+              lastActivityAt: transaction.createdAt,
+            },
+            events: [
+              ...updatedConversationWithContacts[ooocToUpdateIndex].events,
+              kasiaEvent,
+            ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+          };
+
+          updatedConversationWithContacts[ooocToUpdateIndex] =
+            updatedConversation;
 
           console.log(
             "updatedConversationWithContacts",

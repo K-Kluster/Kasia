@@ -1278,7 +1278,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               }
               const handshakeData = JSON.parse(jsonContent);
               if (handshakeData.isResponse) {
-                await this.updateMonitoredConversations();
+                this.updateMonitoredConversations();
               }
             } catch (error) {
               console.error("Error parsing handshake data:", error);
@@ -1318,7 +1318,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
                 }
                 const handshakeData = JSON.parse(jsonContent);
                 if (handshakeData.isResponse) {
-                  await this.updateMonitoredConversations();
+                  this.updateMonitoredConversations();
                 }
               } catch (error) {
                 console.error("Error parsing handshake data:", error);
@@ -1377,7 +1377,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
 
           if (isHandshake) {
-            await this.updateMonitoredConversations();
+            this.updateMonitoredConversations();
           }
 
           this.emit("messageReceived", kasiaTransaction);
@@ -1520,9 +1520,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private async updateMonitoredConversations() {
+  private updateMonitoredConversations() {
     try {
-      const { useMessagingStore } = await import("../store/messaging.store");
       const messagingStore = useMessagingStore.getState();
       const conversationManager = messagingStore?.conversationManager;
 
@@ -1558,7 +1557,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       });
 
-      await this.updateMonitoredConversations();
+      this.updateMonitoredConversations();
 
       for (const tx of transactions) {
         const txId = tx.verboseData?.transactionId;

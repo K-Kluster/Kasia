@@ -200,6 +200,8 @@ export class ConversationManager {
       const existingConversationAndContactByAddress =
         this.getConversationWithContactByAddress(senderAddress);
 
+      console.log("conversation manager - processing handshake", { payload });
+
       if (existingConversationAndContactByAddress) {
         // ------- this is a replay of a message we already handled -------
         // keep the guard so we don't downgrade on refresh
@@ -226,6 +228,8 @@ export class ConversationManager {
         }
         return; // ⬅ nothing else to do
       }
+
+      console.log("handshake is new", payload.alias);
 
       // STEP 3 – completely unknown (first contact ever)
       return this.processNewHandshake(payload, senderAddress);
@@ -442,7 +446,7 @@ export class ConversationManager {
     });
   }
 
-  private parseHandshakePayload(payloadString: string): HandshakePayload {
+  public parseHandshakePayload(payloadString: string): HandshakePayload {
     // Expected format: "ciph_msg:1:handshake:{json}"
     const parts = payloadString.split(":");
     if (
