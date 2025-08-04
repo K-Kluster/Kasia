@@ -334,7 +334,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             ),
           ]);
 
-          const knownEventIds = new Set(oooc.events.map((e) => e.id));
+          const knownEventIds = new Set(
+            oooc.events.map((e) => e.id.split("_")[1])
+          );
 
           // readability improvement possibility: define a type for indexer events with a discriminator field
           // filter out events that are already known
@@ -382,20 +384,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             }
 
             try {
+              const hexStringBytes = newIndexerPayment.message.match(/.{1,2}/g);
+
+              if (!hexStringBytes) {
+                continue;
+              }
+
+              const bytes = new Uint8Array(
+                hexStringBytes.map((byte) => parseInt(byte, 16))
+              );
+              const decodedMessage = new TextDecoder().decode(bytes);
+
               newKasiaTransactions.push({
                 amount: 0,
                 content: decrypt_message(
-                  new EncryptedMessage(newIndexerPayment.message),
+                  new EncryptedMessage(decodedMessage),
                   new PrivateKey(privateKeyString)
                 ),
                 createdAt: new Date(Number(newIndexerPayment.block_time)),
                 fee: 0,
-                payload: newIndexerPayment.message,
+                payload: PROTOCOL_PREFIX + PAYMENT_PREFIX + decodedMessage,
                 recipientAddress: address,
                 senderAddress: newIndexerPayment.sender,
                 transactionId: newIndexerPayment.tx_id,
               });
-            } catch {
+            } catch (e) {
+              console.warn(
+                `Failed to decrypt payment ${newIndexerPayment.tx_id}`,
+                e
+              );
               // ignore errors
               continue;
             }
@@ -677,23 +694,31 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           transaction.createdAt
         );
 
-        const updatedConversationWithContacts = [
-          ...state.oneOnOneConversations,
-        ];
-        updatedConversationWithContacts[existingConversationWithContactIndex] =
-          {
-            contact: existingConversationWithContact.contact,
-            conversation: {
-              ...existingConversationWithContact.conversation,
-              lastActivityAt: transaction.createdAt,
-            },
-            events: [
-              ...existingConversationWithContact.events,
-              kasiaEvent,
-            ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
-          };
+        set((state) => {
+          const updatedConversationWithContacts = state.oneOnOneConversations;
 
-        set({ oneOnOneConversations: updatedConversationWithContacts });
+          const ooocToUpdate = state.oneOnOneConversations.find(
+            (oooc) => oooc.contact.kaspaAddress === participantAddress
+          );
+
+          if (!ooocToUpdate) {
+            console.log("ooocToUpdate not found", participantAddress);
+            return state;
+          }
+
+          ooocToUpdate.conversation.lastActivityAt = transaction.createdAt;
+          ooocToUpdate.events.push(kasiaEvent);
+          ooocToUpdate.events.sort(
+            (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+          );
+
+          console.log(
+            "updatedConversationWithContacts",
+            updatedConversationWithContacts
+          );
+
+          return { oneOnOneConversations: updatedConversationWithContacts };
+        });
       }
     },
     flushWalletHistory: (address: string) => {
