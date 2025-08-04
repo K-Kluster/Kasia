@@ -1135,8 +1135,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       }
 
-      console.log({ tx });
-
       // Get the recipient address from the outputs
       let recipientAddress = null;
       if (tx.outputs && tx.outputs.length > 0) {

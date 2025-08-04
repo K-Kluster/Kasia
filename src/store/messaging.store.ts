@@ -314,10 +314,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
       console.log("all handshake history loaded");
 
-      console.log({
-        oneOnOneConversations: Array.from(ooocsByAddress.values()),
-      });
-
       set({
         oneOnOneConversations: Array.from(ooocsByAddress.values()),
       });
@@ -438,8 +434,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             conversation.id
           );
 
-          console.trace({ events });
-
           return { conversation, contact, events };
         }
       );
@@ -476,10 +470,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       if (!address) {
         throw new Error("Address is not available");
       }
-
-      console.log("messaging store - trying to store received transactions", {
-        transactions,
-      });
 
       for (const transaction of transactions) {
         const isFromMe = transaction.senderAddress === address.toString();
@@ -1182,8 +1172,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             transactionId: txId,
             fee: 0,
           };
-
-          console.log({ eventToAdd });
 
           await repositories.handshakeRepository.saveHandshake(eventToAdd);
 

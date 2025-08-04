@@ -262,8 +262,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
           });
         }
 
-        console.log("account service", _accountService);
-
         set({
           rpcClient: currentRpcClient,
           address: _accountService.receiveAddress,
