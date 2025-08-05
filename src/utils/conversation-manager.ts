@@ -229,8 +229,6 @@ export class ConversationManager {
         return; // ⬅ nothing else to do
       }
 
-      console.log("handshake is new", payload.alias);
-
       // STEP 3 – completely unknown (first contact ever)
       return this.processNewHandshake(payload, senderAddress);
     } catch (error) {

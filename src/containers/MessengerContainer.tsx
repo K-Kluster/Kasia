@@ -135,7 +135,7 @@ export const MessengerContainer: FC = () => {
         const receiveAddressStr = receiveAddress.toString();
 
         // migrate storage
-        await dbStore.migrateStorage();
+        await dbStore.migrateStorage(receiveAddress.toString());
 
         await messageStore.load(receiveAddressStr);
 

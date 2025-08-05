@@ -83,7 +83,6 @@ export interface KasiaDBSchema extends DBSchema {
     value: DbContact;
     indexes: {
       "by-tenant-id": string;
-      "by-contact-id": string;
     };
   };
 }
@@ -175,7 +174,6 @@ export const openDatabase = async (): Promise<KasiaDB> => {
           keyPath: "id",
         });
         contactsStore.createIndex("by-tenant-id", "tenantId");
-        contactsStore.createIndex("by-contact-id", "contactId");
 
         console.log("Database schema created successfully with all indexes");
       }

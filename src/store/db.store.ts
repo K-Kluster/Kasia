@@ -33,7 +33,7 @@ interface DBState {
     walletPassword: string
   ) => void;
 
-  migrateStorage: () => Promise<void>;
+  migrateStorage: (address: string) => Promise<void>;
 }
 
 export const useDBStore = create<DBState>((set, get) => ({
@@ -64,14 +64,12 @@ export const useDBStore = create<DBState>((set, get) => ({
     set({ repositories, unlockedWallet });
   },
 
-  migrateStorage: async () => {
+  migrateStorage: async (address: string) => {
     const repositories = get().repositories;
     const unlockedWallet = get().unlockedWallet;
 
     // migrate to storage v2
     if (!localStorage.getItem(`${unlockedWallet.id}_migrate_storage_v2`)) {
-      const address = unlockedWallet.receiveAddress;
-
       // CONVERSATION and CONTACT
       const conversationString = localStorage.getItem(
         `encrypted_conversations_${address.toString()}`

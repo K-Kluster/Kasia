@@ -303,7 +303,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 const alias = g().conversationManager?.parseHandshakePayload(
                   kasiaHandshake.content
                 )?.alias;
-                console.log({ alias });
                 if (alias) {
                   resolvedUnknownHandshakesAliases.add(alias);
                 }
@@ -734,8 +733,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           const updatedConversationWithContacts = [
             ...state.oneOnOneConversations,
           ];
-
-          console.log({ updatedConversationWithContacts });
 
           const ooocToUpdateIndex = updatedConversationWithContacts.findIndex(
             (oooc) => oooc.contact.kaspaAddress === participantAddress
@@ -1257,7 +1254,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                   contact: oooc.contact,
                   conversation: updatedConversation.conversation,
                   events: [...oooc.events, eventToAdd].sort(
-                    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+                    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
                   ),
                 };
               }

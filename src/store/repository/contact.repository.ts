@@ -63,6 +63,9 @@ export class ContactRepository {
   }
 
   async saveContact(contact: Omit<Contact, "tenantId">): Promise<string> {
+    console.log(
+      this._contactToDbContact({ ...contact, tenantId: this.tenantId })
+    );
     return this.db.put(
       "contacts",
       this._contactToDbContact({ ...contact, tenantId: this.tenantId })
