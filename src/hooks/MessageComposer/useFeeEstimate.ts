@@ -19,21 +19,28 @@ export const useFeeEstimate = (recipient?: string) => {
     }
 
     setFeeState({ status: "loading" });
+    let isCancelled = false;
 
     // debounce the fee estimation
     const timeoutId = setTimeout(() => {
       walletStore
         .estimateSendMessageFees(draft, new Address(recipient), priority)
         .then((estimate) => {
-          const fee = Number(estimate.fees) / 100_000_000;
-          setFeeState({ status: "idle", value: fee });
+          if (!isCancelled) {
+            const fee = Number(estimate.fees) / 100_000_000;
+            setFeeState({ status: "idle", value: fee });
+          }
         })
         .catch((error) => {
-          setFeeState({ status: "error", error: error as Error });
+          if (!isCancelled) {
+            setFeeState({ status: "error", error: error as Error });
+          }
         });
     }, 400);
 
     return () => {
+      // prevent promise from updating state after cleanup
+      isCancelled = true;
       clearTimeout(timeoutId);
     };
   }, [
