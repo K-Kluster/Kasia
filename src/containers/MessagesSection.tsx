@@ -2,7 +2,7 @@ import { FC, useMemo, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { Pencil, Info, Copy, Check, UserCog } from "lucide-react";
 import { FetchApiMessages } from "../components/FetchApiMessages";
-import { MessagesList } from "../components/MessagesList";
+import { MessagesList } from "../components/MessageDisplay/MessagesList";
 import { MessageComposerShell } from "../components/MessageComposer/MessageComposerShell";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";

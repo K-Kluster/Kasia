@@ -1,8 +1,8 @@
 import { FC, memo } from "react";
 import { MessageDisplay } from "./MessageDisplay";
-import { DateSeparator } from "./DateSeparator";
-import { isToday } from "../utils/message-date-format";
-import { OneOnOneConversation } from "../types/all";
+import { OneOnOneConversation } from "../../types/all";
+import { DateSeparator } from "../DateSeparator";
+import { isToday } from "../../utils/message-date-format";
 
 interface MessagesListProps {
   oneOnOneConversation: OneOnOneConversation;
