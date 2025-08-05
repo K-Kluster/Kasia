@@ -193,7 +193,7 @@ export const MessageSection: FC<{
   }, [popoverOpen]);
 
   const openModal = useUiStore((s) => s.openModal);
-  const setContactInfoContact = useUiStore((s) => s.setContactInfoContact);
+  const setOneOnOneConversation = useUiStore((s) => s.setOneOnOneConversation);
 
   if (!oneOnOneConversation) {
     return null;
@@ -437,8 +437,8 @@ export const MessageSection: FC<{
                             )}
                             <button
                               onClick={() => {
-                                setContactInfoContact(
-                                  oneOnOneConversation.contact ?? null
+                                setOneOnOneConversation(
+                                  oneOnOneConversation ?? null
                                 );
                                 openModal("contact-info-modal");
                               }}

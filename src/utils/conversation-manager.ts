@@ -205,28 +205,39 @@ export class ConversationManager {
       if (existingConversationAndContactByAddress) {
         // ------- this is a replay of a message we already handled -------
         // keep the guard so we don't downgrade on refresh
-        if (
-          payload.isResponse &&
-          existingConversationAndContactByAddress.conversation.status ===
-            "pending"
-        ) {
+        if (payload.isResponse) {
           // Promote the existing pending conversation to active *in-place* so any listeners that hold the original object see the change immediately.
           (
             existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
           ).status = "active";
-          await this.repositories.conversationRepository.saveConversation(
-            existingConversationAndContactByAddress.conversation
-          );
-          this.inMemorySyncronization(
-            existingConversationAndContactByAddress.conversation,
-            existingConversationAndContactByAddress.contact
-          );
-          this.events?.onHandshakeCompleted?.(
-            existingConversationAndContactByAddress.conversation,
-            existingConversationAndContactByAddress.contact
-          );
+        } else {
+          if (
+            existingConversationAndContactByAddress.conversation.status ===
+            "active"
+          ) {
+            console.log(
+              "conversation manager - existing conversation is active",
+              { payload }
+            );
+
+            (
+              existingConversationAndContactByAddress.conversation as unknown as PendingConversation
+            ).status = "pending";
+          }
         }
-        return; // ⬅ nothing else to do
+
+        (
+          existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
+        ).theirAlias = payload.alias;
+
+        await this.repositories.conversationRepository.saveConversation(
+          existingConversationAndContactByAddress.conversation
+        );
+        this.inMemorySyncronization(
+          existingConversationAndContactByAddress.conversation,
+          existingConversationAndContactByAddress.contact
+        );
+        return;
       }
 
       // STEP 3 – completely unknown (first contact ever)

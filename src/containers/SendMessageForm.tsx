@@ -26,11 +26,7 @@ import { toast } from "../utils/toast";
 import { SendPaymentPopup } from "../components/SendPaymentPopup";
 import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
-import {
-  KasiaConversationEvent,
-  KasiaTransaction,
-  PriorityFeeConfig,
-} from "../types/all";
+import { KasiaTransaction, PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
@@ -39,8 +35,6 @@ import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../utils/upload-file-handler";
 import { useIsMobile } from "../utils/useIsMobile";
 import { parseImageFileJson } from "../utils/parse-image-file";
-import { Message } from "../store/repository/message.repository";
-import { v4 } from "uuid";
 
 type SendMessageFormProps = {
   onExpand?: () => void;
@@ -240,6 +234,7 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
       }
 
       let txId: string;
+      console.log({ existingConversationAndContact });
 
       // @TODO(indexdb): does it still makes sense to handle non context-aware sending?
       // If we have an active conversation, use the context-aware sending
