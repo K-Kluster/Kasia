@@ -25,6 +25,10 @@ For VsCode user, this is automatically done through .vscode workspace settings.
 
 We use React 19 with React Compiler - as long as you follow the [rules of hooks](https://react.dev/reference/rules/rules-of-hooks) - there is no need to optimize code.
 
+Use the store directly for pure state updates. If there are side effects, route them through a hook instead.
+Use one hook per store for simple cases.
+For more complex scenarios involving multiple stores and hooks, considering creating a manager hook that wraps the individual ones.
+
 ### Web style
 
 For any new implementations, we enforce the use of inline TailwindCSS. A well-known utility `clsx` is available within the codebase for more conplex style application (e.g.: conditional style)
