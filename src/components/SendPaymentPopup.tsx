@@ -235,14 +235,14 @@ export const SendPaymentPopup: FC<{
   // Check if user can send messages with payments (now simplified - no conversation required)
   const canSendMessageWithPayment = true; // Anyone can send payment messages now
 
-  const useInputRef = useCallback(
-    (node: HTMLInputElement | null) => {
-      if (node && panelOpen) {
-        node.focus();
-      }
-    },
-    [panelOpen]
-  );
+  const amountInputRef = useRef<HTMLInputElement | null>(null);
+
+  // focus amount input when panel opens
+  useEffect(() => {
+    if (panelOpen && amountInputRef.current) {
+      amountInputRef.current.focus();
+    }
+  }, [panelOpen]);
 
   return (
     <div className="relative">
@@ -301,7 +301,7 @@ export const SendPaymentPopup: FC<{
               <div className="w-full flex-1">
                 <div className="relative">
                   <Input
-                    ref={useInputRef}
+                    ref={amountInputRef}
                     type="text"
                     value={payAmount}
                     onChange={(e) => handlePayAmountChange(e.target.value)}
