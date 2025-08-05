@@ -4,8 +4,12 @@ import { useWalletStore } from "../../store/wallet.store";
 import { Address } from "kaspa-wasm";
 
 export const useFeeEstimate = (recipient?: string) => {
-  const { draft, priority, sendState, setFeeState } = useComposerStore();
+  const { priority, sendState, setFeeState } = useComposerStore();
   const walletStore = useWalletStore();
+
+  const draft = useComposerStore((s) =>
+    recipient ? s.drafts[recipient] || "" : ""
+  );
 
   useEffect(() => {
     if (

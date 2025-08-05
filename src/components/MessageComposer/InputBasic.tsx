@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useState, useRef, forwardRef } from "react";
+import { useEffect, useState, forwardRef } from "react";
 import clsx from "clsx";
 import {
   MESSAGE_COMPOSER_MIN_HEIGHT,

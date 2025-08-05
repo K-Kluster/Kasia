@@ -11,15 +11,18 @@ import { MAX_PAYLOAD_SIZE } from "../../config/constants";
 
 export const useMessageComposer = (recipient?: string) => {
   const {
-    draft,
     attachment,
     priority,
     sendState,
-    reset,
     setSendState,
     feeState,
     setAttachment,
+    clearDraft,
   } = useComposerStore();
+
+  const draft = useComposerStore((s) =>
+    recipient ? s.drafts[recipient] || "" : ""
+  );
   const walletStore = useWalletStore();
   const messageStore = useMessagingStore();
 
@@ -143,7 +146,12 @@ export const useMessageComposer = (recipient?: string) => {
       // keep the conversation open with the same recipient
       messageStore.setOpenedRecipient(recipient);
 
-      reset();
+      // clear only this contact's draft and reset other states
+      if (recipient) {
+        clearDraft(recipient);
+      }
+      setAttachment(null);
+      setSendState({ status: "idle" });
     } catch (error) {
       console.error("Error sending message:", error);
       setSendState({ status: "error", error: error as Error });

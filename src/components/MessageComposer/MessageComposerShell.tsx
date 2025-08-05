@@ -24,18 +24,21 @@ interface MessageComposerShellProps {
 export const MessageComposerShell = ({
   recipient,
 }: MessageComposerShellProps) => {
-  const draft = useComposerSlice((s) => s.draft);
   const attachment = useComposerSlice((s) => s.attachment);
   const feeState = useComposerSlice((s) => s.feeState);
   const sendState = useComposerSlice((s) => s.sendState);
   const priority = useComposerSlice((s) => s.priority);
+  const setDraft = useComposerStore((s) => s.setDraft);
+
+  const draft = useComposerSlice((s) =>
+    recipient ? s.drafts[recipient] || "" : ""
+  );
 
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const { send, attach } = useMessageComposer(recipient);
-  const setDraft = useComposerStore((s) => s.setDraft);
   const setPriority = useComposerStore((s) => s.setPriority);
   const setSendState = useComposerStore((s) => s.setSendState);
 
@@ -118,7 +121,9 @@ export const MessageComposerShell = ({
 
   // clear error state when user starts typing
   const handleDraftChange = (value: string) => {
-    setDraft(value);
+    if (recipient) {
+      setDraft(recipient, value);
+    }
     // clear error state when user starts typing
     if (sendState.status === "error") {
       setSendState({ status: "idle" });
