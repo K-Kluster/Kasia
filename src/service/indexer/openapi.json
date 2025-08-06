@@ -1,0 +1,501 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "indexer",
+    "description": "",
+    "license": { "name": "" },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/contextual-messages/by-sender": {
+      "get": {
+        "tags": ["contextual_messages"],
+        "operationId": "get_contextual_messages_by_sender",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          {
+            "name": "block_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "alias",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get contextual messages by sender",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContextualMessageResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/handshakes/by-receiver": {
+      "get": {
+        "tags": ["handshakes"],
+        "operationId": "get_handshakes_by_receiver",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          {
+            "name": "block_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get handshakes by receiver",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/HandshakeResponse" }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/handshakes/by-sender": {
+      "get": {
+        "tags": ["handshakes"],
+        "operationId": "get_handshakes_by_sender",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          {
+            "name": "block_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get handshakes by sender",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/HandshakeResponse" }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [],
+        "operationId": "get_metrics",
+        "responses": {
+          "200": {
+            "description": "Get system metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndexerMetricsSnapshot"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/by-receiver": {
+      "get": {
+        "tags": ["payments"],
+        "operationId": "get_payments_by_receiver",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          {
+            "name": "block_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get payments by receiver",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PaymentResponse" }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/by-sender": {
+      "get": {
+        "tags": ["payments"],
+        "operationId": "get_payments_by_sender",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          {
+            "name": "block_time",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": ["integer", "null"],
+              "format": "int64",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "address",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get payments by sender",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PaymentResponse" }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ContextualMessageResponse": {
+        "type": "object",
+        "required": [
+          "tx_id",
+          "sender",
+          "alias",
+          "block_time",
+          "message_payload"
+        ],
+        "properties": {
+          "accepting_block": { "type": ["string", "null"] },
+          "accepting_daa_score": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "alias": { "type": "string" },
+          "block_time": { "type": "integer", "format": "int64", "minimum": 0 },
+          "message_payload": { "type": "string" },
+          "sender": { "type": "string" },
+          "tx_id": { "type": "string" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": { "error": { "type": "string" } }
+      },
+      "HandshakeResponse": {
+        "type": "object",
+        "required": [
+          "tx_id",
+          "sender",
+          "receiver",
+          "block_time",
+          "message_payload"
+        ],
+        "properties": {
+          "accepting_block": { "type": ["string", "null"] },
+          "accepting_daa_score": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "block_time": { "type": "integer", "format": "int64", "minimum": 0 },
+          "message_payload": { "type": "string" },
+          "receiver": { "type": "string" },
+          "sender": { "type": "string" },
+          "tx_id": { "type": "string" }
+        }
+      },
+      "IndexerMetricsSnapshot": {
+        "type": "object",
+        "description": "A snapshot of the indexer metrics.\nThis structure contains a copy of all metric counters as simple u64 values.",
+        "required": [
+          "handshakes_by_sender",
+          "handshakes_by_receiver",
+          "payments_by_sender",
+          "payments_by_receiver",
+          "contextual_messages",
+          "blocks_processed",
+          "latest_block",
+          "latest_accepting_block",
+          "unknown_daa_entries",
+          "unknown_sender_entries",
+          "unknown_tx_entries",
+          "resolved_daa",
+          "resolved_senders"
+        ],
+        "properties": {
+          "blocks_processed": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of blocks processed",
+            "minimum": 0
+          },
+          "contextual_messages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of contextual messages indexed",
+            "minimum": 0
+          },
+          "handshakes_by_receiver": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of handshakes indexed by receiver",
+            "minimum": 0
+          },
+          "handshakes_by_sender": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of handshakes indexed by sender",
+            "minimum": 0
+          },
+          "latest_accepting_block": {
+            "type": "string",
+            "format": "hex",
+            "description": "Latest accepting block hash"
+          },
+          "latest_block": {
+            "type": "string",
+            "format": "hex",
+            "description": "Latest block hash processed"
+          },
+          "payments_by_receiver": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of payments indexed by receiver",
+            "minimum": 0
+          },
+          "payments_by_sender": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of payments indexed by sender",
+            "minimum": 0
+          },
+          "resolved_daa": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "resolved_senders": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "unknown_daa_entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of unknown DAA entries",
+            "minimum": 0
+          },
+          "unknown_sender_entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of unknown sender entries",
+            "minimum": 0
+          },
+          "unknown_tx_entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Number of unknown transaction entries",
+            "minimum": 0
+          }
+        }
+      },
+      "PaymentResponse": {
+        "type": "object",
+        "required": ["tx_id", "receiver", "block_time", "amount", "message"],
+        "properties": {
+          "accepting_block": { "type": ["string", "null"] },
+          "accepting_daa_score": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 0
+          },
+          "amount": { "type": "integer", "format": "int64", "minimum": 0 },
+          "block_time": { "type": "integer", "format": "int64", "minimum": 0 },
+          "message": { "type": "string" },
+          "receiver": { "type": "string" },
+          "sender": { "type": ["string", "null"] },
+          "tx_id": { "type": "string" }
+        }
+      }
+    }
+  },
+  "tags": [{ "name": "Kasia Indexer API", "description": "Kasia Indexer API" }]
+}

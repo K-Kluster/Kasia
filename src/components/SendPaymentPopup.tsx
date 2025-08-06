@@ -8,6 +8,7 @@ import { useMessagingStore } from "../store/messaging.store";
 import { encrypt_message } from "cipher";
 import { Address } from "kaspa-wasm";
 import { toast } from "../utils/toast";
+import { KasiaTransaction } from "../types/all";
 
 export const SendPaymentPopup: FC<{
   address: string;
@@ -22,6 +23,9 @@ export const SendPaymentPopup: FC<{
   const walletStore = useWalletStore();
   const panelRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const storeKasiaTransactions = useMessagingStore(
+    (s) => s.storeKasiaTransactions
+  );
 
   // Close panel on outside click
   useEffect(() => {
@@ -130,23 +134,20 @@ export const SendPaymentPopup: FC<{
         throw new Error("Wallet address not available");
       }
 
-      const outgoingMessage = {
+      const kasiaTransaction: KasiaTransaction = {
         transactionId: txId,
         senderAddress: walletStore.address.toString(),
         recipientAddress: recipientAddress,
-        timestamp: Date.now(),
+        createdAt: new Date(),
+        // @TODO(indexdb): add the correct values for fee field
+        fee: 0,
         content: paymentContent,
         amount: Number(amountSompi) / 100000000,
         payload: payloadHex,
       };
 
       // Store the outgoing message
-      const messageStore = useMessagingStore.getState();
-      messageStore.storeMessage(
-        outgoingMessage,
-        walletStore.address.toString()
-      );
-      messageStore.loadMessages(walletStore.address.toString());
+      await storeKasiaTransactions([kasiaTransaction]);
 
       return txId;
     },
@@ -154,6 +155,7 @@ export const SendPaymentPopup: FC<{
       walletStore.accountService,
       walletStore.address,
       walletStore.unlockedWallet?.password,
+      storeKasiaTransactions,
     ]
   );
 

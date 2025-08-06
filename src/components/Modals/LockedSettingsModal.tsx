@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NetworkSelector } from "../NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
 import { Button } from "../Common/Button";
 import { useUiStore } from "../../store/ui.store";
 import { ThemeToggle } from "../Common/ThemeToggle";
+import { Shield } from "lucide-react";
+import { devMode } from "../../config/dev-mode";
+import { deleteDB } from "idb";
+import { useDBStore } from "../../store/db.store";
 
 export const LockedSettingsModal: React.FC = () => {
   const networkStore = useNetworkStore();
@@ -18,11 +22,42 @@ export const LockedSettingsModal: React.FC = () => {
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
 
+  const dbStore = useDBStore();
+
   const [nodeUrl, setNodeUrl] = useState(
     networkStore.nodeUrl ??
       localStorage.getItem(`kasia_node_url_${selectedNetwork}`) ??
       ""
   );
+
+  const deleteIndexDB = useCallback(async () => {
+    if (dbStore.db) {
+      await deleteDB(dbStore.db.name);
+    }
+
+    await dbStore.initDB();
+  }, [dbStore]);
+
+  const devInfo = useMemo(() => {
+    if (!devMode) {
+      return null;
+    }
+
+    return (
+      <div className="my-4 flex flex-col items-center justify-center gap-2">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          <span className="text-sm">Dev mode enabled</span>
+        </div>
+
+        <div className="my-2">
+          <Button onClick={() => deleteIndexDB()} variant="primary">
+            Delete IndexDB
+          </Button>
+        </div>
+      </div>
+    );
+  }, [deleteIndexDB]);
 
   // Network connection effect
   useEffect(() => {
@@ -115,6 +150,8 @@ export const LockedSettingsModal: React.FC = () => {
           Successfully connected to the node!
         </div>
       )}
+
+      {devInfo}
     </div>
   );
 };

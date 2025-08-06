@@ -4,6 +4,7 @@ import { KaspaClient } from "../utils/kaspa-client";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { useWalletStore } from "./wallet.store";
 import { unstable_batchedUpdates } from "react-dom";
+import { client as indexerClient } from "../service/indexer/generated/client.gen";
 
 interface NetworkState {
   isConnected: boolean;
@@ -129,6 +130,14 @@ export const useNetworkStore = create<NetworkState>((set, g) => {
     setNetwork(network) {
       const nodeUrl =
         localStorage.getItem(`kasia_node_url_${network}`) ?? undefined;
+
+      // update indexer base url
+      indexerClient.setConfig({
+        baseUrl:
+          network === "mainnet"
+            ? import.meta.env.VITE_INDEXER_MAINNET_URL
+            : import.meta.env.VITE_INDEXER_TESTNET_URL,
+      });
 
       set({ network, nodeUrl });
     },

@@ -3,11 +3,14 @@ import { useMessagingStore } from "../store/messaging.store";
 import {
   PendingConversation,
   RejectedConversation,
-} from "src/types/messaging.types";
+} from "../store/repository/conversation.repository";
+import { Contact } from "../store/repository/contact.repository";
 
 export const HandshakeResponse: React.FC<{
   conversation: PendingConversation | RejectedConversation;
-}> = ({ conversation }) => {
+  contact: Contact;
+  handshakeId: string;
+}> = ({ conversation, contact, handshakeId }) => {
   const messagingStore = useMessagingStore();
   const [isResponding, setIsResponding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,17 +19,7 @@ export const HandshakeResponse: React.FC<{
     try {
       setIsResponding(true);
       setError(null);
-      await messagingStore.respondToHandshake({
-        conversationId: conversation.conversationId,
-        myAlias: conversation.myAlias,
-        theirAlias: conversation.theirAlias,
-        kaspaAddress: conversation.kaspaAddress,
-        status:
-          conversation.status === "rejected" ? "pending" : conversation.status,
-        createdAt: conversation.createdAt,
-        lastActivity: conversation.lastActivity,
-        initiatedByMe: conversation.initiatedByMe,
-      });
+      await messagingStore.respondToHandshake(handshakeId);
     } catch (error) {
       console.error("Error responding to handshake:", error);
       setError(
@@ -45,7 +38,7 @@ export const HandshakeResponse: React.FC<{
             Handshake received from:
           </p>
           <p className="my-1 ml-2 break-all text-[var(--text-primary)]">
-            {conversation.kaspaAddress}
+            {contact.kaspaAddress}
           </p>
           <p className="my-1 font-semibold text-[var(--text-secondary)]">
             Their alias:

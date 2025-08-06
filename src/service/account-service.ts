@@ -19,7 +19,11 @@ import { encrypt_message } from "cipher";
 import { DecryptionCache } from "../utils/decryption-cache";
 import { CipherHelper } from "../utils/cipher-helper";
 import { hexToString } from "../utils/format";
-import { BlockAddedData, PriorityFeeConfig } from "../types/all";
+import {
+  BlockAddedData,
+  KasiaTransaction,
+  PriorityFeeConfig,
+} from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
   ExplorerOutput,
@@ -39,24 +43,7 @@ import {
   COMM_PREFIX,
   PAYMENT_PREFIX,
 } from "../config/protocol";
-
-// Message related types
-type DecodedMessage = {
-  transactionId: string;
-  senderAddress: string;
-  recipientAddress: string;
-  timestamp: number;
-  content: string;
-  amount: number;
-  payload: string;
-  fileData?: {
-    type: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    content: string;
-  };
-};
+import { useDBStore } from "../store/db.store";
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -71,8 +58,7 @@ type AccountServiceEvents = {
     pendingUtxoCount: number;
   }) => void;
   utxosChanged: (utxos: UtxoEntry[]) => void;
-  transactionReceived: (transaction: unknown) => void;
-  messageReceived: (message: DecodedMessage) => void;
+  messageReceived: (message: KasiaTransaction) => void;
 };
 
 type SendMessageArgs = {
@@ -263,58 +249,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     return null;
   }
 
-  private async fetchHistoricalMessages() {
-    if (!this.receiveAddress) return;
-
-    try {
-      console.log("Fetching historical messages...");
-      const address = this.receiveAddress.toString();
-
-      // Use the network-appropriate API endpoint
-      const baseUrl =
-        this.networkId === "mainnet"
-          ? "https://api.kaspa.org"
-          : "https://api-tn10.kaspa.org";
-      const encodedAddress = encodeURIComponent(address);
-      const response = await fetch(
-        `${baseUrl}/addresses/${encodedAddress}/full-transactions-page?limit=50&before=0&after=0&resolve_previous_outpoints=no`
-      );
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch historical transactions: ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      const transactions: ExplorerTransaction[] = data || [];
-
-      console.log(`Found ${transactions.length} historical transactions`);
-
-      // Update monitored conversations BEFORE processing messages
-      await this.updateMonitoredConversations();
-
-      // Process each transaction
-      for (const tx of transactions) {
-        const txId = tx.transaction_id;
-        if (!txId || this.processedMessageIds.has(txId)) continue;
-
-        // Check if this is a message transaction and involves our address
-        if (
-          this.isMessageOrHandshakeTransaction(tx) &&
-          this.isTransactionForUs(tx)
-        ) {
-          console.log(`Processing historical message transaction: ${txId}`);
-          await this.processMessageTransaction(tx, txId, Number(tx.block_time));
-        }
-      }
-
-      console.log("Historical message fetch complete");
-    } catch (error) {
-      console.error("Error fetching historical messages:", error);
-    }
-  }
-
   async start() {
     try {
       // Get the receive address from the wallet
@@ -359,9 +293,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         void this.processBlockEvent(event as unknown as BlockAddedData);
       });
       console.log("Successfully subscribed to block events");
-
-      // Fetch historical messages after setup is complete
-      await this.fetchHistoricalMessages();
 
       // Get initial state one more time to ensure we're up to date
       this._emitBalanceUpdate();
@@ -596,61 +527,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // Reset the context to trigger immediate balance update
       await this.context.clear();
       await this.context.trackAddresses([this.receiveAddress!]);
-
-      // Create a message record for the sender to show they sent this payment
-      if (this.receiveAddress) {
-        try {
-          // Remove the ciph_msg: prefix and parse the message
-          const prefixLength = "636970685f6d73673a".length; // "ciph_msg:" in hex
-          const messageHex = paymentTransaction.payload.substring(prefixLength);
-          const messageStr = hexToString(messageHex);
-          const parts = messageStr.split(":");
-
-          if (parts.length >= 3 && parts[1] === "payment") {
-            // For outgoing messages, we don't decrypt - we already know the content!
-            // New simplified format: parts[0] = "1", parts[1] = "payment", parts[2] = encrypted_payload
-
-            // We need to recreate the payment payload that was originally encrypted
-            // This should match the structure that was passed to createPaymentWithMessage
-            const paymentAmount = Number(paymentTransaction.amount) / 100000000;
-
-            // Create payment content using the original message if available
-            const paymentContent = JSON.stringify({
-              type: "payment",
-              message: paymentTransaction.originalMessage || "Payment sent",
-              amount: paymentAmount,
-              timestamp: Math.floor(Date.now() / 1000),
-              version: 1,
-            });
-
-            // Create outgoing message record - no decryption needed!
-            const outgoingMessage: DecodedMessage = {
-              transactionId: txId,
-              senderAddress: this.receiveAddress.toString(),
-              recipientAddress: paymentTransaction.address.toString(),
-              timestamp: Math.floor(Date.now() / 1000),
-              content: paymentContent,
-              amount: paymentAmount,
-              payload: paymentTransaction.payload,
-            };
-            const messagingStore = useMessagingStore.getState();
-            if (messagingStore) {
-              const myAddress = this.receiveAddress.toString();
-              messagingStore.storeMessage(outgoingMessage, myAddress);
-              messagingStore.loadMessages(myAddress);
-            }
-
-            console.log("Created outgoing payment message record for sender");
-          }
-        } catch (error) {
-          console.warn(
-            "Could not create outgoing payment message record:",
-            error
-          );
-        }
-      }
-
-      console.log("========================");
 
       return txId;
     } catch (error) {
@@ -1030,35 +906,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const isDirectSelfMessage =
       destinationAddress.toString() === this.receiveAddress?.toString();
 
-    let isMessageTransaction = false;
-    if (transaction.payload) {
-      // Check if this is a message transaction by looking for the message prefix
-      isMessageTransaction = transaction.payload.startsWith(PROTOCOL_PREFIX);
-    }
+    const isMessageTransaction =
+      transaction.payload && transaction.payload.startsWith(PROTOCOL_PREFIX);
 
-    // Check if we have an active conversation with this address
-    const messagingStore = useMessagingStore.getState();
-    const conversationManager = messagingStore?.conversationManager;
-    let hasActiveConversation = false;
-
-    if (conversationManager) {
-      const conversations = conversationManager.getMonitoredConversations();
-      hasActiveConversation = conversations.some(
-        (conv) => conv.address === destinationAddress.toString()
-      );
-      console.log("Active conversation check:", {
-        destinationAddress: destinationAddress.toString(),
-        hasActiveConversation,
-        conversations: conversations,
-      });
-    }
-
-    // Only treat as self-message if it's a message transaction AND either direct self-message or has active conversation
-    const isSelfMessage =
-      isMessageTransaction && (isDirectSelfMessage || hasActiveConversation);
+    const isSelfMessage = isMessageTransaction && isDirectSelfMessage;
     console.log("Transaction type:", {
       isDirectSelfMessage,
-      hasActiveConversation,
       isMessageTransaction,
       isSelfMessage,
     });
@@ -1123,7 +976,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     console.log("Using destination address:", transaction.address.toString());
 
     const generateSummary = await this.estimateTransaction({
-      address: transaction.address,
+      address: new Address(transaction.address.toString()),
       amount: transaction.amount,
       payload: transaction.payload,
       priorityFee: transaction.priorityFee,
@@ -1160,7 +1013,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     return new Generator({
       changeAddress,
       entries: this.context,
-      outputs: [new PaymentOutput(transaction.address, transaction.amount)],
+      outputs: [
+        new PaymentOutput(
+          new Address(transaction.address.toString()),
+          transaction.amount
+        ),
+      ],
       networkId: this.networkId,
       priorityFee,
       payload: transaction.payload,
@@ -1208,18 +1066,26 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     maxRetries = 10
   ) {
     try {
+      const txId = getTransactionId(tx);
+
+      if (!txId) {
+        console.warn("Transaction ID is missing in real-time processing");
+        return;
+      }
+
+      if (
+        await useDBStore.getState().repositories.doesKasiaEventExistsById(txId)
+      ) {
+        console.log(`Transaction ${txId} already processed`);
+        return;
+      }
+
       const walletAddress =
         this.unlockedWallet.publicKeyGenerator.receiveAddress(
           this.networkId,
           0
         );
       const stringWalletAddress = walletAddress.toString();
-
-      const txId = getTransactionId(tx);
-      if (!txId) {
-        console.warn("Transaction ID is missing in real-time processing");
-        return;
-      }
 
       // 🚀 OPTIMIZATION: Skip if we know this transaction failed decryption before
       if (DecryptionCache.hasFailed(stringWalletAddress, txId)) {
@@ -1245,6 +1111,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             );
             if (prevTx?.outputs && prevTx.outputs[prevOutputIndex]) {
               const output = prevTx.outputs[prevOutputIndex];
+              console.log("resolved sender address from prevTx: ", output);
               senderAddress = output.script_public_key_address;
             }
           } catch (error) {
@@ -1277,6 +1144,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           recipientAddress = tx.outputs[0].script_public_key_address;
         }
       }
+
+      console.log({ senderAddress, recipientAddress });
 
       // If we still don't have a sender address, try to fetch it from the previous transaction
       if (
@@ -1409,7 +1278,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
               }
               const handshakeData = JSON.parse(jsonContent);
               if (handshakeData.isResponse) {
-                await this.updateMonitoredConversations();
+                this.updateMonitoredConversations();
               }
             } catch (error) {
               console.error("Error parsing handshake data:", error);
@@ -1449,7 +1318,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
                 }
                 const handshakeData = JSON.parse(jsonContent);
                 if (handshakeData.isResponse) {
-                  await this.updateMonitoredConversations();
+                  this.updateMonitoredConversations();
                 }
               } catch (error) {
                 console.error("Error parsing handshake data:", error);
@@ -1483,11 +1352,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           decryptionSuccess &&
           (isHandshake || isMonitoredAddress || isCommForUs || isPaymentForUs)
         ) {
-          const message: DecodedMessage = {
+          const kasiaTransaction: KasiaTransaction = {
             transactionId: txId,
             senderAddress: senderAddress || "Unknown",
             recipientAddress: recipientAddress || "Unknown",
-            timestamp: blockTime,
+            createdAt: new Date(blockTime),
+            // @TODO(indexdb): how to get fees?
+            fee: 0,
             content: decryptedContent,
             amount:
               Number(
@@ -1496,17 +1367,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             payload: tx.payload,
           };
 
+          console.log("kasiaTransaction from account service", {
+            ...kasiaTransaction,
+          });
+
           const messagingStore = useMessagingStore.getState();
           if (messagingStore) {
-            messagingStore.storeMessage(message, stringWalletAddress);
-            messagingStore.loadMessages(stringWalletAddress);
+            await messagingStore.storeKasiaTransactions([kasiaTransaction]);
           }
 
           if (isHandshake) {
-            await this.updateMonitoredConversations();
+            this.updateMonitoredConversations();
           }
 
-          this.emit("messageReceived", message);
+          this.emit("messageReceived", kasiaTransaction);
         }
       } catch (error) {
         console.error("Error processing message:", error);
@@ -1585,24 +1459,25 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     // For self-messages, we still want to encrypt using the conversation partner's address
-    const conversation = conversationManager.getConversationByAlias(
-      sendMessage.theirAlias
-    );
-    if (!conversation) {
+    const conversationWithContact =
+      conversationManager.getConversationWithContactByAlias(
+        sendMessage.theirAlias
+      );
+    if (!conversationWithContact) {
       throw new Error("Could not find conversation for the given alias");
     }
 
     console.log("Encryption details:", {
-      conversationPartnerAddress: conversation.kaspaAddress,
+      conversationPartnerAddress: conversationWithContact.contact.kaspaAddress,
       ourAddress: this.receiveAddress?.toString(),
       theirAlias: sendMessage.theirAlias,
       destinationAddress: this.receiveAddress?.toString(),
-      conversation: conversation,
+      conversation: conversationWithContact,
     });
 
     // Use the conversation partner's address for encryption, even though we're sending to ourselves
     const encryptedMessage = encrypt_message(
-      conversation.kaspaAddress,
+      conversationWithContact.contact.kaspaAddress,
       sendMessage.message
     );
     if (!encryptedMessage) {
@@ -1645,9 +1520,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  private async updateMonitoredConversations() {
+  private updateMonitoredConversations() {
     try {
-      const { useMessagingStore } = await import("../store/messaging.store");
       const messagingStore = useMessagingStore.getState();
       const conversationManager = messagingStore?.conversationManager;
 
@@ -1683,7 +1557,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       });
 
-      await this.updateMonitoredConversations();
+      this.updateMonitoredConversations();
 
       for (const tx of transactions) {
         const txId = tx.verboseData?.transactionId;

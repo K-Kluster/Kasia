@@ -1,141 +1,46 @@
-import { FC, useState, useEffect, useRef } from "react";
-import { Message as MessageType } from "../types/all";
-import { decodePayload } from "../utils/format";
+import { FC, useState, useEffect, useRef, useMemo } from "react";
+import { KasiaConversationEvent } from "../types/all";
 import { useWalletStore } from "../store/wallet.store";
-import { WalletStorage } from "../utils/wallet-storage";
-import { CipherHelper } from "../utils/cipher-helper";
-import { useMessagingStore } from "../store/messaging.store";
 import { HandshakeResponse } from "./HandshakeResponse";
 import { KasIcon } from "./icons/KasCoin";
 import { Paperclip, Tickets } from "lucide-react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../utils/message-format";
-import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
+import { Contact } from "../store/repository/contact.repository";
+import { Conversation } from "../store/repository/conversation.repository";
 
 type MessageDisplayProps = {
-  message: MessageType;
+  event: KasiaConversationEvent;
   isOutgoing: boolean;
+  contact: Contact;
+  conversation: Conversation;
   showTimestamp?: boolean;
   groupPosition?: "single" | "top" | "middle" | "bottom";
 };
 
 export const MessageDisplay: FC<MessageDisplayProps> = ({
-  message,
+  event,
+  contact,
+  conversation,
   isOutgoing,
   showTimestamp,
   groupPosition = "single",
 }) => {
   const [showMeta, setShowMeta] = useState(false);
 
-  const {
-    senderAddress,
-    recipientAddress,
-    timestamp,
-    payload,
-    content,
-    fee,
-    transactionId,
-    fileData,
-  } = message;
-
   const walletStore = useWalletStore();
-  const messagingStore = useMessagingStore();
   const mounted = useRef(true);
 
-  const isRecent = Date.now() - timestamp < 12 * 60 * 60 * 1000; // if message is younger than 12 hours, its recent
-  const date = new Date(timestamp);
+  const isRecent = Date.now() - event.createdAt.getTime() < 12 * 60 * 60 * 1000; // if message is younger than 12 hours, its recent
 
   // if expanded OR stale, full date+time; otherwise just HH:MM
   const displayStamp =
     showMeta || !isRecent
-      ? date.toLocaleString()
-      : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-  // Check if this is a handshake message
-  const isHandshake =
-    (payload?.startsWith("ciph_msg:") && payload?.includes(":handshake:")) ||
-    (content?.startsWith("ciph_msg:") && content?.includes(":handshake:"));
-
-  // Check if this is a payment message by checking the hex payload OR decrypted content
-  const isPayment = (() => {
-    // First check if it's a hex payload starting with ciph_msg prefix
-    if (payload) {
-      if (payload.startsWith(PROTOCOL_PREFIX)) {
-        // Extract the message part and check for payment prefix
-        const messageHex = payload.substring(PROTOCOL_PREFIX.length);
-        if (messageHex.startsWith(PAYMENT_PREFIX)) {
-          return true;
-        }
-      }
-    }
-
-    // Also check if the content is already decrypted payment JSON
-    if (content) {
-      try {
-        const parsed = JSON.parse(content);
-        if (parsed.type === "payment") {
-          return true;
-        }
-      } catch (e) {
-        // Not JSON, continue checking
-        void e;
-      }
-    }
-
-    return false;
-  })();
-
-  // Get conversation if it's a handshake
-  const conversation = isHandshake
-    ? (() => {
-        try {
-          // Parse the handshake payload using the same method as ConversationManager
-          const handshakeMessage = payload?.startsWith("ciph_msg:")
-            ? payload
-            : content;
-          const parts = handshakeMessage.split(":");
-          if (
-            parts.length < 4 ||
-            parts[0] !== "ciph_msg" ||
-            parts[2] !== "handshake"
-          ) {
-            console.error("Invalid handshake payload format");
-            return null;
-          }
-
-          const jsonPart = parts.slice(3).join(":"); // Handle colons in JSON
-          const handshakePayload = JSON.parse(jsonPart);
-
-          // Get all conversations
-          const conversations = [
-            ...(messagingStore.conversationManager?.getActiveConversations() ||
-              []),
-            ...(messagingStore.conversationManager?.getPendingConversations() ||
-              []),
-          ];
-
-          // First try to find by conversation ID
-          let foundConversation = conversations.find(
-            (c) => c.conversationId === handshakePayload.conversationId
-          );
-
-          // If not found by ID, try to find by address
-          if (!foundConversation) {
-            foundConversation = conversations.find(
-              (c) =>
-                c.kaspaAddress === senderAddress ||
-                c.kaspaAddress === recipientAddress
-            );
-          }
-
-          console.log("Found conversation:", foundConversation);
-          return foundConversation;
-        } catch (error) {
-          console.error("Error parsing handshake payload:", error);
-          return null;
-        }
-      })()
-    : null;
+      ? event.createdAt.toLocaleString()
+      : event.createdAt.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
 
   // Get the correct explorer URL based on network
   const getExplorerUrl = (txId: string) => {
@@ -144,13 +49,15 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       : `https://explorer-tn10.kaspa.org/txs/${txId}`;
   };
 
+  const [decryptedContent, setDecryptedContent] = useState<string>("");
+
   // Format amount or fee for display
   const formatAmountAndFee = () => {
-    if (isOutgoing && fee !== undefined) {
+    if (isOutgoing && event.fee !== undefined) {
       return (
         <div className="w-full">
           <div className="message-fee text-right">
-            Fee: {fee.toFixed(8)} KAS
+            Fee: {event.fee.toFixed(8)} KAS
           </div>
         </div>
       );
@@ -160,58 +67,45 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
   // Render payment message content
   const renderPaymentMessage = () => {
-    if (isDecrypting) {
-      return (
-        <div className="rounded-md bg-teal-50 px-3 py-2 text-xs text-gray-600 italic">
-          Decrypting payment message...
-        </div>
-      );
-    }
-
-    // For payment messages, we'll only show the UI elements, not the raw content
-    const messageToRender = content;
-
     try {
-      if (messageToRender) {
-        const paymentPayload = JSON.parse(messageToRender);
+      const paymentPayload = JSON.parse(event.content);
 
-        if (paymentPayload.type === "payment") {
-          // Check if message is empty or just whitespace
-          const hasMessage =
-            paymentPayload.message && paymentPayload.message.trim();
+      if (paymentPayload.type === "payment") {
+        // Check if message is empty or just whitespace
+        const hasMessage =
+          paymentPayload.message && paymentPayload.message.trim();
 
-          return (
-            <div className={clsx("flex items-center gap-1")}>
-              <div
-                className={clsx(
-                  "mr-2 flex h-18 w-18 animate-pulse items-center justify-center drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]"
-                )}
-              >
-                <KasIcon
-                  className="h-18 w-18 scale-140 cursor-pointer drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
-                  circleClassName="fill-white"
-                  kClassName="fill-[var(--kas-primary)]"
-                />
-              </div>
-              <div className="flex-1">
-                {hasMessage && (
-                  <div className="mb-1 text-sm font-medium break-all drop-shadow-sm">
-                    {paymentPayload.message}
-                  </div>
-                )}
-                <div className="text-xs font-semibold drop-shadow-sm">
-                  {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
+        return (
+          <div className={clsx("flex items-center gap-1")}>
+            <div
+              className={clsx(
+                "mr-2 flex h-18 w-18 animate-pulse items-center justify-center drop-shadow-[0_0_20px_rgba(112,199,186,0.7)]"
+              )}
+            >
+              <KasIcon
+                className="h-18 w-18 scale-140 cursor-pointer drop-shadow-[0_0_15px_rgba(112,199,186,0.8)]"
+                circleClassName="fill-white"
+                kClassName="fill-[var(--kas-primary)]"
+              />
+            </div>
+            <div className="flex-1">
+              {hasMessage && (
+                <div className="mb-1 text-sm font-medium break-all drop-shadow-sm">
+                  {paymentPayload.message}
                 </div>
+              )}
+              <div className="text-xs font-semibold drop-shadow-sm">
+                {isOutgoing ? "Sent" : "Received"} {paymentPayload.amount} KAS
               </div>
             </div>
-          );
-        }
+          </div>
+        );
       }
     } catch (error) {
       console.warn("Could not parse payment message:", error);
       // If we can't parse it but we know it's a payment message,
       // show the raw content for debugging
-      console.log("Raw payment content:", messageToRender);
+      console.log("Raw payment content:", event.content);
     }
 
     // Fallback to showing basic payment info
@@ -237,9 +131,9 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   };
 
   // Parse and render message content
-  const renderMessageContent = () => {
+  const renderMessageContent = useMemo(() => {
     // If this is a handshake message and we found the conversation
-    if (isHandshake && conversation) {
+    if (event.__type === "handshake") {
       // Only show handshake response UI if:
       // 1. The conversation is pending
       // 2. We didn't initiate it
@@ -249,7 +143,13 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           "Rendering handshake response for conversation:",
           conversation
         );
-        return <HandshakeResponse conversation={conversation} />;
+        return (
+          <HandshakeResponse
+            conversation={conversation}
+            contact={contact}
+            handshakeId={event.id}
+          />
+        );
       }
       // For other handshake messages, just show the status text
       return conversation.status === "active"
@@ -260,54 +160,46 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     }
 
     // If this is a payment message, handle it specially
-    if (isPayment) {
+    if (event.__type === "payment") {
       return renderPaymentMessage();
     }
 
-    // Wait for decryption attempt before showing content
-    if (isDecrypting) {
-      return (
-        <div className="rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 italic">
-          Decrypting message...
-        </div>
-      );
-    }
-
     // Only use decrypted content if decryption was attempted and successful
-    const messageToRender =
-      (decryptionAttempted && decryptedContent) || content;
+    const messageToRender = decryptedContent || event.content;
 
-    // Handle file/image messages
-    if (fileData && fileData.type === "file") {
-      if (fileData.mimeType.startsWith("image/")) {
+    if (event.__type === "message") {
+      // Handle file/image messages
+      if (event.fileData && event.fileData.type === "file") {
+        if (event.fileData.mimeType.startsWith("image/")) {
+          return (
+            <img
+              src={event.fileData.content}
+              alt={event.fileData.name}
+              className="mt-2 block max-w-full rounded-lg"
+            />
+          );
+        }
         return (
-          <img
-            src={fileData.content}
-            alt={fileData.name}
-            className="mt-2 block max-w-full rounded-lg"
-          />
+          <div className="file-message">
+            <div className="file-info">
+              <Paperclip className="h-4 w-4 cursor-pointer" />{" "}
+              {event.fileData.name} ({Math.round(event.fileData.size / 1024)}
+              KB)
+            </div>
+            <button
+              className="mt-1 cursor-pointer rounded border border-[rgba(59,130,246,0.3)] bg-[rgba(59,130,246,0.2)] px-3 py-1 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[rgba(59,130,246,0.3)]"
+              onClick={() => {
+                const link = document.createElement("a");
+                link.href = event.fileData!.content;
+                link.download = event.fileData!.name;
+                link.click();
+              }}
+            >
+              Download
+            </button>
+          </div>
         );
       }
-      return (
-        <div className="file-message">
-          <div className="file-info">
-            <Paperclip className="h-4 w-4 cursor-pointer" /> {fileData.name} (
-            {Math.round(fileData.size / 1024)}
-            KB)
-          </div>
-          <button
-            className="mt-1 cursor-pointer rounded border border-[rgba(59,130,246,0.3)] bg-[rgba(59,130,246,0.2)] px-3 py-1 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[rgba(59,130,246,0.3)]"
-            onClick={() => {
-              const link = document.createElement("a");
-              link.href = fileData.content;
-              link.download = fileData.name;
-              link.click();
-            }}
-          >
-            Download
-          </button>
-        </div>
-      );
     }
 
     // Try to parse as JSON in case it's a file message in content
@@ -317,7 +209,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         if (parsedContent.mimeType.startsWith("image/")) {
           return (
             <img
-              key={`img-${transactionId}`}
+              key={`img-${event.transactionId}`}
               src={parsedContent.content}
               alt={parsedContent.name}
               className="mt-2 block max-w-full rounded-lg"
@@ -325,7 +217,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           );
         }
         return (
-          <div key={`file-${transactionId}`} className="file-message">
+          <div key={`file-${event.transactionId}`} className="file-message">
             <div className="file-info">
               <Paperclip className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
@@ -355,105 +247,31 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     }
 
     return messageToRender;
-  };
-
-  const [decryptedContent, setDecryptedContent] = useState<string>("");
-  const [isDecrypting, setIsDecrypting] = useState<boolean>(false);
-  const [decryptionAttempted, setDecryptionAttempted] =
-    useState<boolean>(false);
+  }, [conversation, renderPaymentMessage, contact, event]);
 
   useEffect(() => {
     const decryptMessage = async () => {
       if (!mounted.current || !walletStore.unlockedWallet) {
-        setDecryptionAttempted(true);
         return;
       }
 
-      // If we already have decrypted content from the account service, use that
-      if (content) {
-        setDecryptedContent(content);
-        setDecryptionAttempted(true);
+      // legacy, probably need to be cleanuped
+      if (event.content) {
+        setDecryptedContent(event.content);
         return;
       }
 
-      // Only attempt decryption if we don't have pre-decrypted content
-      if (!payload) {
-        setDecryptionAttempted(true);
-        return;
-      }
-
-      setIsDecrypting(true);
-      setDecryptionAttempted(false);
-
-      try {
-        // Add a small delay to ensure wallet is fully initialized
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        if (!mounted.current) return;
-
-        // Check if the payload starts with the cipher prefix
-        const prefix = "ciph_msg:"
-          .split("")
-          .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-          .join("");
-
-        if (payload.startsWith(prefix)) {
-          // Extract the encrypted message hex
-          const encryptedHex = CipherHelper.stripPrefix(payload);
-
-          // Get the private key generator
-          const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
-            walletStore.unlockedWallet,
-            walletStore.unlockedWallet.password
-          );
-
-          let decrypted: string | null = null;
-
-          // Try decryption with receive key first
-          try {
-            const privateKey = privateKeyGenerator.receiveKey(0);
-            decrypted = await CipherHelper.tryDecrypt(
-              encryptedHex,
-              privateKey.toString(),
-              transactionId || `${senderAddress}-${timestamp}`
-            );
-          } catch {
-            // Try with change key as fallback
-            try {
-              const changeKey = privateKeyGenerator.changeKey(0);
-              decrypted = await CipherHelper.tryDecrypt(
-                encryptedHex,
-                changeKey.toString(),
-                transactionId || `${senderAddress}-${timestamp}`
-              );
-            } catch {
-              throw new Error(
-                "Failed to decrypt with both receive and change keys"
-              );
-            }
-          }
-
-          if (mounted.current && decrypted) {
-            setDecryptedContent(decrypted);
-          }
-        } else {
-          const decoded = decodePayload(payload);
-          if (mounted.current) {
-            setDecryptedContent(decoded || "");
-          }
-        }
-      } catch (error) {
-        console.error("Error decrypting message:", error);
-      } finally {
-        if (mounted.current) {
-          setIsDecrypting(false);
-          setDecryptionAttempted(true);
-        }
-      }
+      console.error("No decrypted content available");
     };
 
     decryptMessage();
-  }, [payload, walletStore.unlockedWallet, content]);
+  }, [
+    walletStore.unlockedWallet,
+    event.content,
+    event.transactionId,
+    event.createdAt,
+    contact.kaspaAddress,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -489,10 +307,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           : "justify-start pl-0.5 sm:pl-2"
       )}
     >
-      {showMeta && transactionId && isOutgoing && (
+      {showMeta && event.transactionId && isOutgoing && (
         <div className="mr-2 flex items-center">
           <a
-            href={getExplorerUrl(transactionId)}
+            href={getExplorerUrl(event.transactionId)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs opacity-80 transition-opacity hover:opacity-100"
@@ -512,7 +330,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
         )}
       >
         <div className="my-0.5 text-base leading-relaxed">
-          {renderMessageContent()}
+          {renderMessageContent}
         </div>
         {(showMeta || showTimestamp) && (
           <div className="mb-1.5 flex justify-end truncate text-xs">
@@ -532,10 +350,10 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           </div>
         )}
       </div>
-      {showMeta && transactionId && !isOutgoing && (
+      {showMeta && event.transactionId && !isOutgoing && (
         <div className="ml-2 flex items-center">
           <a
-            href={getExplorerUrl(transactionId)}
+            href={getExplorerUrl(event.transactionId)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs opacity-80 transition-opacity hover:opacity-100"

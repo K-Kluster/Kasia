@@ -1,10 +1,26 @@
-import React, { FC, useState } from "react";
+import React, { FC, useCallback, useState } from "react";
 import { Lock } from "lucide-react";
 import { KasIcon } from "../icons/KasCoin";
+import { setDevMode } from "../../config/dev-mode";
+import { toast } from "../../utils/toast";
 
 export const TrustMessage: FC = () => {
   const [openTrust, setOpenTrust] = useState(false);
   const [openWhy, setOpenWhy] = useState(false);
+
+  const [_, setDevModeClickTimes] = useState(0);
+
+  const activateDevModeOnClickFiveTimes = useCallback(() => {
+    setDevModeClickTimes((v) => {
+      if (v === 6) {
+        setDevMode(true);
+        toast.info("Dev mode activated");
+        return 0;
+      } else {
+        return v + 1;
+      }
+    });
+  }, []);
 
   return (
     <div className="mb-2 sm:mb-5">
@@ -13,7 +29,10 @@ export const TrustMessage: FC = () => {
         className="border-kas-secondary from-kas-secondary/20 to-kas-secondary/5 mt-6 cursor-pointer rounded-2xl border bg-gradient-to-r p-2"
         onClick={() => setOpenTrust((v) => !v)}
       >
-        <div className="flex w-full items-center justify-center gap-2 py-1">
+        <div
+          onClick={activateDevModeOnClickFiveTimes}
+          className="flex w-full items-center justify-center gap-2 py-1"
+        >
           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#70C7BA]">
             <Lock className="h-4 w-4 text-white" />
           </div>

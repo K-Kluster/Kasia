@@ -15,8 +15,8 @@ import { ContactInfoModal } from "../components/Modals/ContactInfoModal";
 export const ModalDisplay = () => {
   const isOpen = useUiStore((s) => s.isOpen);
   const closeModal = useUiStore((s) => s.closeModal);
-  const contactInfoContact = useUiStore((s) => s.contactInfoContact);
-  const setContactInfoContact = useUiStore((s) => s.setContactInfoContact);
+  const oneOnOneConversation = useUiStore((s) => s.oneOnOneConversation);
+  const setOneOnOneConversation = useUiStore((s) => s.setOneOnOneConversation);
   const walletStore = useWalletStore();
   const messageStore = useMessagingStore();
 
@@ -65,18 +65,18 @@ export const ModalDisplay = () => {
           />
         </Modal>
       )}
-      {isOpen("contact-info-modal") && contactInfoContact && (
+      {isOpen("contact-info-modal") && oneOnOneConversation && (
         <Modal
           onClose={() => {
             closeModal("contact-info-modal");
-            setContactInfoContact(null);
+            setOneOnOneConversation(null);
           }}
         >
           <ContactInfoModal
-            contact={contactInfoContact}
+            oooc={oneOnOneConversation}
             onClose={() => {
               closeModal("contact-info-modal");
-              setContactInfoContact(null);
+              setOneOnOneConversation(null);
             }}
           />
         </Modal>

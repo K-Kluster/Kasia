@@ -14,12 +14,16 @@ export const KaspaAddress: FC<KaspaAddressProps> = ({ address }) => {
   const addressRef = useRef<HTMLSpanElement>(null);
 
   const addressStr = typeof address === "string" ? address : address.toString();
-  const contact = useMessagingStore((s) =>
-    s.contacts.find((c) => c.address === addressStr)
+  const oneOnOneConversation = useMessagingStore((s) =>
+    s.oneOnOneConversations.find(
+      (oooc) => oooc.contact.kaspaAddress === addressStr
+    )
   );
   const nickname =
-    contact && typeof contact.nickname === "string" && contact.nickname.trim()
-      ? contact.nickname.trim()
+    oneOnOneConversation &&
+    typeof oneOnOneConversation.contact.name === "string" &&
+    oneOnOneConversation.contact.name.trim()
+      ? oneOnOneConversation.contact.name.trim()
       : "";
 
   const displayString = nickname || addressStr;

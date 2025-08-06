@@ -1,19 +1,18 @@
 import { FC, memo } from "react";
 import { MessageDisplay } from "./MessageDisplay";
-import { Message } from "../types/all";
 import { DateSeparator } from "./DateSeparator";
 import { isToday } from "../utils/message-date-format";
+import { OneOnOneConversation } from "../types/all";
 
 interface MessagesListProps {
-  messages: Message[];
-  address: string | null;
+  oneOnOneConversation: OneOnOneConversation;
   lastOutgoing: number;
   lastIncoming: number;
 }
 
 export const MessagesList: FC<MessagesListProps> = memo(
-  ({ messages, address, lastOutgoing, lastIncoming }) => {
-    if (!messages.length) {
+  ({ oneOnOneConversation, lastOutgoing, lastIncoming }) => {
+    if (!oneOnOneConversation.events.length) {
       return (
         <div className="m-5 rounded-xl bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
           No messages in this conversation.
@@ -21,21 +20,25 @@ export const MessagesList: FC<MessagesListProps> = memo(
       );
     }
 
-    const firstTodayIdx = messages.findIndex((msg) =>
-      isToday(new Date(msg.timestamp))
+    const firstTodayIdx = oneOnOneConversation.events.findIndex((event) =>
+      isToday(event.createdAt)
     );
+
+    console.log("message list - oooc", {
+      oneOnOneConversation,
+    });
 
     return (
       <>
-        {messages.map((msg, idx) => {
-          const isOutgoing = msg.senderAddress === address;
+        {oneOnOneConversation.events.map((event, idx) => {
+          const isOutgoing = event.fromMe;
           const showTimestamp = isOutgoing
             ? idx === lastOutgoing
             : idx === lastIncoming;
 
-          const prevMsg = messages[idx - 1];
-          const nextMsg = messages[idx + 1];
-          const dateObj = new Date(msg.timestamp);
+          const previousEvent = oneOnOneConversation.events[idx - 1];
+          const nextEvent = oneOnOneConversation.events[idx + 1];
+          const dateObj = event.createdAt;
 
           // is this the first message of today?
           const isFirstToday = idx === firstTodayIdx && isToday(dateObj);
@@ -47,35 +50,36 @@ export const MessagesList: FC<MessagesListProps> = memo(
           const showSeparator =
             isFirstToday ||
             (idx > 0 &&
-              prevMsg &&
-              msg.timestamp - prevMsg.timestamp > 30 * 60 * 1000) ||
+              previousEvent &&
+              event.createdAt.getTime() - previousEvent.createdAt.getTime() >
+                30 * 60 * 1000) ||
             (idx === 0 && !isToday(dateObj));
 
           // if there's a separator, treat as new group
           const isPrevSameSender =
             !showSeparator &&
-            prevMsg &&
-            prevMsg.senderAddress === msg.senderAddress;
+            previousEvent &&
+            previousEvent.fromMe === event.fromMe;
           const isNextSameSender =
-            nextMsg &&
+            nextEvent &&
             // if the next message has a separator, it's not same group
             !(
-              (idx + 1 === firstTodayIdx &&
-                isToday(new Date(nextMsg.timestamp))) ||
+              (idx + 1 === firstTodayIdx && isToday(nextEvent.createdAt)) ||
               (idx + 1 > 0 &&
-                messages[idx + 1 - 1] &&
-                nextMsg.timestamp - messages[idx + 1 - 1].timestamp >
+                oneOnOneConversation.events[idx + 1 - 1] &&
+                nextEvent.createdAt.getTime() -
+                  oneOnOneConversation.events[idx + 1 - 1].createdAt.getTime() >
                   30 * 60 * 1000) ||
-              (idx + 1 === 0 && !isToday(new Date(nextMsg.timestamp)))
+              (idx + 1 === 0 && !isToday(nextEvent.createdAt))
             ) &&
-            nextMsg.senderAddress === msg.senderAddress;
+            nextEvent.fromMe === event.fromMe;
 
           const isSingleInGroup = !isPrevSameSender && !isNextSameSender;
           const isTopOfGroup = !isPrevSameSender && isNextSameSender;
           const isBottomOfGroup = isPrevSameSender && !isNextSameSender;
 
           return (
-            <div key={msg.transactionId}>
+            <div key={event.transactionId}>
               {showSeparator &&
                 (isFirstToday ? (
                   <div className="my-4 text-center text-xs text-gray-400">
@@ -87,12 +91,14 @@ export const MessagesList: FC<MessagesListProps> = memo(
                     })}
                   </div>
                 ) : (
-                  <DateSeparator timestamp={msg.timestamp} />
+                  <DateSeparator timestamp={event.createdAt.getTime()} />
                 ))}
               <MessageDisplay
                 isOutgoing={isOutgoing}
                 showTimestamp={showTimestamp}
-                message={msg}
+                event={event}
+                contact={oneOnOneConversation.contact}
+                conversation={oneOnOneConversation.conversation}
                 groupPosition={
                   isSingleInGroup
                     ? "single"

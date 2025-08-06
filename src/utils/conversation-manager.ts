@@ -1,74 +1,94 @@
 import {
-  ActiveConversation,
-  Conversation,
   ConversationEvents,
   HandshakePayload,
-  PendingConversation,
 } from "src/types/messaging.types";
 import { v4 as uuidv4 } from "uuid";
 import { ALIAS_LENGTH } from "../config/constants";
 import { isAlias } from "./alias-validator";
+import { DBNotFoundException, Repositories } from "../store/repository/db";
+import {
+  Conversation,
+  ActiveConversation,
+  PendingConversation,
+} from "../store/repository/conversation.repository";
+import { Contact } from "../store/repository/contact.repository";
 
 export class ConversationManager {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";
   private static readonly PROTOCOL_VERSION = 1;
 
-  private conversations: Map<string, Conversation> = new Map();
+  private conversationWithContactByConversationId: Map<
+    string,
+    { conversation: Conversation; contact: Contact }
+  > = new Map();
   private aliasToConversation: Map<string, string> = new Map(); // alias -> conversationId
   private addressToConversation: Map<string, string> = new Map(); // kaspaAddress -> conversationId
 
-  constructor(
+  private constructor(
     private currentAddress: string,
+    readonly repositories: Repositories,
     private events?: Partial<ConversationEvents>
+  ) {}
+
+  static async init(
+    currentAddress: string,
+    repositories: Repositories,
+    events?: Partial<ConversationEvents>
   ) {
-    this.loadConversations();
+    const manager = new ConversationManager(
+      currentAddress,
+      repositories,
+      events
+    );
+    await manager.loadConversations();
+
+    return manager;
   }
 
   private get storageKey(): string {
     return `${ConversationManager.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
   }
 
-  private saveToStorage() {
-    try {
-      const data = Array.from(this.conversations.values());
-      localStorage.setItem(this.storageKey, JSON.stringify(data));
-    } catch (error) {
-      console.error("Failed to save conversations to storage:", error);
-    }
-  }
-
-  private loadConversations() {
+  private async loadConversations() {
     try {
       // Clear existing data first
-      this.conversations.clear();
+      this.conversationWithContactByConversationId.clear();
       this.aliasToConversation.clear();
       this.addressToConversation.clear();
 
+      const conversations =
+        await this.repositories.conversationRepository.getConversations();
+
+      // note: this isn't optimized, we're loading contacts here while it could have been cached earlier and centralized
+      const contacts = await this.repositories.contactRepository.getContacts();
+
       // Load conversations for current wallet
-      const data = localStorage.getItem(this.storageKey);
-      if (data) {
-        const conversations = JSON.parse(data) as Conversation[];
-        conversations.forEach((conv) => {
-          // Only load conversations that belong to the current wallet address
-          if (
-            conv.kaspaAddress &&
-            this.isValidKaspaAddress(conv.kaspaAddress)
-          ) {
-            this.conversations.set(conv.conversationId, conv);
-            this.addressToConversation.set(
-              conv.kaspaAddress,
-              conv.conversationId
+      conversations.forEach((conversation) => {
+        const contact = contacts.find((c) => c.id === conversation.contactId);
+
+        if (!contact) {
+          return;
+        }
+
+        // Only load conversations that belong to the current wallet address
+        if (
+          contact.kaspaAddress &&
+          this.isValidKaspaAddress(contact.kaspaAddress)
+        ) {
+          this.conversationWithContactByConversationId.set(conversation.id, {
+            conversation,
+            contact,
+          });
+          this.addressToConversation.set(contact.kaspaAddress, conversation.id);
+          this.aliasToConversation.set(conversation.myAlias, conversation.id);
+          if (conversation.theirAlias) {
+            this.aliasToConversation.set(
+              conversation.theirAlias,
+              conversation.id
             );
-            this.aliasToConversation.set(conv.myAlias, conv.conversationId);
-            if (conv.theirAlias) {
-              this.aliasToConversation.set(
-                conv.theirAlias,
-                conv.conversationId
-              );
-            }
           }
-        });
-      }
+        }
+      });
     } catch (error) {
       console.error("Failed to load conversations from storage:", error);
     }
@@ -81,6 +101,7 @@ export class ConversationManager {
   public async initiateHandshake(recipientAddress: string): Promise<{
     payload: string;
     conversation: Conversation;
+    contact: Contact;
   }> {
     try {
       // Validate recipient address format
@@ -91,20 +112,26 @@ export class ConversationManager {
       // Check if we already have an active conversation
       const existingConvId = this.addressToConversation.get(recipientAddress);
       if (existingConvId) {
-        const conv = this.conversations.get(existingConvId);
-        if (conv && conv.status === "active") {
+        const conversationAndContact =
+          this.conversationWithContactByConversationId.get(existingConvId);
+        if (
+          conversationAndContact &&
+          conversationAndContact.conversation.status === "active"
+        ) {
           throw new Error(
             "Active conversation already exists with this address"
           );
         }
         // Keep the first alias - reuse existing pending conversation
-        if (conv && conv.status === "pending") {
+        if (
+          conversationAndContact &&
+          conversationAndContact.conversation.status === "pending"
+        ) {
           // Create handshake payload with the existing alias (keeps first alias)
           const handshakePayload: HandshakePayload = {
             type: "handshake",
-            alias: conv.myAlias, // Keep the original alias
+            alias: conversationAndContact.conversation.myAlias, // Keep the original alias
             timestamp: Date.now(),
-            conversationId: conv.conversationId,
             version: ConversationManager.PROTOCOL_VERSION,
             recipientAddress: recipientAddress,
             sendToRecipient: true,
@@ -116,23 +143,32 @@ export class ConversationManager {
           }:handshake:${JSON.stringify(handshakePayload)}`;
 
           // Update last activity to show it's still active
-          conv.lastActivity = Date.now();
-          this.saveConversation(conv);
+          conversationAndContact.conversation.lastActivityAt = new Date();
+          this.inMemorySyncronization(
+            conversationAndContact.conversation,
+            conversationAndContact.contact
+          );
 
           // Note: Not triggering onHandshakeInitiated again since it's a retry
-          return { payload, conversation: conv };
+          return {
+            payload,
+            conversation: conversationAndContact.conversation,
+            contact: conversationAndContact.contact,
+          };
         }
       }
 
       // Generate new conversation with unique alias (only for truly new handshakes)
-      const conversation = this.createNewConversation(recipientAddress, true);
+      const { conversation, contact } = await this.createNewConversation(
+        recipientAddress,
+        true
+      );
 
       // Create handshake payload - initial handshake is sent directly to recipient
       const handshakePayload: HandshakePayload = {
         type: "handshake",
         alias: conversation.myAlias,
         timestamp: Date.now(),
-        conversationId: conversation.conversationId,
         version: ConversationManager.PROTOCOL_VERSION,
         recipientAddress: recipientAddress,
         sendToRecipient: true, // Flag to indicate this should be sent to recipient
@@ -143,9 +179,9 @@ export class ConversationManager {
         ConversationManager.PROTOCOL_VERSION
       }:handshake:${JSON.stringify(handshakePayload)}`;
 
-      this.events?.onHandshakeInitiated?.(conversation);
+      this.events?.onHandshakeInitiated?.(conversation, contact);
 
-      return { payload, conversation };
+      return { payload, conversation, contact };
     } catch (error) {
       this.events?.onError?.(error);
       throw error;
@@ -161,35 +197,47 @@ export class ConversationManager {
       this.validateHandshakePayload(payload);
 
       // STEP 1 – look up strictly by conversationId only
-      const existingConversationById = this.conversations.get(
-        payload.conversationId
-      );
+      const existingConversationAndContactByAddress =
+        this.getConversationWithContactByAddress(senderAddress);
 
-      if (existingConversationById) {
+      console.log("conversation manager - processing handshake", { payload });
+
+      if (existingConversationAndContactByAddress) {
         // ------- this is a replay of a message we already handled -------
         // keep the guard so we don't downgrade on refresh
-        if (
-          payload.isResponse &&
-          existingConversationById.status === "pending"
-        ) {
+        if (payload.isResponse) {
           // Promote the existing pending conversation to active *in-place* so any listeners that hold the original object see the change immediately.
-          (existingConversationById as unknown as ActiveConversation).status =
-            "active";
-          this.saveConversation(existingConversationById);
-          this.events?.onHandshakeCompleted?.(existingConversationById);
+          (
+            existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
+          ).status = "active";
+        } else {
+          if (
+            existingConversationAndContactByAddress.conversation.status ===
+            "active"
+          ) {
+            console.log(
+              "conversation manager - existing conversation is active",
+              { payload }
+            );
+
+            (
+              existingConversationAndContactByAddress.conversation as unknown as PendingConversation
+            ).status = "pending";
+          }
         }
-        return; // ⬅ nothing else to do
-      }
 
-      // STEP 2 – we didn't find that ID, but do we know the address?
-      const existingByAddress =
-        this.addressToConversation.get(senderAddress) &&
-        this.conversations.get(this.addressToConversation.get(senderAddress)!);
+        (
+          existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
+        ).theirAlias = payload.alias;
 
-      if (existingByAddress && !payload.isResponse) {
-        // ---------- peer lost cache & is initiating again ----------
-        // create a *new* pending conversation linked to the new ID
-        return this.processNewHandshake(payload, senderAddress);
+        await this.repositories.conversationRepository.saveConversation(
+          existingConversationAndContactByAddress.conversation
+        );
+        this.inMemorySyncronization(
+          existingConversationAndContactByAddress.conversation,
+          existingConversationAndContactByAddress.contact
+        );
+        return;
       }
 
       // STEP 3 – completely unknown (first contact ever)
@@ -200,11 +248,16 @@ export class ConversationManager {
     }
   }
 
-  public createHandshakeResponse(conversationId: string): string {
-    const conversation = this.conversations.get(conversationId);
-    if (!conversation) {
+  public async createHandshakeResponse(
+    conversationId: string
+  ): Promise<string> {
+    const conversationAndContact =
+      this.conversationWithContactByConversationId.get(conversationId);
+    if (!conversationAndContact) {
       throw new Error("Conversation not found for handshake response");
     }
+
+    const { conversation, contact } = conversationAndContact;
 
     // Allow responses for both pending and active conversations (for cache recovery)
     if (conversation.status !== "pending" && conversation.status !== "active") {
@@ -220,14 +273,20 @@ export class ConversationManager {
       const activatedConversation: ActiveConversation = {
         ...conversation,
         status: "active",
-        lastActivity: Date.now(),
+        lastActivityAt: new Date(),
       };
-      this.saveConversation(activatedConversation);
-      this.events?.onHandshakeCompleted?.(activatedConversation);
+      await this.repositories.conversationRepository.saveConversation(
+        activatedConversation
+      );
+      this.inMemorySyncronization(activatedConversation, contact);
+      this.events?.onHandshakeCompleted?.(activatedConversation, contact);
     } else {
+      conversation.lastActivityAt = new Date();
       // For active conversations, just update last activity
-      conversation.lastActivity = Date.now();
-      this.saveConversation(conversation);
+      await this.repositories.conversationRepository.saveConversation(
+        conversation
+      );
+      this.inMemorySyncronization(conversation, contact);
     }
 
     const responsePayload: HandshakePayload = {
@@ -235,9 +294,8 @@ export class ConversationManager {
       alias: conversation.myAlias,
       theirAlias: conversation.theirAlias, // Include their alias in response
       timestamp: Date.now(),
-      conversationId: conversation.conversationId, // Use our conversation ID
       version: ConversationManager.PROTOCOL_VERSION,
-      recipientAddress: conversation.kaspaAddress, // Include their address
+      recipientAddress: contact.kaspaAddress, // Include their address
       sendToRecipient: false, // Set to false to use standard encryption
       isResponse: true,
     };
@@ -247,104 +305,157 @@ export class ConversationManager {
     }:handshake:${JSON.stringify(responsePayload)}`;
   }
 
-  public getConversationByAlias(alias: string): Conversation | null {
+  public getConversationWithContactByAlias(
+    alias: string
+  ): { conversation: Conversation; contact: Contact } | null {
     const convId = this.aliasToConversation.get(alias);
-    return convId ? this.conversations.get(convId) || null : null;
+    return convId
+      ? this.conversationWithContactByConversationId.get(convId) || null
+      : null;
   }
 
-  public getConversationByAddress(address: string): Conversation | null {
+  public getConversationWithContactByAddress(
+    address: string
+  ): { conversation: Conversation; contact: Contact } | null {
     const convId = this.addressToConversation.get(address);
-    return convId ? this.conversations.get(convId) || null : null;
+    return convId
+      ? this.conversationWithContactByConversationId.get(convId) || null
+      : null;
   }
 
-  public getActiveConversations(): Conversation[] {
-    return Array.from(this.conversations.values()).filter(
-      (conv) => conv.status === "active"
-    );
+  public getActiveConversationsWithContact(): {
+    conversation: ActiveConversation;
+    contact: Contact;
+  }[] {
+    return Array.from(this.conversationWithContactByConversationId.values())
+      .filter(({ conversation }) => conversation.status === "active")
+      .map(({ conversation, contact }) => ({
+        conversation: conversation as ActiveConversation,
+        contact,
+      }));
   }
 
-  public getPendingConversations(): PendingConversation[] {
-    return Array.from(this.conversations.values()).filter(
-      (conv) => conv.status === "pending"
-    );
+  public getPendingConversationsWithContact(): {
+    conversation: PendingConversation;
+    contact: Contact;
+  }[] {
+    return Array.from(this.conversationWithContactByConversationId.values())
+      .filter(({ conversation }) => conversation.status === "pending")
+      .map(({ conversation, contact }) => ({
+        conversation: conversation as PendingConversation,
+        contact,
+      }));
+  }
+
+  public getAllConversationsWithContact(): {
+    conversation: Conversation;
+    contact: Contact;
+  }[] {
+    return Array.from(
+      this.conversationWithContactByConversationId.values()
+    ).map(({ conversation, contact }) => ({
+      conversation: conversation,
+      contact,
+    }));
   }
 
   public updateLastActivity(conversationId: string): void {
-    const conversation = this.conversations.get(conversationId);
-    if (conversation) {
-      conversation.lastActivity = Date.now();
-      this.saveConversation(conversation);
+    const conversationWithContact =
+      this.conversationWithContactByConversationId.get(conversationId);
+    if (conversationWithContact) {
+      conversationWithContact.conversation.lastActivityAt = new Date();
+      this.inMemorySyncronization(
+        conversationWithContact.conversation,
+        conversationWithContact.contact
+      );
     }
   }
 
-  public removeConversation(conversationId: string): boolean {
-    const conversation = this.conversations.get(conversationId);
-    if (!conversation) return false;
+  public async removeConversation(conversationId: string): Promise<boolean> {
+    const conversationWithContact =
+      this.conversationWithContactByConversationId.get(conversationId);
+    if (!conversationWithContact) return false;
 
-    this.conversations.delete(conversationId);
-    this.addressToConversation.delete(conversation.kaspaAddress);
+    const { conversation, contact } = conversationWithContact;
+
+    this.conversationWithContactByConversationId.delete(conversationId);
+    this.addressToConversation.delete(contact.kaspaAddress);
     this.aliasToConversation.delete(conversation.myAlias);
     if (conversation.theirAlias) {
       this.aliasToConversation.delete(conversation.theirAlias);
     }
-    this.saveToStorage();
+
+    // remove from storage
+    await this.repositories.contactRepository.deleteContact(contact.id);
+    await this.repositories.conversationRepository.deleteConversation(
+      conversation.id
+    );
+
     return true;
   }
 
-  public updateConversation(
-    conversation: Pick<Conversation, "conversationId"> & Partial<Conversation>
+  public async updateConversation(
+    conversation: Pick<Conversation, "id"> & Partial<Conversation>
   ) {
     // Validate the conversation
-    if (!conversation.conversationId) {
+    if (!conversation.id) {
       throw new Error("Invalid conversation: missing required fields");
     }
 
     // Get the existing conversation
-    const existing = this.conversations.get(conversation.conversationId);
+    const existing = this.conversationWithContactByConversationId.get(
+      conversation.id
+    );
     if (!existing) {
       throw new Error("Conversation not found");
     }
 
+    const { conversation: existingConversation, contact: existingContact } =
+      existing;
+
     // Update the conversation
     const updatedConversation = {
-      ...existing,
+      ...existingConversation,
       ...conversation,
-      lastActivity: Date.now(),
+      lastActivityAt: new Date(),
     };
-    this.conversations.set(conversation.conversationId, updatedConversation);
+    this.conversationWithContactByConversationId.set(conversation.id, {
+      conversation: updatedConversation,
+      contact: existingContact,
+    });
 
     // If status changed to active, trigger the completion event
-    if (existing.status === "pending" && conversation.status === "active") {
-      this.events?.onHandshakeCompleted?.(updatedConversation);
+    if (
+      existingConversation.status === "pending" &&
+      conversation.status === "active"
+    ) {
+      this.events?.onHandshakeCompleted?.(updatedConversation, existingContact);
     }
 
-    // Update mappings
-    if (conversation.kaspaAddress) {
-      this.addressToConversation.set(
-        conversation.kaspaAddress,
-        conversation.conversationId
-      );
-    }
+    // @TODO(indexdb): useless?
+    // // Update mappings
+    // if (existingContact.kaspaAddress) {
+    //   this.addressToConversation.set(
+    //     existingContact.kaspaAddress,
+    //     conversation.conversationId
+    //   );
+    // }
 
     if (conversation.myAlias) {
-      this.aliasToConversation.set(
-        conversation.myAlias,
-        conversation.conversationId
-      );
+      this.aliasToConversation.set(conversation.myAlias, conversation.id);
     }
 
     if (conversation.theirAlias) {
-      this.aliasToConversation.set(
-        conversation.theirAlias,
-        conversation.conversationId
-      );
+      this.aliasToConversation.set(conversation.theirAlias, conversation.id);
     }
 
-    // Save to storage
-    this.saveToStorage();
+    // save to storage
+    await this.repositories.conversationRepository.saveConversation({
+      ...updatedConversation,
+    });
   }
 
-  private parseHandshakePayload(payloadString: string): HandshakePayload {
+  public parseHandshakePayload(payloadString: string): HandshakePayload {
     // Expected format: "ciph_msg:1:handshake:{json}"
     const parts = payloadString.split(":");
     if (
@@ -363,23 +474,51 @@ export class ConversationManager {
     }
   }
 
-  private createNewConversation(
+  private async createNewConversation(
     recipientAddress: string,
     initiatedByMe: boolean
-  ): Conversation {
+  ): Promise<{ conversation: Conversation; contact: Contact }> {
+    const contact = await this.repositories.contactRepository
+      .getContactByKaspaAddress(recipientAddress)
+      .catch(async (error) => {
+        if (error instanceof DBNotFoundException) {
+          // create a new contact if not found
+          const newContact = {
+            id: uuidv4(),
+            kaspaAddress: recipientAddress,
+            timestamp: new Date(),
+            name: undefined,
+            tenantId: this.repositories.tenantId,
+          };
+
+          await this.repositories.contactRepository.saveContact(newContact);
+
+          return newContact;
+        }
+        throw error;
+      });
+
     const conversation: Conversation = {
-      conversationId: uuidv4(),
+      id: uuidv4(),
       myAlias: this.generateUniqueAlias(),
       theirAlias: null,
-      kaspaAddress: recipientAddress,
-      createdAt: Date.now(),
-      lastActivity: Date.now(),
+      lastActivityAt: new Date(),
       status: "pending",
       initiatedByMe,
+      contactId: contact.id,
+      tenantId: this.repositories.tenantId,
     };
 
-    this.saveConversation(conversation);
-    return conversation;
+    await this.repositories.conversationRepository.saveConversation(
+      conversation
+    );
+
+    this.inMemorySyncronization(conversation, contact);
+
+    return {
+      conversation,
+      contact,
+    };
   }
 
   private generateUniqueAlias(): string {
@@ -430,21 +569,36 @@ export class ConversationManager {
     const status =
       payload.isResponse && isMyNewAliasValid ? "active" : "pending";
 
+    const newContact = {
+      id: uuidv4(),
+      kaspaAddress: senderAddress,
+      timestamp: new Date(),
+      name: undefined,
+      tenantId: this.repositories.tenantId,
+    };
+
+    const contactId =
+      await this.repositories.contactRepository.saveContact(newContact);
+
     const conversation: Conversation = {
-      conversationId: payload.conversationId,
+      id: uuidv4(),
       myAlias,
       theirAlias: payload.alias,
-      kaspaAddress: senderAddress,
-      createdAt: Date.now(),
-      lastActivity: Date.now(),
+      contactId,
+      tenantId: this.repositories.tenantId,
+      lastActivityAt: new Date(),
       status,
       initiatedByMe: false,
     };
 
-    this.saveConversation(conversation);
+    await this.repositories.conversationRepository.saveConversation(
+      conversation
+    );
+
+    this.inMemorySyncronization(conversation, newContact);
 
     if (isMyNewAliasValid) {
-      this.events?.onHandshakeCompleted?.(conversation);
+      this.events?.onHandshakeCompleted?.(conversation, newContact);
     }
   }
 
@@ -457,10 +611,6 @@ export class ConversationManager {
       throw new Error("Alias must be hexadecimal");
     }
 
-    if (!payload.conversationId || typeof payload.conversationId !== "string") {
-      throw new Error("Invalid conversation ID");
-    }
-
     // Version compatibility check
     if (
       payload.version &&
@@ -470,42 +620,38 @@ export class ConversationManager {
     }
   }
 
-  private saveConversation(conversation: Conversation) {
-    this.conversations.set(conversation.conversationId, conversation);
-    this.addressToConversation.set(
-      conversation.kaspaAddress,
-      conversation.conversationId
-    );
-    this.aliasToConversation.set(
-      conversation.myAlias,
-      conversation.conversationId
-    );
+  private inMemorySyncronization(conversation: Conversation, contact: Contact) {
+    this.conversationWithContactByConversationId.set(conversation.id, {
+      contact,
+      conversation,
+    });
+    this.addressToConversation.set(contact.kaspaAddress, conversation.id);
+    this.aliasToConversation.set(conversation.myAlias, conversation.id);
     if (conversation.theirAlias) {
-      this.aliasToConversation.set(
-        conversation.theirAlias,
-        conversation.conversationId
-      );
+      this.aliasToConversation.set(conversation.theirAlias, conversation.id);
     }
-    this.saveToStorage();
   }
 
   public getMonitoredConversations(): { alias: string; address: string }[] {
     const monitored: { alias: string; address: string }[] = [];
 
-    Array.from(this.conversations.values())
-      .filter((conv) => conv.status === "active")
-      .forEach((conv) => {
+    Array.from(this.conversationWithContactByConversationId.values())
+      .filter(
+        (conversationAndContact) =>
+          conversationAndContact.conversation.status === "active"
+      )
+      .forEach((conversationAndContact) => {
         // Monitor our own alias
         monitored.push({
-          alias: conv.myAlias,
-          address: conv.kaspaAddress,
+          alias: conversationAndContact.conversation.myAlias,
+          address: conversationAndContact.contact.kaspaAddress,
         });
 
         // Also monitor their alias if available
-        if (conv.theirAlias) {
+        if (conversationAndContact.conversation.theirAlias) {
           monitored.push({
-            alias: conv.theirAlias,
-            address: conv.kaspaAddress,
+            alias: conversationAndContact.conversation.theirAlias,
+            address: conversationAndContact.contact.kaspaAddress,
           });
         }
       });
@@ -517,7 +663,10 @@ export class ConversationManager {
    * Restore a conversation from a backup
    * @param conversation The conversation to restore
    */
-  restoreConversation(conversation: Conversation): void {
+  async restoreConversation(
+    conversation: Conversation,
+    contact: Contact
+  ): Promise<void> {
     // Validate conversation object
     if (!this.isValidConversation(conversation)) {
       console.error("Invalid conversation object:", conversation);
@@ -525,57 +674,43 @@ export class ConversationManager {
     }
 
     // Check if conversation already exists
-    const existingConversation = this.conversations.get(
-      conversation.conversationId
-    );
-    if (existingConversation) {
+    const existingConversationWithContact =
+      this.conversationWithContactByConversationId.get(conversation.id);
+    if (existingConversationWithContact) {
       // Update existing conversation
-      this.conversations.set(conversation.conversationId, {
-        ...existingConversation,
+      const updatedConversation: Conversation = {
+        ...existingConversationWithContact.conversation,
         ...conversation,
-        lastActivity: Date.now(),
+        lastActivityAt: new Date(),
+      };
+      this.conversationWithContactByConversationId.set(conversation.id, {
+        conversation: updatedConversation,
+        contact: existingConversationWithContact.contact,
       });
+
+      await this.repositories.conversationRepository.saveConversation(
+        updatedConversation
+      );
     } else {
       // Add new conversation
-      this.conversations.set(conversation.conversationId, conversation);
+      this.conversationWithContactByConversationId.set(conversation.id, {
+        conversation,
+        contact,
+      });
     }
 
     // Update mappings
-    this.addressToConversation.set(
-      conversation.kaspaAddress,
-      conversation.conversationId
-    );
-    this.aliasToConversation.set(
-      conversation.myAlias,
-      conversation.conversationId
-    );
+    this.addressToConversation.set(contact.kaspaAddress, conversation.id);
+    this.aliasToConversation.set(conversation.myAlias, conversation.id);
     if (conversation.theirAlias) {
-      this.aliasToConversation.set(
-        conversation.theirAlias,
-        conversation.conversationId
-      );
+      this.aliasToConversation.set(conversation.theirAlias, conversation.id);
     }
 
     // Save to storage
-    this.saveToStorage();
-  }
-
-  private identifyConversationByConversationIdOrAddress(
-    conversationId: string,
-    senderAddress: string
-  ): Conversation | null {
-    const conversation = this.conversations.get(conversationId);
-    if (conversation) {
-      return conversation;
-    }
-
-    const conversationIdByAddress =
-      this.addressToConversation.get(senderAddress);
-    if (conversationIdByAddress) {
-      return this.conversations.get(conversationIdByAddress) || null;
-    }
-
-    return null;
+    await this.repositories.contactRepository.saveContact(contact);
+    await this.repositories.conversationRepository.saveConversation(
+      conversation
+    );
   }
 
   /**
@@ -583,7 +718,7 @@ export class ConversationManager {
    * @param conversation The conversation to validate
    * @returns boolean indicating if the conversation is valid
    */
-  private isValidConversation(
+  public isValidConversation(
     conversation: unknown
   ): conversation is Conversation {
     if (typeof conversation !== "object" || conversation === null) {
@@ -593,15 +728,13 @@ export class ConversationManager {
     const conv = conversation as Partial<Conversation>;
 
     return (
-      typeof conv.conversationId === "string" &&
+      typeof conv.id === "string" &&
       typeof conv.myAlias === "string" &&
       (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
-      typeof conv.kaspaAddress === "string" &&
       ["pending", "active", "rejected"].includes(
         conv.status as Conversation["status"]
       ) &&
-      typeof conv.createdAt === "number" &&
-      typeof conv.lastActivity === "number" &&
+      typeof conv.lastActivityAt === "object" &&
       typeof conv.initiatedByMe === "boolean"
     );
   }

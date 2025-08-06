@@ -5,11 +5,13 @@ import { useMessagingStore } from "../store/messaging.store";
 import { useNetworkStore } from "../store/network.store";
 import { useUiStore } from "../store/ui.store";
 import { useWalletStore } from "../store/wallet.store";
-import { Contact } from "../types/all";
 import { unknownErrorToErrorLike } from "../utils/errors";
 import { useIsMobile } from "../utils/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
+import { useDBStore } from "../store/db.store";
+import { Contact } from "../store/repository/contact.repository";
+import { HistoricalSyncer } from "../service/historical-syncer";
 
 export const MessengerContainer: FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,6 +27,7 @@ export const MessengerContainer: FC = () => {
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
+  const dbStore = useDBStore();
 
   const isMobile = useIsMobile();
   const { closeAllModals } = useUiStore();
@@ -83,13 +86,14 @@ export const MessengerContainer: FC = () => {
   // Clean up useEffect
   useEffect(() => {
     return () => {
+      messageStore.stop();
+
       // Called when MessagingContainer unmounts (user leaves route), so we can reset all the states
       walletStore.lock();
       uiStore.setSettingsOpen(false);
       closeAllModals();
 
       setMessageClientStarted(false);
-      messageStore.setIsLoaded(false);
       messageStore.setOpenedRecipient(null);
       messageStore.setIsCreatingNewChat(false);
     };
@@ -130,31 +134,10 @@ export const MessengerContainer: FC = () => {
 
         const receiveAddressStr = receiveAddress.toString();
 
-        // Initialize conversation manager
-        messageStore.initializeConversationManager(receiveAddressStr);
+        // migrate storage
+        await dbStore.migrateStorage(receiveAddress.toString());
 
-        // Start the wallet and get the receive address
-        await walletStore.start(networkStore.kaspaClient);
-
-        // Load existing messages
-        messageStore.loadMessages(receiveAddressStr);
-        messageStore.setIsLoaded(true);
-
-        // Check if we should trigger API message fetching for imported wallets
-        const shouldFetchApi = localStorage.getItem("kasia_fetch_api_on_start");
-        if (shouldFetchApi === "true") {
-          console.log("Triggering API message fetch for imported wallet...");
-          // Set a flag to trigger API fetching after a short delay
-          setTimeout(() => {
-            const event = new CustomEvent("kasia-trigger-api-fetch", {
-              detail: { address: receiveAddressStr },
-            });
-            window.dispatchEvent(event);
-          }, 1000);
-
-          // Clear the flag after use
-          localStorage.removeItem("kasia_fetch_api_on_start");
-        }
+        await messageStore.load(receiveAddressStr);
 
         // Clear error message on success
         setErrorMessage(null);
@@ -170,7 +153,10 @@ export const MessengerContainer: FC = () => {
   }, [isWalletReady, networkStore.isConnected, walletStore.unlockedWallet]);
 
   useEffect(() => {
-    if (isWalletReady && !messageStore.isLoaded) {
+    if (
+      isWalletReady &&
+      (!messageStore.isLoaded || !walletStore.isAccountServiceRunning)
+    ) {
       setLoadingMessage(loadingMessages[0].message);
       const timeouts = loadingMessages
         .slice(1)
@@ -181,15 +167,20 @@ export const MessengerContainer: FC = () => {
         timeouts.forEach(clearTimeout);
       };
     }
-  }, [isWalletReady, messageStore.isLoaded]);
+  }, [
+    isWalletReady,
+    messageStore.isLoaded,
+    walletStore.isAccountServiceRunning,
+  ]);
 
   // Effect to restore last opened conversation after messages are loaded (desktop only)
   useEffect(() => {
     if (
       !isMobile &&
       messageStore.isLoaded &&
+      walletStore.isAccountServiceRunning &&
       !messageStore.openedRecipient &&
-      messageStore.contacts.length > 0
+      messageStore.oneOnOneConversations.length > 0
     ) {
       const walletAddress = walletStore.address?.toString();
       if (walletAddress) {
@@ -199,7 +190,8 @@ export const MessengerContainer: FC = () => {
   }, [
     messageStore.isLoaded,
     messageStore.openedRecipient,
-    messageStore.contacts.length,
+    messageStore.oneOnOneConversations.length,
+    walletStore.isAccountServiceRunning,
     walletStore.address,
     messageStore,
     isMobile,
@@ -224,7 +216,7 @@ export const MessengerContainer: FC = () => {
       }
 
       messageStore.setIsCreatingNewChat(false);
-      messageStore.setOpenedRecipient(contact.address);
+      messageStore.setOpenedRecipient(contact.kaspaAddress);
     },
     [messageStore, walletStore.address]
   );
@@ -234,10 +226,14 @@ export const MessengerContainer: FC = () => {
       {/* Main Message Section*/}
       <div className="bg-primary-bg flex items-center">
         <div className="flex h-[100dvh] min-h-[300px] w-full overflow-hidden sm:h-[calc(100dvh-69px)]">
-          {isWalletReady && messageStore.isLoaded ? (
+          {isWalletReady &&
+          messageStore.isLoaded &&
+          walletStore.isAccountServiceRunning ? (
             <>
               <ContactSection
-                contacts={messageStore.contacts}
+                contacts={messageStore.oneOnOneConversations.map(
+                  (oooc) => oooc.contact
+                )}
                 onNewChatClicked={onNewChatClicked}
                 onContactClicked={onContactClicked}
                 openedRecipient={messageStore.openedRecipient}

@@ -1,27 +1,27 @@
 import { FC } from "react";
-import { Contact } from "../../types/all";
+import { OneOnOneConversation } from "../../types/all";
 import { AvatarHash } from "../icons/AvatarHash";
 import clsx from "clsx";
 
 type ContactInfoModalProps = {
-  contact: Contact;
+  oooc: OneOnOneConversation;
   onClose: () => void;
 };
 
-export const ContactInfoModal: FC<ContactInfoModalProps> = ({ contact }) => (
+export const ContactInfoModal: FC<ContactInfoModalProps> = ({ oooc }) => (
   <div onClick={(e) => e.stopPropagation()}>
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <div className="relative h-10 w-10">
           <AvatarHash
-            address={contact.address}
+            address={oooc.contact.kaspaAddress}
             size={40}
             className={clsx({
-              "opacity-60": !!contact.nickname?.trim()?.[0],
+              "opacity-60": !!oooc.contact.name?.trim()?.[0],
             })}
             selected={true}
           />
-          {contact.nickname?.trim()?.[0]?.toUpperCase() && (
+          {oooc.contact.name?.trim()?.[0]?.toUpperCase() && (
             <span
               className={clsx(
                 "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[calc(50%+1px)]",
@@ -30,13 +30,13 @@ export const ContactInfoModal: FC<ContactInfoModalProps> = ({ contact }) => (
                 "rounded-full text-sm leading-none font-bold tracking-wide text-[var(--text-secondary)]"
               )}
             >
-              {contact.nickname.trim()[0].toUpperCase()}
+              {oooc.contact.name.trim()[0].toUpperCase()}
             </span>
           )}
         </div>
         <div>
           <div className="font-semibold break-all text-[var(--text-primary)]">
-            {contact.nickname || "No nickname"}
+            {oooc.contact.name || "No nickname"}
           </div>
           <div className="text-sm text-[var(--text-secondary)]">Contact</div>
         </div>
@@ -50,16 +50,16 @@ export const ContactInfoModal: FC<ContactInfoModalProps> = ({ contact }) => (
             Address
           </div>
           <div className="text-sm break-all text-[var(--text-primary)]">
-            {contact.address}
+            {oooc.contact.kaspaAddress}
           </div>
         </div>
-        {contact.nickname && (
+        {oooc.contact.name && (
           <div>
             <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
               Nickname
             </div>
             <div className="text-sm break-all text-[var(--text-primary)]">
-              {contact.nickname}
+              {oooc.contact.name}
             </div>
           </div>
         )}
@@ -68,19 +68,17 @@ export const ContactInfoModal: FC<ContactInfoModalProps> = ({ contact }) => (
             Messages
           </div>
           <div className="text-sm text-[var(--text-primary)]">
-            {contact.messages?.length || 0} messages
+            {oooc.events.length || 0} messages
           </div>
         </div>
-        {contact.lastMessage && (
-          <div>
-            <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
-              Last Message
-            </div>
-            <div className="text-sm text-[var(--text-primary)]">
-              {new Date(contact.lastMessage.timestamp).toLocaleString()}
-            </div>
+        <div>
+          <div className="text-xs font-medium tracking-wide text-[var(--text-secondary)] uppercase">
+            Last Activity
           </div>
-        )}
+          <div className="text-sm text-[var(--text-primary)]">
+            {oooc.conversation.lastActivityAt.toLocaleString()}
+          </div>
+        </div>
       </div>
     </div>
   </div>

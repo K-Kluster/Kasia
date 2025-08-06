@@ -1,30 +1,10 @@
 import { FeeSource, ITransaction } from "kaspa-wasm";
-
-export type Message = {
-  transactionId: string;
-  senderAddress: string;
-  recipientAddress: string;
-  timestamp: number;
-  content: string;
-  amount: number;
-  fee?: number;
-  payload: string;
-  fileData?: {
-    type: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    content: string;
-  };
-};
-
-export type Contact = {
-  address: string;
-  lastMessage: Message;
-  messages: Message[];
-  status?: "active" | "pending" | "rejected";
-  nickname?: string;
-};
+import { Contact } from "../store/repository/contact.repository";
+import { Conversation } from "../store/repository/conversation.repository";
+import { Message } from "../store/repository/message.repository";
+import { Handshake } from "../store/repository/handshake.repository";
+import { Payment } from "../store/repository/payment.repository";
+import { TransactionId } from "./transactions";
 
 export type NetworkType = "mainnet" | "testnet-10" | "testnet-11" | "devnet";
 
@@ -136,3 +116,25 @@ export interface PriorityFeeConfig {
   source: FeeSource;
   feerate?: number; // Store the fee rate used for calculation
 }
+
+/**
+ * used when receiving transactions from either API (explorer now, later indexer) or from wrpc subscribed event (block added)
+ */
+export type KasiaTransaction = {
+  senderAddress: string;
+  recipientAddress: string;
+  createdAt: Date;
+  content: string;
+  payload: string;
+  amount: number;
+  fee: number;
+  transactionId: TransactionId;
+};
+
+export type OneOnOneConversation = {
+  contact: Contact;
+  conversation: Conversation;
+  events: KasiaConversationEvent[];
+};
+
+export type KasiaConversationEvent = Message | Payment | Handshake;

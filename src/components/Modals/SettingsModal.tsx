@@ -684,7 +684,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </button>
 
                       {/* Wallet Security */}
-                      <div className="border-primary-border border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
+                      <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
                         <div className="text-text-warning mb-2 text-sm font-medium">
                           Wallet Security
                         </div>

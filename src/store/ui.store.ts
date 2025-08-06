@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import type { Contact } from "../types/all"; // adjust path as needed
 import {
   applyCustomColors,
   resetCustomColors,
@@ -7,6 +6,7 @@ import {
   DEFAULT_COLORS,
   type CustomColorPalette,
 } from "../utils/custom-theme-applier";
+import { OneOnOneConversation } from "../types/all";
 
 export type ModalType =
   | "address"
@@ -47,8 +47,8 @@ type UiState = {
   resetCustomColors: () => void;
 
   // Contact Info Modal state
-  contactInfoContact: Contact | null;
-  setContactInfoContact: (c: Contact | null) => void;
+  oneOnOneConversation: OneOnOneConversation | null;
+  setOneOnOneConversation: (oooc: OneOnOneConversation | null) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -194,6 +194,6 @@ export const useUiStore = create<UiState>()((set, get) => ({
   },
 
   // Contact Info Modal state
-  contactInfoContact: null,
-  setContactInfoContact: (c) => set({ contactInfoContact: c }),
+  oneOnOneConversation: null,
+  setOneOnOneConversation: (c) => set({ oneOnOneConversation: c }),
 }));
