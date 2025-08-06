@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import { KasiaDB, openDatabase, Repositories } from "./repository/db";
 import { UnlockedWallet } from "../types/wallet.type";
-import { WalletStorage } from "../utils/wallet-storage";
-import { useWalletStore } from "./wallet.store";
 import { v4 } from "uuid";
 import { DecryptionCache } from "../utils/decryption-cache";
 import {
