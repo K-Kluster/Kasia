@@ -37,7 +37,7 @@ import {
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
   if (address.startsWith("kaspatest:")) {
-    return NetworkType.Mainnet;
+    return NetworkType.Testnet;
   } else if (address.startsWith("kaspadev:")) {
     return NetworkType.Devnet;
   }
@@ -48,7 +48,6 @@ interface MessagingState {
   isLoaded: boolean;
   isCreatingNewChat: boolean;
   oneOnOneConversations: OneOnOneConversation[];
-  eventsOnOpenedRecipient: KasiaConversationEvent[];
   storeKasiaTransactions: (transactions: KasiaTransaction[]) => Promise<void>;
   flushWalletHistory: (address: string) => void;
   exportMessages: (wallet: UnlockedWallet, password: string) => Promise<Blob>;
@@ -132,7 +131,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     isCreatingNewChat: false,
     openedRecipient: null,
     oneOnOneConversations: [],
-    eventsOnOpenedRecipient: [],
     async load(address) {
       const initLazyHistoricalHandshakeLoad = () => {
         _historicalSyncer = new HistoricalSyncer(address);

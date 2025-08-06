@@ -338,7 +338,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className={clsx(
                     "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium transition-colors",
                     {
-                      "mx-2 min-w-[80px] flex-col items-center justify-center":
+                      "mx-2 min-w-14 flex-col items-center justify-center":
                         isMobile,
                       "w-full": !isMobile,
                       "text-primary border-primary border-b-2":
@@ -355,7 +355,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               ))}
             </nav>
             {isMobile && (
-              <div className="bg-primary-border absolute right-0 bottom-[-20px] left-0 z-10 h-[1px]"></div>
+              <div className="bg-primary-border my-0 h-0.5 w-full" />
             )}
           </div>
           {/* Content */}
