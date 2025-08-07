@@ -6,6 +6,9 @@ export const FEE_ESTIMATE_POLLING_INTERVAL_IN_MS = 2 * ONE_MINUTE_IN_MS;
 
 export const ALIAS_LENGTH = 6; // 6 bytes = 12 hex characters
 
+// Placeholder alias for fee estimation and testing (12 hex chars = 6 bytes)
+export const PLACEHOLDER_ALIAS = "000000000000";
+
 // Maximum priority fee (5 KAS) - Originally 10 but lowering for intial release
 export const MAX_PRIORITY_FEE = BigInt(5 * 100_000_000);
 

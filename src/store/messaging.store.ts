@@ -24,7 +24,7 @@ import {
   ActiveConversation,
 } from "./repository/conversation.repository";
 import { loadLegacyMessages, saveMessages } from "../utils/storage-encryption";
-import { PROTOCOL_PREFIX, PAYMENT_PREFIX } from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";
 import { Handshake } from "./repository/handshake.repository";
@@ -436,7 +436,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 ),
                 createdAt: new Date(Number(newIndexerPayment.block_time)),
                 fee: 0,
-                payload: PROTOCOL_PREFIX + PAYMENT_PREFIX + decodedMessage,
+                payload:
+                  PROTOCOL.prefix.hex +
+                  PROTOCOL.headers.PAYMENT.hex +
+                  decodedMessage,
                 recipientAddress: address,
                 senderAddress: newIndexerPayment.sender,
                 transactionId: newIndexerPayment.tx_id,
@@ -547,7 +550,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
         // HANDSHAKE
         if (
-          transaction.content.startsWith("ciph_msg:") &&
+          transaction.content.startsWith(PROTOCOL.prefix.string) &&
           transaction.content.includes(":handshake:")
         ) {
           try {
@@ -679,8 +682,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
         // PAYMENT
         if (
-          transaction.payload.startsWith(PROTOCOL_PREFIX) &&
-          transaction.payload.includes(PAYMENT_PREFIX)
+          transaction.payload.startsWith(PROTOCOL.prefix.hex) &&
+          transaction.payload.includes(PROTOCOL.headers.PAYMENT.hex)
         ) {
           const payment: Payment = {
             __type: "payment",

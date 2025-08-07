@@ -9,6 +9,7 @@ import { encrypt_message } from "cipher";
 import { Address } from "kaspa-wasm";
 import { toast } from "../utils/toast";
 import { KasiaTransaction } from "../types/all";
+import { PROTOCOL } from "../config/protocol";
 
 export const SendPaymentPopup: FC<{
   address: string;
@@ -81,7 +82,7 @@ export const SendPaymentPopup: FC<{
 
       // Create simplified payment payload without aliases
       const paymentPayload = {
-        type: "payment",
+        type: PROTOCOL.headers.PAYMENT.type,
         message: message,
         amount: Number(amountSompi) / 100000000, // Convert sompi to KAS for payload
         timestamp: Date.now(),
@@ -99,10 +100,7 @@ export const SendPaymentPopup: FC<{
       }
 
       // Create the simplified payment protocol payload (no alias needed)
-      const prefix = "ciph_msg";
-      const version = "1";
-      const messageType = "payment";
-      const payload = `${prefix}:${version}:${messageType}:${encryptedMessage.to_hex()}`;
+      const payload = `${PROTOCOL.prefix.string}${PROTOCOL.headers.PAYMENT.string}${encryptedMessage.to_hex()}`;
 
       // Convert the payload to hex
       const payloadHex = payload
@@ -123,7 +121,7 @@ export const SendPaymentPopup: FC<{
 
       // Create and store outgoing payment message record (simplified)
       const paymentContent = JSON.stringify({
-        type: "payment",
+        type: PROTOCOL.headers.PAYMENT.type,
         message: message ?? "",
         amount: Number(amountSompi) / 100000000,
         timestamp: Date.now(),

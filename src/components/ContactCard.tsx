@@ -2,6 +2,7 @@ import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
 import { AvatarHash } from "./icons/AvatarHash";
+import { PROTOCOL } from "../config/protocol";
 import clsx from "clsx";
 import { Contact } from "../store/repository/contact.repository";
 
@@ -14,7 +15,7 @@ function getMessagePreview(content: string) {
   }
 
   // For regular messages, try to decode if it's encrypted
-  if (content.startsWith("ciph_msg:")) {
+  if (content.startsWith(PROTOCOL.prefix.string)) {
     const decoded = decodePayload(content);
     return decoded
       ? decoded.slice(0, 40) + (content.length > 40 ? "..." : "")
@@ -51,9 +52,9 @@ export const ContactCard: FC<{
     switch (__type) {
       case "message":
         return getMessagePreview(content);
-      case "payment":
+      case PROTOCOL.headers.PAYMENT.type:
         return "Payment received";
-      case "handshake":
+      case PROTOCOL.headers.HANDSHAKE.type:
         if (oneOnOneConversation?.conversation.theirAlias) {
           return "Handshake completed";
         }
@@ -77,10 +78,12 @@ export const ContactCard: FC<{
     if (!contact?.kaspaAddress) return "Unknown";
     const addr = contact.kaspaAddress;
     if (addr === "Unknown") {
-      if (lastEvent?.__type === "handshake") {
+      if (lastEvent?.__type === PROTOCOL.headers.HANDSHAKE.type) {
         try {
+          // use protocol constants instead of hardcoded regex
+          const handshakePrefix = `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}`;
           const handshakeMatch = lastEvent.content.match(
-            /ciph_msg:1:handshake:(.+)/
+            new RegExp(`${handshakePrefix}(.+)`)
           );
           if (handshakeMatch) {
             const handshakeData = JSON.parse(handshakeMatch[1]);
@@ -89,7 +92,7 @@ export const ContactCard: FC<{
             }
           }
         } catch (e) {
-          // Ignore parsing errors for handshake alias extraction
+          // ignore parsing errors for handshake alias extraction
           void e;
         }
       }
