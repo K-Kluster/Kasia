@@ -1,6 +1,6 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
 
-import { useIsMobile } from "../utils/useIsMobile";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { useMessagingStore } from "../store/messaging.store";
 
 interface KaspaAddressProps {

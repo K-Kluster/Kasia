@@ -2,11 +2,11 @@ import { create } from "zustand";
 import { KasiaDB, openDatabase, Repositories } from "./repository/db";
 import { UnlockedWallet } from "../types/wallet.type";
 import { v4 } from "uuid";
-import { DecryptionCache } from "../utils/decryption-cache";
+import { DecryptionCache } from "../service/decryption-cache";
 import {
   loadLegacyMessages,
   loadMessagesForAddress,
-} from "../utils/storage-encryption";
+} from "../service/storage-encryption";
 import { PROTOCOL } from "../config/protocol";
 import { Message } from "./repository/message.repository";
 import { Handshake } from "./repository/handshake.repository";

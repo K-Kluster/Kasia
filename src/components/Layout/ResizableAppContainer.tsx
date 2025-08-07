@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import { useIsMobile } from "../../utils/useIsMobile";
-import { MOBILE_BREAKPOINT } from "../../utils/useIsMobile";
+import { useIsMobile } from "../../hooks/useIsMobile";
+import { MOBILE_BREAKPOINT } from "../../hooks/useIsMobile";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import clsx from "clsx";
 

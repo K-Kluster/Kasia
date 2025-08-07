@@ -6,7 +6,7 @@ import { useNetworkStore } from "../store/network.store";
 import { useUiStore } from "../store/ui.store";
 import { useWalletStore } from "../store/wallet.store";
 import { unknownErrorToErrorLike } from "../utils/errors";
-import { useIsMobile } from "../utils/useIsMobile";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { ContactSection } from "./ContactSection";
 import { MessageSection } from "./MessagesSection";
 import { useDBStore } from "../store/db.store";

@@ -22,7 +22,7 @@ import {
   Camera,
   Trash,
 } from "lucide-react";
-import { toast } from "../utils/toast";
+import { toast } from "../utils/toast-helper";
 import { SendPaymentPopup } from "../components/SendPaymentPopup";
 import clsx from "clsx";
 import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
@@ -32,8 +32,8 @@ import { useUiStore } from "../store/ui.store";
 import { Modal } from "../components/Common/modal";
 import { Button } from "../components/Common/Button";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
-import { prepareFileForUpload } from "../utils/upload-file-handler";
-import { useIsMobile } from "../utils/useIsMobile";
+import { prepareFileForUpload } from "../service/upload-file-service";
+import { useIsMobile } from "../hooks/useIsMobile";
 import { parseImageFileJson } from "../utils/parse-image-file";
 
 type SendMessageFormProps = {

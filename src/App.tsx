@@ -3,12 +3,12 @@ import { useNetworkStore } from "./store/network.store";
 import { useUiStore } from "./store/ui.store";
 import type { NetworkType } from "./types/all";
 import { AppRoutes } from "./AppRoutes";
-import { useIsMobile } from "./utils/useIsMobile";
+import { useIsMobile } from "./hooks/useIsMobile";
 import { syncThemeColorMeta } from "./utils/meta-theme-syncer";
 import {
   applyCustomColors,
   resetCustomColors,
-} from "./utils/custom-theme-applier";
+} from "./config/custom-theme-applier";
 
 const App: React.FC = () => {
   const networkStore = useNetworkStore();
