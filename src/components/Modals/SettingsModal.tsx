@@ -3,10 +3,15 @@ import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { useNetworkStore } from "../../store/network.store";
+import {
+  useFeatureFlagsStore,
+  type FeatureFlags,
+} from "../../store/featureflag.store";
 import { Modal } from "../Common/modal";
 import { Button } from "../Common/Button";
 import { ColorPicker } from "../Common/ColorPicker";
 import { NetworkSelector } from "../NetworkSelector";
+import { Switch } from "@headlessui/react";
 import clsx from "clsx";
 import { reencryptMessagesForWallet } from "../../utils/storage-encryption";
 import {
@@ -26,19 +31,13 @@ import {
   ArrowLeft,
   Edit3,
   Palette,
+  RectangleEllipsis,
 } from "lucide-react";
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const tabs = [
-  { id: "account", label: "Account", icon: User },
-  { id: "theme", label: "Theme", icon: Monitor },
-  { id: "network", label: "Network", icon: Network },
-  { id: "security", label: "Security", icon: Shield },
-];
 
 const colorPickers: Array<{
   key: keyof CustomColorPalette;
@@ -73,6 +72,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const changePassword = useWalletStore((s) => s.changePassword);
   const changeWalletName = useWalletStore((s) => s.changeWalletName);
   const networkStore = useNetworkStore();
+  const { flags, flips, setFlag } = useFeatureFlagsStore();
+
+  const tabs = [
+    { id: "account", label: "Account", icon: User },
+    { id: "theme", label: "Theme", icon: Monitor },
+    { id: "network", label: "Network", icon: Network },
+    { id: "security", label: "Security", icon: Shield },
+    // only show if there are >0 flips
+    ...(Object.keys(flips).length > 0
+      ? [{ id: "extras", label: "Extras", icon: RectangleEllipsis }]
+      : []),
+  ];
 
   // Password change state
   const [showPasswordChange, setShowPasswordChange] = useState(false);
@@ -817,6 +828,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </>
                 )}
               </div>
+            )}
+            {activeTab === "extras" && (
+              <>
+                <div className="mt-4 space-y-6 sm:mt-0"></div>
+                <h3 className="mb-4 text-lg font-medium">Extras</h3>
+                {/* Warning */}
+                <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
+                  <div className="text-text-warning mb-2 text-sm font-medium">
+                    Warning
+                  </div>
+                  <div className="text-text-warning/80 text-xs">
+                    Some of these features are in beta or expose you to external
+                    content
+                  </div>
+                </div>
+                {Object.entries(flips).map(([flagKey, item]) => (
+                  <div
+                    key={flagKey}
+                    className="border-primary-border bg-primary-bg my-2 rounded-2xl border p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="mb-1 text-sm font-semibold">
+                          {item.label}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {item.desc}
+                        </div>
+                      </div>
+                      <Switch
+                        checked={flags[flagKey as FeatureFlags] || false}
+                        onChange={(enabled) =>
+                          setFlag(flagKey as FeatureFlags, enabled)
+                        }
+                        className={clsx(
+                          "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
+                          {
+                            "bg-kas-secondary": flags[flagKey as FeatureFlags],
+                            "bg-gray-300": !flags[flagKey as FeatureFlags],
+                          }
+                        )}
+                      >
+                        <span
+                          className={clsx(
+                            "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                            {
+                              "translate-x-6": flags[flagKey as FeatureFlags],
+                              "translate-x-1": !flags[flagKey as FeatureFlags],
+                            }
+                          )}
+                        />
+                      </Switch>
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>
