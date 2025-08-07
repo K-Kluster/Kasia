@@ -38,27 +38,28 @@ const useFeatureFlagsStore = create<{
   flags: FeatureFlags;
   flips: FeatureFlip[];
   setFlag: (key: keyof FeatureFlags, value: boolean) => void;
-  loadFlags: () => void;
-}>((set, get) => ({
-  flags: defaultFlags,
-  flips: featureFlips,
+}>((set, get) => {
+  // hydrate features here, else take default value
+  let initialFlags = defaultFlags;
+  try {
+    const stored = JSON.parse(
+      localStorage.getItem("kasia-feature-flags") || "{}"
+    );
+    initialFlags = { ...defaultFlags, ...stored };
+  } catch {
+    console.error("Invalid flags in localStorage");
+  }
 
-  setFlag: (key, value) => {
-    const updated = { ...get().flags, [key]: value };
-    set({ flags: updated });
-    localStorage.setItem("kasia-feature-flags", JSON.stringify(updated));
-  },
+  return {
+    flags: initialFlags,
+    flips: featureFlips,
 
-  loadFlags: () => {
-    try {
-      const stored = JSON.parse(
-        localStorage.getItem("kasia-feature-flags") || "{}"
-      );
-      set({ flags: { ...defaultFlags, ...stored } });
-    } catch {
-      console.error("Invalid flags in localStorage");
-    }
-  },
-}));
+    setFlag: (key, value) => {
+      const updated = { ...get().flags, [key]: value };
+      set({ flags: updated });
+      localStorage.setItem("kasia-feature-flags", JSON.stringify(updated));
+    },
+  };
+});
 
 export { useFeatureFlagsStore };

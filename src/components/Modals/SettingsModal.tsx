@@ -72,7 +72,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const changePassword = useWalletStore((s) => s.changePassword);
   const changeWalletName = useWalletStore((s) => s.changeWalletName);
   const networkStore = useNetworkStore();
-  const { flags, flips, setFlag, loadFlags } = useFeatureFlagsStore();
+  const { flags, flips, setFlag } = useFeatureFlagsStore();
 
   const tabs = [
     { id: "account", label: "Account", icon: User },
@@ -271,10 +271,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     window.addEventListener("resize", checkIfMobile);
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
-
-  useEffect(() => {
-    loadFlags();
-  }, [loadFlags]);
 
   // Real-time validation for wallet name
   useEffect(() => {
