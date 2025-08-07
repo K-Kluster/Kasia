@@ -80,7 +80,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: "network", label: "Network", icon: Network },
     { id: "security", label: "Security", icon: Shield },
     // only show if there are >0 flips
-    ...(flips.length > 0
+    ...(Object.keys(flips).length > 0
       ? [{ id: "extras", label: "Extras", icon: RectangleEllipsis }]
       : []),
   ];
@@ -843,9 +843,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     content
                   </div>
                 </div>
-                {flips.map((item) => (
+                {Object.entries(flips).map(([flagKey, item]) => (
                   <div
-                    key={item.id}
+                    key={flagKey}
                     className="border-primary-border bg-primary-bg my-2 rounded-2xl border p-4"
                   >
                     <div className="flex items-center justify-between">
@@ -858,15 +858,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                       </div>
                       <Switch
-                        checked={flags[item.id] || false}
-                        onChange={(enabled) => setFlag(item.id, enabled)}
+                        checked={flags[flagKey as FeatureFlags] || false}
+                        onChange={(enabled) =>
+                          setFlag(flagKey as FeatureFlags, enabled)
+                        }
                         className={clsx(
                           "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
                           {
-                            "bg-kas-secondary":
-                              flags[item.id as keyof FeatureFlags],
-                            "bg-gray-300":
-                              !flags[item.id as keyof FeatureFlags],
+                            "bg-kas-secondary": flags[flagKey as FeatureFlags],
+                            "bg-gray-300": !flags[flagKey as FeatureFlags],
                           }
                         )}
                       >
@@ -874,10 +874,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           className={clsx(
                             "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
                             {
-                              "translate-x-6":
-                                flags[item.id as keyof FeatureFlags],
-                              "translate-x-1":
-                                !flags[item.id as keyof FeatureFlags],
+                              "translate-x-6": flags[flagKey as FeatureFlags],
+                              "translate-x-1": !flags[flagKey as FeatureFlags],
                             }
                           )}
                         />

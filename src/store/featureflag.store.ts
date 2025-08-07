@@ -1,51 +1,44 @@
 import { create } from "zustand";
 import { Dices, LucideIcon } from "lucide-react";
 
-export interface FeatureFlags {
-  gameframe: boolean;
-  moreitems: boolean;
+export enum FeatureFlags {
+  GAME_FRAME = "gameframe",
 }
 
-export interface FeatureFlip {
-  id: keyof FeatureFlags;
+export type FeatureFlagsTable = Record<FeatureFlags, boolean>;
+
+const defaultFeatureFlagsTable: FeatureFlagsTable = {
+  [FeatureFlags.GAME_FRAME]: false,
+};
+
+export interface FeatureDescription {
   label: string;
   desc: string;
   icon: LucideIcon;
 }
 
-const defaultFlags: FeatureFlags = {
-  gameframe: false,
-  moreitems: false,
+export type FeatureFlips = Record<FeatureFlags, FeatureDescription>;
+
+const featureFlips: FeatureFlips = {
+  [FeatureFlags.GAME_FRAME]: {
+    label: "Game Frame",
+    desc: "NOT IMPLEMENTED - JUST FOR FLAG DEMO.",
+    icon: Dices,
+  },
 };
 
-const featureFlips: FeatureFlip[] = [
-  // UNCOMMENT BELOW!
-  // {
-  //   id: "gameframe",
-  //   label: "Game Frame",
-  //   desc: "This enables external game frame content. NOT IMPLEMENTED - JUST FOR FLAG DEMO.",
-  //   icon: Dices,
-  // },
-  // {
-  //   id: "moreitems",
-  //   label: "More Items",
-  //   desc: "This would be something else!",
-  //   icon: Dices,
-  //},
-];
-
 const useFeatureFlagsStore = create<{
-  flags: FeatureFlags;
-  flips: FeatureFlip[];
-  setFlag: (key: keyof FeatureFlags, value: boolean) => void;
+  flags: FeatureFlagsTable;
+  flips: FeatureFlips;
+  setFlag: (key: FeatureFlags, value: boolean) => void;
 }>((set, get) => {
   // hydrate features here, else take default value
-  let initialFlags = defaultFlags;
+  let initialFlags = defaultFeatureFlagsTable;
   try {
     const stored = JSON.parse(
       localStorage.getItem("kasia-feature-flags") || "{}"
     );
-    initialFlags = { ...defaultFlags, ...stored };
+    initialFlags = { ...defaultFeatureFlagsTable, ...stored };
   } catch {
     console.error("Invalid flags in localStorage");
   }
