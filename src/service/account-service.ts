@@ -38,7 +38,7 @@ import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorage } from "../utils/wallet-storage";
 import { useDBStore } from "../store/db.store";
-import { PROTOCOL } from "../config/protocol";
+import { PROTOCOL, VERSION } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
 
 // Message related types
@@ -905,7 +905,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       destinationAddress.toString() === this.receiveAddress?.toString();
 
     const isMessageTransaction =
-      transaction.payload && transaction.payload.startsWith(PROTOCOL.prefix.hex);
+      transaction.payload &&
+      transaction.payload.startsWith(PROTOCOL.prefix.hex);
 
     const isSelfMessage = isMessageTransaction && isDirectSelfMessage;
     console.log("Transaction type:", {
@@ -1499,9 +1500,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     // Create the payload with conversation context
-    const prefix = "ciph_msg";
-    const version = "1"; // Use the current protocol version
-    const messageType = "comm"; // Use comm type for conversation messages
+    const prefix = PROTOCOL.prefix.type;
+    const version = VERSION; // Use the current protocol version
+    const messageType = PROTOCOL.headers.COMM.type; // Use comm type for conversation messages
     const payload = `${prefix}:${version}:${messageType}:${
       sendMessage.theirAlias
     }:${encryptedMessage.to_hex()}`;

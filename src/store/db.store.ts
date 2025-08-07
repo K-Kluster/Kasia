@@ -7,7 +7,7 @@ import {
   loadLegacyMessages,
   loadMessagesForAddress,
 } from "../utils/storage-encryption";
-import { PAYMENT_PREFIX, PROTOCOL_PREFIX } from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 import { Message } from "./repository/message.repository";
 import { Handshake } from "./repository/handshake.repository";
 import { Payment } from "./repository/payment.repository";
@@ -172,8 +172,8 @@ export const useDBStore = create<DBState>((set, get) => ({
 
         // PAYMENT
         if (
-          m.payload.startsWith(PROTOCOL_PREFIX) &&
-          m.payload.includes(PAYMENT_PREFIX)
+          m.payload.startsWith(PROTOCOL.prefix.hex) &&
+          m.payload.includes(PROTOCOL.headers.PAYMENT.hex)
         ) {
           messageEntities.payments.push({
             amount: m.amount,

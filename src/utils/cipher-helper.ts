@@ -6,6 +6,7 @@ import {
   PrivateKey,
 } from "cipher";
 import { SecurityHelper } from "./security-helper";
+import { PROTOCOL } from "src/config/protocol";
 
 /**
  * Helper functions for working with cipher encryption/decryption
@@ -169,7 +170,7 @@ export class CipherHelper {
    * @returns The hex string without prefix
    */
   static stripPrefix(payload: string): string {
-    const prefix = "ciph_msg:"
+    const prefix = PROTOCOL.prefix.string
       .split("")
       .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
       .join("");

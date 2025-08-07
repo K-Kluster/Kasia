@@ -19,6 +19,7 @@ import {
 import { TransactionId } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
+import { PROTOCOL } from "../config/protocol";
 
 export interface WalletStoreSendMessageArgs {
   message: string;
@@ -340,7 +341,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       try {
         // Check if this is a handshake message
         if (
-          message.startsWith("ciph_msg:") &&
+          message.startsWith(PROTOCOL.prefix.string) &&
           message.includes(":handshake:")
         ) {
           // Always send handshake messages to the recipient's address

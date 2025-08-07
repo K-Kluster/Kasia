@@ -2,7 +2,7 @@ import { FC, useMemo, useState, useEffect, useRef } from "react";
 import { decodePayload } from "../utils/format";
 import { useMessagingStore } from "../store/messaging.store";
 import { AvatarHash } from "./icons/AvatarHash";
-import { PROTOCOL, DELIM, VERSION } from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 import clsx from "clsx";
 import { Contact } from "../store/repository/contact.repository";
 
@@ -80,8 +80,10 @@ export const ContactCard: FC<{
     if (addr === "Unknown") {
       if (lastEvent?.__type === PROTOCOL.headers.HANDSHAKE.type) {
         try {
+          // use protocol constants instead of hardcoded regex
+          const handshakePrefix = `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}`;
           const handshakeMatch = lastEvent.content.match(
-            /ciph_msg:1:handshake:(.+)/
+            new RegExp(`${handshakePrefix}(.+)`)
           );
           if (handshakeMatch) {
             const handshakeData = JSON.parse(handshakeMatch[1]);
@@ -90,7 +92,7 @@ export const ContactCard: FC<{
             }
           }
         } catch (e) {
-          // Ignore parsing errors for handshake alias extraction
+          // ignore parsing errors for handshake alias extraction
           void e;
         }
       }
