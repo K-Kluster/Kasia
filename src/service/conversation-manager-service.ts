@@ -35,7 +35,7 @@ export class ConversationManagerService {
     repositories: Repositories,
     events?: Partial<ConversationEvents>
   ) {
-    const manager = new ConversationManager(
+    const manager = new ConversationManagerService(
       currentAddress,
       repositories,
       events
@@ -132,7 +132,7 @@ export class ConversationManagerService {
             type: "handshake",
             alias: conversationAndContact.conversation.myAlias, // Keep the original alias
             timestamp: Date.now(),
-            version: ConversationManager.PROTOCOL_VERSION,
+            version: ConversationManagerService.PROTOCOL_VERSION,
             recipientAddress: recipientAddress,
             sendToRecipient: true,
           };
@@ -169,7 +169,7 @@ export class ConversationManagerService {
         type: "handshake",
         alias: conversation.myAlias,
         timestamp: Date.now(),
-        version: ConversationManager.PROTOCOL_VERSION,
+        version: ConversationManagerService.PROTOCOL_VERSION,
         recipientAddress: recipientAddress,
         sendToRecipient: true, // Flag to indicate this should be sent to recipient
       };
@@ -294,7 +294,7 @@ export class ConversationManagerService {
       alias: conversation.myAlias,
       theirAlias: conversation.theirAlias, // Include their alias in response
       timestamp: Date.now(),
-      version: ConversationManager.PROTOCOL_VERSION,
+      version: ConversationManagerService.PROTOCOL_VERSION,
       recipientAddress: contact.kaspaAddress, // Include their address
       sendToRecipient: false, // Set to false to use standard encryption
       isResponse: true,

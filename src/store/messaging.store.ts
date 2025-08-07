@@ -67,7 +67,7 @@ interface MessagingState {
   load: (address: string) => Promise<void>;
   stop: () => void;
 
-  conversationManager: ConversationManager | null;
+  conversationManager: ConversationManagerService | null;
   initiateHandshake: (
     recipientAddress: string,
     customAmount?: bigint
@@ -121,7 +121,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       },
     };
 
-    const manager = await ConversationManager.init(
+    const manager = await ConversationManagerService.init(
       address,
       useDBStore.getState().repositories,
       events
@@ -169,7 +169,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       if (!unlockedWallet) {
         throw new Error("Wallet not unlocked");
       }
-      const privateKeyString = WalletStorage.getPrivateKeyGenerator(
+      const privateKeyString = WalletStorageService.getPrivateKeyGenerator(
         unlockedWallet,
         unlockedWallet.password
       )
@@ -515,7 +515,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       // cannot use `walletStore.address` because it is not always already populated
-      const address = WalletStorage.getPrivateKeyGenerator(
+      const address = WalletStorageService.getPrivateKeyGenerator(
         unlockedWallet,
         unlockedWallet.password
       )
@@ -856,7 +856,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         const messagesMap = loadLegacyMessages(password);
 
         console.log("Getting private key generator...");
-        const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+        const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
           wallet,
           password
         );
@@ -950,14 +950,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         }
 
         console.log("Getting private key for decryption...");
-        const privateKeyGenerator = WalletStorage.getPrivateKeyGenerator(
+        const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
           wallet,
           password
         );
         const privateKey = privateKeyGenerator.receiveKey(0);
 
         // Get private key bytes
-        const privateKeyBytes = WalletStorage.getPrivateKeyBytes(privateKey);
+        const privateKeyBytes =
+          WalletStorageService.getPrivateKeyBytes(privateKey);
         if (!privateKeyBytes) {
           throw new Error("Failed to get private key bytes");
         }
