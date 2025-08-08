@@ -196,7 +196,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       const promises: Promise<void>[] = [];
-      const resolvedUnknownHandshakesAliases: Set<string> = new Set();
+      const resolvedUnknownHandshakesAliasesBySenderAddress: Record<
+        string,
+        Set<string>
+      > = {};
 
       for (const [
         senderAddress,
@@ -305,7 +308,14 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                   kasiaHandshake.content
                 )?.alias;
                 if (alias) {
-                  resolvedUnknownHandshakesAliases.add(alias);
+                  const existing =
+                    resolvedUnknownHandshakesAliasesBySenderAddress[
+                      senderAddress
+                    ] ?? new Set();
+                  existing.add(alias);
+                  resolvedUnknownHandshakesAliasesBySenderAddress[
+                    senderAddress
+                  ] = existing;
                 }
               } catch (e) {
                 console.warn(
@@ -348,18 +358,25 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           // this is useful mainly on a new device, where we have no history of received messages
 
           // include current conversation alias
-          resolvedUnknownHandshakesAliases.add(oooc.conversation.myAlias);
+          const resolvedUnknownHandshakesAlisesForThisConversation =
+            resolvedUnknownHandshakesAliasesBySenderAddress[
+              oooc.contact.kaspaAddress
+            ] ?? new Set<string>();
+          resolvedUnknownHandshakesAlisesForThisConversation.add(
+            oooc.conversation.myAlias
+          );
 
           const [indexerPayments, indexerMessages] = await Promise.all([
             _historicalSyncer.fetchHistoricalPaymentsFromAddress(
               oooc.contact.kaspaAddress
             ),
             Promise.allSettled(
-              [...resolvedUnknownHandshakesAliases].map((alias) =>
-                _historicalSyncer.fetchHistoricalMessagesToAddress(
-                  oooc.contact.kaspaAddress,
-                  alias
-                )
+              [...resolvedUnknownHandshakesAlisesForThisConversation].map(
+                (alias) =>
+                  _historicalSyncer.fetchHistoricalMessagesToAddress(
+                    oooc.contact.kaspaAddress,
+                    alias
+                  )
               )
             ).then((results) => {
               // filter out rejected promises
@@ -395,10 +412,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           // try to transform payments and messages into kasia transaction
           for (const newIndexerMessage of newIndexerMessages) {
             try {
+              const hexStringBytes =
+                newIndexerMessage.message_payload.match(/.{1,2}/g);
+
+              if (!hexStringBytes) {
+                continue;
+              }
+
+              const bytes = new Uint8Array(
+                hexStringBytes.map((byte) => parseInt(byte, 16))
+              );
+              const decodedMessage = new TextDecoder().decode(bytes);
+
               newKasiaTransactions.push({
                 amount: 0,
                 content: decrypt_message(
-                  new EncryptedMessage(newIndexerMessage.message_payload),
+                  new EncryptedMessage(decodedMessage),
                   new PrivateKey(privateKeyString)
                 ),
                 createdAt: new Date(Number(newIndexerMessage.block_time)),

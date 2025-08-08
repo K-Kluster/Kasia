@@ -32,7 +32,10 @@ export class HistoricalSyncer {
     const messages = await getContextualMessagesBySender({
       query: {
         address: from,
-        alias,
+        // encode alias as hex string using text encoder
+        alias: new TextEncoder()
+          .encode(alias)
+          .reduce((acc, byte) => acc + byte.toString(16).padStart(2, "0"), ""),
       },
     });
 
