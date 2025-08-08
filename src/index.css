@@ -68,6 +68,11 @@
   --color-text-warning: var(--text-warning);
 }
 
+/* we need this to assist with splash > loaded app transition. Its our css limit */
+body {
+  background-color: var(--primary-bg);
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
