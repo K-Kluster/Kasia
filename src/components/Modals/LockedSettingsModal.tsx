@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { NetworkSelector } from "../NetworkSelector";
 import { useNetworkStore } from "../../store/network.store";
 import { NetworkType } from "../../types/all";
@@ -21,6 +21,7 @@ export const LockedSettingsModal: React.FC = () => {
 
   const connectionError = useNetworkStore((s) => s.connectionError);
   const [connectionSuccess, setConnectionSuccess] = useState(false);
+  const hasAttemptedInitialConnection = useRef(false);
 
   const dbStore = useDBStore();
 
@@ -61,15 +62,14 @@ export const LockedSettingsModal: React.FC = () => {
 
   // Network connection effect
   useEffect(() => {
-    // Skip if no network selected or connection attempt in progress
-    if (isConnected) {
+    // Skip if already connected or if we've already attempted initial connection
+    if (isConnected || hasAttemptedInitialConnection.current) {
       return;
     }
 
+    hasAttemptedInitialConnection.current = true;
     connect();
-    // this is on purpose, we only want to run this once upon component mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isConnected, connect]);
 
   const onNetworkChange = useCallback(
     (network: NetworkType) => {
