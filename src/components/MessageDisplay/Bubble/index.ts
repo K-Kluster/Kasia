@@ -11,8 +11,8 @@ export { MessageTimestamp } from "./Meta/MessageTimestamp";
 export { MessageMeta } from "./Meta/MessageMeta";
 
 // Generators
-export { MessageContentRouter as MessageContentGenerator } from "./Generator/MessageContentRouter";
+export { MessageContentRouter } from "./Generator/MessageContentRouter";
 
 // Utils
 export { generateBubbleClasses } from "./Utils/BubbleClassGenerator";
-export { detectMessageType } from "./Utils/MessageTypeDetector";
+export { detectEventType } from "./Utils/MessageTypeDetector";

@@ -1,14 +1,15 @@
 import { FC } from "react";
-import { Message as MessageType } from "../../../../types/all";
+import { KasiaConversationEvent } from "../../../../types/all";
+import { Conversation } from "src/store/repository/conversation.repository";
+
 import { MessageContent } from "../Content/MessageContent";
 import { HandshakeContent } from "../Content/HandshakeContent";
 import { FileContent } from "../Content/FileContent";
 import { PaymentContent } from "../Content/PaymentContent";
-import { detectMessageType } from "../Utils/MessageTypeDetector";
-import { Conversation } from "src/types/messaging.types";
+import { detectEventType } from "../Utils/MessageTypeDetector"; // renamed for clarity
 
 type MessageContentRouterProps = {
-  message: MessageType;
+  event: KasiaConversationEvent; // ← event, not Message
   isOutgoing: boolean;
   isDecrypting: boolean;
   decryptionAttempted: boolean;
@@ -17,21 +18,20 @@ type MessageContentRouterProps = {
 };
 
 export const MessageContentRouter: FC<MessageContentRouterProps> = ({
-  message,
+  event,
   isOutgoing,
   isDecrypting,
   decryptionAttempted,
   decryptedContent,
   conversation,
 }) => {
-  const { content, fileData, transactionId } = message;
+  const { content, transactionId } = event;
 
-  const messageToRender = (decryptionAttempted && decryptedContent) || content;
+  const messageToRender =
+    (decryptionAttempted && decryptedContent) || content || "";
 
-  // detect message type
-  const { isHandshake, isPayment, isFile } = detectMessageType(message);
+  const { isHandshake, isPayment } = detectEventType(event);
 
-  // generate the appropriate content component
   if (isHandshake && conversation) {
     return (
       <HandshakeContent conversation={conversation} isHandshake={isHandshake} />
@@ -48,21 +48,17 @@ export const MessageContentRouter: FC<MessageContentRouterProps> = ({
     );
   }
 
-  if (isFile) {
-    return (
-      <FileContent
-        fileData={fileData || null}
-        content={messageToRender}
-        transactionId={transactionId}
-      />
-    );
-  }
+  // if (isFile) {
+  //   return (
+  //     <FileContent
+  //       fileData={fileData || null}
+  //       content={messageToRender}
+  //       transactionId={transactionId}
+  //     />
+  //   );
+  // }
 
-  // default to message content
   return (
-    <MessageContent
-      content={messageToRender || ""}
-      isDecrypting={isDecrypting}
-    />
+    <MessageContent content={messageToRender} isDecrypting={isDecrypting} />
   );
 };
