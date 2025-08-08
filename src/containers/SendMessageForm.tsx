@@ -40,6 +40,9 @@ type SendMessageFormProps = {
   onExpand?: () => void;
 };
 
+const REMINDER =
+  " rebased originally I had deleted `SendMessageForm` but the indexeddb has some changes to it (that I will need to migrate to the new files). I will do this once we are at parity with staging.**";
+
 // Arbritary fee levels to colour the fee indicator in chat
 const FEE_LEVELS = [
   { limit: 0.00002, classes: "text-green-400 border-green-400" },
