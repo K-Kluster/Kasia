@@ -6,7 +6,7 @@ import {
   PrivateKey,
 } from "cipher";
 import { SecurityHelper } from "./security-helper";
-import { PROTOCOL } from "src/config/protocol";
+import { PROTOCOL } from "../config/protocol";
 
 /**
  * Helper functions for working with cipher encryption/decryption

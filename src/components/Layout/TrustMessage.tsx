@@ -2,7 +2,7 @@ import React, { FC, useCallback, useState } from "react";
 import { Lock } from "lucide-react";
 import { KasIcon } from "../icons/KasCoin";
 import { setDevMode } from "../../config/dev-mode";
-import { toast } from "../../utils/toast";
+import { toast } from "../../utils/toast-helper";
 
 export const TrustMessage: FC = () => {
   const [openTrust, setOpenTrust] = useState(false);
