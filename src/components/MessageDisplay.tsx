@@ -218,8 +218,11 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
           );
         }
         return (
-          <div key={`file-${event.transactionId}`} className="file-message">
-            <div className="file-info">
+          <div
+            key={`file-${event.transactionId}`}
+            className="mt-1 rounded-lg bg-[var(--primary-bg)]/10 p-2"
+          >
+            <div className="mb-2 flex items-center gap-2 text-sm">
               <Paperclip className="h-4 w-4" /> {parsedContent.name} (
               {Math.round((parsedContent.size || 0) / 1024)}KB)
             </div>
