@@ -22,10 +22,8 @@ export const ModalHost = () => {
   // this is the line that makes us aware of store state!
   const modals = useUiStore((state) => state.modals);
   const closeModal = useUiStore((state) => state.closeModal);
-  const contactInfoContact = useUiStore((state) => state.contactInfoContact);
-  const setContactInfoContact = useUiStore(
-    (state) => state.setContactInfoContact
-  );
+  const oneOnOneConversation = useUiStore((s) => s.oneOnOneConversation);
+  const setOneOnOneConversation = useUiStore((s) => s.setOneOnOneConversation);
   const sendMessageCallback = useUiStore((state) => state.sendMessageCallback);
 
   const walletStore = useWalletStore();
@@ -89,18 +87,18 @@ export const ModalHost = () => {
       )}
 
       {/* Contact Info Modal */}
-      {modals["contact-info-modal"] && contactInfoContact && (
+      {modals["contact-info-modal"] && oneOnOneConversation && (
         <Modal
           onClose={() => {
             closeModal("contact-info-modal");
-            setContactInfoContact(null);
+            setOneOnOneConversation(null);
           }}
         >
           <ContactInfoModal
-            contact={contactInfoContact}
+            contact={oneOnOneConversation}
             onClose={() => {
               closeModal("contact-info-modal");
-              setContactInfoContact(null);
+              setOneOnOneConversation(null);
             }}
           />
         </Modal>
