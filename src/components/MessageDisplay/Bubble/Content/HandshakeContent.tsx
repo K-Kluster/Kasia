@@ -1,5 +1,5 @@
 import { FC } from "react";
-import { HandshakeResponse } from "../../../HandshakeResponse";
+import { HandshakeResponse } from "./HandshakeResponse";
 import { Contact } from "../../../../store/repository/contact.repository";
 import { Conversation } from "../../../../store/repository/conversation.repository";
 
