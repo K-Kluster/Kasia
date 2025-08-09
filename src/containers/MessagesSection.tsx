@@ -327,7 +327,7 @@ export const MessageSection: FC<{
                   <KaspaAddress address={openedRecipient ?? ""} />
                 )}
                 <Popover className="relative">
-                  {({ open }) => {
+                  {({ open, close }) => {
                     // Only update state if it actually changed, and never in render
                     if (open !== popoverOpen) {
                       // Use a microtask to avoid updating state during render
@@ -402,6 +402,7 @@ export const MessageSection: FC<{
                                     );
                                   }
                                   setIsEditingInPopover(false);
+                                  close();
                                 }}
                                 onCancel={() => setIsEditingInPopover(false)}
                               />
