@@ -6,7 +6,6 @@ import {
   CreditCard,
   ArrowLeft,
   User,
-  Info,
   Loader2,
   Key,
   Wallet,

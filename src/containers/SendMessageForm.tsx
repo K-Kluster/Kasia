@@ -17,8 +17,6 @@ import {
   Plus,
   ChevronUp,
   ChevronDown,
-  AlertTriangle,
-  Info,
   Camera,
   Trash,
 } from "lucide-react";
@@ -29,8 +27,6 @@ import { PriorityFeeSelector } from "../components/PriorityFeeSelector";
 import { KasiaTransaction, PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
 import { useUiStore } from "../store/ui.store";
-import { Modal } from "../components/Common/modal";
-import { Button } from "../components/Common/Button";
 import { MAX_PAYLOAD_SIZE } from "../config/constants";
 import { prepareFileForUpload } from "../service/upload-file-service";
 import { useIsMobile } from "../hooks/useIsMobile";

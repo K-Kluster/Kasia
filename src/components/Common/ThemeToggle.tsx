@@ -3,7 +3,7 @@ import { Sun, Moon, Monitor, Palette } from "lucide-react";
 import { useUiStore } from "../../store/ui.store";
 
 export const ThemeToggle: FC = () => {
-  const { theme, setTheme, getEffectiveTheme, customColors } = useUiStore();
+  const { theme, setTheme, customColors } = useUiStore();
 
   const effectiveTheme = useUiStore((state) => state.getEffectiveTheme());
 
