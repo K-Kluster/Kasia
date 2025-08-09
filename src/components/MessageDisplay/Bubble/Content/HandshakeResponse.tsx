@@ -31,7 +31,7 @@ export const HandshakeResponse: React.FC<{
   };
 
   return (
-    <div className="my-2 rounded-lg border border-[var(--border-color)] bg-[var(--primary-bg)] p-4">
+    <div className="my-2 rounded-lg">
       <div className="flex">
         <div className="mb-3 flex-1">
           <p className="my-1 font-semibold text-[var(--text-secondary)]">
@@ -40,11 +40,11 @@ export const HandshakeResponse: React.FC<{
           <p className="my-1 ml-2 break-all text-[var(--text-primary)]">
             {contact.kaspaAddress}
           </p>
-          <p className="my-1 font-semibold text-[var(--text-secondary)]">
-            Their alias:
-          </p>
-          <p className="my-1 ml-2 text-[var(--text-primary)]">
-            {conversation.theirAlias}
+          <p className="my-1 text-sm font-semibold text-[var(--text-secondary)]">
+            Alias:{" "}
+            <span className="ml-2 text-[var(--text-primary)]">
+              {conversation.theirAlias}
+            </span>
           </p>
           <p className="my-1 font-semibold text-[var(--text-secondary)]">
             Status:
