@@ -8,6 +8,7 @@ import { useFeeEstimate } from "./useFeeEstimate";
 import { prepareFileForUpload } from "../../service/upload-file-service";
 import { MAX_PAYLOAD_SIZE } from "../../config/constants";
 import { KasiaTransaction } from "../../types/all";
+import { FileData } from "../../store/repository/message.repository";
 
 export const useMessageComposer = (recipient?: string) => {
   const {
@@ -42,8 +43,8 @@ export const useMessageComposer = (recipient?: string) => {
       setAttachment({
         type: file.type.startsWith("image/") ? "image" : "file",
         name: file.name,
-        mime: file.type,
-        data: fileMessage,
+        mimeType: file.type,
+        content: fileMessage,
         size: file.size,
       });
       toast.success(`Attached ${source.toLowerCase()} successfully!`);
@@ -80,18 +81,12 @@ export const useMessageComposer = (recipient?: string) => {
     setSendState({ status: "loading" });
     try {
       let messageToSend = draft;
-      let fileDataForStorage: {
-        type: string;
-        name: string;
-        size: number;
-        mimeType: string;
-        content: string;
-      } | null = null;
+      let fileDataForStorage: FileData | null = null;
 
       if (attachment) {
-        messageToSend = attachment.data; // always send attachment payload
+        messageToSend = attachment.content; // always send attachment payload
         try {
-          const parsed = JSON.parse(attachment.data);
+          const parsed = JSON.parse(attachment.content);
           fileDataForStorage = {
             type: parsed.type,
             name: parsed.name,

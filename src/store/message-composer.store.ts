@@ -1,26 +1,9 @@
 import { create } from "zustand";
 import { PriorityFeeConfig } from "../types/all";
 import { FeeSource } from "kaspa-wasm";
+import { FileData } from "./repository/message.repository";
 
-// attachment types
-export interface BaseAttachment {
-  name: string;
-  mime: string;
-  data: string;
-  size: number;
-}
-
-export interface FileAttachment extends BaseAttachment {
-  type: "file";
-}
-
-export interface ImageAttachment extends BaseAttachment {
-  type: "image";
-  width?: number;
-  height?: number;
-}
-
-export type Attachment = FileAttachment | ImageAttachment | null;
+export type Attachment = FileData | null;
 
 interface ComposerState {
   drafts: Record<string, string>;
