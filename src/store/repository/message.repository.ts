@@ -21,16 +21,20 @@ export type DbMessage = {
   encryptedData: string;
 };
 
+export type FileData = {
+  type: "file" | "image";
+  name: string;
+  size: number;
+  mimeType: string;
+  content: string;
+  width?: number;
+  height?: number;
+};
+
 export type MessageBag = {
   amount: number;
   fee?: number;
-  fileData?: {
-    type: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    content: string;
-  };
+  fileData?: FileData;
   content: string;
   fromMe: boolean;
 };

@@ -1,4 +1,4 @@
-import { FC, useState, useMemo } from "react";
+import { FC, useState } from "react";
 import { Menu, Search, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { ContactCard } from "../components/ContactCard";
@@ -38,10 +38,36 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  // @TODO: should this be a use effect instead? result seems unused
+  // order contacts by last activity (most recent first)
+  const orderedContacts = contacts.sort((a, b) => {
+    const conversationA = messageStore.oneOnOneConversations.find(
+      (oooc) => oooc.contact.id === a.id
+    );
+    const conversationB = messageStore.oneOnOneConversations.find(
+      (oooc) => oooc.contact.id === b.id
+    );
+
+    const lastEventA = conversationA?.events?.at(-1);
+    const lastEventB = conversationB?.events?.at(-1);
+
+    // if both have events, sort by most recent
+    if (lastEventA?.createdAt && lastEventB?.createdAt) {
+      return lastEventB.createdAt.getTime() - lastEventA.createdAt.getTime();
+    }
+
+    // if only one has events, prioritize the one with events
+    if (lastEventA?.createdAt && !lastEventB?.createdAt) return -1;
+    if (!lastEventA?.createdAt && lastEventB?.createdAt) return 1;
+
+    // if neither has events, sort alphabetically by name or address
+    const nameA = a.name?.trim() || a.kaspaAddress;
+    const nameB = b.name?.trim() || b.kaspaAddress;
+    return nameA.localeCompare(nameB);
+  });
+
   // Search through all messages and contacts
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return contacts;
+  const searchResults = (() => {
+    if (!searchQuery.trim()) return orderedContacts;
     const q = searchQuery.toLowerCase();
     const matches = new Map<string, Contact>();
 
@@ -56,7 +82,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
       });
     });
 
-    contacts.forEach((contact) => {
+    orderedContacts.forEach((contact) => {
       if (
         contact.name?.toLowerCase().includes(q) ||
         contact.kaspaAddress.toLowerCase().includes(q)
@@ -66,7 +92,7 @@ export const ContactSection: FC<ContactSectionProps> = ({
     });
 
     return [...matches.values()];
-  }, [searchQuery, contacts, messageStore.oneOnOneConversations]);
+  })();
 
   const containerCls = clsx(
     "flex flex-col bg-bg-primary transition-all duration-200",
@@ -142,8 +168,8 @@ export const ContactSection: FC<ContactSectionProps> = ({
 
       {/* Contacts list */}
       <div className="bg-secondary-bg flex-1 overflow-y-auto">
-        {contacts.length
-          ? contacts.map((contact) => (
+        {searchResults.length
+          ? searchResults.map((contact) => (
               <ContactCard
                 key={contact.kaspaAddress}
                 contact={contact}

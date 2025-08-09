@@ -39,9 +39,7 @@ export const ContactCard: FC<{
   );
 
   // Use the store selector to get the latest message for this contact
-  const lastEvent = useMessagingStore((s) =>
-    oneOnOneConversation?.events?.at(-1)
-  );
+  const lastEvent = oneOnOneConversation?.events?.at(-1);
 
   // get last message preview
   const preview = useMemo(() => {
