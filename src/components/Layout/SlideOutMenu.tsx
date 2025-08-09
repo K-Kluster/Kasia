@@ -31,16 +31,25 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
   const open = useUiStore((s) => s.isSettingsOpen);
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
-  const msgStore = useMessagingStore();
   const [actionsOpen, setActionsOpen] = useState(false);
   const { openModal } = useUiStore();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setMounted(true);
+    } else {
       setActionsOpen(false);
     }
   }, [open]);
+
+  const handleClose = () => {
+    setMounted(false);
+    setTimeout(() => {
+      setSettingsOpen(false);
+    }, 300);
+  };
 
   if (!open || !isWalletReady) return null;
 
@@ -48,12 +57,26 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
     <>
       {/* Modal Darkness */}
       <div
-        className="fixed inset-0 z-40 bg-black/50"
-        onClick={() => setSettingsOpen(false)}
+        className={clsx(
+          "fixed inset-0 z-40 bg-black/50 transition-opacity duration-300",
+          {
+            "opacity-0": !mounted,
+            "opacity-100": mounted,
+          }
+        )}
+        onClick={handleClose}
       />
 
       {/* Draw type thing */}
-      <aside className="bg-secondary-bg fixed inset-y-0 left-0 z-45 flex w-full max-w-xs flex-col shadow-xl">
+      <aside
+        className={clsx(
+          "bg-secondary-bg fixed inset-y-0 left-0 z-45 flex w-full max-w-xs flex-col shadow-xl transition-transform duration-300 ease-out",
+          {
+            "-translate-x-full": !mounted,
+            "translate-x-0": mounted,
+          }
+        )}
+      >
         <header className="border-primary-border flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
             <img
@@ -66,7 +89,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
             </div>
           </div>
           <button
-            onClick={() => setSettingsOpen(false)}
+            onClick={handleClose}
             className="cursor-pointer rounded-lg p-2 transition-colors hover:bg-gray-700"
             aria-label="Close menu"
           >
