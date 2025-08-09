@@ -150,16 +150,12 @@ export const MessageSection: FC<{
     }
   };
 
-  // scroll if the conversation is open or box state changes
+  // scroll to bottom when conversation is filtered or new messages are received
   useEffect(() => {
     if (boxState === "filtered" && messagesScrollRef.current) {
-      messagesScrollRef.current.scrollTo({
-        top: messagesScrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      scrollToBottom();
     }
-    // @TODO(indexdb): reintroduce scoll upon message received or sent
-  }, [boxState]);
+  }, [boxState, oneOnOneConversation?.events.length]);
 
   // Helper to format old domain nickname
   function formatOldDomainNickname(domain: string) {
@@ -443,10 +439,7 @@ export const MessageSection: FC<{
               lastIncoming={lastIncoming}
             />
           </div>
-          <MessageComposerShell
-            recipient={openedRecipient || undefined}
-            onExpand={scrollToBottom}
-          />
+          <MessageComposerShell recipient={openedRecipient || undefined} />
         </>
       )}
 
