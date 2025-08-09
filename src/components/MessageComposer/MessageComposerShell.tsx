@@ -128,7 +128,7 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   return (
     <div
       className={clsx(
-        "border-primary-border bg-secondary-bg relative flex-col gap-8 border-t transition-colors duration-200",
+        "border-primary-border bg-secondary-bg relative flex-col gap-8 border-t",
         isDragOver && "border-kas-primary bg-kas-primary/10"
       )}
       onDragOver={handleDragOver}
