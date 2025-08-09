@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { useMessagingStore } from "../store/messaging.store";
+import { useMessagingStore } from "../../../../store/messaging.store";
 import {
   PendingConversation,
   RejectedConversation,
-} from "../store/repository/conversation.repository";
-import { Contact } from "../store/repository/contact.repository";
+} from "../../../../store/repository/conversation.repository";
+import { Contact } from "../../../../store/repository/contact.repository";
 
 export const HandshakeResponse: React.FC<{
   conversation: PendingConversation | RejectedConversation;
