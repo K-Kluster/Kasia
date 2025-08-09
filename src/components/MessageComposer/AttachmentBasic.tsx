@@ -26,7 +26,7 @@ export const AttachmentBasic = () => {
           <div className="flex items-center justify-between gap-2">
             {attachment.type === "image" ? (
               <img
-                src={JSON.parse(attachment.data).content}
+                src={JSON.parse(attachment.content).content}
                 alt={attachment.name}
                 className="block max-h-[120px] max-w-[200px] flex-1 rounded-lg object-contain"
               />
@@ -34,7 +34,8 @@ export const AttachmentBasic = () => {
               <div className="flex items-center gap-2 text-sm">
                 <Paperclip className="h-4 w-4" />
                 {attachment.name} (
-                {((JSON.parse(attachment.data).size || 0) / 1024).toFixed(2)}KB)
+                {((JSON.parse(attachment.content).size || 0) / 1024).toFixed(2)}
+                KB)
               </div>
             )}
             <button

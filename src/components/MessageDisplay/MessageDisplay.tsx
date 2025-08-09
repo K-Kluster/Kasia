@@ -26,6 +26,7 @@ type MessageDisplayProps = {
 export const MessageDisplay: FC<MessageDisplayProps> = ({
   event,
   isOutgoing,
+  contact,
   showTimestamp,
   groupPosition = "single",
   conversation,
@@ -63,11 +64,20 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     };
   }, [event.content]);
 
-  // const shouldUseBubble = !(
-  //   event.fileData?.type === "file" &&
-  //   event.fileData.mimeType?.startsWith?.("image/")
-  // );
-
+  const shouldUseBubble = !(
+    event.__type === "message" &&
+    event.content &&
+    (() => {
+      try {
+        const parsed = JSON.parse(event.content);
+        return (
+          parsed.type === "file" && parsed.mimeType?.startsWith?.("image/")
+        );
+      } catch {
+        return false;
+      }
+    })()
+  );
   const renderMessageContent = () => (
     <MessageContentRouter
       event={event}
@@ -76,6 +86,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       decryptionAttempted={decryptionAttempted}
       decryptedContent={decryptedContent}
       conversation={conversation}
+      contact={contact}
     />
   );
 
@@ -98,26 +109,25 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
       {(() => {
         const timeStampBlock = (showMeta || showTimestamp) && (
-          <MessageTimestamp timestamp={displayStamp} shouldUseBubble={true} />
+          <MessageTimestamp
+            timestamp={displayStamp}
+            shouldUseBubble={shouldUseBubble}
+          />
         );
 
         const metaBlock = showMeta && (
           <MessageMeta fee={event.fee} isOutgoing={isOutgoing} />
         );
 
-        return true ? (
+        return (
           <div
             onClick={() => setShowMeta((prev) => !prev)}
-            className={generateBubbleClasses(isOutgoing, groupPosition)}
+            className={clsx(
+              "my-0.5 text-base leading-relaxed",
+              shouldUseBubble &&
+                generateBubbleClasses(isOutgoing, groupPosition)
+            )}
           >
-            <div className="my-0.5 text-base leading-relaxed">
-              {renderMessageContent()}
-            </div>
-            {timeStampBlock}
-            {metaBlock}
-          </div>
-        ) : (
-          <div onClick={() => setShowMeta((prev) => !prev)}>
             {renderMessageContent()}
             {timeStampBlock}
             {metaBlock}
