@@ -4,11 +4,14 @@ import { MOBILE_BREAKPOINT } from "../../hooks/useIsMobile";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import clsx from "clsx";
 
+const CONTAINER_DEFAULT = 1600;
+const OVERFLOW_PADDING = 20;
+
 export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const isMobile = useIsMobile();
-  const [width, setWidth] = useState<number>(1600); // set default to 1600
+  const [width, setWidth] = useState<number>(CONTAINER_DEFAULT); // set default to 1600
   const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
   const isResizing = useRef<null | "left" | "right">(null);
 
@@ -25,7 +28,9 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   // hide resize handles when window is small and container is at max width
-  const shouldHideResizers = windowWidth < 1440 && width >= windowWidth;
+  const shouldHideResizers =
+    windowWidth < CONTAINER_DEFAULT + OVERFLOW_PADDING ||
+    width >= windowWidth - OVERFLOW_PADDING;
 
   const startResize = (side: "left" | "right") => (e: React.MouseEvent) => {
     if (isMobile) return; // make sure you cant on mobile sizing
@@ -68,9 +73,7 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
     <div
       className={clsx(
         "bg-primary-bg flex min-h-0 flex-col sm:min-h-screen",
-        isMobile
-          ? "w-full"
-          : "relative mx-auto overflow-hidden rounded-lg shadow-2xl"
+        isMobile ? "w-full" : "relative mx-auto rounded-lg shadow-2xl"
       )}
       style={
         !isMobile
@@ -86,7 +89,7 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
       {!isMobile && !shouldHideResizers && (
         <div
           onMouseDown={startResize("left")}
-          className="group absolute top-0 left-0 z-50 h-full w-2 cursor-ew-resize bg-black/5 transition-colors hover:bg-black/10"
+          className="group absolute top-0 -left-2 z-50 h-full w-2 cursor-ew-resize bg-[var(--secondary-bg)]/20 transition-colors hover:bg-[var(--secondary-bg)]/50"
         >
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
@@ -95,16 +98,16 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
               expandToMaxWidth();
             }}
           >
-            <ChevronLeft className="size-5 text-gray-600" />
+            <ChevronLeft className="size-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" />
           </div>
         </div>
       )}
-      {children}
+      <div className="overflow-hidden">{children}</div>
       {/* right resizer - only on desktop */}
       {!isMobile && !shouldHideResizers && (
         <div
           onMouseDown={startResize("right")}
-          className="group absolute top-0 right-0 z-50 h-full w-2 cursor-ew-resize bg-black/5 transition-colors hover:bg-black/10"
+          className="group absolute top-0 -right-2 z-50 h-full w-2 cursor-ew-resize bg-[var(--secondary-bg)]/20 transition-colors hover:bg-[var(--secondary-bg)]/50"
         >
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform cursor-pointer opacity-0 transition-opacity group-hover:opacity-100"
@@ -113,7 +116,7 @@ export const ResizableAppContainer: React.FC<{ children: React.ReactNode }> = ({
               expandToMaxWidth();
             }}
           >
-            <ChevronRight className="size-5 text-gray-600" />
+            <ChevronRight className="size-6 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" />
           </div>
         </div>
       )}
