@@ -89,7 +89,7 @@ export const MessageSection: FC<{
     let lastOut = -1;
     let lastIn = -1;
     conversationEvents.forEach((m, i) => {
-      if (!m.fromMe) lastOut = i;
+      if (m.fromMe) lastOut = i;
       else lastIn = i;
     });
     return { lastOutgoing: lastOut, lastIncoming: lastIn };
