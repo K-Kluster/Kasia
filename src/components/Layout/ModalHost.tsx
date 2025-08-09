@@ -95,7 +95,7 @@ export const ModalHost = () => {
           }}
         >
           <ContactInfoModal
-            contact={oneOnOneConversation}
+            oooc={oneOnOneConversation}
             onClose={() => {
               closeModal("contact-info-modal");
               setOneOnOneConversation(null);
