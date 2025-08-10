@@ -104,7 +104,7 @@ export const ModalHost = () => {
         </Modal>
       )}
 
-      {/* Warning Costly Send Message Modal (previously in SendMessageForm) */}
+      {/* Warning Costly Send Message Modal */}
       {modals["warn-costy-send-message"] && (
         <Modal onClose={() => closeModal("warn-costy-send-message")}>
           <div className="flex flex-col items-center justify-center gap-8">
