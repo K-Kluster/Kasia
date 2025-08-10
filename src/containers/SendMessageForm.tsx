@@ -67,7 +67,8 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const { isOpen, closeModal, openModal } = useUiStore();
+  const { isOpen, closeModal, openModal, setSendMessageCallback } =
+    useUiStore();
 
   const messageStore = useMessagingStore();
 
@@ -329,8 +330,15 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
     }
 
     // If no active conversation, display a warning modal
+    setSendMessageCallback(() => sendMessage);
     openModal("warn-costy-send-message");
-  }, [messageStore, openModal, openedRecipient, sendMessage]);
+  }, [
+    messageStore,
+    openModal,
+    openedRecipient,
+    sendMessage,
+    setSendMessageCallback,
+  ]);
 
   const processFile = async (file: File, source: string) => {
     if (isUploading) return;
@@ -663,40 +671,6 @@ export const SendMessageForm: FC<SendMessageFormProps> = ({ onExpand }) => {
           )}
         </div>
       </div>
-
-      {isOpen("warn-costy-send-message") && (
-        <Modal onClose={() => closeModal("warn-costy-send-message")}>
-          <div className="flex flex-col items-center justify-center gap-8">
-            <h2 className="text-lg text-yellow-400">
-              <AlertTriangle className="mr-2 inline size-6 text-yellow-400" />
-              Your Correspondent hasn't answered yet
-            </h2>
-
-            <p className="text-center">
-              Sending this message will carry an{" "}
-              <span className="font-bold">extra cost of 0.2 KAS</span>, that
-              will be sent to your correspondent. Are you sure you want to send
-              it?
-            </p>
-            <div className="flex items-start justify-start rounded-lg border border-[#B6B6B6]/20 bg-gradient-to-br from-[#B6B6B6]/10 to-[#B6B6B6]/5 px-4 py-2">
-              <Info className="mr-2 size-10 text-white" />
-              <p className="">
-                This is occuring because your correspondent hasn't accepted the
-                handshake yet.
-              </p>
-            </div>
-
-            <Button
-              onClick={() => {
-                closeModal("warn-costy-send-message");
-                sendMessage();
-              }}
-            >
-              Send anyway
-            </Button>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

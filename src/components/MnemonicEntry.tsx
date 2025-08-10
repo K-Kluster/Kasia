@@ -3,23 +3,23 @@ import clsx from "clsx";
 
 interface MnemonicEntryProps {
   seedPhraseLength: number;
-  mnemonicRef: React.RefObject<HTMLTextAreaElement | null>;
+  onMnemonicChange: (mnemonic: string) => void;
 }
 
 export const MnemonicEntry = ({
   seedPhraseLength,
-  mnemonicRef,
+  onMnemonicChange,
 }: MnemonicEntryProps) => {
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   // If the user changes the seed phrase length, reset the input fields
   useEffect(() => {
-    if (mnemonicRef.current) mnemonicRef.current.value = "";
     document
       .querySelectorAll<HTMLInputElement>(".mnemonic-input-grid input")
       .forEach((i) => (i.value = ""));
     setFocusedIndex(null);
-  }, [seedPhraseLength]);
+    onMnemonicChange("");
+  }, [seedPhraseLength, onMnemonicChange]);
 
   const handlePaste = (e: ClipboardEvent<HTMLInputElement>, idx: number) => {
     if (idx !== 0) return;
@@ -35,7 +35,7 @@ export const MnemonicEntry = ({
     words.forEach((word, i) => {
       if (inputs[i]) inputs[i].value = word;
     });
-    if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ");
+    onMnemonicChange(words.join(" "));
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +44,7 @@ export const MnemonicEntry = ({
     const words = Array.from(allInputs).map((inp) =>
       (inp as HTMLInputElement).value.trim()
     );
-    if (mnemonicRef.current) mnemonicRef.current.value = words.join(" ");
+    onMnemonicChange(words.join(" "));
   };
 
   return (
@@ -75,7 +75,6 @@ export const MnemonicEntry = ({
           );
         })}
       </div>
-      <textarea ref={mnemonicRef} readOnly className="hidden" />
     </div>
   );
 };

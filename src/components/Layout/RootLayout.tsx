@@ -9,6 +9,7 @@ import { ToastContainer } from "../Common/ToastContainer";
 import { useUiStore } from "../../store/ui.store";
 import { toast } from "../../utils/toast-helper";
 import { ResizableAppContainer } from "./ResizableAppContainer";
+import { ModalHost } from "./ModalHost";
 
 export const RootLayout: FC = () => {
   const walletStore = useWalletStore();
@@ -36,6 +37,7 @@ export const RootLayout: FC = () => {
   return (
     <>
       <ToastContainer />
+      <ModalHost />
       <ResizableAppContainer>
         {/* desktop header */}
         {!isMobile && (

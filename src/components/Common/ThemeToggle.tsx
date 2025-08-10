@@ -4,7 +4,8 @@ import { useUiStore } from "../../store/ui.store";
 
 export const ThemeToggle: FC = () => {
   const { theme, setTheme, getEffectiveTheme, customColors } = useUiStore();
-  const effectiveTheme = getEffectiveTheme();
+
+  const effectiveTheme = useUiStore((state) => state.getEffectiveTheme());
 
   const getButtonStyles = (
     buttonTheme: "light" | "dark" | "system" | "custom"

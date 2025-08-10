@@ -23,6 +23,8 @@ For VsCode user, this is automatically done through .vscode workspace settings.
 
 ## Coding guide
 
+We use React 19 with React Compiler - as long as you follow the [rules of hooks](https://react.dev/reference/rules/rules-of-hooks) - there is no need to optimize code.
+
 ### Web style
 
 For any new implementations, we enforce the use of inline TailwindCSS. A well-known utility `clsx` is available within the codebase for more conplex style application (e.g.: conditional style)
@@ -70,6 +72,7 @@ Currently available:
   - Consumers pass modal body as a child
 - **Button**
   - Provides `primary` and `secondary` styles
+- More
 
 If you're building a reusable UI element, check if a common component already exists. If not, consider generalizing it.
 
