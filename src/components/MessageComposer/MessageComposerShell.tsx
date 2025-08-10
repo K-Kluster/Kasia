@@ -17,6 +17,7 @@ import { MessageInput } from "./MessageInput";
 import { FeeDisplay } from "./FeeDisplay";
 import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
+import { useFeeEstimate } from "../../hooks/MessageComposer/useFeeEstimate";
 
 export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const attachment = useComposerSlice((s) => s.attachment);
@@ -41,6 +42,9 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasCamera, setHasCamera] = useState(false);
+
+  //get fee when composer renders
+  useFeeEstimate(recipient);
 
   useEffect(() => {
     async function checkCamera() {
