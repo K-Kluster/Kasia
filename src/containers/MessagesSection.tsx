@@ -7,7 +7,6 @@ import { SendMessageForm } from "./SendMessageForm";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { KaspaAddress } from "../components/KaspaAddress";
-import styles from "../components/NewChatForm.module.css";
 import clsx from "clsx";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
@@ -15,6 +14,7 @@ import { EditNicknamePopover } from "../components/EditNicknamePopover";
 import { useUiStore } from "../store/ui.store";
 import { copyToClipboard } from "../utils/copy-to-clipboard";
 import { Contact } from "../store/repository/contact.repository";
+import { Button } from "../components/Common/Button";
 
 export const MessageSection: FC<{
   mobileView: "contacts" | "messages";
@@ -200,35 +200,19 @@ export const MessageSection: FC<{
   }
 
   return (
-    <div className={finalClassName}>
+    <div
+      className={`flex flex-[2] flex-col overflow-x-hidden ${isMobile ? "" : "border-primary-border border-l"} ${isMobile && mobileView === "contacts" ? "hidden" : ""}`}
+    >
       {showKnsMovedModal &&
         knsMovedDomain &&
         knsMovedNewAddress &&
         knsMovedContact && (
-          <div className="modal-overlay" style={{ zIndex: 1000 }}>
-            <div
-              className="modal"
-              style={{
-                background: "#222",
-                color: "#fff",
-                padding: 24,
-                borderRadius: 12,
-                maxWidth: 800,
-                margin: "80px auto",
-                boxShadow: "0 2px 16px #0008",
-              }}
-            >
-              <h3
-                style={{
-                  marginBottom: 12,
-                  textAlign: "center",
-                  color: "#ff4444",
-                  fontWeight: "bold",
-                }}
-              >
+          <div className="fixed inset-0 z-[50] flex items-start justify-center overflow-y-auto bg-black/70">
+            <div className="mt-20 max-w-xl rounded-xl bg-[var(--primary-bg)] p-6 text-[var(--text-primary)] shadow-2xl">
+              <h3 className="mb-3 text-center font-bold text-[var(--accent-red)]">
                 KNS Domain Moved
               </h3>
-              <p style={{ wordBreak: "break-all", marginBottom: 10 }}>
+              <p className="mb-2 font-semibold break-all">
                 The KNS domain <b>{knsMovedDomain}</b> is now linked to a
                 different address.
                 <br />
@@ -242,26 +226,13 @@ export const MessageSection: FC<{
                   Old: {knsMovedContact.kaspaAddress}
                 </span>
                 <br />
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#7fd6ff",
-                    wordBreak: "break-all",
-                  }}
-                >
+                <span className="text-sm break-all text-[var(--text-secondary)]">
                   New: {knsMovedNewAddress}
                 </span>
               </p>
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                <button
-                  className={`${styles.button} ${styles["submit-button"]}`}
+              <div className="mt-4 flex flex-col gap-2">
+                <Button
+                  variant="primary"
                   onClick={() => {
                     messageStore.setContactNickname(
                       knsMovedContact.kaspaAddress,
@@ -271,9 +242,9 @@ export const MessageSection: FC<{
                   }}
                 >
                   Change Nickname
-                </button>
-                <button
-                  className={`${styles.button} ${styles["submit-button"]}`}
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={() => {
                     localStorage.setItem(
                       `ignoreKnsMoved_${knsMovedDomain}`,
@@ -282,10 +253,10 @@ export const MessageSection: FC<{
                     setShowKnsMovedModal(false);
                   }}
                 >
-                  Keep Nickname & Ignore Future Warnings
-                </button>
-                <button
-                  className={`${styles.button} ${styles["submit-button"]}`}
+                  Keep Nickname &amp; Ignore Future Warnings
+                </Button>
+                <Button
+                  variant="primary"
                   onClick={() => {
                     messageStore.setIsCreatingNewChat(true);
                     messageStore.setContactNickname(
@@ -296,7 +267,7 @@ export const MessageSection: FC<{
                   }}
                 >
                   Create new conversation with {knsMovedDomain}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
