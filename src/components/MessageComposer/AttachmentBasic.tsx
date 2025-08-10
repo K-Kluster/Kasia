@@ -34,7 +34,7 @@ export const AttachmentBasic = () => {
               <div className="flex items-center gap-2 text-sm">
                 <Paperclip className="h-4 w-4" />
                 {attachment.name} (
-                {Math.round((JSON.parse(attachment.data).size || 0) / 1024)}KB)
+                {((JSON.parse(attachment.data).size || 0) / 1024).toFixed(2)}KB)
               </div>
             )}
             <button
