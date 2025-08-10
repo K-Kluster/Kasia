@@ -167,7 +167,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
             {/* toggle pane */}
             <button
               aria-label="toggle contacts pane"
-              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 transition-colors"
+              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2"
               onClick={() => setContactsCollapsed(!contactsCollapsed)}
             >
               <PanelLeftOpen
@@ -180,7 +180,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
             {/* toggle pane */}
             <button
               aria-label="toggle contacts pane"
-              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 transition-colors"
+              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2"
               onClick={() => setContactsCollapsed(!contactsCollapsed)}
             >
               <PanelLeftOpen className="size-5" />
@@ -320,7 +320,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
         <button
           onClick={lockWallet}
           className={clsx(
-            "hover:bg-primary-bg/50 flex w-full cursor-pointer items-center gap-2 rounded p-2 transition-colors focus:outline-none",
+            "hover:bg-primary-bg/50 flex w-full cursor-pointer items-center gap-2 rounded p-2 focus:outline-none",
             contactsCollapsed ? "flex-col" : "flex-row"
           )}
           aria-label="Sign out"

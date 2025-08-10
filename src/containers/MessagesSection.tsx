@@ -89,7 +89,7 @@ export const MessageSection: FC<{
     let lastOut = -1;
     let lastIn = -1;
     conversationEvents.forEach((m, i) => {
-      if (!m.fromMe) lastOut = i;
+      if (m.fromMe) lastOut = i;
       else lastIn = i;
     });
     return { lastOutgoing: lastOut, lastIncoming: lastIn };
@@ -150,16 +150,12 @@ export const MessageSection: FC<{
     }
   };
 
-  // scroll if the conversation is open or box state changes
+  // scroll to bottom when conversation is filtered or new messages are received
   useEffect(() => {
     if (boxState === "filtered" && messagesScrollRef.current) {
-      messagesScrollRef.current.scrollTo({
-        top: messagesScrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
+      scrollToBottom();
     }
-    // @TODO(indexdb): reintroduce scoll upon message received or sent
-  }, [boxState]);
+  }, [boxState, oneOnOneConversation?.events.length]);
 
   // Helper to format old domain nickname
   function formatOldDomainNickname(domain: string) {
@@ -327,7 +323,7 @@ export const MessageSection: FC<{
                   <KaspaAddress address={openedRecipient ?? ""} />
                 )}
                 <Popover className="relative">
-                  {({ open }) => {
+                  {({ open, close }) => {
                     // Only update state if it actually changed, and never in render
                     if (open !== popoverOpen) {
                       // Use a microtask to avoid updating state during render
@@ -402,6 +398,7 @@ export const MessageSection: FC<{
                                     );
                                   }
                                   setIsEditingInPopover(false);
+                                  close();
                                 }}
                                 onCancel={() => setIsEditingInPopover(false)}
                               />
@@ -442,10 +439,7 @@ export const MessageSection: FC<{
               lastIncoming={lastIncoming}
             />
           </div>
-          <MessageComposerShell
-            recipient={openedRecipient || undefined}
-            onExpand={scrollToBottom}
-          />
+          <MessageComposerShell recipient={openedRecipient || undefined} />
         </>
       )}
 

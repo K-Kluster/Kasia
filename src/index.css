@@ -50,8 +50,6 @@
 }
 
 @theme {
-  --animate-fade-in: fade-in 2s ease forwards;
-  --animate-modal-fadein: modalFadeIn 0.2s ease;
   --color-primary-bg: var(--primary-bg);
   --color-secondary-bg: var(--secondary-bg);
   --color-primary-border: var(--primary-border);
@@ -81,17 +79,5 @@ body {
 
   to {
     opacity: 1;
-  }
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
