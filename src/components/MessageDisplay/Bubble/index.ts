@@ -7,6 +7,7 @@ export { PaymentContent } from "./Content/PaymentContent";
 // meta components
 export { FeeDisplay } from "./Meta/FeeDisplay";
 export { ExplorerLink } from "./Meta/ExplorerLink";
+export { ImageView } from "./Meta/ImageView";
 export { MessageTimestamp } from "./Meta/MessageTimestamp";
 export { MessageMeta } from "./Meta/MessageMeta";
 

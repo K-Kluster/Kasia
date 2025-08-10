@@ -5,6 +5,7 @@ import { KasiaConversationEvent } from "../../types/all";
 import { useWalletStore } from "../../store/wallet.store";
 import { Conversation } from "../../store/repository/conversation.repository";
 import { Contact } from "../../store/repository/contact.repository";
+import { isImageType } from "../../utils/parse-message";
 
 import {
   ExplorerLink,
@@ -12,6 +13,7 @@ import {
   MessageContentRouter,
   MessageTimestamp,
   MessageMeta,
+  ImageView,
 } from "./Bubble";
 
 type MessageDisplayProps = {
@@ -34,6 +36,7 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
   const [showMeta, setShowMeta] = useState(false);
   const walletStore = useWalletStore();
   const mounted = useRef(true);
+  const isImage = isImageType(event);
 
   const createdAtMs =
     event.createdAt instanceof Date
@@ -64,20 +67,9 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     };
   }, [event.content]);
 
-  const shouldUseBubble = !(
-    event.__type === "message" &&
-    event.content &&
-    (() => {
-      try {
-        const parsed = JSON.parse(event.content);
-        return (
-          parsed.type === "file" && parsed.mimeType?.startsWith?.("image/")
-        );
-      } catch {
-        return false;
-      }
-    })()
-  );
+  // if image, don't use bubble
+  const shouldUseBubble = !isImage;
+
   const renderMessageContent = () => (
     <MessageContentRouter
       event={event}
@@ -90,6 +82,23 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
     />
   );
 
+  const renderTimestamp = () => {
+    if (!showMeta && !showTimestamp) return null;
+
+    return (
+      <MessageTimestamp
+        timestamp={displayStamp}
+        shouldUseBubble={shouldUseBubble}
+      />
+    );
+  };
+
+  const renderMeta = () => {
+    if (!showMeta) return null;
+
+    return <MessageMeta fee={event.fee} isOutgoing={isOutgoing} />;
+  };
+
   return (
     <div
       className={clsx(
@@ -100,47 +109,37 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
       )}
     >
       {showMeta && event.transactionId && isOutgoing && (
-        <ExplorerLink
-          transactionId={event.transactionId}
-          network={walletStore.selectedNetwork}
-          position="right"
-        />
+        <>
+          <ImageView data={event} position="right" />
+          <ExplorerLink
+            transactionId={event.transactionId}
+            network={walletStore.selectedNetwork}
+            position="right"
+          />
+        </>
       )}
 
-      {(() => {
-        const timeStampBlock = (showMeta || showTimestamp) && (
-          <MessageTimestamp
-            timestamp={displayStamp}
-            shouldUseBubble={shouldUseBubble}
-          />
-        );
-
-        const metaBlock = showMeta && (
-          <MessageMeta fee={event.fee} isOutgoing={isOutgoing} />
-        );
-
-        return (
-          <div
-            onClick={() => setShowMeta((prev) => !prev)}
-            className={clsx(
-              "my-0.5 text-base leading-relaxed",
-              shouldUseBubble &&
-                generateBubbleClasses(isOutgoing, groupPosition)
-            )}
-          >
-            {renderMessageContent()}
-            {timeStampBlock}
-            {metaBlock}
-          </div>
-        );
-      })()}
+      <div
+        onClick={() => setShowMeta((prev) => !prev)}
+        className={clsx(
+          "my-0.5 text-base leading-relaxed",
+          shouldUseBubble && generateBubbleClasses(isOutgoing, groupPosition)
+        )}
+      >
+        {renderMessageContent()}
+        {renderTimestamp()}
+        {renderMeta()}
+      </div>
 
       {showMeta && event.transactionId && !isOutgoing && (
-        <ExplorerLink
-          transactionId={event.transactionId}
-          network={walletStore.selectedNetwork}
-          position="left"
-        />
+        <>
+          <ImageView data={event} position="left" />
+          <ExplorerLink
+            transactionId={event.transactionId}
+            network={walletStore.selectedNetwork}
+            position="left"
+          />
+        </>
       )}
     </div>
   );

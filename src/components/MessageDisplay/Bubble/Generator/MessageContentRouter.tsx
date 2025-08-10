@@ -7,7 +7,7 @@ import { HandshakeContent } from "../Content/HandshakeContent";
 import { FileContent } from "../Content/FileContent";
 import { PaymentContent } from "../Content/PaymentContent";
 
-import type { FileData } from "../../../../store/repository/message.repository";
+import { extractFileData } from "../../../../utils/parse-message";
 import { Contact } from "src/store/repository/contact.repository";
 
 type MessageContentRouterProps = {
@@ -19,32 +19,6 @@ type MessageContentRouterProps = {
   conversation: Conversation | null;
   contact: Contact;
 };
-
-function extractFileData(e: KasiaConversationEvent): FileData | null {
-  // check if it's a message with fileData property
-  if (
-    e.__type === "message" &&
-    "fileData" in e &&
-    e.fileData?.type === "file"
-  ) {
-    return e.fileData as FileData;
-  }
-
-  if (e.content) {
-    try {
-      const parsed = JSON.parse(e.content);
-      if (parsed?.type === "file") {
-        return {
-          ...parsed,
-          size: parsed.size || 0,
-        } as FileData;
-      }
-    } catch {
-      // not JSON, ignore
-    }
-  }
-  return null;
-}
 
 export const MessageContentRouter: FC<MessageContentRouterProps> = ({
   event,
