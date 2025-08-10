@@ -77,7 +77,6 @@ export const MessagesList: FC<MessagesListProps> = memo(
           const isSingleInGroup = !isPrevSameSender && !isNextSameSender;
           const isTopOfGroup = !isPrevSameSender && isNextSameSender;
           const isBottomOfGroup = isPrevSameSender && !isNextSameSender;
-
           return (
             <div key={event.transactionId}>
               {showSeparator &&

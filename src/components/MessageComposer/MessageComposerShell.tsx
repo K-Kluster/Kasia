@@ -15,15 +15,10 @@ import {
 import { SendPaymentPopup } from "../SendPaymentPopup";
 import { MessageInput } from "./MessageInput";
 import { FeeDisplay } from "./FeeDisplay";
+import { useUiStore } from "../../store/ui.store";
+import { useMessagingStore } from "../../store/messaging.store";
 
-interface MessageComposerShellProps {
-  recipient?: string;
-  onExpand?: () => void;
-}
-
-export const MessageComposerShell = ({
-  recipient,
-}: MessageComposerShellProps) => {
+export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const attachment = useComposerSlice((s) => s.attachment);
   const feeState = useComposerSlice((s) => s.feeState);
   const sendState = useComposerSlice((s) => s.sendState);
@@ -42,19 +37,17 @@ export const MessageComposerShell = ({
   const setPriority = useComposerStore((s) => s.setPriority);
   const setSendState = useComposerStore((s) => s.setSendState);
 
+  const { openModal, setSendMessageCallback } = useUiStore();
+
   const [isDragOver, setIsDragOver] = useState(false);
   const [hasCamera, setHasCamera] = useState(false);
 
-  // check if a camera exists
   useEffect(() => {
     async function checkCamera() {
-      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      if (navigator.mediaDevices?.enumerateDevices) {
         try {
           const devices = await navigator.mediaDevices.enumerateDevices();
-          const hasVideoInput = devices.some(
-            (device) => device.kind === "videoinput"
-          );
-          setHasCamera(hasVideoInput);
+          setHasCamera(devices.some((d) => d.kind === "videoinput"));
         } catch {
           setHasCamera(false);
         }
@@ -82,15 +75,12 @@ export const MessageComposerShell = ({
   ) => {
     const items = event.clipboardData?.items;
     if (!items) return;
-
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type.startsWith("image/")) {
         event.preventDefault();
         const file = item.getAsFile();
-        if (file) {
-          await attach(file, "Pasted Image");
-        }
+        if (file) await attach(file, "Pasted Image");
         break;
       }
     }
@@ -101,33 +91,38 @@ export const MessageComposerShell = ({
     e.stopPropagation();
     setIsDragOver(true);
   };
-
   const handleDragLeave = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
   };
-
   const handleDrop = async (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-
     const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      await attach(files[0], "Dropped File");
-    }
+    if (files.length > 0) await attach(files[0], "Dropped File");
   };
 
-  // clear error state when user starts typing
   const handleDraftChange = (value: string) => {
-    if (recipient) {
-      setDraft(recipient, value);
+    if (recipient) setDraft(recipient, value);
+    if (sendState.status === "error") setSendState({ status: "idle" });
+  };
+
+  const onSend = async () => {
+    if (!recipient) return;
+    const active = useMessagingStore
+      .getState()
+      .getActiveConversationsWithContacts();
+    const exists = active.find(
+      ({ contact }) => contact.kaspaAddress === recipient
+    );
+    if (!exists) {
+      setSendMessageCallback(() => send);
+      openModal("warn-costy-send-message");
+      return;
     }
-    // clear error state when user starts typing
-    if (sendState.status === "error") {
-      setSendState({ status: "idle" });
-    }
+    await send();
   };
 
   return (
@@ -140,7 +135,6 @@ export const MessageComposerShell = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* fee display - positioned in top-right like original */}
       <FeeDisplay
         recipient={recipient}
         draft={draft}
@@ -148,8 +142,6 @@ export const MessageComposerShell = ({
         priority={priority}
         onPriorityChange={setPriority}
       />
-
-      {/* input area */}
       <div className="relative my-2 mr-2 rounded-lg p-1 pb-3 sm:pb-0">
         <div className="relative flex items-center">
           <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
@@ -193,22 +185,19 @@ export const MessageComposerShell = ({
           <MessageInput
             ref={messageInputRef}
             value={draft}
-            onChange={handleDraftChange} // Use our new handler instead of setDraft directly
+            onChange={handleDraftChange}
             onDragOver={isDragOver}
-            onSend={send}
+            onSend={onSend}
             onPaste={handlePaste}
             placeholder="Type your message..."
             disabled={sendState.status === "loading"}
           />
 
-          {/* send button */}
           <div className="absolute right-2 flex h-full items-center gap-1">
             <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center">
               <div className="absolute inset-0 flex items-center justify-center">
                 <button
-                  onClick={() => {
-                    send();
-                  }}
+                  onClick={onSend}
                   className={clsx(
                     "absolute flex h-6 w-6 cursor-pointer items-center justify-center text-[var(--button-primary)] transition-all duration-200 ease-in-out hover:text-[var(--button-primary)]/80",
                     draft.trim() || attachment
@@ -239,11 +228,10 @@ export const MessageComposerShell = ({
         </div>
       </div>
 
-      {/* hidden file inputs */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="*/*"
+        accept="image/*,.txt,.json,.md"
         onChange={handleFileUpload}
         className="hidden"
       />

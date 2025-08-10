@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { useMessagingStore } from "../store/messaging.store";
+import { useMessagingStore } from "../../../../store/messaging.store";
 import {
   PendingConversation,
   RejectedConversation,
-} from "../store/repository/conversation.repository";
-import { Contact } from "../store/repository/contact.repository";
+} from "../../../../store/repository/conversation.repository";
+import { Contact } from "../../../../store/repository/contact.repository";
 
 export const HandshakeResponse: React.FC<{
   conversation: PendingConversation | RejectedConversation;
@@ -52,7 +52,7 @@ export const HandshakeResponse: React.FC<{
           <p className="my-1 ml-2 text-[var(--text-primary)]">
             {conversation.status}
           </p>
-          {error && <p className="mt-2 text-red-500">{error}</p>}
+          {error && <p className="mt-2 text-[var(--accent-red)]">{error}</p>}
         </div>
         <div className="ml-2 flex flex-col items-center justify-center select-none">
           <img
@@ -68,7 +68,7 @@ export const HandshakeResponse: React.FC<{
             e.stopPropagation();
             handleRespond();
           }}
-          className="cursor-pointer rounded border-none bg-[var(--button-primary)] px-4 py-2 text-sm text-white transition-colors duration-200 hover:bg-[var(--button-primary)]/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+          className="cursor-pointer rounded border-none bg-[var(--button-primary)] px-4 py-2 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[var(--button-primary)]/80 disabled:cursor-not-allowed disabled:bg-gray-500"
           disabled={isResponding}
         >
           {isResponding ? "Sending Response..." : "Accept & Send Response"}

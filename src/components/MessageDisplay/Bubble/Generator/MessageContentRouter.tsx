@@ -1,68 +1,99 @@
 import { FC } from "react";
-import { Message as MessageType } from "../../../../types/all";
+import { KasiaConversationEvent } from "../../../../types/all";
+import { Conversation } from "../../../../store/repository/conversation.repository";
+
 import { MessageContent } from "../Content/MessageContent";
 import { HandshakeContent } from "../Content/HandshakeContent";
 import { FileContent } from "../Content/FileContent";
 import { PaymentContent } from "../Content/PaymentContent";
-import { detectMessageType } from "../Utils/MessageTypeDetector";
-import { Conversation } from "src/types/messaging.types";
+
+import type { FileData } from "../../../../store/repository/message.repository";
+import { Contact } from "src/store/repository/contact.repository";
 
 type MessageContentRouterProps = {
-  message: MessageType;
+  event: KasiaConversationEvent;
   isOutgoing: boolean;
   isDecrypting: boolean;
   decryptionAttempted: boolean;
   decryptedContent: string;
   conversation: Conversation | null;
+  contact: Contact;
 };
 
+function extractFileData(e: KasiaConversationEvent): FileData | null {
+  // check if it's a message with fileData property
+  if (
+    e.__type === "message" &&
+    "fileData" in e &&
+    e.fileData?.type === "file"
+  ) {
+    return e.fileData as FileData;
+  }
+
+  if (e.content) {
+    try {
+      const parsed = JSON.parse(e.content);
+      if (parsed?.type === "file") {
+        return {
+          ...parsed,
+          size: parsed.size || 0,
+        } as FileData;
+      }
+    } catch {
+      // not JSON, ignore
+    }
+  }
+  return null;
+}
+
 export const MessageContentRouter: FC<MessageContentRouterProps> = ({
-  message,
+  event,
   isOutgoing,
   isDecrypting,
   decryptionAttempted,
   decryptedContent,
   conversation,
+  contact,
 }) => {
-  const { content, fileData, transactionId } = message;
+  const { content, transactionId, __type } = event;
 
-  const messageToRender = (decryptionAttempted && decryptedContent) || content;
+  const messageToRender =
+    (decryptionAttempted ? decryptedContent : content) ?? "";
 
-  // detect message type
-  const { isHandshake, isPayment, isFile } = detectMessageType(message);
+  switch (__type) {
+    case "handshake":
+      return conversation ? (
+        <HandshakeContent
+          conversation={conversation}
+          isHandshake
+          contact={contact}
+          handshakeId={String(event.id)}
+        />
+      ) : (
+        <MessageContent content={messageToRender} isDecrypting={isDecrypting} />
+      );
 
-  // generate the appropriate content component
-  if (isHandshake && conversation) {
-    return (
-      <HandshakeContent conversation={conversation} isHandshake={isHandshake} />
-    );
+    case "payment":
+      return (
+        <PaymentContent
+          content={messageToRender}
+          isOutgoing={isOutgoing}
+          isDecrypting={isDecrypting}
+        />
+      );
+
+    case "message":
+    default: {
+      const file = extractFileData(event);
+      return file ? (
+        <FileContent
+          content={messageToRender}
+          transactionId={transactionId}
+          fileData={file}
+        />
+      ) : (
+        <MessageContent content={messageToRender} isDecrypting={isDecrypting} />
+      );
+    }
   }
-
-  if (isPayment) {
-    return (
-      <PaymentContent
-        content={messageToRender}
-        isOutgoing={isOutgoing}
-        isDecrypting={isDecrypting}
-      />
-    );
-  }
-
-  if (isFile) {
-    return (
-      <FileContent
-        fileData={fileData || null}
-        content={messageToRender}
-        transactionId={transactionId}
-      />
-    );
-  }
-
-  // default to message content
-  return (
-    <MessageContent
-      content={messageToRender || ""}
-      isDecrypting={isDecrypting}
-    />
-  );
 };
