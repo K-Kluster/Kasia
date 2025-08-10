@@ -1,4 +1,5 @@
 node_modules
+src/service/indexer/generated/
 dist
 build
 *.lock
