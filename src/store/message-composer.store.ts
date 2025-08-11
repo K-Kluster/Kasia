@@ -10,22 +10,12 @@ interface ComposerState {
   attachment: Attachment | null;
   priority: PriorityFeeConfig;
 
-  feeState: {
-    status: "idle" | "loading" | "error";
-    error?: Error;
-    value?: number;
-  };
   sendState: { status: "idle" | "loading" | "error"; error?: Error };
 
   // actions
   setDraft: (recipient: string, draft: string) => void;
   setAttachment: (attachment: Attachment | null) => void;
   setPriority: (priority: PriorityFeeConfig) => void;
-  setFeeState: (state: {
-    status: "idle" | "loading" | "error";
-    error?: Error;
-    value?: number;
-  }) => void;
   setSendState: (state: {
     status: "idle" | "loading" | "error";
     error?: Error;
@@ -39,7 +29,6 @@ export const useComposerStore = create<ComposerState>((set, get) => ({
   drafts: {},
   attachment: null,
   priority: { amount: 0n, source: FeeSource.SenderPays },
-  feeState: { status: "idle" },
   sendState: { status: "idle" },
 
   setDraft: (recipient, draft) =>
@@ -48,7 +37,6 @@ export const useComposerStore = create<ComposerState>((set, get) => ({
     })),
   setAttachment: (attachment) => set({ attachment }),
   setPriority: (priority) => set({ priority }),
-  setFeeState: (feeState) => set({ feeState }),
   setSendState: (sendState) => set({ sendState }),
   getDraft: (recipient) => get().drafts[recipient] || "",
   clearDraft: (recipient) =>
@@ -62,7 +50,6 @@ export const useComposerStore = create<ComposerState>((set, get) => ({
       drafts: {},
       attachment: null,
       priority: { amount: 0n, source: FeeSource.SenderPays },
-      feeState: { status: "idle" },
       sendState: { status: "idle" },
     }),
 }));

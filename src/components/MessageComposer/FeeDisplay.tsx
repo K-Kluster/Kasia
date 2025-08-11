@@ -3,6 +3,7 @@ import { formatKasAmount } from "../../utils/format";
 import { PriorityFeeSelector } from "../PriorityFeeSelector";
 import { PriorityFeeConfig } from "../../types/all";
 import { Attachment } from "../../store/message-composer.store";
+import { FeeState } from "../../types/all";
 
 // fee levels for color coding
 // need to extract this and make it setable from the settings
@@ -20,13 +21,9 @@ function getFeeClasses(fee: number) {
 
 interface FeeDisplayProps {
   recipient?: string;
-  draft: string;
-  attachment: Attachment;
-  feeState: {
-    status: "idle" | "loading" | "error";
-    error?: Error;
-    value?: number;
-  };
+  draft?: string;
+  attachment: Attachment | null;
+  feeState: FeeState;
   priority: PriorityFeeConfig;
   onPriorityChange: (priority: PriorityFeeConfig) => void;
 }

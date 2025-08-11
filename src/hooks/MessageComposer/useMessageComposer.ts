@@ -6,16 +6,15 @@ import { toast } from "../../utils/toast-helper";
 import { unknownErrorToErrorLike } from "../../utils/errors";
 import { prepareFileForUpload } from "../../service/upload-file-service";
 import { MAX_PAYLOAD_SIZE } from "../../config/constants";
-import { KasiaTransaction } from "../../types/all";
+import { KasiaTransaction, FeeState } from "../../types/all";
 import { FileData } from "../../store/repository/message.repository";
 
-export const useMessageComposer = (recipient?: string) => {
+export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
   const {
     attachment,
     priority,
     sendState,
     setSendState,
-    feeState,
     setAttachment,
     clearDraft,
   } = useComposerStore();
@@ -69,10 +68,17 @@ export const useMessageComposer = (recipient?: string) => {
       toast.error("Please enter a message or attach a file.");
       return;
     }
-    if (feeState.status === "error") {
-      toast.error("Fee estimation failed. Please try again or reload the app.");
+
+    // require valid fee state before sending
+    if (
+      !feeState ||
+      feeState.status !== "idle" ||
+      typeof feeState.value !== "number"
+    ) {
+      toast.error("Please wait for fee calculation to complete.");
       return;
     }
+
     if (sendState.status === "loading") {
       return;
     }
@@ -155,7 +161,7 @@ export const useMessageComposer = (recipient?: string) => {
           ? JSON.stringify(fileDataForStorage)
           : draft,
         amount: 20000000,
-        fee: feeState.value || 0,
+        fee: feeState.value,
         payload: "",
       };
 

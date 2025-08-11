@@ -1,20 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Attachment,
   useComposerStore,
 } from "../../store/message-composer.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { Address } from "kaspa-wasm";
+import { FeeState } from "../../types/all";
 
 export const useFeeEstimate = (
   recipient?: string,
   draft?: string,
   attachment?: Attachment
 ) => {
+  const [feeState, setFeeState] = useState<FeeState>({ status: "idle" });
+
   const {
     priority,
     sendState: { status: sendStatus },
-    setFeeState,
   } = useComposerStore();
   const { unlockedWallet, estimateSendMessageFees } = useWalletStore();
 
@@ -74,7 +76,8 @@ export const useFeeEstimate = (
     priority,
     sendStatus,
     unlockedWallet,
-    setFeeState,
     estimateSendMessageFees,
   ]);
+
+  return feeState;
 };
