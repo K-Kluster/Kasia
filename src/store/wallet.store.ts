@@ -351,10 +351,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       try {
         // Check if this is a handshake message
         console.log("Sending protocol message to:", toAddress.toString());
-        const encryptedMessage = await encrypt_message(
-          toAddress.toString(),
-          message
-        );
+        const encryptedMessage = encrypt_message(toAddress.toString(), message);
 
         return await state.accountService.sendMessage({
           message: encryptedMessage.to_hex(),
@@ -383,10 +380,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       try {
         // Check if this is a handshake message
         console.log("Sending protocol message to:", toAddress.toString());
-        const encryptedMessage = await encrypt_message(
-          toAddress.toString(),
-          message
-        );
+        const encryptedMessage = encrypt_message(toAddress.toString(), message);
 
         return await state.accountService.sendMessageWithContext({
           message: encryptedMessage.to_hex(),

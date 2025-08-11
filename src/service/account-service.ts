@@ -1470,22 +1470,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       conversation: conversationWithContact,
     });
 
-    // Use the conversation partner's address for encryption, even though we're sending to ourselves
-    const encryptedMessage = encrypt_message(
-      conversationWithContact.contact.kaspaAddress,
-      sendMessage.message
-    );
-    if (!encryptedMessage) {
-      throw new Error("Failed to encrypt message");
-    }
-
     // Create the payload with conversation context
     const prefix = PROTOCOL.prefix.type;
     const version = VERSION; // Use the current protocol version
     const messageType = PROTOCOL.headers.COMM.type; // Use comm type for conversation messages
     const payload = `${prefix}:${version}:${messageType}:${
       sendMessage.theirAlias
-    }:${encryptedMessage.to_hex()}`;
+    }:${sendMessage.message}`;
 
     // Convert the payload to hex
     const payloadHex = payload
