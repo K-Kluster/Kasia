@@ -112,17 +112,23 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
 
   const onSend = async () => {
     if (!recipient) return;
-    const active = useMessagingStore
+    const conversations = useMessagingStore
       .getState()
-      .getActiveConversationsWithContacts();
-    const exists = active.find(
+      .getConversationsWithContacts();
+    const exists = conversations.find(
       ({ contact }) => contact.kaspaAddress === recipient
     );
     if (!exists) {
-      setSendMessageCallback(() => send);
-      openModal("warn-costy-send-message");
-      return;
+      throw new Error("Conversation does not exist");
     }
+
+    // @TODO: this is useless now?
+    // should we prompt a one-time warn that me not have participant's alias and hence it's possible the participant will not read/reply?
+    // if (exists.conversation.status !== "active") {
+    //   setSendMessageCallback(() => send);
+    //   openModal("warn-costy-send-message");
+    //   return;
+    // }
     await send(exists.conversation.myAlias);
   };
 

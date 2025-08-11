@@ -22,6 +22,7 @@ import { useDBStore } from "./db.store";
 import {
   PendingConversation,
   ActiveConversation,
+  Conversation,
 } from "./repository/conversation.repository";
 import {
   loadLegacyMessages,
@@ -79,6 +80,10 @@ interface MessagingState {
   getActiveConversationsWithContacts: () => {
     contact: Contact;
     conversation: ActiveConversation;
+  }[];
+  getConversationsWithContacts: () => {
+    contact: Contact;
+    conversation: Conversation;
   }[];
   getPendingConversationsWithContact: () => {
     contact: Contact;
@@ -357,14 +362,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           // also included previously unknown handhshakes message history fetching
           // this is useful mainly on a new device, where we have no history of received messages
 
-          // include current conversation alias
+          // include current conversation participant's alias
           const resolvedUnknownHandshakesAlisesForThisConversation =
             resolvedUnknownHandshakesAliasesBySenderAddress[
               oooc.contact.kaspaAddress
             ] ?? new Set<string>();
-          resolvedUnknownHandshakesAlisesForThisConversation.add(
-            oooc.conversation.myAlias
-          );
+          if (oooc.conversation.theirAlias) {
+            resolvedUnknownHandshakesAlisesForThisConversation.add(
+              oooc.conversation.theirAlias
+            );
+          }
 
           const [indexerPayments, indexerMessages] = await Promise.all([
             _historicalSyncer.fetchHistoricalPaymentsFromAddress(
@@ -1199,6 +1206,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     getActiveConversationsWithContacts: () => {
       const manager = g().conversationManager;
       return manager ? manager.getActiveConversationsWithContact() : [];
+    },
+    getConversationsWithContacts: () => {
+      const manager = g().conversationManager;
+      return manager ? manager.getAllConversationsWithContact() : [];
     },
     getPendingConversationsWithContact: () => {
       const manager = g().conversationManager;
