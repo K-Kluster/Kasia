@@ -123,7 +123,7 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
       openModal("warn-costy-send-message");
       return;
     }
-    await send();
+    await send(exists.conversation.myAlias);
   };
 
   return (

@@ -19,13 +19,20 @@ import {
 import { TransactionId } from "../types/transactions";
 import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
-import { PROTOCOL } from "../config/protocol";
 
 export interface WalletStoreSendMessageArgs {
   message: string;
   toAddress: Address;
   password: string;
   customAmount?: bigint;
+  priorityFee?: PriorityFeeConfig;
+}
+
+export interface WalletStoreSendContextualMessageArgs {
+  message: string;
+  toAddress: Address;
+  myAlias: string;
+  password: string;
   priorityFee?: PriorityFeeConfig;
 }
 
@@ -93,6 +100,9 @@ type WalletState = {
   // wallet operations
   stop: () => void;
   sendMessage: (args: WalletStoreSendMessageArgs) => Promise<TransactionId>;
+  sendMessageWithContext: (
+    args: WalletStoreSendContextualMessageArgs
+  ) => Promise<TransactionId>;
   sendPreEncryptedMessage: (
     preEncryptedHex: string,
     toAddress: Address,
@@ -340,40 +350,12 @@ export const useWalletStore = create<WalletState>((set, get) => {
 
       try {
         // Check if this is a handshake message
-        if (
-          message.startsWith(PROTOCOL.prefix.string) &&
-          message.includes(":handshake:")
-        ) {
-          // Always send handshake messages to the recipient's address
-          console.log("Sending handshake message to:", toAddress.toString());
-          const encryptedMessage = await encrypt_message(
-            toAddress.toString(),
-            message
-          );
-          if (!encryptedMessage) {
-            throw new Error("Failed to encrypt handshake message");
-          }
-          return await state.accountService.sendMessage({
-            message: encryptedMessage.to_hex(),
-            toAddress,
-            password,
-            amount: customAmount,
-            priorityFee,
-          });
-        }
-
-        // For regular messages, send to recipient
-        console.log(
-          "Sending regular message to recipient:",
-          toAddress.toString()
-        );
+        console.log("Sending protocol message to:", toAddress.toString());
         const encryptedMessage = await encrypt_message(
           toAddress.toString(),
           message
         );
-        if (!encryptedMessage) {
-          throw new Error("Failed to encrypt message");
-        }
+
         return await state.accountService.sendMessage({
           message: encryptedMessage.to_hex(),
           toAddress,
@@ -386,7 +368,38 @@ export const useWalletStore = create<WalletState>((set, get) => {
         throw error;
       }
     },
+    sendMessageWithContext: async ({
+      message,
+      toAddress,
+      password,
+      priorityFee,
+      myAlias,
+    }) => {
+      const state = get();
+      if (!state.unlockedWallet || !state.accountService) {
+        throw new Error("Wallet not unlocked or account service not running");
+      }
 
+      try {
+        // Check if this is a handshake message
+        console.log("Sending protocol message to:", toAddress.toString());
+        const encryptedMessage = await encrypt_message(
+          toAddress.toString(),
+          message
+        );
+
+        return await state.accountService.sendMessageWithContext({
+          message: encryptedMessage.to_hex(),
+          toAddress,
+          password,
+          theirAlias: myAlias,
+          priorityFee,
+        });
+      } catch (error) {
+        console.error("Error sending contextual message:", error);
+        throw error;
+      }
+    },
     sendPreEncryptedMessage: (preEncryptedHex, toAddress, password) => {
       if (!_accountService) {
         throw Error("Account service not initialized.");
