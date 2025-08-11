@@ -2,6 +2,7 @@ import clsx from "clsx";
 import { formatKasAmount } from "../../utils/format";
 import { PriorityFeeSelector } from "../PriorityFeeSelector";
 import { PriorityFeeConfig } from "../../types/all";
+import { Attachment } from "../../store/message-composer.store";
 
 // fee levels for color coding
 // need to extract this and make it setable from the settings
@@ -20,6 +21,7 @@ function getFeeClasses(fee: number) {
 interface FeeDisplayProps {
   recipient?: string;
   draft: string;
+  attachment: Attachment;
   feeState: {
     status: "idle" | "loading" | "error";
     error?: Error;
@@ -33,12 +35,13 @@ interface FeeDisplayProps {
 export const FeeDisplay = ({
   recipient,
   draft,
+  attachment,
   feeState,
   priority,
   onPriorityChange,
 }: FeeDisplayProps) => {
-  // only show fee display when we have a recipient and draft
-  if (!recipient || !draft) {
+  // only show fee display when we have a recipient and either draft or attachment
+  if (!recipient || (!draft && !attachment)) {
     return null;
   }
 

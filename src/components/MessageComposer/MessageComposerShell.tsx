@@ -44,7 +44,7 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const [hasCamera, setHasCamera] = useState(false);
 
   //get fee when composer renders
-  useFeeEstimate(recipient);
+  useFeeEstimate(recipient, draft, attachment);
 
   useEffect(() => {
     async function checkCamera() {
@@ -142,6 +142,7 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
       <FeeDisplay
         recipient={recipient}
         draft={draft}
+        attachment={attachment}
         feeState={feeState}
         priority={priority}
         onPriorityChange={setPriority}
