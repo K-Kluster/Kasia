@@ -37,7 +37,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const messageStore = useMessagingStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-
   // order contacts by last activity (most recent first)
   const orderedContacts = contacts.sort((a, b) => {
     const conversationA = messageStore.oneOnOneConversations.find(
@@ -169,9 +168,9 @@ export const ContactSection: FC<ContactSectionProps> = ({
       {/* Contacts list */}
       <div className="bg-secondary-bg flex-1 overflow-y-auto">
         {searchResults.length
-          ? searchResults.map((contact) => (
+          ? searchResults.map((contact, index) => (
               <ContactCard
-                key={contact.kaspaAddress}
+                key={`contact-${contact.id}-${index}`}
                 contact={contact}
                 isSelected={contact.kaspaAddress === openedRecipient}
                 collapsed={contactsCollapsed}

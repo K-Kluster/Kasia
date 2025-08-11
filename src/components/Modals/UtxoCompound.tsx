@@ -4,6 +4,7 @@ import { Address } from "kaspa-wasm";
 import { FC, useCallback, useEffect, useState } from "react";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
+import { getExplorerUrl } from "../../utils/explorer-url";
 
 // Type definitions
 type CompoundResult = {
@@ -45,16 +46,6 @@ export const UtxoCompound: FC = () => {
       setFrozenBalance(null); // Clear frozen balance to show final result
     }
   }, [balance?.matureUtxoCount, isCompounding, pendingResult]);
-
-  // Helper functions
-  const getExplorerUrl = useCallback(
-    (txId: string) => {
-      return selectedNetwork === "mainnet"
-        ? `https://explorer.kaspa.org/txs/${txId}`
-        : `https://explorer-tn10.kaspa.org/txs/${txId}`;
-    },
-    [selectedNetwork]
-  );
 
   const resetAllStates = useCallback(() => {
     setError(null);
