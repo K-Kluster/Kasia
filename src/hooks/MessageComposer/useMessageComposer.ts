@@ -104,44 +104,6 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
         }
       }
 
-      // check if we have an active conversation with this recipient
-      // const activeConversations =
-      //   messageStore.getActiveConversationsWithContacts();
-      // const existingConversation = activeConversations.find(
-      //   (conv) => conv.contact.kaspaAddress === recipient
-      // );
-
-      // let txId: string;
-
-      // // if we have an active conversation, use the context-aware sending
-      // if (
-      //   existingConversation &&
-      //   existingConversation.conversation.theirAlias
-      // ) {
-      //   console.log("Sending message with conversation context:", {
-      //     recipient,
-      //     theirAlias: existingConversation.conversation.theirAlias,
-      //     priorityFee: priority,
-      //   });
-
-      //   if (!walletStore.accountService) {
-      //     throw new Error("Account service not initialized");
-      //   }
-
-      //   // use the account service directly for context-aware sending
-      //   txId = await walletStore.accountService.sendMessageWithContext({
-      //     toAddress: new Address(recipient),
-      //     message: messageToSend,
-      //     password: walletStore.unlockedWallet.password,
-      //     theirAlias: existingConversation.conversation.theirAlias,
-      //     priorityFee: priority,
-      //   });
-      // } else {
-      //   // if no active conversation or no alias, use regular sending
-      //   console.log(
-      //     "No active conversation found, sending regular message with priority fee:",
-      //     priority
-      //   );
       let txId = "";
       if (myAlias) {
         txId = await walletStore.sendMessageWithContext({
@@ -186,7 +148,6 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
   };
-
 
   return {
     /**
