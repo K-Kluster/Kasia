@@ -99,7 +99,6 @@ export class ConversationManagerService {
   }
 
   public async initiateHandshake(recipientAddress: string): Promise<{
-    payload: string;
     conversation: Conversation;
     contact: Contact;
   }> {
@@ -127,21 +126,6 @@ export class ConversationManagerService {
           conversationAndContact &&
           conversationAndContact.conversation.status === "pending"
         ) {
-          // Create handshake payload with the existing alias (keeps first alias)
-          const handshakePayload: HandshakePayload = {
-            type: "handshake",
-            alias: conversationAndContact.conversation.myAlias, // Keep the original alias
-            timestamp: Date.now(),
-            version: ConversationManagerService.PROTOCOL_VERSION,
-            recipientAddress: recipientAddress,
-            sendToRecipient: true,
-          };
-
-          // Format for blockchain transaction
-          const payload = `ciph_msg:${
-            ConversationManagerService.PROTOCOL_VERSION
-          }:handshake:${JSON.stringify(handshakePayload)}`;
-
           // Update last activity to show it's still active
           conversationAndContact.conversation.lastActivityAt = new Date();
           this.inMemorySyncronization(
@@ -151,7 +135,6 @@ export class ConversationManagerService {
 
           // Note: Not triggering onHandshakeInitiated again since it's a retry
           return {
-            payload,
             conversation: conversationAndContact.conversation,
             contact: conversationAndContact.contact,
           };
@@ -164,24 +147,9 @@ export class ConversationManagerService {
         true
       );
 
-      // Create handshake payload - initial handshake is sent directly to recipient
-      const handshakePayload: HandshakePayload = {
-        type: "handshake",
-        alias: conversation.myAlias,
-        timestamp: Date.now(),
-        version: ConversationManagerService.PROTOCOL_VERSION,
-        recipientAddress: recipientAddress,
-        sendToRecipient: true, // Flag to indicate this should be sent to recipient
-      };
-
-      // Format for blockchain transaction
-      const payload = `ciph_msg:${
-        ConversationManagerService.PROTOCOL_VERSION
-      }:handshake:${JSON.stringify(handshakePayload)}`;
-
       this.events?.onHandshakeInitiated?.(conversation, contact);
 
-      return { payload, conversation, contact };
+      return { conversation, contact };
     } catch (error) {
       this.events?.onError?.(error);
       throw error;
@@ -248,9 +216,7 @@ export class ConversationManagerService {
     }
   }
 
-  public async createHandshakeResponse(
-    conversationId: string
-  ): Promise<string> {
+  public async createHandshakeResponse(conversationId: string): Promise<void> {
     const conversationAndContact =
       this.conversationWithContactByConversationId.get(conversationId);
     if (!conversationAndContact) {
@@ -288,21 +254,6 @@ export class ConversationManagerService {
       );
       this.inMemorySyncronization(conversation, contact);
     }
-
-    const responsePayload: HandshakePayload = {
-      type: "handshake",
-      alias: conversation.myAlias,
-      theirAlias: conversation.theirAlias, // Include their alias in response
-      timestamp: Date.now(),
-      version: ConversationManagerService.PROTOCOL_VERSION,
-      recipientAddress: contact.kaspaAddress, // Include their address
-      sendToRecipient: false, // Set to false to use standard encryption
-      isResponse: true,
-    };
-
-    return `ciph_msg:${
-      ConversationManagerService.PROTOCOL_VERSION
-    }:handshake:${JSON.stringify(responsePayload)}`;
   }
 
   public getConversationWithContactByAlias(
@@ -455,20 +406,34 @@ export class ConversationManagerService {
     });
   }
 
+  /**
+   * Expected Legacy Format: "ciph_msg:1:handshake:{json}"
+   *
+   * Expected Format: "{json}"
+   */
   public parseHandshakePayload(payloadString: string): HandshakePayload {
-    // Expected format: "ciph_msg:1:handshake:{json}"
-    const parts = payloadString.split(":");
-    if (
-      parts.length < 4 ||
-      parts[0] !== "ciph_msg" ||
-      parts[2] !== "handshake"
-    ) {
-      throw new Error("Invalid handshake payload format");
+    // LEGACY HANDSHAKE FORMAT
+    if (payloadString.startsWith("ciph_msg:1:handshake:")) {
+      const parts = payloadString.split(":");
+      if (
+        parts.length < 4 ||
+        parts[0] !== "ciph_msg" ||
+        parts[2] !== "handshake"
+      ) {
+        throw new Error("Invalid handshake payload format");
+      }
+
+      const jsonPart = parts.slice(3).join(":"); // Handle colons in JSON
+      try {
+        return JSON.parse(jsonPart);
+      } catch {
+        throw new Error("Invalid handshake JSON payload");
+      }
     }
 
-    const jsonPart = parts.slice(3).join(":"); // Handle colons in JSON
+    // ASSUME IT'S THE NEW FORMAT
     try {
-      return JSON.parse(jsonPart);
+      return JSON.parse(payloadString);
     } catch {
       throw new Error("Invalid handshake JSON payload");
     }

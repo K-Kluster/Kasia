@@ -9,12 +9,19 @@ import {
  * Handles historical events
  */
 export class HistoricalSyncer {
+  private DISABLED = import.meta.env.VITE_DISABLE_INDEXER === "true";
+
   constructor(readonly address: string) {}
 
   /**
    * Emits `initialLoadCompleted` when done
    */
   async initialLoad(): Promise<HandshakeResponse[]> {
+    if (this.DISABLED) {
+      console.log("HistoricalSyncer: initialLoad disabled");
+      return [];
+    }
+
     // fetch all historical handhskaes for this address
     const handshakeResponses = await getHandshakesByReceiver({
       query: { address: this.address },
@@ -29,6 +36,13 @@ export class HistoricalSyncer {
   }
 
   async fetchHistoricalMessagesToAddress(from: string, alias: string) {
+    if (this.DISABLED) {
+      console.log(
+        "HistoricalSyncer: fetchHistoricalMessagesToAddress disabled"
+      );
+      return [];
+    }
+
     const messages = await getContextualMessagesBySender({
       query: {
         address: from,
@@ -48,6 +62,13 @@ export class HistoricalSyncer {
   }
 
   async fetchHistoricalPaymentsFromAddress(from: string) {
+    if (this.DISABLED) {
+      console.log(
+        "HistoricalSyncer: fetchHistoricalPaymentsFromAddress disabled"
+      );
+      return [];
+    }
+
     const payments = await getPaymentsBySender({
       query: {
         address: from,

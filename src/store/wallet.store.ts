@@ -21,6 +21,9 @@ import { PriorityFeeConfig } from "../types/all";
 import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
 
 export interface WalletStoreSendMessageArgs {
+  /**
+   * message to send, prefix will be added automatically
+   */
   message: string;
   toAddress: Address;
   password: string;
@@ -33,6 +36,17 @@ export interface WalletStoreSendContextualMessageArgs {
   toAddress: Address;
   myAlias: string;
   password: string;
+  priorityFee?: PriorityFeeConfig;
+}
+
+export interface WalletStoreSendTransactionArgs {
+  /**
+   * payload to use for the transaction, if encryption is required, it should be encrypted before passing it here
+   */
+  payload?: string;
+  toAddress: Address;
+  password: string;
+  customAmount?: bigint;
   priorityFee?: PriorityFeeConfig;
 }
 
@@ -103,10 +117,8 @@ type WalletState = {
   sendMessageWithContext: (
     args: WalletStoreSendContextualMessageArgs
   ) => Promise<TransactionId>;
-  sendPreEncryptedMessage: (
-    preEncryptedHex: string,
-    toAddress: Address,
-    password: string
+  sendTransaction: (
+    args: WalletStoreSendTransactionArgs
   ) => Promise<TransactionId>;
   getMatureUtxos: () => UtxoEntryReference[];
 
@@ -394,14 +406,19 @@ export const useWalletStore = create<WalletState>((set, get) => {
         throw error;
       }
     },
-    sendPreEncryptedMessage: (preEncryptedHex, toAddress, password) => {
-      if (!_accountService) {
-        throw Error("Account service not initialized.");
+    sendTransaction: async (args) => {
+      const state = get();
+      if (!state.unlockedWallet || !state.accountService) {
+        throw new Error("Wallet not unlocked or account service not running");
       }
-      return _accountService.sendPreEncryptedMessage(
-        toAddress,
-        preEncryptedHex,
-        password
+      return state.accountService.createTransaction(
+        {
+          address: args.toAddress,
+          amount: args.customAmount ?? BigInt(0),
+          payload: args.payload ?? "",
+          priorityFee: args.priorityFee,
+        },
+        state.unlockedWallet.password
       );
     },
 
