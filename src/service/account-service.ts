@@ -703,9 +703,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         addressString,
         sendMessage.message
       );
-      if (!encryptedMessage) {
-        throw new Error("Failed to encrypt message");
-      }
+
       payload = PROTOCOL.prefix.hex + encryptedMessage.to_hex();
     }
 
@@ -811,47 +809,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     console.log("Adjusted hex for SEC1 format compatibility");
 
     return modifiedHex;
-  }
-
-  /**
-   * Send a message using a pre-encrypted hex value from the visualizer
-   * Use this to test sending a message with known-good encryption
-   */
-  public async sendPreEncryptedMessage(
-    toAddress: Address,
-    preEncryptedHex: string,
-    password: string
-  ) {
-    const minimumAmount = kaspaToSompi("0.2");
-
-    if (!minimumAmount) {
-      throw new Error("Minimum amount missing");
-    }
-
-    // Ensure the destination address has the proper prefix
-    const destinationAddress = this.ensureAddressPrefix(toAddress);
-    console.log(
-      "Sending pre-encrypted message to:",
-      destinationAddress.toString()
-    );
-    console.log("Pre-encrypted message:", preEncryptedHex);
-
-    // Ensure the pre-encrypted message is compatible with the Rust code
-    const adjustedHex = this.adjustForSEC1Format(preEncryptedHex);
-
-    // Use the provided pre-encrypted hex directly
-    const payload = PROTOCOL.prefix.hex + adjustedHex;
-    console.log("Final transaction payload:", payload);
-
-    return this.createTransaction(
-      {
-        address: destinationAddress,
-        amount: minimumAmount,
-        payload: payload,
-        priorityFee: { amount: BigInt(0), source: FeeSource.SenderPays },
-      },
-      password
-    );
   }
 
   public getMatureUtxos() {
@@ -1245,7 +1202,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             messageType = PROTOCOL.headers.HANDSHAKE.type;
             isHandshake = true;
             try {
-              // extract the JSON part
+              /**
+               * Expected Legacy Format: "ciph_msg:1:handshake:{json}"
+               *
+               * Expected Format: "{json}"
+               */
               let jsonContent = decryptedContent;
               if (
                 decryptedContent.includes(
