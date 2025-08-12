@@ -908,9 +908,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       transaction.payload &&
       transaction.payload.startsWith(PROTOCOL.prefix.hex);
 
-    const isSelfMessage = isMessageTransaction && isDirectSelfMessage;
+    const hasActiveConversation = this.monitoredAddresses.has(
+      destinationAddress.toString()
+    );
+
+    const isSelfMessage =
+      isMessageTransaction && (isDirectSelfMessage || hasActiveConversation);
+
     console.log("Transaction type:", {
       isDirectSelfMessage,
+      hasActiveConversation,
       isMessageTransaction,
       isSelfMessage,
     });

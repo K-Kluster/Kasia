@@ -4,19 +4,17 @@ import { useMessagingStore } from "../../store/messaging.store";
 import { Address } from "kaspa-wasm";
 import { toast } from "../../utils/toast-helper";
 import { unknownErrorToErrorLike } from "../../utils/errors";
-import { useFeeEstimate } from "./useFeeEstimate";
 import { prepareFileForUpload } from "../../service/upload-file-service";
 import { MAX_PAYLOAD_SIZE } from "../../config/constants";
-import { KasiaTransaction } from "../../types/all";
+import { KasiaTransaction, FeeState } from "../../types/all";
 import { FileData } from "../../store/repository/message.repository";
 
-export const useMessageComposer = (recipient?: string) => {
+export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
   const {
     attachment,
     priority,
     sendState,
     setSendState,
-    feeState,
     setAttachment,
     clearDraft,
   } = useComposerStore();
@@ -70,10 +68,17 @@ export const useMessageComposer = (recipient?: string) => {
       toast.error("Please enter a message or attach a file.");
       return;
     }
-    if (feeState.status === "error") {
-      toast.error("Fee estimation failed. Please try again or reload the app.");
+
+    // require valid fee state before sending
+    if (
+      !feeState ||
+      feeState.status !== "idle" ||
+      typeof feeState.value !== "number"
+    ) {
+      toast.error("Please wait for fee calculation to complete.");
       return;
     }
+
     if (sendState.status === "loading") {
       return;
     }
@@ -99,12 +104,51 @@ export const useMessageComposer = (recipient?: string) => {
         }
       }
 
-      const txId = await walletStore.sendMessage({
-        message: messageToSend,
-        toAddress: new Address(recipient),
-        password: walletStore.unlockedWallet.password,
-        priorityFee: priority,
-      });
+      // check if we have an active conversation with this recipient
+      const activeConversations =
+        messageStore.getActiveConversationsWithContacts();
+      const existingConversation = activeConversations.find(
+        (conv) => conv.contact.kaspaAddress === recipient
+      );
+
+      let txId: string;
+
+      // if we have an active conversation, use the context-aware sending
+      if (
+        existingConversation &&
+        existingConversation.conversation.theirAlias
+      ) {
+        console.log("Sending message with conversation context:", {
+          recipient,
+          theirAlias: existingConversation.conversation.theirAlias,
+          priorityFee: priority,
+        });
+
+        if (!walletStore.accountService) {
+          throw new Error("Account service not initialized");
+        }
+
+        // use the account service directly for context-aware sending
+        txId = await walletStore.accountService.sendMessageWithContext({
+          toAddress: new Address(recipient),
+          message: messageToSend,
+          password: walletStore.unlockedWallet.password,
+          theirAlias: existingConversation.conversation.theirAlias,
+          priorityFee: priority,
+        });
+      } else {
+        // if no active conversation or no alias, use regular sending
+        console.log(
+          "No active conversation found, sending regular message with priority fee:",
+          priority
+        );
+        txId = await walletStore.sendMessage({
+          message: messageToSend,
+          toAddress: new Address(recipient),
+          password: walletStore.unlockedWallet.password,
+          priorityFee: priority,
+        });
+      }
 
       const event: KasiaTransaction = {
         transactionId: txId,
@@ -117,7 +161,7 @@ export const useMessageComposer = (recipient?: string) => {
           ? JSON.stringify(fileDataForStorage)
           : draft,
         amount: 20000000,
-        fee: feeState.value || 0,
+        fee: feeState.value,
         payload: "",
       };
 
@@ -132,8 +176,6 @@ export const useMessageComposer = (recipient?: string) => {
       toast.error(`Failed to send message: ${unknownErrorToErrorLike(error)}`);
     }
   };
-
-  useFeeEstimate(recipient);
 
   return { send, attach };
 };

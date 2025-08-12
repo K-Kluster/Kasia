@@ -66,7 +66,6 @@ export const MessengerContainer: FC = () => {
   useEffect(() => {
     const syncToWidth = () => {
       if (isMobile) {
-        if (contactsCollapsed) setContactsCollapsed(false);
         // On mobile, show messages if there's an opened recipient, otherwise show contacts
         if (messageStore.openedRecipient) {
           setMobileView("messages");
@@ -81,7 +80,7 @@ export const MessengerContainer: FC = () => {
     syncToWidth(); // run once on mount
     window.addEventListener("resize", syncToWidth);
     return () => window.removeEventListener("resize", syncToWidth);
-  }, [contactsCollapsed, messageStore.openedRecipient, isMobile]);
+  }, [messageStore.openedRecipient, isMobile]);
 
   // Clean up useEffect
   useEffect(() => {

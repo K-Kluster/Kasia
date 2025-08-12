@@ -1,24 +1,44 @@
-import { useEffect } from "react";
-import { useComposerStore } from "../../store/message-composer.store";
+import { useEffect, useState } from "react";
+import {
+  Attachment,
+  useComposerStore,
+} from "../../store/message-composer.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { Address } from "kaspa-wasm";
+import { FeeState } from "../../types/all";
 
-export const useFeeEstimate = (recipient?: string) => {
-  const { priority, sendState, setFeeState } = useComposerStore();
-  const walletStore = useWalletStore();
+export const useFeeEstimate = (
+  recipient?: string,
+  draft?: string,
+  attachment?: Attachment
+) => {
+  const [feeState, setFeeState] = useState<FeeState>({ status: "idle" });
 
-  const draft = useComposerStore((s) =>
-    recipient ? s.drafts[recipient] || "" : ""
-  );
+  const {
+    priority,
+    sendState: { status: sendStatus },
+  } = useComposerStore();
+  const { unlockedWallet, estimateSendMessageFees } = useWalletStore();
 
   useEffect(() => {
     if (
       !recipient ||
-      !draft ||
-      !walletStore.unlockedWallet ||
-      sendState.status === "loading"
+      (!draft && !attachment) ||
+      !unlockedWallet ||
+      sendStatus === "loading"
     ) {
       setFeeState({ status: "idle" });
+      return;
+    }
+
+    let address: Address;
+    try {
+      address = new Address(recipient);
+    } catch {
+      setFeeState({
+        status: "error",
+        error: new Error("Invalid recipient address"),
+      });
       return;
     }
 
@@ -27,8 +47,10 @@ export const useFeeEstimate = (recipient?: string) => {
 
     // debounce the fee estimation
     const timeoutId = setTimeout(() => {
-      walletStore
-        .estimateSendMessageFees(draft, new Address(recipient), priority)
+      // use attachment content if available, otherwise use draft text
+      const messageContent = attachment ? attachment.content : draft || "";
+
+      estimateSendMessageFees(messageContent, address, priority)
         .then((estimate) => {
           if (!isCancelled) {
             const fee = Number(estimate.fees) / 100_000_000;
@@ -48,12 +70,14 @@ export const useFeeEstimate = (recipient?: string) => {
       clearTimeout(timeoutId);
     };
   }, [
-    draft,
     recipient,
+    draft,
+    attachment,
     priority,
-    sendState.status,
-    walletStore.unlockedWallet,
-    setFeeState,
-    walletStore,
+    sendStatus,
+    unlockedWallet,
+    estimateSendMessageFees,
   ]);
+
+  return feeState;
 };

@@ -5,20 +5,26 @@ import { AvatarHash } from "./icons/AvatarHash";
 import { PROTOCOL } from "../config/protocol";
 import clsx from "clsx";
 import { Contact } from "../store/repository/contact.repository";
+import { getFileTypeFromContent } from "../utils/parse-message";
 
 function getMessagePreview(content: string) {
-  // If it's a file message
+  // check if it's a file or image message
+  const fileType = getFileTypeFromContent(content);
 
-  if (content.startsWith("[File:")) {
-    // only consider the file name, not the whole content
-    return content;
+  if (fileType) {
+    try {
+      const parsed = JSON.parse(content);
+      return parsed.name || (fileType === "image" ? "Image" : "File");
+    } catch {
+      return fileType === "image" ? "Image" : "File";
+    }
   }
 
   // For regular messages, try to decode if it's encrypted
   if (content.startsWith(PROTOCOL.prefix.string)) {
     const decoded = decodePayload(content);
     return decoded
-      ? decoded.slice(0, 40) + (content.length > 40 ? "..." : "")
+      ? decoded.slice(0, 40) + (decoded.length > 40 ? "..." : "")
       : "Encrypted message";
   }
 
