@@ -80,7 +80,7 @@ export const useDBStore = create<DBState>((set, get) => ({
           kaspaAddress: string;
           createdAt: number;
           lastActivity: number;
-          status: "pending" | "rejected" | "active";
+          status: "sent-pending" | "receive-pending" | "rejected" | "active";
           initiatedByMe: boolean;
         }[] = JSON.parse(conversationString);
 

@@ -20,7 +20,10 @@ export const HandshakeContent: FC<HandshakeContentProps> = ({
     return null;
   }
 
-  if (conversation.status === "pending" && !conversation.initiatedByMe) {
+  if (
+    conversation.status === "receive-pending" &&
+    !conversation.initiatedByMe
+  ) {
     console.log("Rendering handshake response for conversation:", conversation);
     return (
       <HandshakeResponse

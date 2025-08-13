@@ -237,7 +237,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         // You might want to update UI or state here
       },
       onHandshakeCompleted: (conversation, contact) => {
-        console.log("Handshake completed:", conversation);
+        set((s) => ({
+          oneOnOneConversations: s.oneOnOneConversations.map((oooc) =>
+            oooc.conversation.id === conversation.id
+              ? { ...oooc, conversation }
+              : oooc
+          ),
+        }));
       },
       onHandshakeExpired: (conversation, contact) => {
         console.log("Handshake expired:", conversation);

@@ -1,7 +1,11 @@
 import { decryptXChaCha20Poly1305, encryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { DBNotFoundException, KasiaDB } from "./db";
 
-export type ConversationStatus = "pending" | "active" | "rejected";
+export type ConversationStatus =
+  | "sent-pending"
+  | "receive-pending"
+  | "active"
+  | "rejected";
 
 export type ActiveConversation = InternalConversation & {
   status: "active";
@@ -11,14 +15,23 @@ export type RejectedConversation = InternalConversation & {
   status: "rejected";
 };
 
-export type PendingConversation = InternalConversation & {
-  status: "pending";
+export type SentPendingConversation = InternalConversation & {
+  status: "sent-pending";
 };
+
+export type ReceivePendingConversation = InternalConversation & {
+  status: "receive-pending";
+};
+
+export type PendingConversation =
+  | SentPendingConversation
+  | ReceivePendingConversation;
 
 export type Conversation =
   | ActiveConversation
   | RejectedConversation
-  | PendingConversation;
+  | SentPendingConversation
+  | ReceivePendingConversation;
 
 export type DbConversation = {
   /**

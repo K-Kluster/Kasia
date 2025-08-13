@@ -125,7 +125,7 @@ export class ConversationManagerService {
         // Keep the first alias - reuse existing pending conversation
         if (
           conversationAndContact &&
-          conversationAndContact.conversation.status === "pending"
+          conversationAndContact.conversation.status === "sent-pending"
         ) {
           // Create handshake payload with the existing alias (keeps first alias)
           const handshakePayload: HandshakePayload = {
@@ -203,40 +203,37 @@ export class ConversationManagerService {
       console.log("conversation manager - processing handshake", { payload });
 
       if (existingConversationAndContactByAddress) {
-        // ------- this is a replay of a message we already handled -------
-        // keep the guard so we don't downgrade on refresh
-        if (payload.isResponse) {
-          // Promote the existing pending conversation to active *in-place* so any listeners that hold the original object see the change immediately.
-          (
-            existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
-          ).status = "active";
+        const conv = existingConversationAndContactByAddress.conversation;
+        const contact = existingConversationAndContactByAddress.contact;
+
+        const wasActive = conv.status === "active";
+        const shouldActivate =
+          payload.isResponse || conv.status === "sent-pending";
+
+        if (shouldActivate) {
+          const activeConv: ActiveConversation = {
+            ...conv,
+            status: "active",
+            theirAlias: payload.alias,
+            lastActivityAt: new Date(),
+          };
+          await this.repositories.conversationRepository.saveConversation(
+            activeConv
+          );
+          this.inMemorySyncronization(activeConv, contact);
+          if (!wasActive)
+            this.events?.onHandshakeCompleted?.(activeConv, contact);
         } else {
-          if (
-            existingConversationAndContactByAddress.conversation.status ===
-            "active"
-          ) {
-            console.log(
-              "conversation manager - existing conversation is active",
-              { payload }
-            );
-
-            (
-              existingConversationAndContactByAddress.conversation as unknown as PendingConversation
-            ).status = "pending";
-          }
+          const updated: Conversation = {
+            ...conv,
+            theirAlias: payload.alias,
+            lastActivityAt: new Date(),
+          };
+          await this.repositories.conversationRepository.saveConversation(
+            updated
+          );
+          this.inMemorySyncronization(updated, contact);
         }
-
-        (
-          existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
-        ).theirAlias = payload.alias;
-
-        await this.repositories.conversationRepository.saveConversation(
-          existingConversationAndContactByAddress.conversation
-        );
-        this.inMemorySyncronization(
-          existingConversationAndContactByAddress.conversation,
-          existingConversationAndContactByAddress.contact
-        );
         return;
       }
 
@@ -260,7 +257,11 @@ export class ConversationManagerService {
     const { conversation, contact } = conversationAndContact;
 
     // Allow responses for both pending and active conversations (for cache recovery)
-    if (conversation.status !== "pending" && conversation.status !== "active") {
+    if (
+      conversation.status !== "sent-pending" &&
+      conversation.status !== "receive-pending" &&
+      conversation.status !== "active"
+    ) {
       throw new Error("Invalid conversation status for handshake response");
     }
 
@@ -340,7 +341,7 @@ export class ConversationManagerService {
     contact: Contact;
   }[] {
     return Array.from(this.conversationWithContactByConversationId.values())
-      .filter(({ conversation }) => conversation.status === "pending")
+      .filter(({ conversation }) => conversation.status === "receive-pending")
       .map(({ conversation, contact }) => ({
         conversation: conversation as PendingConversation,
         contact,
@@ -426,7 +427,7 @@ export class ConversationManagerService {
 
     // If status changed to active, trigger the completion event
     if (
-      existingConversation.status === "pending" &&
+      existingConversation.status === "sent-pending" &&
       conversation.status === "active"
     ) {
       this.events?.onHandshakeCompleted?.(updatedConversation, existingContact);
@@ -503,7 +504,7 @@ export class ConversationManagerService {
       myAlias: this.generateUniqueAlias(),
       theirAlias: null,
       lastActivityAt: new Date(),
-      status: "pending",
+      status: initiatedByMe ? "sent-pending" : "receive-pending",
       initiatedByMe,
       contactId: contact.id,
       tenantId: this.repositories.tenantId,
@@ -567,7 +568,7 @@ export class ConversationManagerService {
         ? payload.theirAlias
         : this.generateUniqueAlias();
     const status =
-      payload.isResponse && isMyNewAliasValid ? "active" : "pending";
+      payload.isResponse && isMyNewAliasValid ? "active" : "receive-pending";
 
     const newContact = {
       id: uuidv4(),
@@ -634,21 +635,58 @@ export class ConversationManagerService {
 
   public getMonitoredConversations(): { alias: string; address: string }[] {
     const monitored: { alias: string; address: string }[] = [];
+    const all = Array.from(
+      this.conversationWithContactByConversationId.values()
+    );
 
-    Array.from(this.conversationWithContactByConversationId.values())
-      .filter(
-        (conversationAndContact) =>
-          conversationAndContact.conversation.status === "active"
-      )
-      .forEach((conversationAndContact) => {
-        // Monitor our own alias
+    // active
+    all
+      .filter(({ conversation }) => conversation.status === "active")
+      .forEach(({ conversation, contact }) =>
         monitored.push({
-          alias: conversationAndContact.conversation.myAlias,
-          address: conversationAndContact.contact.kaspaAddress,
-        });
-      });
+          alias: conversation.myAlias,
+          address: contact.kaspaAddress,
+        })
+      );
+
+    // pending initiated-by-us (so estimate uses self-message path)
+    all
+      .filter(
+        ({ conversation }) =>
+          conversation.status === "sent-pending" && conversation.initiatedByMe
+      )
+      .forEach(({ conversation, contact }) =>
+        monitored.push({
+          alias: conversation.myAlias,
+          address: contact.kaspaAddress,
+        })
+      );
 
     return monitored;
+  }
+
+  public getConversationStatusByAddress(address: string): {
+    alias: string;
+    status: Conversation["status"];
+    initiatedByMe: boolean;
+  } | null {
+    const conversationId = this.addressToConversation.get(address);
+    if (!conversationId) {
+      return null;
+    }
+
+    const conversationWithContact =
+      this.conversationWithContactByConversationId.get(conversationId);
+    if (!conversationWithContact) {
+      return null;
+    }
+
+    const { conversation } = conversationWithContact;
+    return {
+      alias: conversation.myAlias,
+      status: conversation.status,
+      initiatedByMe: conversation.initiatedByMe,
+    };
   }
 
   /**
@@ -723,7 +761,7 @@ export class ConversationManagerService {
       typeof conv.id === "string" &&
       typeof conv.myAlias === "string" &&
       (conv.theirAlias === null || typeof conv.theirAlias === "string") &&
-      ["pending", "active", "rejected"].includes(
+      ["sent-pending", "receive-pending", "active", "rejected"].includes(
         conv.status as Conversation["status"]
       ) &&
       typeof conv.lastActivityAt === "object" &&

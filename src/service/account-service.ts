@@ -25,7 +25,6 @@ import {
 } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
-  ExplorerOutput,
   ExplorerTransaction,
   TransactionId,
   getTransactionId,

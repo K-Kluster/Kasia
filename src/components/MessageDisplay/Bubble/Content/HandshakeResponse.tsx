@@ -62,18 +62,19 @@ export const HandshakeResponse: React.FC<{
           />
         </div>
       </div>
-      {!conversation.initiatedByMe && conversation.status === "pending" && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleRespond();
-          }}
-          className="cursor-pointer rounded border-none bg-[var(--button-primary)] px-4 py-2 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[var(--button-primary)]/80 disabled:cursor-not-allowed disabled:bg-gray-500"
-          disabled={isResponding}
-        >
-          {isResponding ? "Sending Response..." : "Accept & Send Response"}
-        </button>
-      )}
+      {!conversation.initiatedByMe &&
+        conversation.status === "receive-pending" && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRespond();
+            }}
+            className="cursor-pointer rounded border-none bg-[var(--button-primary)] px-4 py-2 text-sm text-[var(--text-primary)] transition-colors duration-200 hover:bg-[var(--button-primary)]/80 disabled:cursor-not-allowed disabled:bg-gray-500"
+            disabled={isResponding}
+          >
+            {isResponding ? "Sending Response..." : "Accept & Send Response"}
+          </button>
+        )}
     </div>
   );
 };
