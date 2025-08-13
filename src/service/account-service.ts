@@ -30,7 +30,7 @@ import {
   TransactionId,
   getTransactionId,
   getTransactionPayload,
-  isExplorerTransaction,
+  isIndexerTransaction,
   isITransaction,
 } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
@@ -1059,15 +1059,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
   }
 
-  private isMessageOrHandshakeTransaction(
-    tx: ITransaction | ExplorerTransaction
-  ): boolean {
+  private isKasiaTransaction(tx: ITransaction | ExplorerTransaction): boolean {
     return tx?.payload?.startsWith(PROTOCOL.prefix.hex) ?? false;
   }
 
   private async processMessageTransaction(
     tx: ITransaction | ExplorerTransaction,
-    blockHash: string,
     blockTime: number,
     maxRetries = 10
   ) {
@@ -1100,7 +1097,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
         return;
       }
-
       // Get sender address from transaction inputs
       let senderAddress = null;
       if (isITransaction(tx) && tx.inputs && tx.inputs.length > 0) {
@@ -1125,7 +1121,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
         }
       } else if (
-        isExplorerTransaction(tx) &&
+        isIndexerTransaction(tx) &&
         tx.inputs &&
         tx.inputs.length > 0
       ) {
@@ -1151,12 +1147,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         }
       }
 
-      console.log({ senderAddress, recipientAddress });
-
       // If we still don't have a sender address, try to fetch it from the previous transaction
       if (
         !senderAddress &&
-        isExplorerTransaction(tx) &&
+        isIndexerTransaction(tx) &&
         tx.inputs &&
         tx.inputs.length > 0
       ) {
@@ -1276,7 +1270,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             console.debug(`Failed to decrypt with receive key:`, error);
           }
         }
-
         if (!decryptionSuccess) {
           try {
             const privateKey = privateKeyGenerator.changeKey(0);
@@ -1325,7 +1318,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             }
           }
         }
-
         // 🚀 OPTIMIZATION: Mark decryption result in cache
         if (decryptionSuccess) {
           DecryptionCache.markSuccess(stringWalletAddress, txId);
@@ -1386,34 +1378,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         error
       );
     }
-  }
-
-  private isTransactionForUs(tx: ExplorerTransaction): boolean {
-    if (!this.receiveAddress) return false;
-    const ourAddress = this.receiveAddress.toString();
-
-    // Helper function to extract address from output
-    const getOutputAddress = (output: ExplorerOutput): string | null => {
-      // For API transactions, we only need to check script_public_key_address
-      return output?.script_public_key_address || null;
-    };
-
-    // Check if this is a message transaction
-    const isMessageTx = this.isMessageOrHandshakeTransaction(tx);
-    if (!isMessageTx) return false;
-
-    // For message transactions, check if any output involves our address
-    // Don't assume specific amounts - handshakes can use any amount
-    if (tx.outputs) {
-      for (const output of tx.outputs) {
-        const address = getOutputAddress(output);
-        if (address === ourAddress) {
-          return true; // We're involved if we're either sender or recipient
-        }
-      }
-    }
-
-    return false;
   }
 
   public async sendMessageWithContext(sendMessage: SendMessageWithContextArgs) {
@@ -1532,7 +1496,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     try {
       const blockTime =
         Number(event?.data?.block?.header?.timestamp) || Date.now();
-      const blockHash = event?.data?.block?.header?.hash;
       const transactions = event?.data?.block?.transactions || [];
 
       // Process transactions silently
@@ -1549,7 +1512,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         const txId = tx.verboseData?.transactionId;
         if (!txId || this.processedMessageIds.has(txId)) continue;
 
-        if (this.isMessageOrHandshakeTransaction(tx)) {
+        if (this.isKasiaTransaction(tx)) {
           // mark the txId as processed to avoid duplicate processing
           this.processedMessageIds.add(txId);
           if (this.processedMessageIds.size > this.MAX_PROCESSED_MESSAGES) {
@@ -1562,7 +1525,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
           try {
             // Process message transaction silently
-            await this.processMessageTransaction(tx, blockHash, blockTime);
+            await this.processMessageTransaction(tx, blockTime);
           } catch (error) {
             if (process.env.NODE_ENV === "development") {
               console.debug("Error processing message transaction:", error);

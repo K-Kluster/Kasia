@@ -41,7 +41,7 @@ export interface ExplorerOutput {
 // Type guards and helper functions for ITransaction | ExplorerTransaction
 import { ITransaction } from "kaspa-wasm";
 
-export function isExplorerTransaction(
+export function isIndexerTransaction(
   tx: ITransaction | ExplorerTransaction
 ): tx is ExplorerTransaction {
   return "transaction_id" in tx && "block_hash" in tx;
@@ -57,7 +57,7 @@ export function isITransaction(
 export function getTransactionId(
   tx: ITransaction | ExplorerTransaction
 ): string | undefined {
-  return isExplorerTransaction(tx)
+  return isIndexerTransaction(tx)
     ? tx.transaction_id
     : tx.verboseData?.transactionId;
 }
@@ -69,7 +69,7 @@ export function getTransactionPayload(
 }
 
 export function getBlockTime(tx: ITransaction | ExplorerTransaction): number {
-  return isExplorerTransaction(tx)
+  return isIndexerTransaction(tx)
     ? tx.block_time
     : Number(tx.verboseData?.blockTime);
 }

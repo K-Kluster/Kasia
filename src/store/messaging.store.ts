@@ -107,6 +107,14 @@ interface MessagingState {
 export const useMessagingStore = create<MessagingState>((set, g) => {
   let _historicalSyncer: HistoricalSyncer = null!;
 
+  const _isIncomingContentAllowed = (
+    conversation: Conversation,
+    isFromMe: boolean
+  ): boolean => {
+    if (isFromMe) return true;
+    return Boolean(conversation.theirAlias) && conversation.status === "active";
+  };
+
   const _initializeConversationManager = async (address: string) => {
     const events: Partial<ConversationEvents> = {
       onHandshakeInitiated: (conversation, contact) => {
@@ -724,12 +732,30 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           transaction.payload.startsWith(PROTOCOL.prefix.hex) &&
           transaction.payload.includes(PROTOCOL.headers.PAYMENT.hex)
         ) {
+          let paymentContent = transaction.content ?? "";
+          if (
+            !_isIncomingContentAllowed(
+              existingConversationWithContact.conversation,
+              isFromMe
+            )
+          ) {
+            // drop note for incoming payments if not accepted/alias unknown
+            try {
+              const parsed = JSON.parse(paymentContent);
+              if (parsed && parsed.type === PROTOCOL.headers.PAYMENT.type) {
+                delete parsed.message;
+                paymentContent = JSON.stringify(parsed);
+              }
+            } catch {
+              paymentContent = "";
+            }
+          }
           const payment: Payment = {
             __type: "payment",
             amount: transaction.amount,
             contactId: existingConversationWithContact.contact.id,
             conversationId: existingConversationWithContact.conversation.id,
-            content: transaction.content ?? "",
+            content: paymentContent,
             createdAt: transaction.createdAt,
             fromMe: transaction.senderAddress === address.toString(),
             id: `${unlockedWallet.id}_${transaction.transactionId}`,
@@ -742,7 +768,15 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
           kasiaEvent = payment;
         } else {
-          // considering the transaction is a message
+          // block incoming messages unless conversation is accepted and alias known
+          if (
+            !_isIncomingContentAllowed(
+              existingConversationWithContact.conversation,
+              isFromMe
+            )
+          ) {
+            continue;
+          }
 
           const message: Message = {
             __type: "message",
