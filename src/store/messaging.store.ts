@@ -115,6 +115,121 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     return Boolean(conversation.theirAlias) && conversation.status === "active";
   };
 
+  const _fetchHistoricalForConversation = async (
+    oooc: OneOnOneConversation,
+    aliases: Set<string>,
+    myAddress: string
+  ): Promise<void> => {
+    try {
+      if (!_historicalSyncer) return;
+      const unlockedWallet = useWalletStore.getState().unlockedWallet;
+      if (!unlockedWallet) return;
+
+      const privateKeyString = WalletStorageService.getPrivateKeyGenerator(
+        unlockedWallet,
+        unlockedWallet.password
+      )
+        .receiveKey(0)
+        .toString();
+
+      const aliasesToFetch = new Set<string>(aliases);
+      if (!aliasesToFetch.size && oooc.conversation.theirAlias) {
+        aliasesToFetch.add(oooc.conversation.theirAlias);
+      }
+
+      const [indexerPayments, indexerMessages] = await Promise.all([
+        _historicalSyncer.fetchHistoricalPaymentsFromAddress(
+          oooc.contact.kaspaAddress
+        ),
+        Promise.allSettled(
+          [...aliasesToFetch].map((alias) =>
+            _historicalSyncer.fetchHistoricalMessagesToAddress(
+              oooc.contact.kaspaAddress,
+              alias
+            )
+          )
+        ).then((results) => {
+          const fulfilled = results.filter(
+            (r) => r.status === "fulfilled"
+          ) as PromiseFulfilledResult<ContextualMessageResponse[]>[];
+          return fulfilled.flatMap((r) => r.value);
+        }),
+      ]);
+
+      const knownEventIds = new Set(oooc.events.map((e) => e.id.split("_")[1]));
+      const newIndexerPayments = indexerPayments.filter(
+        (p) => !knownEventIds.has(p.tx_id)
+      );
+      const newIndexerMessages = indexerMessages.filter(
+        (m) => !knownEventIds.has(m.tx_id)
+      );
+
+      const newKasiaTransactions: KasiaTransaction[] = [];
+
+      for (const m of newIndexerMessages) {
+        try {
+          const hexStringBytes = m.message_payload.match(/.{1,2}/g);
+          if (!hexStringBytes) continue;
+          const bytes = new Uint8Array(
+            hexStringBytes.map((b) => parseInt(b, 16))
+          );
+          const decodedMessage = new TextDecoder().decode(bytes);
+          newKasiaTransactions.push({
+            amount: 0,
+            content: decrypt_message(
+              new EncryptedMessage(decodedMessage),
+              new PrivateKey(privateKeyString)
+            ),
+            createdAt: new Date(Number(m.block_time)),
+            fee: 0,
+            payload: m.message_payload,
+            recipientAddress: myAddress,
+            senderAddress: m.sender,
+            transactionId: m.tx_id,
+          });
+        } catch {
+          //chill
+        }
+      }
+
+      for (const p of newIndexerPayments) {
+        if (!p.sender) continue;
+        try {
+          const hexStringBytes = p.message.match(/.{1,2}/g);
+          if (!hexStringBytes) continue;
+          const bytes = new Uint8Array(
+            hexStringBytes.map((b) => parseInt(b, 16))
+          );
+          const decodedMessage = new TextDecoder().decode(bytes);
+          newKasiaTransactions.push({
+            amount: 0,
+            content: decrypt_message(
+              new EncryptedMessage(decodedMessage),
+              new PrivateKey(privateKeyString)
+            ),
+            createdAt: new Date(Number(p.block_time)),
+            fee: 0,
+            payload:
+              PROTOCOL.prefix.hex +
+              PROTOCOL.headers.PAYMENT.hex +
+              decodedMessage,
+            recipientAddress: myAddress,
+            senderAddress: p.sender,
+            transactionId: p.tx_id,
+          });
+        } catch {
+          //nothing
+        }
+      }
+
+      if (newKasiaTransactions.length > 0) {
+        await g().storeKasiaTransactions(newKasiaTransactions);
+      }
+    } catch {
+      // chill
+    }
+  };
+
   const _initializeConversationManager = async (address: string) => {
     const events: Partial<ConversationEvents> = {
       onHandshakeInitiated: (conversation, contact) => {
@@ -381,129 +496,11 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             );
           }
 
-          const [indexerPayments, indexerMessages] = await Promise.all([
-            _historicalSyncer.fetchHistoricalPaymentsFromAddress(
-              oooc.contact.kaspaAddress
-            ),
-            Promise.allSettled(
-              [...resolvedUnknownHandshakesAlisesForThisConversation].map(
-                (alias) =>
-                  _historicalSyncer.fetchHistoricalMessagesToAddress(
-                    oooc.contact.kaspaAddress,
-                    alias
-                  )
-              )
-            ).then((results) => {
-              // filter out rejected promises
-              const fulfilledResults = results.filter(
-                (result) => result.status === "fulfilled"
-              ) as PromiseFulfilledResult<ContextualMessageResponse[]>[];
-              return fulfilledResults.flatMap((result) => result.value);
-            }),
-          ]);
-
-          const knownEventIds = new Set(
-            oooc.events.map((e) => e.id.split("_")[1])
+          await _fetchHistoricalForConversation(
+            oooc,
+            resolvedUnknownHandshakesAlisesForThisConversation,
+            address
           );
-
-          // readability improvement possibility: define a type for indexer events with a discriminator field
-          // filter out events that are already known
-          const newIndexerPayments = indexerPayments.filter(
-            (p) => !knownEventIds.has(p.tx_id)
-          );
-          const newIndexerMessages = indexerMessages.filter(
-            (m) => !knownEventIds.has(m.tx_id)
-          );
-
-          if (newIndexerPayments.length > 0 || newIndexerMessages.length > 0) {
-            console.log("found new indexer events", {
-              newIndexerMessages,
-              newIndexerPayments,
-            });
-          }
-
-          const newKasiaTransactions: KasiaTransaction[] = [];
-
-          // try to transform payments and messages into kasia transaction
-          for (const newIndexerMessage of newIndexerMessages) {
-            try {
-              const hexStringBytes =
-                newIndexerMessage.message_payload.match(/.{1,2}/g);
-
-              if (!hexStringBytes) {
-                continue;
-              }
-
-              const bytes = new Uint8Array(
-                hexStringBytes.map((byte) => parseInt(byte, 16))
-              );
-              const decodedMessage = new TextDecoder().decode(bytes);
-
-              newKasiaTransactions.push({
-                amount: 0,
-                content: decrypt_message(
-                  new EncryptedMessage(decodedMessage),
-                  new PrivateKey(privateKeyString)
-                ),
-                createdAt: new Date(Number(newIndexerMessage.block_time)),
-                fee: 0,
-                payload: newIndexerMessage.message_payload,
-                recipientAddress: address,
-                senderAddress: newIndexerMessage.sender,
-                transactionId: newIndexerMessage.tx_id,
-              });
-            } catch {
-              // ignore errors
-              continue;
-            }
-          }
-
-          for (const newIndexerPayment of newIndexerPayments) {
-            if (!newIndexerPayment.sender) {
-              continue;
-            }
-
-            try {
-              const hexStringBytes = newIndexerPayment.message.match(/.{1,2}/g);
-
-              if (!hexStringBytes) {
-                continue;
-              }
-
-              const bytes = new Uint8Array(
-                hexStringBytes.map((byte) => parseInt(byte, 16))
-              );
-              const decodedMessage = new TextDecoder().decode(bytes);
-
-              newKasiaTransactions.push({
-                amount: 0,
-                content: decrypt_message(
-                  new EncryptedMessage(decodedMessage),
-                  new PrivateKey(privateKeyString)
-                ),
-                createdAt: new Date(Number(newIndexerPayment.block_time)),
-                fee: 0,
-                payload:
-                  PROTOCOL.prefix.hex +
-                  PROTOCOL.headers.PAYMENT.hex +
-                  decodedMessage,
-                recipientAddress: address,
-                senderAddress: newIndexerPayment.sender,
-                transactionId: newIndexerPayment.tx_id,
-              });
-            } catch (e) {
-              console.warn(
-                `Failed to decrypt payment ${newIndexerPayment.tx_id}`,
-                e
-              );
-              // ignore errors
-              continue;
-            }
-          }
-
-          if (newKasiaTransactions.length > 0) {
-            g().storeKasiaTransactions(newKasiaTransactions);
-          }
         })
       );
 
@@ -676,6 +673,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                   const updatedConversations = [...g().oneOnOneConversations];
                   updatedConversations[existingConversationIndex] = {
                     ...updatedConversations[existingConversationIndex],
+                    conversation: conversationWithContact.conversation,
                     events: [
                       ...updatedConversations[existingConversationIndex].events,
                       handshake,
@@ -1289,7 +1287,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         console.log("Handshake response to send:", handshakeResponse);
 
         try {
-          // Create a valid Kaspa address - use the address exactly as is
+          console.log("Trying", recipientAddress);
           const kaspaAddress = new Address(recipientAddress);
           console.log("Valid Kaspa address created:", kaspaAddress.toString());
 
@@ -1345,6 +1343,29 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             set({
               oneOnOneConversations: updatedOneOnOneConversations,
             });
+          }
+
+          // after successful response, trigger a one-time indexer backfill for this conversation
+          try {
+            const walletStoreState = useWalletStore.getState();
+            const myAddress = walletStoreState.address?.toString();
+            if (myAddress) {
+              const oooc = g().oneOnOneConversations.find(
+                (o) => o.conversation.id === conversation.id
+              );
+              if (oooc) {
+                const aliases = new Set<string>();
+                if (oooc.conversation.theirAlias) {
+                  aliases.add(oooc.conversation.theirAlias);
+                }
+                await _fetchHistoricalForConversation(oooc, aliases, myAddress);
+              }
+            }
+          } catch (e) {
+            console.warn(
+              "failed to backfill messages after handshake response",
+              e
+            );
           }
 
           return txId;
