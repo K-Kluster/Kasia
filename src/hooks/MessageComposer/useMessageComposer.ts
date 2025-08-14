@@ -49,9 +49,13 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
     }
   };
 
-  const send = async (myAlias?: string) => {
+  const send = async (myAlias: string) => {
     if (!recipient) {
       toast.error("Error, please select a contact.");
+      return;
+    }
+    if (!myAlias) {
+      toast.error("Valid Alias needed for sending.");
       return;
     }
     if (!walletStore.unlockedWallet) {
@@ -105,22 +109,13 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
       }
 
       let txId = "";
-      if (myAlias) {
-        txId = await walletStore.sendMessageWithContext({
-          message: messageToSend,
-          toAddress: new Address(recipient),
-          password: walletStore.unlockedWallet.password,
-          myAlias,
-          priorityFee: priority,
-        });
-      } else {
-        txId = await walletStore.sendMessage({
-          message: messageToSend,
-          toAddress: new Address(recipient),
-          password: walletStore.unlockedWallet.password,
-          priorityFee: priority,
-        });
-      }
+      txId = await walletStore.sendMessageWithContext({
+        message: messageToSend,
+        toAddress: new Address(recipient),
+        password: walletStore.unlockedWallet.password,
+        myAlias,
+        priorityFee: priority,
+      });
 
       const event: KasiaTransaction = {
         transactionId: txId,
