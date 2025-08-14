@@ -646,14 +646,6 @@ export class ConversationManagerService {
           alias: conversationAndContact.conversation.myAlias,
           address: conversationAndContact.contact.kaspaAddress,
         });
-
-        // Also monitor their alias if available
-        if (conversationAndContact.conversation.theirAlias) {
-          monitored.push({
-            alias: conversationAndContact.conversation.theirAlias,
-            address: conversationAndContact.contact.kaspaAddress,
-          });
-        }
       });
 
     return monitored;

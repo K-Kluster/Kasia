@@ -15,7 +15,6 @@ export type ModalType =
   | "backup"
   | "delete"
   | "seed"
-  | "warn-costy-send-message"
   | "utxo-compound"
   | "settings"
   | "contact-info-modal"
