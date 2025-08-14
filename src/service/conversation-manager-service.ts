@@ -638,7 +638,9 @@ export class ConversationManagerService {
     Array.from(this.conversationWithContactByConversationId.values())
       .filter(
         (conversationAndContact) =>
-          conversationAndContact.conversation.status === "active"
+          conversationAndContact.conversation.status === "active" ||
+          (conversationAndContact.conversation.status === "pending" &&
+            conversationAndContact.conversation.initiatedByMe)
       )
       .forEach((conversationAndContact) => {
         // Monitor our own alias
