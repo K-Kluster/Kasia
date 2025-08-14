@@ -30,7 +30,7 @@ import {
   TransactionId,
   getTransactionId,
   getTransactionPayload,
-  isIndexerTransaction,
+  isExplorerTransaction,
   isITransaction,
 } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
@@ -1121,7 +1121,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           }
         }
       } else if (
-        isIndexerTransaction(tx) &&
+        isExplorerTransaction(tx) &&
         tx.inputs &&
         tx.inputs.length > 0
       ) {
@@ -1150,7 +1150,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // If we still don't have a sender address, try to fetch it from the previous transaction
       if (
         !senderAddress &&
-        isIndexerTransaction(tx) &&
+        isExplorerTransaction(tx) &&
         tx.inputs &&
         tx.inputs.length > 0
       ) {
