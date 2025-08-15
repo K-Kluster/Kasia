@@ -40,6 +40,7 @@ import { PROTOCOL, VERSION } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
 import { parseKaspaMessagePayload } from "../utils/message-payload";
 import { WalletStorageService } from "./wallet-storage-service";
+import { MAX_TX_FEE } from "../config/constants";
 
 // Message related types
 type DecodedMessage = {
@@ -400,6 +401,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       if ((await generator.next()) !== null) {
         throw new Error("Unexpected multiple transaction generation");
+      }
+
+      if (pendingTransaction.feeAmount > MAX_TX_FEE) {
+        throw new Error(
+          `Fee cannot exceed ${Number(MAX_TX_FEE) / 100_000_000} KAS`
+        );
       }
 
       // Log the addresses that need signing

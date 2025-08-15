@@ -11,7 +11,7 @@ export const FeeDisplay: FC<FeeDisplayProps> = ({
   isOutgoing,
   className = "message-fee text-right",
 }) => {
-  if (isOutgoing && fee !== undefined) {
+  if (isOutgoing && fee !== undefined && fee > 0) {
     return (
       <div className="w-full">
         <div className={className}>Fee: {fee.toFixed(8)} KAS</div>

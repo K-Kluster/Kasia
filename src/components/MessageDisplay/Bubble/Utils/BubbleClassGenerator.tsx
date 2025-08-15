@@ -29,7 +29,7 @@ export const generateBubbleClasses = (
   })();
 
   return clsx(
-    "relative z-0 mb-1 max-w-[70%] cursor-pointer px-4 py-1 text-left break-words hyphens-auto",
+    "relative z-0 max-w-[70%] cursor-pointer px-4 py-1 text-left break-words hyphens-auto",
     isOutgoing
       ? "border border-[var(--button-primary)] bg-[var(--button-primary)]/20"
       : "bg-[var(--secondary-bg)]",
