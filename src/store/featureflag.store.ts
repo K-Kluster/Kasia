@@ -1,14 +1,14 @@
 import { create } from "zustand";
-import { PencilRuler, LucideIcon } from "lucide-react";
+import { Coins, LucideIcon } from "lucide-react";
 
 export enum FeatureFlags {
-  RICH_TEXT = "richtext",
+  CUSTOM_FEE = "customfee",
 }
 
 export type FeatureFlagsTable = Record<FeatureFlags, boolean>;
 
 const defaultFeatureFlagsTable: FeatureFlagsTable = {
-  [FeatureFlags.RICH_TEXT]: false,
+  [FeatureFlags.CUSTOM_FEE]: false,
 };
 
 export interface FeatureDescription {
@@ -20,10 +20,10 @@ export interface FeatureDescription {
 export type FeatureFlips = Record<FeatureFlags, FeatureDescription>;
 
 const featureFlips: FeatureFlips = {
-  [FeatureFlags.RICH_TEXT]: {
-    label: "Game Frame",
-    desc: "NOT IMPLEMENTED - JUST FOR FLAG DEMO.",
-    icon: PencilRuler,
+  [FeatureFlags.CUSTOM_FEE]: {
+    label: "Custom Priority Fee",
+    desc: "Turn on to set custom priority fee in chat.",
+    icon: Coins,
   },
 };
 
