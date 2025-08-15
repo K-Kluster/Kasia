@@ -11,9 +11,6 @@ import {
   X,
 } from "lucide-react";
 import { Settings } from "lucide-react";
-import { useMessagingStore } from "../../store/messaging.store";
-
-import { FeeBuckets } from "../FeeBuckets";
 import { useUiStore } from "../../store/ui.store";
 import { SettingsModal } from "../Modals/SettingsModal";
 
@@ -200,11 +197,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Fee Buckets Section */}
-          <div className="p-4">
-            <FeeBuckets inline={false} />
           </div>
 
           {/* Sign Out Section */}
