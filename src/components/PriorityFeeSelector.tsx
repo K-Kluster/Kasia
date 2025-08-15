@@ -9,6 +9,8 @@ import { Button } from "./Common/Button";
 import { toast } from "../utils/toast-helper";
 import { Input } from "@headlessui/react";
 import { DEFAULT_FEE_BUCKETS, MAX_PRIORITY_FEE } from "../config/constants";
+import { useFeatureFlagsStore } from "../store/featureflag.store";
+import { Switch } from "@headlessui/react";
 
 interface PriorityFeeSelectorProps {
   onFeeChange: (fee: PriorityFeeConfig) => void;
@@ -37,6 +39,9 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
 
   // Get fee estimate from wallet store instead of fetching directly
   const feeEstimate = useWalletStore((s) => s.feeEstimate);
+  const featureFlag_CustomFee = useFeatureFlagsStore(
+    (state) => state.flags.customfee
+  );
 
   useEffect(() => {
     setSettings((prev) => ({
@@ -110,7 +115,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
     // Low bucket (slowest/cheapest) - should always be 0 priority fee
     buckets.push({
       label: "Low",
-      description: "Standard processing time",
+      description: "Standard processing time.",
       amount: BigInt(0), // Low priority = no additional fee
       feerate: estimate.lowBuckets?.[0]?.feerate || 1,
       estimatedSeconds: estimate.lowBuckets?.[0]?.estimatedSeconds,
@@ -306,12 +311,15 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
           <div className="space-y-4">
-            <h3 className="mb-4 text-lg font-medium">Select Priority Fee</h3>
+            <h3 className="mb-1 text-lg font-medium">Select Priority Fee</h3>
             <div className="flex items-start gap-2 text-xs text-[var(--text-secondary)] sm:text-sm">
               <Info className="h-5 w-5 flex-shrink-0" />
               <p>
                 Priority fees help your transaction get processed faster during
-                busy times. Higher fees = faster processing.
+                busy times. Higher fees = faster processing.{" "}
+                <i>
+                  Suggestion: Keep "Low" selected unless network congestion.
+                </i>
               </p>
             </div>
 
@@ -321,66 +329,80 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
                   className={clsx(
-                    "w-full cursor-pointer rounded-lg border px-4 py-2 text-left transition-colors sm:py-4",
-                    "hover:bg-[var(--primary-bg)] focus:ring-2 focus:ring-blue-500",
+                    "flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 px-4 hover:bg-[var(--primary-bg)]/50",
                     settings.selectedBucket === bucket.label
-                      ? "border-blue-500 bg-blue-500/10"
+                      ? "border-[var(--kas-secondary)] bg-[var(--primary-bg)]/80"
                       : "border-[var(--border-color)] bg-[var(--primary-bg)]"
                   )}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium text-[var(--text-primary)]">
-                        {bucket.label}
-                      </div>
-                      <div className="text-sm text-[var(--text-secondary)]">
-                        {bucket.description}
-                      </div>
-                      {bucket.estimatedSeconds && (
-                        <div className="mt-1 text-xs text-[var(--text-secondary)]">
-                          {formatTime(bucket.estimatedSeconds)}
-                        </div>
-                      )}
+                  <div className="flex flex-col text-start">
+                    <div className="font-medium text-[var(--text-primary)]">
+                      {bucket.label}
                     </div>
-                    <div className="font-mono text-sm text-[var(--accent-green)]">
-                      {bucket.feerate === 1
-                        ? "Base fee"
-                        : `${bucket.feerate}x fee rate`}
+                    <div className="text-sm text-[var(--text-secondary)]">
+                      {bucket.description}
                     </div>
+                    {bucket.estimatedSeconds && (
+                      <div className="mt-1 text-xs text-[var(--text-secondary)]">
+                        {formatTime(bucket.estimatedSeconds)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm whitespace-nowrap text-[var(--accent-green)]">
+                    {bucket.feerate === 1
+                      ? "Base fee"
+                      : `${bucket.feerate}x fee rate`}
                   </div>
                 </button>
               ))}
 
               {/* Custom fee option */}
-              <div className="mt-4">
-                <div className="mb-2 text-sm font-medium">Custom Fee</div>
-                <div className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={customAmount}
-                    onChange={(e) => handleCustomAmountChange(e.target.value)}
-                    placeholder="Enter amount in KAS"
-                    className="flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--input-bg)] px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                  <Button onClick={handleCustomFee} className="!w-fit">
-                    Set
-                  </Button>
+              {(featureFlag_CustomFee ||
+                settings.selectedBucket === "Custom") && (
+                <div className="mt-4">
+                  <div className="mb-2 text-sm font-medium">Custom Fee</div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={customAmount}
+                      onChange={(e) => handleCustomAmountChange(e.target.value)}
+                      placeholder="Enter amount in KAS"
+                      className="flex-1 rounded-lg border border-[var(--border-color)] bg-[var(--input-bg)] px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                    <Button
+                      onClick={handleCustomFee}
+                      className="!w-fit !rounded-lg"
+                    >
+                      Set
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Remember choice option */}
               <div className="my-4 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="remember-choice"
+                <Switch
                   checked={settings.isPersistent}
-                  onChange={(e) => togglePersistence(e.target.checked)}
-                  className="cursor-pointer rounded border-[var(--border-color)] bg-[var(--input-bg)] text-blue-500 focus:ring-2 focus:ring-blue-500"
-                />
-                <label
-                  htmlFor="remember-choice"
-                  className="text-sm text-[var(--text-secondary)]"
+                  onChange={togglePersistence}
+                  className={clsx(
+                    "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
+                    {
+                      "bg-kas-secondary": settings.isPersistent,
+                      "bg-gray-300": !settings.isPersistent,
+                    }
+                  )}
                 >
+                  <span
+                    className={clsx(
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                      {
+                        "translate-x-6": settings.isPersistent,
+                        "translate-x-1": !settings.isPersistent,
+                      }
+                    )}
+                  />
+                </Switch>
+                <label className="text-sm text-[var(--text-secondary)]">
                   Remember my choice
                 </label>
               </div>
