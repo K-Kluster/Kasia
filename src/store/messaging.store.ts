@@ -16,7 +16,10 @@ import { WalletStorageService } from "../service/wallet-storage-service";
 import { Address, NetworkType } from "kaspa-wasm";
 import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
-import { ConversationEvents } from "src/types/messaging.types";
+import {
+  ConversationEvents,
+  HandshakePayload,
+} from "src/types/messaging.types";
 import { UnlockedWallet } from "src/types/wallet.type";
 import { useDBStore } from "./db.store";
 import {
@@ -1125,15 +1128,25 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         throw new Error("Wallet not unlocked");
       }
 
-      // Create the handshake payload
-      const { payload, contact, conversation } =
+      // create contact and conversation
+      const { contact, conversation } =
         await manager.initiateHandshake(recipientAddress);
+
+      // Create the handshake payload
+      const handshakePayload: HandshakePayload = {
+        type: "handshake",
+        alias: conversation.myAlias,
+        timestamp: Date.now(),
+        version: 1,
+      };
+
+      const payload = `ciph_msg:${1}:handshake:${encrypt_message(recipientAddress, JSON.stringify(handshakePayload))}`;
 
       // Send the handshake message
       console.log("Sending handshake message to:", recipientAddress);
       try {
-        const txId = await walletStore.sendMessage({
-          message: payload,
+        const txId = await walletStore.sendTransaction({
+          payload,
           toAddress: new Address(recipientAddress),
           password: walletStore.unlockedWallet.password,
           customAmount,
@@ -1237,20 +1250,29 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         console.log("Using recipient address:", recipientAddress);
 
         // Create handshake response
-        const handshakeResponse = await manager.createHandshakeResponse(
-          conversation.id
-        );
+        await manager.createHandshakeResponse(conversation.id);
 
-        console.log("Handshake response to send:", handshakeResponse);
+        const handshakeResponsePayload: HandshakePayload = {
+          type: "handshake",
+          alias: conversation.myAlias,
+          // create handshake response already check if their alias is set, else it throws
+          theirAlias: conversation.theirAlias!,
+          timestamp: Date.now(),
+          version: 1,
+          isResponse: true,
+        };
+
+        console.log("Handshake response to send:", handshakeResponsePayload);
+
+        const payload = `ciph_msg:${1}:handshake:${encrypt_message(recipientAddress, JSON.stringify(handshakeResponsePayload))}`;
 
         try {
           // Create a valid Kaspa address - use the address exactly as is
           const kaspaAddress = new Address(recipientAddress);
-          console.log("Valid Kaspa address created:", kaspaAddress.toString());
 
           // Send the handshake response
-          const txId = await walletStore.sendMessage({
-            message: handshakeResponse,
+          const txId = await walletStore.sendTransaction({
+            payload,
             toAddress: kaspaAddress,
             password: walletStore.unlockedWallet.password,
           });

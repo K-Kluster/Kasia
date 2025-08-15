@@ -22,7 +22,21 @@ import { FEE_ESTIMATE_POLLING_INTERVAL_IN_MS } from "../config/constants";
 import { PROTOCOL } from "../config/protocol";
 
 export interface WalletStoreSendMessageArgs {
+  /**
+   * message to send, prefix will be added automatically
+   */
   message: string;
+  toAddress: Address;
+  password: string;
+  customAmount?: bigint;
+  priorityFee?: PriorityFeeConfig;
+}
+
+export interface WalletStoreSendTransactionArgs {
+  /**
+   * payload to use for the transaction, if encryption is required, it should be encrypted before passing it here
+   */
+  payload?: string;
   toAddress: Address;
   password: string;
   customAmount?: bigint;
@@ -93,11 +107,10 @@ type WalletState = {
   // wallet operations
   stop: () => void;
   sendMessage: (args: WalletStoreSendMessageArgs) => Promise<TransactionId>;
-  sendPreEncryptedMessage: (
-    preEncryptedHex: string,
-    toAddress: Address,
-    password: string
+  sendTransaction: (
+    args: WalletStoreSendTransactionArgs
   ) => Promise<TransactionId>;
+
   getMatureUtxos: () => UtxoEntryReference[];
 
   estimateSendMessageFees: (
@@ -387,14 +400,19 @@ export const useWalletStore = create<WalletState>((set, get) => {
       }
     },
 
-    sendPreEncryptedMessage: (preEncryptedHex, toAddress, password) => {
-      if (!_accountService) {
-        throw Error("Account service not initialized.");
+    sendTransaction: async (args) => {
+      const state = get();
+      if (!state.unlockedWallet || !state.accountService) {
+        throw new Error("Wallet not unlocked or account service not running");
       }
-      return _accountService.sendPreEncryptedMessage(
-        toAddress,
-        preEncryptedHex,
-        password
+      return state.accountService.createTransaction(
+        {
+          address: args.toAddress,
+          amount: args.customAmount ?? BigInt(0),
+          payload: args.payload ?? "",
+          priorityFee: args.priorityFee,
+        },
+        state.unlockedWallet.password
       );
     },
 
