@@ -73,16 +73,6 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
       return;
     }
 
-    // require valid fee state before sending
-    if (
-      !feeState ||
-      feeState.status !== "idle" ||
-      typeof feeState.value !== "number"
-    ) {
-      toast.error("Please wait for fee calculation to complete.");
-      return;
-    }
-
     if (sendState.status === "loading") {
       return;
     }
@@ -128,7 +118,7 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
           ? JSON.stringify(fileDataForStorage)
           : draft,
         amount: 20000000,
-        fee: feeState.value,
+        fee: feeState.value || 0,
         payload: "",
       };
 
