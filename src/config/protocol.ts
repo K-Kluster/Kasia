@@ -1,11 +1,11 @@
-type Kind = "ciph_msg" | "handshake" | "comm" | "payment";
+type Kind = "ciph_msg" | "handshake" | "comm" | "payment" | "self_stash";
 type Prefix = { type: Kind; string: string; hex: string };
 
 export const VERSION = "1";
 export const DELIM = ":";
 
 // Universal string to hex conversion
-const toHex = (s: string): string =>
+export const toHex = (s: string): string =>
   Array.from(new TextEncoder().encode(s))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
@@ -28,5 +28,6 @@ export const PROTOCOL = {
     HANDSHAKE: mk("handshake"),
     COMM: mk("comm"),
     PAYMENT: mk("payment"),
+    SELF_STASH: mk("self_stash"),
   },
 } as const;
