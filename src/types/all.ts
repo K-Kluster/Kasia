@@ -117,6 +117,12 @@ export interface PriorityFeeConfig {
   feerate?: number; // Store the fee rate used for calculation
 }
 
+export interface FeeState {
+  status: "idle" | "loading" | "error";
+  error?: Error;
+  value?: number;
+}
+
 /**
  * used when receiving transactions from either API (explorer now, later indexer) or from wrpc subscribed event (block added)
  */

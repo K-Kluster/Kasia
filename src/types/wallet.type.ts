@@ -1,5 +1,5 @@
-import { KaspaClient } from "src/utils/kaspa-client";
-import { Address, PublicKey, PublicKeyGenerator } from "wasm/kaspa";
+import { KaspaClient } from "../service/kaspa-client";
+import { PublicKey, PublicKeyGenerator } from "wasm/kaspa";
 
 export type Wallet = {
   id: string;

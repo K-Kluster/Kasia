@@ -7,7 +7,6 @@ import {
   type CustomColorPalette,
 } from "../config/custom-theme-applier";
 import { OneOnOneConversation } from "../types/all";
-import { Contact } from "./repository/contact.repository";
 
 export type ModalType =
   | "address"
@@ -19,7 +18,8 @@ export type ModalType =
   | "warn-costy-send-message"
   | "utxo-compound"
   | "settings"
-  | "contact-info-modal";
+  | "contact-info-modal"
+  | "image";
 type Theme = "light" | "dark" | "system" | "custom";
 
 type UiState = {
@@ -54,6 +54,10 @@ type UiState = {
   // Warn Costy Send Message Modal callback
   sendMessageCallback: (() => void) | null;
   setSendMessageCallback: (callback: (() => void) | null) => void;
+
+  // image presenter content
+  imagePresenterImage: string | null;
+  setImagePresenterImage: (image: string | null) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -205,4 +209,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   // Warn Costy Send Message Modal callback
   sendMessageCallback: null,
   setSendMessageCallback: (callback) => set({ sendMessageCallback: callback }),
+
+  // image presenter content
+  imagePresenterImage: null,
+  setImagePresenterImage: (image) => set({ imagePresenterImage: image }),
 }));

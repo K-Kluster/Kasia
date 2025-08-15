@@ -1,7 +1,9 @@
 import { NetworkType } from "../types/all";
 
-export const getExplorerUrl = (txId: string, network: NetworkType) => {
-  switch (network) {
+export const getExplorerUrl = (txId: string, network: string) => {
+  const networkType = network as NetworkType;
+
+  switch (networkType) {
     case "mainnet":
       return `https://explorer.kaspa.org/txs/${txId}`;
     case "testnet-10":
@@ -10,5 +12,8 @@ export const getExplorerUrl = (txId: string, network: NetworkType) => {
       return `https://explorer-tn11.kaspa.org/txs/${txId}`;
     case "devnet":
       return `https://explorer-devnet.kaspa.org/txs/${txId}`;
+    default:
+      // fallback to mainnet if there is *somehow* an issue
+      return `https://explorer.kaspa.org/txs/${txId}`;
   }
 };

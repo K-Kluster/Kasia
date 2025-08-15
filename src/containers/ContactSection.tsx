@@ -37,7 +37,6 @@ export const ContactSection: FC<ContactSectionProps> = ({
   const messageStore = useMessagingStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-
   // order contacts by last activity (most recent first)
   const orderedContacts = contacts.sort((a, b) => {
     const conversationA = messageStore.oneOnOneConversations.find(
@@ -65,23 +64,13 @@ export const ContactSection: FC<ContactSectionProps> = ({
     return nameA.localeCompare(nameB);
   });
 
-  // Search through all messages and contacts
-  const searchResults = (() => {
+  // get contacts to display - filter them by search if needed
+  const contactsToDisplay = (() => {
     if (!searchQuery.trim()) return orderedContacts;
     const q = searchQuery.toLowerCase();
     const matches = new Map<string, Contact>();
 
-    messageStore.oneOnOneConversations.forEach((oneOnOneConversation) => {
-      oneOnOneConversation.events.forEach((event) => {
-        if (event.content.includes(q)) {
-          matches.set(
-            oneOnOneConversation.contact.kaspaAddress,
-            oneOnOneConversation.contact
-          );
-        }
-      });
-    });
-
+    // first, add all contacts that match by name or address
     orderedContacts.forEach((contact) => {
       if (
         contact.name?.toLowerCase().includes(q) ||
@@ -89,6 +78,21 @@ export const ContactSection: FC<ContactSectionProps> = ({
       ) {
         matches.set(contact.kaspaAddress, contact);
       }
+    });
+
+    // then, add contacts from messages that match content
+    messageStore.oneOnOneConversations.forEach((oneOnOneConversation) => {
+      oneOnOneConversation.events.forEach((event) => {
+        if (event.content.includes(q)) {
+          // only add if not already present
+          if (!matches.has(oneOnOneConversation.contact.kaspaAddress)) {
+            matches.set(
+              oneOnOneConversation.contact.kaspaAddress,
+              oneOnOneConversation.contact
+            );
+          }
+        }
+      });
     });
 
     return [...matches.values()];
@@ -121,7 +125,12 @@ export const ContactSection: FC<ContactSectionProps> = ({
               <Search
                 className="hover:text-kas-primary absolute top-1/2 left-3 size-5 -translate-y-1/2 cursor-pointer text-gray-400 hover:scale-110"
                 onClick={() => {
-                  setShowSearch(!showSearch);
+                  if (searchQuery.length > 0) {
+                    setSearchQuery("");
+                    setShowSearch(!showSearch);
+                  } else {
+                    setShowSearch(!showSearch);
+                  }
                 }}
               />
               <input
@@ -168,10 +177,10 @@ export const ContactSection: FC<ContactSectionProps> = ({
 
       {/* Contacts list */}
       <div className="bg-secondary-bg flex-1 overflow-y-auto">
-        {searchResults.length
-          ? searchResults.map((contact) => (
+        {contactsToDisplay.length
+          ? contactsToDisplay.map((contact, index) => (
               <ContactCard
-                key={contact.kaspaAddress}
+                key={`contact-${contact.id}-${index}`}
                 contact={contact}
                 isSelected={contact.kaspaAddress === openedRecipient}
                 collapsed={contactsCollapsed}

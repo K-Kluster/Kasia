@@ -17,10 +17,10 @@ import { MessageInput } from "./MessageInput";
 import { FeeDisplay } from "./FeeDisplay";
 import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
+import { useFeeEstimate } from "../../hooks/MessageComposer/useFeeEstimate";
 
 export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const attachment = useComposerSlice((s) => s.attachment);
-  const feeState = useComposerSlice((s) => s.feeState);
   const sendState = useComposerSlice((s) => s.sendState);
   const priority = useComposerSlice((s) => s.priority);
   const setDraft = useComposerStore((s) => s.setDraft);
@@ -33,7 +33,8 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
-  const { send, attach } = useMessageComposer(recipient);
+  const feeState = useFeeEstimate(recipient, draft, attachment);
+  const { send, attach } = useMessageComposer(feeState, recipient);
   const setPriority = useComposerStore((s) => s.setPriority);
   const setSendState = useComposerStore((s) => s.setSendState);
 
@@ -138,6 +139,7 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
       <FeeDisplay
         recipient={recipient}
         draft={draft}
+        attachment={attachment}
         feeState={feeState}
         priority={priority}
         onPriorityChange={setPriority}

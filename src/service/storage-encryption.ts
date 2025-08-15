@@ -1,5 +1,5 @@
 import { encryptXChaCha20Poly1305, decryptXChaCha20Poly1305 } from "kaspa-wasm";
-import { Message } from "../types/all";
+import { Message } from "../store/repository/message.repository";
 
 // legacy storage key for backward compatibility
 const LEGACY_STORAGE_KEY = "kaspa_messages_by_wallet";

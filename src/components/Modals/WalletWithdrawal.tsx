@@ -6,6 +6,7 @@ import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast-helper";
 import { QrScanner } from "../QrScanner";
 import { Clipboard } from "lucide-react";
+import { useUiStore } from "../../store/ui.store";
 
 const maxDustAmount = kaspaToSompi("0.19")!;
 
@@ -15,6 +16,8 @@ export const WalletWithdrawal: FC = () => {
   const [isSending, setIsSending] = useState(false);
 
   const [amountInputError, setAmountInputError] = useState<string | null>(null);
+
+  const closeModal = useUiStore((s) => s.closeModal);
 
   const balance = useWalletStore((store) => store.balance);
   const inputAmountUpdated = useCallback(
@@ -116,6 +119,8 @@ export const WalletWithdrawal: FC = () => {
       await createWithdrawTransaction(withdrawAddress, amount);
       setWithdrawAddress("");
       setWithdrawAmount("");
+      toast.success("Withdraw Success");
+      closeModal("withdraw");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to send transaction"

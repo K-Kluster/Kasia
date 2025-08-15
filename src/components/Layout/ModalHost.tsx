@@ -13,6 +13,7 @@ import { ContactInfoModal } from "../Modals/ContactInfoModal";
 import { NewChatForm } from "../NewChatForm";
 import { LoaderCircle, AlertTriangle, Info } from "lucide-react";
 import { Button } from "../Common/Button";
+import { ImagePresenter } from "../Modals/ImagePresenter";
 
 // This component subscribes to modal state and renders the appropriate modal
 // based on the current state. It's React Compiler friendly because it has
@@ -44,6 +45,12 @@ export const ModalHost = () => {
         </Modal>
       )}
 
+      {/* View Image */}
+      {modals.image && (
+        <Modal onClose={() => closeModal("image")}>
+          <ImagePresenter />
+        </Modal>
+      )}
       {/* Withdraw Modal */}
       {modals.withdraw && (
         <Modal onClose={() => closeModal("withdraw")}>

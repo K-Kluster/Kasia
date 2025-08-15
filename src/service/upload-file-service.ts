@@ -102,7 +102,7 @@ async function compressImageToFit(
     minHeight = 100,
     maxQuality = 1.0,
     minQuality = 0.4,
-    maxAttempts = 10,
+    maxAttempts = 20,
   } = options;
 
   const img = await new Promise<HTMLImageElement>((res, rej) => {
@@ -121,6 +121,11 @@ async function compressImageToFit(
   if (!ctx) return null;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    console.log(
+      `[compressImageToFit] attempt ${attempt + 1}/${maxAttempts}: ` +
+        `quality=${quality.toFixed(2)}, width=${width}, height=${height}, ` +
+        `targetSize=${rawTarget} bytes`
+    );
     if (width > maxWidth || height > maxHeight) {
       const ratio = Math.min(maxWidth / width, maxHeight / height);
       width = Math.round(width * ratio);
@@ -135,11 +140,11 @@ async function compressImageToFit(
 
     if (compressed) return compressed;
 
-    quality = Math.max(minQuality, quality - 0.1);
+    quality = Math.max(minQuality, quality - 0.05);
 
     if (attempt > maxAttempts / 2) {
-      width = Math.max(minWidth, Math.round(width * 0.8));
-      height = Math.max(minHeight, Math.round(height * 0.8));
+      width = Math.max(minWidth, Math.round(width * 0.95));
+      height = Math.max(minHeight, Math.round(height * 0.95));
     }
   }
   return null;
