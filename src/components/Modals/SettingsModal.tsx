@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useWalletStore } from "../../store/wallet.store";
@@ -32,7 +32,10 @@ import {
   Edit3,
   Palette,
   RectangleEllipsis,
+  Coffee,
 } from "lucide-react";
+import { toHex, PROTOCOL } from "../../config/protocol";
+import { devMode } from "../../config/dev-mode";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -71,6 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const unlockedWallet = useWalletStore((s) => s.unlockedWallet);
   const changePassword = useWalletStore((s) => s.changePassword);
   const changeWalletName = useWalletStore((s) => s.changeWalletName);
+  const sendTransaction = useWalletStore((s) => s.sendTransaction);
   const networkStore = useNetworkStore();
   const { flags, flips, setFlag } = useFeatureFlagsStore();
 
@@ -82,6 +86,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     // only show if there are >0 flips
     ...(Object.keys(flips).length > 0
       ? [{ id: "extras", label: "Extras", icon: RectangleEllipsis }]
+      : []),
+    ...(devMode
+      ? [
+          {
+            icon: Coffee,
+            id: "dev",
+            label: "Dev",
+          },
+        ]
       : []),
   ];
 
@@ -105,6 +118,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [tempCustomColors, setTempCustomColors] = useState(
     customColors || DEFAULT_COLORS
   );
+
+  const sendSelfStash = useCallback(async () => {
+    await sendTransaction({
+      password: unlockedWallet?.password!,
+      toAddress: walletAddress!,
+      payload: toHex(
+        PROTOCOL.prefix.type +
+          ":1:" +
+          PROTOCOL.headers.SELF_STASH.type +
+          ":test_prefix:" +
+          "this is some test DATA!"
+      ),
+      customAmount: BigInt(0),
+    });
+  }, []);
 
   const onClearHistory = () => {
     if (!walletAddress) return;
@@ -885,6 +913,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 ))}
               </>
             )}
+            {activeTab === "dev" ? (
+              <>
+                <div className="mt-4 space-y-6 sm:mt-0"></div>
+                <h3 className="mb-4 text-lg font-medium">Development Mode</h3>
+
+                <Button onClick={sendSelfStash}>Trigger Send Self Stash</Button>
+              </>
+            ) : null}
           </div>
         </div>
       </div>

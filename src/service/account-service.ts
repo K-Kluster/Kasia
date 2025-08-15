@@ -339,7 +339,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Transaction address is required");
     }
 
-    if (!transaction.amount) {
+    if (transaction.amount === null || transaction.amount === undefined) {
       throw new Error("Transaction amount is required");
     }
 
