@@ -25,7 +25,6 @@ import {
 } from "../types/all";
 import { UnlockedWallet } from "../types/wallet.type";
 import {
-  ExplorerOutput,
   ExplorerTransaction,
   TransactionId,
   getTransactionId,
@@ -36,29 +35,16 @@ import {
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { useDBStore } from "../store/db.store";
-import { PROTOCOL, VERSION } from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
-import { parseKaspaMessagePayload } from "../utils/message-payload";
+import {
+  parseKaspaMessagePayload,
+  hexToBytes,
+  getEncoder,
+  isMessagePayload,
+} from "../utils/message-payload";
 import { WalletStorageService } from "./wallet-storage-service";
 import { MAX_TX_FEE } from "../config/constants";
-
-// Message related types
-type DecodedMessage = {
-  transactionId: string;
-  senderAddress: string;
-  recipientAddress: string;
-  timestamp: number;
-  content: string;
-  amount: number;
-  payload: string;
-  fileData?: {
-    type: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    content: string;
-  };
-};
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -101,7 +87,7 @@ type SendMessageWithContextArgs = {
 type CreateTransactionArgs = {
   address: Address;
   amount: bigint;
-  payload: string;
+  payload: string | Uint8Array;
   payloadSize?: number;
   messageLength?: number;
   priorityFee?: PriorityFeeConfig; // Add priority fee support
@@ -116,7 +102,7 @@ type CreateWithdrawTransactionArgs = {
 type CreatePaymentWithMessageArgs = {
   address: Address;
   amount: bigint;
-  payload: string;
+  payload: string | Uint8Array;
   originalMessage?: string; // Add the original message for outgoing record creation
   priorityFee?: PriorityFeeConfig; // Add priority fee support
 };
@@ -911,9 +897,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const isDirectSelfMessage =
       destinationAddress.toString() === this.receiveAddress?.toString();
 
-    const isMessageTransaction =
-      transaction.payload &&
-      transaction.payload.startsWith(PROTOCOL.prefix.hex);
+    const isMessageTransaction = isMessagePayload(transaction.payload);
 
     const hasActiveConversation = this.monitoredAddresses.has(
       destinationAddress.toString()
@@ -1442,18 +1426,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     });
 
     // Create the payload with conversation context
-    const prefix = PROTOCOL.prefix.type;
-    const version = VERSION; // Use the current protocol version
-    const messageType = PROTOCOL.headers.COMM.type; // Use comm type for conversation messages
-    const payload = `${prefix}:${version}:${messageType}:${
-      sendMessage.theirAlias
-    }:${sendMessage.message}`;
+    const hexString = sendMessage.message; // This is already encrypted hex
+    const hexBytes = hexToBytes(hexString);
+    const base64String = btoa(String.fromCharCode(...hexBytes));
 
-    // Convert the payload to hex
-    const payloadHex = payload
-      .split("")
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-      .join("");
+    // Build the full protocol string with all components
+    const protocolString = `ciph_msg:1:comm:${sendMessage.theirAlias}:${base64String}`;
+    const payloadBytes = getEncoder().encode(protocolString);
+
+    const payload = payloadBytes;
 
     try {
       // Always send to our own address for self-send messages
@@ -1464,7 +1445,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         {
           address: destinationAddress,
           amount: minimumAmount,
-          payload: payloadHex,
+          payload: payload,
           priorityFee: sendMessage.priorityFee,
         },
         sendMessage.password
