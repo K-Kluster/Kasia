@@ -37,13 +37,13 @@ import { useWalletStore } from "../store/wallet.store";
 import { useDBStore } from "../store/db.store";
 import { PROTOCOL } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
+import { parseKaspaMessagePayload } from "../utils/message-payload";
 import {
-  parseKaspaMessagePayload,
   hexToBytes,
   getEncoder,
   isMessagePayload,
-  base64ToHex,
-} from "../utils/message-payload";
+  tryBase64ToHex,
+} from "../utils/payload-encoding";
 import { WalletStorageService } from "./wallet-storage-service";
 import { MAX_TX_FEE } from "../config/constants";
 
@@ -1189,7 +1189,9 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const parsed = parseKaspaMessagePayload(tx.payload);
       let messageType = parsed.type;
       const targetAlias = parsed.alias;
-      const hexEncryptedPayload = base64ToHex(parsed.encryptedHex);
+
+      const hexEncryptedPayload = tryBase64ToHex(parsed.encryptedHex);
+
       const encryptedHex = hexEncryptedPayload;
       let isHandshake = parsed.type === PROTOCOL.headers.HANDSHAKE.type;
 
