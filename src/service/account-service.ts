@@ -42,6 +42,7 @@ import {
   hexToBytes,
   getEncoder,
   isMessagePayload,
+  base64ToHex,
 } from "../utils/message-payload";
 import { WalletStorageService } from "./wallet-storage-service";
 import { MAX_TX_FEE } from "../config/constants";
@@ -1188,7 +1189,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const parsed = parseKaspaMessagePayload(tx.payload);
       let messageType = parsed.type;
       const targetAlias = parsed.alias;
-      const encryptedHex = parsed.encryptedHex;
+      const hexEncryptedPayload = base64ToHex(parsed.encryptedHex);
+      const encryptedHex = hexEncryptedPayload;
       let isHandshake = parsed.type === PROTOCOL.headers.HANDSHAKE.type;
 
       const isMonitoredAddress =
