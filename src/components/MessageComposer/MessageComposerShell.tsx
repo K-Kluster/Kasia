@@ -18,6 +18,7 @@ import { FeeDisplay } from "./FeeDisplay";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useFeeEstimate } from "../../hooks/MessageComposer/useFeeEstimate";
 import { toast } from "../../utils/toast-helper";
+import { MAX_CHAT_INPUT_CHAR } from "../../config/constants";
 
 export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const attachment = useComposerSlice((s) => s.attachment);
@@ -77,6 +78,19 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
     }
     checkCamera();
   }, []);
+
+  // check message length and trim if over limit
+  useEffect(() => {
+    console.log(draft.length);
+    if (draft.length > MAX_CHAT_INPUT_CHAR) {
+      toast.removeAll();
+      toast.error(
+        `Over max message length of ${MAX_CHAT_INPUT_CHAR}, message trimmed.`
+      );
+      const trimmedDraft = draft.slice(0, MAX_CHAT_INPUT_CHAR);
+      if (recipient) setDraft(recipient, trimmedDraft);
+    }
+  }, [draft, recipient, setDraft]);
 
   const openFileDialog = () => {
     if (!guardReady()) return;

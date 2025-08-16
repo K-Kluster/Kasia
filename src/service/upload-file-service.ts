@@ -44,7 +44,7 @@ export async function prepareFileForUpload(
   }
   if (file.size > rawTarget && !file.type.startsWith("image/"))
     return {
-      error: `File too large. Please keep files under ${maxSize / 1024}KB to ensure it fits in a Kaspa transaction.`,
+      error: `File too large. Please keep files under ${maxSize / 1024 - 5}KB to ensure it fits in a Kaspa transaction.`,
     };
 
   let candidate: File | null = file;
