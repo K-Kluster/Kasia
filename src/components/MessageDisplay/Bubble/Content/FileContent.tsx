@@ -19,7 +19,7 @@ export const FileContent: FC<FileContentProps> = ({ fileData }) => {
       <img
         src={fileData.content}
         alt={fileData.name}
-        className="my-0.5 block max-w-full cursor-pointer rounded-lg"
+        className="my-0.5 block h-auto max-h-[256px] w-auto max-w-[256px] cursor-pointer rounded-lg"
       />
     );
   }

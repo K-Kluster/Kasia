@@ -4,6 +4,7 @@ import {
   MESSAGE_COMPOSER_MIN_HEIGHT,
   MESSAGE_COMPOSER_MAX_HEIGHT,
 } from "../../config/constants";
+import { MAX_CHAT_INPUT_CHAR } from "../../config/constants";
 
 interface InputBasicProps {
   value: string;
@@ -91,6 +92,7 @@ export const InputBasic = forwardRef<HTMLTextAreaElement, InputBasicProps>(
         onPaste={onPaste}
         placeholder={placeholder}
         disabled={disabled}
+        maxLength={MAX_CHAT_INPUT_CHAR + 1}
         className={clsx(
           className ||
             "peer bg-primary-bg box-border flex-1 resize-none rounded-3xl py-3 pr-20 pl-4 text-sm text-[var(--text-primary)]",

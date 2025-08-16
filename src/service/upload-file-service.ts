@@ -44,7 +44,7 @@ export async function prepareFileForUpload(
   }
   if (file.size > rawTarget && !file.type.startsWith("image/"))
     return {
-      error: `File too large. Please keep files under ${maxSize / 1024}KB to ensure it fits in a Kaspa transaction.`,
+      error: `File too large. Please keep files under ${maxSize / 1024 - 5}KB to ensure it fits in a Kaspa transaction.`,
     };
 
   let candidate: File | null = file;
@@ -96,8 +96,8 @@ async function compressImageToFit(
   options: CompressImageOptions
 ): Promise<File | null> {
   const {
-    maxWidth = 256,
-    maxHeight = 256,
+    maxWidth = 350,
+    maxHeight = 350,
     minWidth = 100,
     minHeight = 100,
     maxQuality = 1.0,
