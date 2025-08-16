@@ -96,8 +96,8 @@ async function compressImageToFit(
   options: CompressImageOptions
 ): Promise<File | null> {
   const {
-    maxWidth = 256,
-    maxHeight = 256,
+    maxWidth = 350,
+    maxHeight = 350,
     minWidth = 100,
     minHeight = 100,
     maxQuality = 1.0,

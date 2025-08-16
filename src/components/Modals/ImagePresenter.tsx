@@ -22,7 +22,6 @@ export const ImagePresenter = () => {
         src={imagePresenterImage}
         alt="Presented image"
         className="h-auto max-w-full rounded-lg object-contain"
-        style={{ zoom: 1.5 }}
       />
     </div>
   );

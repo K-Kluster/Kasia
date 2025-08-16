@@ -133,12 +133,12 @@ export const MessageDisplay: FC<MessageDisplayProps> = ({
 
       {showMeta && event.transactionId && !isOutgoing && (
         <>
-          <ImageView data={event} position="left" />
           <ExplorerLink
             transactionId={event.transactionId}
             network={walletStore.selectedNetwork}
             position="left"
           />
+          <ImageView data={event} position="left" />
         </>
       )}
     </div>
