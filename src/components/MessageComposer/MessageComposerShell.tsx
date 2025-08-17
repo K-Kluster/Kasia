@@ -81,7 +81,6 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
 
   // check message length and trim if over limit
   useEffect(() => {
-    console.log(draft.length);
     if (draft.length > MAX_CHAT_INPUT_CHAR) {
       toast.removeAll();
       toast.error(
