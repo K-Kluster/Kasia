@@ -41,7 +41,6 @@ import { parseKaspaMessagePayload } from "../utils/message-payload";
 import {
   hexToBytes,
   getEncoder,
-  isMessagePayload,
   tryBase64ToHex,
 } from "../utils/payload-encoding";
 import { WalletStorageService } from "./wallet-storage-service";
@@ -950,46 +949,23 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
   private async _getGeneratorForPaymentWithMessage(
     transaction: CreatePaymentWithMessageArgs
   ) {
-    if (!this.isStarted) {
-      throw new Error("Account service is not started");
-    }
-
-    console.log("Using destination address:", transaction.address.toString());
-    console.error("1");
-    const generateSummary = await this.estimateTransaction({
-      address: new Address(transaction.address.toString()),
-      amount: transaction.amount,
-      payload: transaction.payload,
-      priorityFee: transaction.priorityFee,
-    });
-    const estimatedFees = generateSummary.fees;
-
     const matureBalance = this.context.balance?.mature ?? 0n;
 
-    const isFullBalance = transaction.amount + estimatedFees >= matureBalance;
+    // if sending full balance, use ReceiverPays
+    const isFullBalance = transaction.amount >= matureBalance;
 
-    console.log("is full balance?:", {
-      requestedAmount: transaction.amount.toString(),
-      matureBalance: this.context.balance?.mature.toString(),
-      isFullBalance,
-    });
-
-    // if thats the case, use destination as change address and ReceiverPays fees
     const changeAddress = isFullBalance
       ? new Address(transaction.address.toString())
       : this.receiveAddress!;
 
-    // use ReceiverPays for full balance to avoid insufficient funds
     const priorityFee = isFullBalance
-      ? {
-          amount: BigInt(0),
-          source: FeeSource.ReceiverPays,
-        }
+      ? { amount: BigInt(0), source: FeeSource.ReceiverPays }
       : transaction.priorityFee || {
           amount: BigInt(0),
           source: FeeSource.SenderPays,
         };
-
+    // once we add custom fees we might need to bring back a estimate generator,
+    // but we at least wont be calling estimatetransaction functio extenally
     return new Generator({
       changeAddress,
       entries: this.context,
@@ -1020,16 +996,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       ? new Address(transaction.address.toString())
       : this.receiveAddress!;
 
+    // for full balance, use ReceiverPays (no choice). For partial, use SenderPays
+    const priorityFee = isFullBalance
+      ? { amount: BigInt(0), source: FeeSource.ReceiverPays }
+      : transaction.priorityFee || {
+          amount: BigInt(0),
+          source: FeeSource.SenderPays,
+        };
+
     return new Generator({
       changeAddress,
       entries: this.context,
-      // priorityEntries: this.context.getMatureRange(0, this.context.matureLength),
       outputs: [new PaymentOutput(transaction.address, transaction.amount)],
       networkId: this.networkId,
-      priorityFee: transaction.priorityFee || {
-        amount: BigInt(0),
-        source: FeeSource.ReceiverPays,
-      },
+      priorityFee,
     });
   }
 
