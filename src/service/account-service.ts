@@ -725,6 +725,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
+  // estimation with context 1:1 base64
   public async estimateSendMessageFees(
     sendMessage: EstimateSendMessageFeesArgs
   ): Promise<GeneratorSummary> {
@@ -738,23 +739,20 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     const destinationAddress = this.ensureAddressPrefix(sendMessage.toAddress);
     const addressString = destinationAddress.toString();
-
     // Message needs to be encrypted
+
     const encryptedMessage = encrypt_message(
       addressString,
       sendMessage.message
     );
-
+    const bytesData = hexToBytes(encryptedMessage.to_hex());
+    const base64Data = btoa(String.fromCharCode(...bytesData));
     if (!encryptedMessage) {
       throw new Error("Failed to encrypt message");
     }
-
-    const payload = `${PROTOCOL.prefix.string}${PROTOCOL.headers.COMM.string}${PLACEHOLDER_ALIAS}:${encryptedMessage.to_hex()}`;
-
-    const payloadHex = payload
-      .split("")
-      .map((c) => c.charCodeAt(0).toString(16).padStart(2, "0"))
-      .join("");
+    // Build the full protocol string with all components to match sendMessageWithContext
+    const protocolString = `ciph_msg:1:comm:${PLACEHOLDER_ALIAS}:${base64Data}`;
+    const payload = getEncoder().encode(protocolString);
 
     if (!payload) {
       throw new Error("Failed to create message payload");
@@ -764,7 +762,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const summary = await this.estimateTransaction({
         address: destinationAddress,
         amount: BigInt(0.2 * 100_000_000),
-        payload: payloadHex,
+        payload: payload,
         priorityFee: sendMessage.priorityFee,
       });
 
@@ -898,25 +896,10 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     const isDirectSelfMessage =
       destinationAddress.toString() === this.receiveAddress?.toString();
 
-    const isMessageTransaction = isMessagePayload(transaction.payload);
-
-    const hasActiveConversation = this.monitoredAddresses.has(
-      destinationAddress.toString()
-    );
-
-    const isSelfMessage =
-      isMessageTransaction && (isDirectSelfMessage || hasActiveConversation);
-
-    console.log("Transaction type:", {
-      isDirectSelfMessage,
-      hasActiveConversation,
-      isMessageTransaction,
-      isSelfMessage,
-    });
-
+    console.log(isDirectSelfMessage);
     // For regular transactions, always use the specified amount and destination
     // For self-messages, use empty outputs array to only use change output
-    const outputs = isSelfMessage
+    const outputs = isDirectSelfMessage
       ? []
       : [new PaymentOutput(destinationAddress, transaction.amount)];
 
@@ -972,14 +955,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     console.log("Using destination address:", transaction.address.toString());
-
+    console.error("1");
     const generateSummary = await this.estimateTransaction({
       address: new Address(transaction.address.toString()),
       amount: transaction.amount,
       payload: transaction.payload,
       priorityFee: transaction.priorityFee,
     });
-
     const estimatedFees = generateSummary.fees;
 
     const matureBalance = this.context.balance?.mature ?? 0n;
@@ -1443,7 +1425,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     try {
       // Always send to our own address for self-send messages
       const destinationAddress = new Address(this.receiveAddress.toString());
-
       // Send to our own address
       const txId = await this.createTransaction(
         {

@@ -8,6 +8,7 @@ import { Address } from "kaspa-wasm";
 import { FeeState } from "../../types/all";
 
 export const useFeeEstimate = (
+  toSelf?: boolean,
   recipient?: string,
   draft?: string,
   attachment?: Attachment
@@ -18,11 +19,14 @@ export const useFeeEstimate = (
     priority,
     sendState: { status: sendStatus },
   } = useComposerStore();
-  const { unlockedWallet, estimateSendMessageFees } = useWalletStore();
+  const { unlockedWallet, estimateSendMessageFees, address } = useWalletStore();
 
   useEffect(() => {
+    // when toSelf is true, we need user's address; otherwise we need recipient
+    const targetAddress = toSelf ? address?.toString() : recipient;
+
     if (
-      !recipient ||
+      !targetAddress ||
       (!draft && !attachment) ||
       !unlockedWallet ||
       sendStatus === "loading"
@@ -31,13 +35,13 @@ export const useFeeEstimate = (
       return;
     }
 
-    let address: Address;
+    let parsedAddress: Address;
     try {
-      address = new Address(recipient);
+      parsedAddress = new Address(targetAddress);
     } catch {
       setFeeState({
         status: "error",
-        error: new Error("Invalid recipient address"),
+        error: new Error("Invalid address"),
       });
       return;
     }
@@ -50,7 +54,7 @@ export const useFeeEstimate = (
       // use attachment content if available, otherwise use draft text
       const messageContent = attachment ? attachment.content : draft || "";
 
-      estimateSendMessageFees(messageContent, address, priority)
+      estimateSendMessageFees(messageContent, parsedAddress, priority)
         .then((estimate) => {
           if (!isCancelled) {
             const fee = Number(estimate.fees) / 100_000_000;
@@ -70,7 +74,9 @@ export const useFeeEstimate = (
       clearTimeout(timeoutId);
     };
   }, [
+    toSelf,
     recipient,
+    address,
     draft,
     attachment,
     priority,

@@ -27,11 +27,19 @@ export const tryBase64ToHex = (input: string): string => {
 };
 
 // check if payload is a message transaction (both hex and base64 formats)
-export const isMessagePayload = (p: string | Uint8Array): boolean =>
-  !!p &&
-  (typeof p === "string"
-    ? p.startsWith(PROTOCOL.prefix.hex) || p.startsWith("ciph_msg:")
-    : false);
+export const isMessagePayload = (p: string | Uint8Array): boolean => {
+  if (!p) return false;
+
+  if (typeof p === "string") {
+    return p.startsWith(PROTOCOL.prefix.hex) || p.startsWith("ciph_msg:1:comm");
+  }
+
+  // handle Uint8Array by converting to string
+  const str = new TextDecoder().decode(p.slice(0, 30)); // check first 20 bytes
+  return (
+    str.startsWith(PROTOCOL.prefix.hex) || str.startsWith("ciph_msg:1:comm")
+  );
+};
 
 // get encoder singleton for reuse
 export const getEncoder = () => _encoder;
