@@ -3,8 +3,6 @@ import {
   Address,
   UtxoProcessor,
   UtxoContext,
-  Generator,
-  PaymentOutput,
   UtxoEntry,
   ITransaction,
   PendingTransaction,
@@ -44,6 +42,7 @@ import {
   tryBase64ToHex,
 } from "../utils/payload-encoding";
 import { WalletStorageService } from "./wallet-storage-service";
+import { TransactionGeneratorService } from "./transaction-generator";
 import { MAX_TX_FEE } from "../config/constants";
 
 // strictly typed events
@@ -375,7 +374,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     try {
       // Use our optimized generator creation method
-      const generator = this._getGeneratorForTransaction(transaction);
+      const generator = TransactionGeneratorService.createForTransaction({
+        context: this.context,
+        networkId: this.networkId,
+        receiveAddress: this.receiveAddress!,
+        destinationAddress: transaction.address,
+        amount: transaction.amount,
+        payload: transaction.payload,
+        priorityFee: transaction.priorityFee,
+      });
 
       console.log("Generating transaction...");
       const pendingTransaction: PendingTransaction | null =
@@ -451,26 +458,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Transaction amount is required");
     }
 
-    console.log("=== CREATING PAYMENT WITH MESSAGE ===");
-    const primaryAddress = this.receiveAddress;
-    console.log(
-      "Creating payment from primary address:",
-      primaryAddress.toString()
-    );
-    console.log(
-      "Change will go back to primary address:",
-      primaryAddress.toString()
-    );
-    console.log(`Destination: ${paymentTransaction.address.toString()}`);
-    console.log(
-      `Amount: ${Number(paymentTransaction.amount) / 100000000} KAS (${
-        paymentTransaction.amount
-      } sompi)`
-    );
-    console.log(
-      `Payload length: ${paymentTransaction.payload.length / 2} bytes`
-    );
-
     const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
@@ -486,10 +473,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     try {
       // Use a modified generator that sends to recipient but includes payload
-      const generator =
-        await this._getGeneratorForPaymentWithMessage(paymentTransaction);
+      const generator = TransactionGeneratorService.createForPaymentOrWithdraw({
+        context: this.context,
+        networkId: this.networkId,
+        receiveAddress: this.receiveAddress!,
+        destinationAddress: paymentTransaction.address,
+        amount: paymentTransaction.amount,
+        payload: paymentTransaction.payload,
+        priorityFee: paymentTransaction.priorityFee,
+      });
 
-      console.log("Generating payment transaction...");
       const pendingTransaction: PendingTransaction | null =
         await generator.next();
 
@@ -512,7 +505,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Always use receive key for all addresses since we only use primary address
       const privateKeys = pendingTransaction.addresses().map(() => {
-        console.log("Using primary address key for signing");
         const key = privateKeyGenerator.receiveKey(0);
         if (!key) {
           throw new Error("Failed to generate private key for signing");
@@ -521,7 +513,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       });
 
       // Sign the transaction
-      console.log("Signing transaction...");
       pendingTransaction.sign(privateKeys);
 
       // Submit the transaction
@@ -562,22 +553,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Transaction amount is required");
     }
 
-    console.log("=== CREATING WITHDRAW TRANSACTION ===");
-    const primaryAddress = this.receiveAddress;
-    console.log(
-      "Creating withdraw transaction from primary address:",
-      primaryAddress.toString()
-    );
-    console.log(
-      "Change will go back to primary address:",
-      primaryAddress.toString()
-    );
-    console.log(`Destination: ${withdrawTransaction.address.toString()}`);
-    console.log(
-      `Amount: ${Number(withdrawTransaction.amount) / 100000000} KAS (${
-        withdrawTransaction.amount
-      } sompi)`
-    );
     const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
       this.unlockedWallet,
       password
@@ -593,10 +568,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     try {
       // Use our optimized generator creation method
-      const generator =
-        this._getGeneratorForWithdrawTransaction(withdrawTransaction);
+      const generator = TransactionGeneratorService.createForPaymentOrWithdraw({
+        context: this.context,
+        networkId: this.networkId,
+        receiveAddress: this.receiveAddress!,
+        destinationAddress: withdrawTransaction.address,
+        amount: withdrawTransaction.amount,
+        priorityFee: withdrawTransaction.priorityFee,
+      });
 
-      console.log("Generating transaction...");
       const pendingTransaction: PendingTransaction | null =
         await generator.next();
 
@@ -606,16 +586,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Log the addresses that need signing
       const addressesToSign = pendingTransaction.addresses();
-      console.log(
-        `Transaction requires signing ${addressesToSign.length} addresses:`
-      );
+
       addressesToSign.forEach((addr, i) => {
         console.log(`  Address ${i + 1}: ${addr.toString()}`);
       });
 
       // Always use receive key for all addresses since we only use primary address
       const privateKeys = pendingTransaction.addresses().map(() => {
-        console.log("Using primary address key for signing");
         const key = privateKeyGenerator.receiveKey(0);
         if (!key) {
           throw new Error("Failed to generate private key for signing");
@@ -624,12 +601,8 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       });
 
       // Sign the transaction
-      console.log("Signing transaction...");
       pendingTransaction.sign(privateKeys);
-
-      // Submit the transaction
-      console.log("Submitting transaction to network...");
-
+      // submit
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
 
       // reset the context to workaround "withdraw all" use-case where change address isn't the user
@@ -638,7 +611,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       await this.context.trackAddresses([this.receiveAddress!]);
 
       console.log(`Transaction submitted with ID: ${txId}`);
-      console.log("========================");
 
       return txId;
     } catch (error) {
@@ -663,7 +635,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     // ensure password is available
     this.ensurePasswordSet();
 
-    console.log("=== CREATING COMPOUND TRANSACTION ===");
     console.log("Consolidating all UTXOs to:", this.receiveAddress.toString());
 
     const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
@@ -680,17 +651,18 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       await this.context.clear();
       await this.context.trackAddresses([this.receiveAddress!]);
 
-      // validate UTXO availability before creating transaction
-      console.log("Validating UTXO availability...");
       const balance = this.context.balance;
       if (!balance || balance.mature === 0n) {
         throw new Error("No mature UTXOs available for compound transaction");
       }
 
       // Use our simple compound transaction generator
-      const generator = this._getGeneratorForCompoundTransaction();
+      const generator = TransactionGeneratorService.createForCompound({
+        context: this.context,
+        networkId: this.networkId,
+        receiveAddress: this.receiveAddress!,
+      });
 
-      console.log("Generating transaction...");
       const pendingTransaction: PendingTransaction | null =
         await generator.next();
 
@@ -700,16 +672,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       // Log the addresses that need signing
       const addressesToSign = pendingTransaction.addresses();
-      console.log(
-        `Transaction requires signing ${addressesToSign.length} addresses:`
-      );
+
       addressesToSign.forEach((addr, i) => {
         console.log(`  Address ${i + 1}: ${addr.toString()}`);
       });
 
       // Always use receive key for all addresses since we only use primary address
       const privateKeys = pendingTransaction.addresses().map(() => {
-        console.log("Using primary address key for signing");
         const key = privateKeyGenerator.receiveKey(0);
         if (!key) {
           throw new Error("Failed to generate private key for signing");
@@ -718,16 +687,12 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       });
 
       // Sign the transaction
-      console.log("Signing transaction...");
       pendingTransaction.sign(privateKeys);
 
       // Submit the transaction
-      console.log("Submitting transaction to network...");
-
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
 
       console.log(`Transaction submitted with ID: ${txId}`);
-      console.log("========================");
 
       // wait for transaction to propagate, then refresh context
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -745,7 +710,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Account service is not started");
     }
 
-    return this._getGeneratorForTransaction(transaction).estimate();
+    return TransactionGeneratorService.createForTransaction({
+      context: this.context,
+      networkId: this.networkId,
+      receiveAddress: this.receiveAddress!,
+      destinationAddress: transaction.address,
+      amount: transaction.amount,
+      payload: transaction.payload,
+      priorityFee: transaction.priorityFee,
+    }).estimate();
   }
 
   public async sendMessage(
@@ -969,152 +942,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     console.log(`Added prefix to address: ${prefixedAddressString}`);
     return new Address(prefixedAddressString);
-  }
-
-  private _getGeneratorForTransaction(transaction: CreateTransactionArgs) {
-    if (!this.isStarted) {
-      throw new Error("Account service is not started");
-    }
-
-    // Ensure both addresses have the correct prefixes
-    const destinationAddress = this.ensureAddressPrefix(transaction.address);
-    const primaryAddress = this.ensureAddressPrefix(this.receiveAddress!);
-
-    // Log both addresses for debugging
-    console.log("Using destination address:", destinationAddress.toString());
-    console.log("Using primary address for change:", primaryAddress.toString());
-
-    // Check if this is a direct self-message (sending to our own receive address)
-    const isDirectSelfMessage =
-      destinationAddress.toString() === this.receiveAddress?.toString();
-
-    console.log(isDirectSelfMessage);
-    // For regular transactions, always use the specified amount and destination
-    // For self-messages, use empty outputs array to only use change output
-    const outputs = isDirectSelfMessage
-      ? []
-      : [new PaymentOutput(destinationAddress, transaction.amount)];
-
-    // Calculate additional fee based on fee rate difference
-    let additionalFee = BigInt(0);
-
-    if (
-      transaction.priorityFee?.feerate &&
-      transaction.priorityFee.feerate > 1
-    ) {
-      // Estimate transaction mass (typical message transaction ~2500-3000 grams)
-      const estimatedMass = 2800; // grams - rough estimate for message transaction
-      const baseFeeRate = 1; // sompi per gram
-      const additionalFeeRate = transaction.priorityFee.feerate - baseFeeRate;
-      additionalFee = BigInt(Math.floor(additionalFeeRate * estimatedMass));
-
-      console.log("Calculated additional priority fee:", {
-        selectedFeeRate: transaction.priorityFee.feerate,
-        baseFeeRate,
-        additionalFeeRate,
-        estimatedMass,
-        additionalFeeSompi: additionalFee.toString(),
-        additionalFeeKAS: Number(additionalFee) / 100_000_000,
-      });
-    } else if (
-      transaction.priorityFee?.amount &&
-      transaction.priorityFee.amount > 0
-    ) {
-      additionalFee = transaction.priorityFee.amount;
-      console.log(
-        "Using explicit priority fee amount:",
-        additionalFee.toString()
-      );
-    }
-
-    console.log("Final priority fee for Generator:", additionalFee.toString());
-
-    return new Generator({
-      changeAddress: primaryAddress,
-      entries: this.context,
-      outputs: outputs,
-      payload: transaction.payload,
-      networkId: this.networkId,
-      priorityFee: additionalFee,
-    });
-  }
-
-  private async _getGeneratorForPaymentWithMessage(
-    transaction: CreatePaymentWithMessageArgs
-  ) {
-    const matureBalance = this.context.balance?.mature ?? 0n;
-
-    // if sending full balance, use ReceiverPays
-    const isFullBalance = transaction.amount >= matureBalance;
-
-    const changeAddress = isFullBalance
-      ? new Address(transaction.address.toString())
-      : this.receiveAddress!;
-
-    const priorityFee = isFullBalance
-      ? { amount: BigInt(0), source: FeeSource.ReceiverPays }
-      : transaction.priorityFee || {
-          amount: BigInt(0),
-          source: FeeSource.SenderPays,
-        };
-    // once we add custom fees we might need to bring back a estimate generator,
-    // but we at least wont be calling estimatetransaction functio extenally
-    return new Generator({
-      changeAddress,
-      entries: this.context,
-      outputs: [
-        new PaymentOutput(
-          new Address(transaction.address.toString()),
-          transaction.amount
-        ),
-      ],
-      networkId: this.networkId,
-      priorityFee,
-      payload: transaction.payload,
-    });
-  }
-
-  private _getGeneratorForCompoundTransaction() {
-    // compound transaction - sweep operation to consolidate UTXOs
-    // for compound tx, we pass undefined to outputs which means we dont need to specify priorty fee
-    return new Generator({
-      changeAddress: this.receiveAddress!,
-      entries: this.context,
-      outputs: undefined as unknown as PaymentOutput[],
-      networkId: this.networkId,
-    });
-  }
-
-  private _getGeneratorForWithdrawTransaction(
-    transaction: CreateWithdrawTransactionArgs
-  ) {
-    if (!this.isStarted) {
-      throw new Error("Account service is not started");
-    }
-
-    console.log("Using destination address:", transaction.address.toString());
-
-    const isFullBalance = transaction.amount === this.context.balance?.mature;
-
-    const changeAddress = isFullBalance
-      ? new Address(transaction.address.toString())
-      : this.receiveAddress!;
-
-    // for full balance, use ReceiverPays (no choice). For partial, use SenderPays
-    const priorityFee = isFullBalance
-      ? { amount: BigInt(0), source: FeeSource.ReceiverPays }
-      : transaction.priorityFee || {
-          amount: BigInt(0),
-          source: FeeSource.SenderPays,
-        };
-
-    return new Generator({
-      changeAddress,
-      entries: this.context,
-      outputs: [new PaymentOutput(transaction.address, transaction.amount)],
-      networkId: this.networkId,
-      priorityFee,
-    });
   }
 
   private isKasiaTransaction(tx: ITransaction | ExplorerTransaction): boolean {
