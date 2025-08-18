@@ -7,6 +7,7 @@ export type Attachment = FileData | null;
 
 interface ComposerState {
   drafts: Record<string, string>;
+
   attachment: Attachment | null;
   priority: PriorityFeeConfig;
 

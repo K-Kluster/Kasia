@@ -19,6 +19,7 @@ type FrozenBalance = {
 
 // Constants
 const HIGH_UTXO_THRESHOLD = 100; // Threshold for showing high UTXO warning
+const UTXO_MIN_COUNT = 2;
 
 export const UtxoCompound: FC = () => {
   const [isCompounding, setIsCompounding] = useState(false);
@@ -36,6 +37,9 @@ export const UtxoCompound: FC = () => {
   const walletStore = useWalletStore();
   const { accountService, unlockedWallet, balance, address, selectedNetwork } =
     walletStore;
+
+  const compoundNotNeeded =
+    balance?.matureUtxoCount && balance?.matureUtxoCount < UTXO_MIN_COUNT;
 
   // Monitor balance changes to detect when compound is complete
   useEffect(() => {
@@ -69,14 +73,15 @@ export const UtxoCompound: FC = () => {
     return "Transaction failed. Please check your connection and try again.";
   }, []);
 
-  const handleCompoundUtxos = useCallback(async () => {
-    if (!accountService || !unlockedWallet || !address) {
-      setError("Wallet not properly initialized");
+  const handleCompoundUtxos = async () => {
+    if (
+      !accountService ||
+      !unlockedWallet ||
+      !address ||
+      !balance?.matureUtxoCount ||
+      compoundNotNeeded
+    ) {
       return;
-    }
-
-    if (!balance?.matureUtxoCount || balance.matureUtxoCount < 2) {
-      return; // Silently do nothing if not enough UTXOs
     }
 
     setIsCompounding(true);
@@ -106,14 +111,7 @@ export const UtxoCompound: FC = () => {
     } finally {
       setIsCompounding(false);
     }
-  }, [
-    accountService,
-    unlockedWallet,
-    balance,
-    address,
-    resetAllStates,
-    getUserFriendlyErrorMessage,
-  ]);
+  };
 
   if (!balance) {
     return (
@@ -226,12 +224,12 @@ export const UtxoCompound: FC = () => {
 
       {/* Results */}
       {error && (
-        <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-red-500 bg-red-500 p-3">
-          <div className="flex items-start gap-2">
-            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
+        <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-[var(--accent-red)] bg-[var(--accent-red)] p-3">
+          <div className="flex items-start gap-2 text-white">
+            <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
             <div className="text-base">
-              <p className="font-medium text-red-400">Error</p>
-              <p className="text-[var(--text-secondary)]-300 mt-1">{error}</p>
+              <p className="font-medium">Error</p>
+              <p className="mt-1">{error}</p>
             </div>
           </div>
         </div>
@@ -252,7 +250,7 @@ export const UtxoCompound: FC = () => {
                   Transaction ID:
                 </span>{" "}
                 <a
-                  href={getExplorerUrl(compoundResult.txId)}
+                  href={getExplorerUrl(compoundResult.txId, selectedNetwork)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="break-all text-blue-300 underline hover:text-blue-200"
