@@ -15,7 +15,12 @@ import {
   ITransactionOutput,
 } from "kaspa-wasm";
 import { KaspaClient } from "./kaspa-client";
-import { encrypt_message } from "cipher";
+import {
+  decrypt_message,
+  encrypt_message,
+  EncryptedMessage,
+  PrivateKey,
+} from "cipher";
 import { DecryptionCache } from "./decryption-cache";
 import {
   BlockAddedData,
@@ -377,6 +382,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       console.log("Generating transaction...");
       const pendingTransaction: PendingTransaction | null =
         await generator.next();
+
+      console.log({
+        pendingTransaction,
+        payload: pendingTransaction?.transaction.payload,
+      });
 
       if (!pendingTransaction) {
         throw new Error("Failed to generate transaction");
@@ -769,38 +779,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  /**
-   * Helper function to handle SEC1 format compatibility
-   * for pre-encrypted messages
-   */
-  private adjustForSEC1Format(encryptedHex: string): string {
-    // Check if the key starts with 02 or 03 (compressed SEC1 format)
-    const keyStart = encryptedHex.substring(24, 26);
-    if (keyStart !== "02" && keyStart !== "03") {
-      return encryptedHex; // Not a SEC1 key, return unchanged
-    }
-
-    console.log("Detected SEC1 compressed key format in pre-encrypted message");
-
-    // Extract components
-    const nonce = encryptedHex.substring(0, 24);
-    const ephemeralPublicKey = encryptedHex.substring(24, 24 + 66);
-    const ciphertext = encryptedHex.substring(24 + 66);
-
-    // Extract the X coordinate (without the 02/03 prefix)
-    const publicKeyWithoutPrefix = ephemeralPublicKey.substring(2);
-
-    // The public key should be exactly 32 bytes (64 hex chars)
-    // If it's shorter, pad it with zeros at the end
-    const paddedPublicKey = publicKeyWithoutPrefix.padEnd(64, "0");
-
-    // Create new hex with padded public key
-    const modifiedHex = nonce + paddedPublicKey + ciphertext;
-    console.log("Adjusted hex for SEC1 format compatibility");
-
-    return modifiedHex;
-  }
-
   public getMatureUtxos() {
     if (!this.isStarted) {
       throw new Error("Account service is not started");
@@ -1169,11 +1147,17 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       try {
         const privateKey = privateKeyGenerator.receiveKey(0);
-        const decryptedContent = await CipherHelper.tryDecrypt(
-          encryptedHex,
-          privateKey.toString(),
-          txId
+
+        const decryptedContent = decrypt_message(
+          new EncryptedMessage(encryptedHex),
+          new PrivateKey(privateKey.toString())
         );
+
+        // const decryptedContent = await CipherHelper.tryDecrypt(
+        //   encryptedHex,
+        //   privateKey.toString(),
+        //   txId
+        // );
         decryptionSuccess = true;
 
         if (decryptionSuccess) {
