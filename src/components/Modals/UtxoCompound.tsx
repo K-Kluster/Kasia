@@ -94,13 +94,7 @@ export const UtxoCompound: FC = () => {
     });
 
     try {
-      const txId = await accountService.createWithdrawTransaction(
-        {
-          address: new Address(address.toString()), // Send to self
-          amount: balance.mature, // Send entire balance
-        },
-        unlockedWallet.password
-      );
+      const txId = await accountService.createCompoundTransaction();
 
       console.log(`UTXO Compounding succeed, txid: ${txId}`);
       setFrozenBalance(null); // Clear frozen balance on complete

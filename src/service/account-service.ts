@@ -647,6 +647,99 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
+  public async createCompoundTransaction() {
+    if (!this.isStarted || !this.rpcClient.rpc) {
+      throw new Error("Account service is not started");
+    }
+
+    if (!this.receiveAddress) {
+      throw new Error("Receive address not initialized");
+    }
+
+    if (!this.context) {
+      throw new Error("UTXO context not initialized");
+    }
+
+    // ensure password is available
+    this.ensurePasswordSet();
+
+    console.log("=== CREATING COMPOUND TRANSACTION ===");
+    console.log("Consolidating all UTXOs to:", this.receiveAddress.toString());
+
+    const privateKeyGenerator = WalletStorageService.getPrivateKeyGenerator(
+      this.unlockedWallet,
+      this.password!
+    );
+
+    if (!privateKeyGenerator) {
+      throw new Error("Failed to generate private key");
+    }
+
+    try {
+      // refresh the UTXO context to ensure we have the latest UTXO data
+      await this.context.clear();
+      await this.context.trackAddresses([this.receiveAddress!]);
+
+      // validate UTXO availability before creating transaction
+      console.log("Validating UTXO availability...");
+      const balance = this.context.balance;
+      if (!balance || balance.mature === 0n) {
+        throw new Error("No mature UTXOs available for compound transaction");
+      }
+
+      // Use our simple compound transaction generator
+      const generator = this._getGeneratorForCompoundTransaction();
+
+      console.log("Generating transaction...");
+      const pendingTransaction: PendingTransaction | null =
+        await generator.next();
+
+      if (!pendingTransaction) {
+        throw new Error("Failed to generate transaction");
+      }
+
+      // Log the addresses that need signing
+      const addressesToSign = pendingTransaction.addresses();
+      console.log(
+        `Transaction requires signing ${addressesToSign.length} addresses:`
+      );
+      addressesToSign.forEach((addr, i) => {
+        console.log(`  Address ${i + 1}: ${addr.toString()}`);
+      });
+
+      // Always use receive key for all addresses since we only use primary address
+      const privateKeys = pendingTransaction.addresses().map(() => {
+        console.log("Using primary address key for signing");
+        const key = privateKeyGenerator.receiveKey(0);
+        if (!key) {
+          throw new Error("Failed to generate private key for signing");
+        }
+        return key;
+      });
+
+      // Sign the transaction
+      console.log("Signing transaction...");
+      pendingTransaction.sign(privateKeys);
+
+      // Submit the transaction
+      console.log("Submitting transaction to network...");
+
+      const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
+
+      console.log(`Transaction submitted with ID: ${txId}`);
+      console.log("========================");
+
+      // wait for transaction to propagate, then refresh context
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      this._emitBalanceUpdate();
+
+      return txId;
+    } catch (error) {
+      console.error("Error creating compound transaction:", error);
+      throw error;
+    }
+  }
+
   public async estimateTransaction(transaction: CreateTransactionArgs) {
     if (!this.isStarted) {
       throw new Error("Account service is not started");
@@ -978,6 +1071,17 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       networkId: this.networkId,
       priorityFee,
       payload: transaction.payload,
+    });
+  }
+
+  private _getGeneratorForCompoundTransaction() {
+    // compound transaction - sweep operation to consolidate UTXOs
+    // for compound tx, we pass undefined to outputs which means we dont need to specify priorty fee
+    return new Generator({
+      changeAddress: this.receiveAddress!,
+      entries: this.context,
+      outputs: undefined as unknown as PaymentOutput[],
+      networkId: this.networkId,
     });
   }
 
