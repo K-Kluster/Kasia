@@ -113,7 +113,6 @@ type WalletState = {
 
   // wallet operations
   stop: () => void;
-  sendMessage: (args: WalletStoreSendMessageArgs) => Promise<TransactionId>;
   sendMessageWithContext: (
     args: WalletStoreSendContextualMessageArgs
   ) => Promise<TransactionId>;
@@ -346,36 +345,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
         toAddress,
         priorityFee,
       });
-    },
-
-    sendMessage: async ({
-      message,
-      toAddress,
-      password,
-      customAmount,
-      priorityFee,
-    }: WalletStoreSendMessageArgs) => {
-      const state = get();
-      if (!state.unlockedWallet || !state.accountService) {
-        throw new Error("Wallet not unlocked or account service not running");
-      }
-
-      try {
-        // Check if this is a handshake message
-        console.log("Sending protocol message to:", toAddress.toString());
-        const encryptedMessage = encrypt_message(toAddress.toString(), message);
-
-        return await state.accountService.sendMessage({
-          message: encryptedMessage.to_hex(),
-          toAddress,
-          password,
-          amount: customAmount,
-          priorityFee,
-        });
-      } catch (error) {
-        console.error("Error sending message:", error);
-        throw error;
-      }
     },
     sendMessageWithContext: async ({
       message,

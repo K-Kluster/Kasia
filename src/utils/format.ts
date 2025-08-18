@@ -11,11 +11,13 @@ export function formatKasAmount(amount: number, isSompi: boolean = false) {
 
 // hex to string conversion utility
 export function hexToString(hex: string): string {
-  let str = "";
-  for (let i = 0; i < hex.length; i += 2) {
-    str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  const hexStringBytes = hex.match(/.{1,2}/g);
+  if (!hexStringBytes) {
+    return "";
   }
-  return str;
+
+  const bytes = new Uint8Array(hexStringBytes.map((b) => parseInt(b, 16)));
+  return new TextDecoder().decode(bytes);
 }
 
 export function decodePayload(hex: string) {

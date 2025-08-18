@@ -27,7 +27,8 @@
     "paths": {
       "kaspa-wasm": ["./wasm"],
       "cipher": ["./cipher-wasm"]
-    }
+    },
+    "types": ["@vitest/browser/providers/playwright"]
   },
   "include": ["src"]
 }

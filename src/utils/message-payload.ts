@@ -1,4 +1,4 @@
-import { PROTOCOL } from "../config/protocol";
+import { PROTOCOL, toHex } from "../config/protocol";
 import { hexToString } from "./format";
 
 export type ParsedKaspaMessagePayload = {
@@ -7,36 +7,57 @@ export type ParsedKaspaMessagePayload = {
   encryptedHex: string;
 };
 
+/**
+ *
+ * @param payload the raw transaction payload (hex-encoded)
+ */
 export function parseKaspaMessagePayload(
   payload: string
 ): ParsedKaspaMessagePayload {
-  // Remove protocol prefix if present
-  let messageHex = payload;
-  if (payload.startsWith(PROTOCOL.prefix.hex)) {
-    messageHex = payload.substring(PROTOCOL.prefix.hex.length);
+  if (!payload.startsWith(PROTOCOL.prefix.hex)) {
+    throw new Error("Cannot parse as the transaction payload, prefix missing.");
   }
+
+  // strip prefix
+  const payloadWithoutPrefix = payload.substring(PROTOCOL.prefix.hex.length);
 
   let type = "unknown";
   let alias: string | undefined;
-  let encryptedHex = messageHex;
+  let encryptedHex = payloadWithoutPrefix;
 
-  if (messageHex.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
-    type = PROTOCOL.headers.HANDSHAKE.type;
-    encryptedHex = messageHex;
-  } else if (messageHex.startsWith(PROTOCOL.headers.COMM.hex)) {
-    const messageStr = hexToString(messageHex);
-    const parts = messageStr.split(":");
+  if (payloadWithoutPrefix.startsWith(PROTOCOL.headers.HANDSHAKE.hex)) {
+    const payloadWithoutPrefixStr = hexToString(payloadWithoutPrefix);
+    const parts = payloadWithoutPrefixStr.split(":");
+
+    // 1:handshake:xyz
+    if (parts.length >= 3) {
+      type = PROTOCOL.headers.HANDSHAKE.type;
+      encryptedHex = payloadWithoutPrefix.substr(
+        PROTOCOL.headers.HANDSHAKE.hex.length + 2
+      );
+    }
+  } else if (payloadWithoutPrefix.startsWith(PROTOCOL.headers.COMM.hex)) {
+    const payloadWithoutPrefixStr = hexToString(payloadWithoutPrefix);
+    const parts = payloadWithoutPrefixStr.split(":");
+
+    // 1:comm:alias:xyz
     if (parts.length >= 4) {
       type = PROTOCOL.headers.COMM.type;
       alias = parts[2];
-      encryptedHex = parts[3];
+      encryptedHex = encryptedHex = payloadWithoutPrefix.substr(
+        PROTOCOL.headers.COMM.hex.length + 2 + alias.length * 2
+      );
     }
-  } else if (messageHex.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
-    const messageStr = hexToString(messageHex);
-    const parts = messageStr.split(":");
+  } else if (payloadWithoutPrefix.startsWith(PROTOCOL.headers.PAYMENT.hex)) {
+    const payloadWithoutPrefixStr = hexToString(payloadWithoutPrefix);
+    const parts = payloadWithoutPrefixStr.split(":");
+
+    // 1:payment:xyz
     if (parts.length >= 3) {
       type = PROTOCOL.headers.PAYMENT.type;
-      encryptedHex = parts[2];
+      encryptedHex = payloadWithoutPrefix.substr(
+        PROTOCOL.headers.PAYMENT.hex.length + 2
+      );
     }
   }
 

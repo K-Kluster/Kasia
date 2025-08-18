@@ -1,10 +1,4 @@
-import {
-  decrypt_message,
-  decrypt_with_secret_key,
-  debug_can_decrypt,
-  EncryptedMessage,
-  PrivateKey,
-} from "cipher";
+import { decrypt_message, EncryptedMessage, PrivateKey } from "cipher";
 import { SecurityHelper } from "./security-helper";
 import { PROTOCOL } from "../config/protocol";
 
@@ -75,11 +69,11 @@ export class CipherHelper {
    */
   static async tryDecrypt(
     encryptedHex: string,
-    privateKeyHex: string,
+    privateKeyString: string,
     messageId: string
   ): Promise<string> {
     // Validate inputs
-    if (!encryptedHex || !privateKeyHex) {
+    if (!encryptedHex || !privateKeyString) {
       throw new Error(
         "Invalid input: encrypted message and private key are required"
       );
@@ -99,24 +93,12 @@ export class CipherHelper {
     // Record this attempt
     SecurityHelper.recordDecryptionAttempt(messageId);
 
-    // First check if this private key can decrypt the message - but don't fail if it returns false
-    try {
-      const canDecrypt = await debug_can_decrypt(encryptedHex, privateKeyHex);
-      CipherHelper.log("Debug can decrypt check:", canDecrypt);
-
-      // NOTE: We're not failing early here anymore, as the debug_can_decrypt might
-      // give false negatives in some cases
-    } catch (err) {
-      // Don't fail if debug check fails, continue with decryption attempts
-      CipherHelper.log("Debug check failed:", err);
-    }
-
     // Try different approaches
     const errors: Error[] = [];
 
     // Method 1: Use private key directly (most reliable method)
     try {
-      const privateKey = new PrivateKey(privateKeyHex);
+      const privateKey = new PrivateKey(privateKeyString);
       const encryptedMessage = new EncryptedMessage(encryptedHex);
 
       const decrypted = await decrypt_message(encryptedMessage, privateKey);
@@ -125,29 +107,6 @@ export class CipherHelper {
     } catch (err) {
       errors.push(err as Error);
       CipherHelper.log("Standard decryption attempt failed");
-    }
-
-    // Method 2: Convert private key to bytes and try the secret key approach
-    try {
-      // Convert private key to bytes
-      const privateKeyBytes = new Uint8Array(
-        privateKeyHex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
-      );
-      const encryptedMessage = new EncryptedMessage(encryptedHex);
-
-      const decrypted = await decrypt_with_secret_key(
-        encryptedMessage,
-        privateKeyBytes
-      );
-      CipherHelper.log("Byte-based decryption successful");
-
-      // Schedule clearing of private key bytes from memory
-      SecurityHelper.clearSensitiveData(privateKeyBytes);
-
-      return decrypted;
-    } catch (err) {
-      errors.push(err as Error);
-      CipherHelper.log("Byte-based decryption attempt failed");
     }
 
     // Log decryption stats only in debug mode

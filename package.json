@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "wasm:build": "cd cipher && wasm-pack build --target web --release -d ../cipher-wasm && cd ..",
-    "prepare": "node .husky/install.mjs && npm run generate:openapi"
+    "prepare": "node .husky/install.mjs && npm run generate:openapi",
+    "test:browser": "vitest --config=vitest.browser.config.ts"
   },
   "dependencies": {
     "@headlessui/react": "2.2.1",
@@ -47,6 +48,7 @@
     "@types/react-dom": "19.1.4",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^4.5.1",
+    "@vitest/browser": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "cssnano": "^7.0.7",
@@ -55,6 +57,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
     "husky": "^9.1.7",
+    "playwright": "^1.54.2",
     "postcss": "^8.5.4",
     "postcss-preset-env": "^10.2.1",
     "prettier": "^3.6.2",
@@ -64,7 +67,9 @@
     "typescript-eslint": "^8.24.1",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.0.1",
-    "vite-plugin-sri3": "1.0.6"
+    "vite-plugin-sri3": "1.0.6",
+    "vitest": "^3.2.4",
+    "vitest-browser-react": "^1.0.1"
   },
   "optionalDependencies": {
     "@rollup/rollup-linux-x64-gnu": "4.42.0",

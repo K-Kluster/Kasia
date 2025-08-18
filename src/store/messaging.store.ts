@@ -31,7 +31,7 @@ import {
   loadLegacyMessages,
   saveMessages,
 } from "../service/storage-encryption";
-import { PROTOCOL } from "../config/protocol";
+import { PROTOCOL, toHex } from "../config/protocol";
 import { Payment } from "./repository/payment.repository";
 import { Message } from "./repository/message.repository";
 import { Handshake } from "./repository/handshake.repository";
@@ -41,6 +41,7 @@ import {
   HandshakeResponse,
 } from "../service/indexer/generated";
 import { tryBase64ToHex } from "../utils/payload-encoding";
+import { hexToString } from "../utils/format";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -1193,8 +1194,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         version: 1,
       };
 
-      const payload = `ciph_msg:${1}:handshake:${encrypt_message(recipientAddress, JSON.stringify(handshakePayload))}`;
+      const encryptedMessage = encrypt_message(
+        recipientAddress,
+        JSON.stringify(handshakePayload)
+      );
 
+      const payload = `${toHex("ciph_msg:1:handshake:")}${encryptedMessage.to_hex()}`;
+      console.log({ payload });
       // Send the handshake message
       console.log("Sending handshake message to:", recipientAddress);
       try {
@@ -1321,7 +1327,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
         console.log("Handshake response to send:", handshakeResponsePayload);
 
-        const payload = `ciph_msg:${1}:handshake:${encrypt_message(recipientAddress, JSON.stringify(handshakeResponsePayload))}`;
+        const payload = `${toHex("ciph_msg:1:handshake:")}${encrypt_message(recipientAddress, JSON.stringify(handshakeResponsePayload)).to_hex()}`;
 
         try {
           console.log("Trying", recipientAddress);

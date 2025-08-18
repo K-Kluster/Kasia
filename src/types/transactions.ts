@@ -62,12 +62,6 @@ export function getTransactionId(
     : tx.verboseData?.transactionId;
 }
 
-export function getTransactionPayload(
-  tx: ITransaction | ExplorerTransaction
-): string {
-  return tx.payload;
-}
-
 export function getBlockTime(tx: ITransaction | ExplorerTransaction): number {
   return isExplorerTransaction(tx)
     ? tx.block_time
