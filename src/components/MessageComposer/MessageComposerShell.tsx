@@ -34,7 +34,12 @@ export const MessageComposerShell = ({ recipient }: { recipient?: string }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
-  const feeState = useFeeEstimate(true, recipient, draft, attachment);
+  const feeState = useFeeEstimate({
+    toSelf: true,
+    recipient,
+    draft,
+    attachment,
+  });
   const { send, attach } = useMessageComposer(feeState, recipient);
   const setPriority = useComposerStore((s) => s.setPriority);
   const setSendState = useComposerStore((s) => s.setSendState);

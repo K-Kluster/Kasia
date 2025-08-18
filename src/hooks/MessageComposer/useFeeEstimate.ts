@@ -7,12 +7,17 @@ import { useWalletStore } from "../../store/wallet.store";
 import { Address } from "kaspa-wasm";
 import { FeeState } from "../../types/all";
 
-export const useFeeEstimate = (
-  toSelf?: boolean,
-  recipient?: string,
-  draft?: string,
-  attachment?: Attachment
-) => {
+export const useFeeEstimate = ({
+  toSelf = false,
+  recipient,
+  draft,
+  attachment,
+}: {
+  toSelf?: boolean;
+  recipient?: string;
+  draft?: string;
+  attachment?: Attachment;
+}) => {
   const [feeState, setFeeState] = useState<FeeState>({ status: "idle" });
 
   const {
