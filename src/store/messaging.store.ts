@@ -13,7 +13,7 @@ import {
   PrivateKey,
 } from "cipher";
 import { WalletStorageService } from "../service/wallet-storage-service";
-import { Address, NetworkType } from "kaspa-wasm";
+import { Address, kaspaToSompi, NetworkType } from "kaspa-wasm";
 import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
 import {
@@ -1325,7 +1325,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         const payload = `${toHex("ciph_msg:1:handshake:")}${encrypt_message(recipientAddress, JSON.stringify(handshakeResponsePayload)).to_hex()}`;
 
         try {
-          console.log("Trying", recipientAddress);
           const kaspaAddress = new Address(recipientAddress);
 
           // Send the handshake response
@@ -1333,6 +1332,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             payload,
             toAddress: kaspaAddress,
             password: walletStore.unlockedWallet.password,
+            customAmount: kaspaToSompi("0.2"),
           });
 
           // Update the handshake status in the store
