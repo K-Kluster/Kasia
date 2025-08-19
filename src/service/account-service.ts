@@ -295,7 +295,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       console.log("Successfully subscribed to block events");
 
       // Get initial state one more time to ensure we're up to date
-      this._emitBalanceUpdate();
+      // this._emitBalanceUpdate();
 
       this.isStarted = true;
     } catch (error) {
@@ -522,10 +522,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
       console.log(`Payment with message submitted with ID: ${txId}`);
 
-      // Reset the context to trigger immediate balance update
-      await this.context.clear();
-      await this.context.trackAddresses([this.receiveAddress!]);
-
       return txId;
     } catch (error) {
       console.error("Error creating payment with message:", error);
@@ -605,11 +601,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       // submit
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
 
-      // reset the context to workaround "withdraw all" use-case where change address isn't the user
-      // @IMPROVEMENT: this could be only executed when "withdraw all", currently done even if it's partial
-      await this.context.clear();
-      await this.context.trackAddresses([this.receiveAddress!]);
-
       console.log(`Transaction submitted with ID: ${txId}`);
 
       return txId;
@@ -647,10 +638,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     try {
-      // refresh the UTXO context to ensure we have the latest UTXO data
-      await this.context.clear();
-      await this.context.trackAddresses([this.receiveAddress!]);
-
       const balance = this.context.balance;
       if (!balance || balance.mature === 0n) {
         throw new Error("No mature UTXOs available for compound transaction");
@@ -693,10 +680,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       const txId: string = await pendingTransaction.submit(this.rpcClient.rpc);
 
       console.log(`Transaction submitted with ID: ${txId}`);
-
-      // wait for transaction to propagate, then refresh context
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      this._emitBalanceUpdate();
 
       return txId;
     } catch (error) {
