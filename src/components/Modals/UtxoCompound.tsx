@@ -8,11 +8,17 @@ type FrozenBalance = {
   matureDisplay: string;
 };
 
+type UtxoCompoundProps = {
+  onFrozenBalanceChange?: (frozenBalance: FrozenBalance | null) => void;
+};
+
 // Constants
-const HIGH_UTXO_THRESHOLD = 20; // Threshold for showing high UTXO warning
+const HIGH_UTXO_THRESHOLD = 1; // Threshold for showing high UTXO warning
 const UTXO_MIN_COUNT = 2;
 
-export const UtxoCompound: FC = () => {
+export const UtxoCompound: FC<UtxoCompoundProps> = ({
+  onFrozenBalanceChange,
+}) => {
   const [isCompounding, setIsCompounding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [frozenBalance, setFrozenBalance] = useState<FrozenBalance | null>(
@@ -24,6 +30,11 @@ export const UtxoCompound: FC = () => {
 
   const compoundNotNeeded =
     balance?.matureUtxoCount && balance?.matureUtxoCount < UTXO_MIN_COUNT;
+
+  // notify parent whenever frozen balance changes
+  useEffect(() => {
+    onFrozenBalanceChange?.(frozenBalance);
+  }, [frozenBalance, onFrozenBalanceChange]);
 
   // Monitor balance changes to detect when compound is complete
   useEffect(() => {
@@ -83,21 +94,17 @@ export const UtxoCompound: FC = () => {
     }
   };
 
-  // Use frozen balance during processing, otherwise use current balance
-  const displayBalance = frozenBalance || balance;
-
   const isHighUtxoCount = Boolean(
-    displayBalance?.matureUtxoCount &&
-      displayBalance.matureUtxoCount > HIGH_UTXO_THRESHOLD
+    balance?.matureUtxoCount && balance.matureUtxoCount > HIGH_UTXO_THRESHOLD
   );
 
   if (compoundNotNeeded) return;
 
   return (
     <div className="mt-1">
-      <div className="mb-1">
-        <h3 className="mb-2 text-base font-semibold">Compound UTXOs</h3>
-        <p className="text-xs text-[var(--text-secondary)]">
+      <div className="mb-2">
+        <h3 className="mb-1 text-base font-semibold">Compound UTXOs</h3>
+        <p className="text-sm text-[var(--text-secondary)]">
           Combine multiple UTXOs into fewer, larger ones to optimize wallet
           performance
         </p>
@@ -105,16 +112,16 @@ export const UtxoCompound: FC = () => {
 
       {/* Performance Warning */}
       {isHighUtxoCount && (
-        <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-orange-500 bg-orange-500">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
-            <div className="text-base">
-              <p className="font-medium text-orange-400">
+        <div className="my-2 rounded-lg border border-[var(--accent-yellow)] bg-[var(--secondary-bg)] p-1 sm:my-3">
+          <div className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
+            <AlertTriangle className="m-0 size-6 text-[var(--accent-yellow)] sm:m-1" />
+            <div className="text-xs">
+              <p className="font-medium text-[var(--accent-yellow)]">
                 High UTXO Count Detected
               </p>
-              <p className="mt-1 text-[var(--text-secondary)]">
+              <p className="mt-1 text-[var(--accent-yellow)]">
                 Having many UTXOs can slow down transactions and increase memory
-                usage. Compounding is recommended for optimal performance.
+                usage. Compounding is recommended for optimal performance
               </p>
             </div>
           </div>
@@ -128,7 +135,7 @@ export const UtxoCompound: FC = () => {
           <Button
             onClick={handleCompoundUtxos}
             variant="primary"
-            className="!p-1"
+            className="!p-1.5"
           >
             Compound {balance?.matureUtxoCount} UTXOs
           </Button>
@@ -136,9 +143,9 @@ export const UtxoCompound: FC = () => {
 
         {/* Processing State */}
         {isCompounding && (
-          <div className="border-primary-border bg-primary-bg rounded-lg border p-1">
-            <div className="text-kas-secondary flex items-center gap-1">
-              <RefreshCw className="h-5 w-5 animate-spin" />
+          <div className="border-primary-border bg-primary-bg rounded-lg border p-2">
+            <div className="text-kas-primary flex items-center gap-1">
+              <RefreshCw className="mx-2 size-6 animate-spin" />
               <span className="font-medium">
                 Processing compound transaction
               </span>
