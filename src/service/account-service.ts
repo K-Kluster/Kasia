@@ -705,22 +705,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
-  public async estimateTransaction(transaction: CreateTransactionArgs) {
-    if (!this.isStarted) {
-      throw new Error("Account service is not started");
-    }
-
-    return TransactionGeneratorService.createForTransaction({
-      context: this.context,
-      networkId: this.networkId,
-      receiveAddress: this.receiveAddress!,
-      destinationAddress: transaction.address,
-      amount: transaction.amount,
-      payload: transaction.payload,
-      priorityFee: transaction.priorityFee,
-    }).estimate();
-  }
-
   public async sendMessage(
     sendMessage: SendMessageArgs
   ): Promise<TransactionId> {
@@ -824,14 +808,15 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
 
     try {
-      const summary = await this.estimateTransaction({
-        address: destinationAddress,
+      return TransactionGeneratorService.createForTransaction({
+        context: this.context,
+        networkId: this.networkId,
+        receiveAddress: this.receiveAddress!,
+        destinationAddress: destinationAddress,
         amount: BigInt(0.2 * 100_000_000),
         payload: payload,
         priorityFee: sendMessage.priorityFee,
-      });
-
-      return summary;
+      }).estimate();
     } catch (error) {
       console.error("Error estimating transaction fees:", error);
       throw error;
