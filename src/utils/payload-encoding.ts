@@ -20,22 +20,17 @@ export const tryParseBase64AsHexToHex = (input: string): string => {
     return input;
   }
 
-  // "3d" is "=" sign
-  if (input.substring(input.length - 2) === "3d") {
-    const content = hexToString(input);
-    const isBase64 =
-      /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?$/.test(
-        content
-      );
+  const content = hexToString(input);
+  const isBase64 =
+    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?$/.test(
+      content
+    );
 
-    if (!isBase64) {
-      return input;
-    }
-
-    return base64ToHex(content);
+  if (!isBase64) {
+    return input;
   }
 
-  return input;
+  return base64ToHex(content);
 };
 
 // check if payload is a message transaction (both hex and base64 formats)
