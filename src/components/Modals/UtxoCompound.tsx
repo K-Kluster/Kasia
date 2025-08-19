@@ -1,16 +1,8 @@
 import { RefreshCw, AlertTriangle, XCircle } from "lucide-react";
 import { clsx } from "clsx";
-import { Address } from "kaspa-wasm";
 import { FC, useCallback, useEffect, useState } from "react";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";
-import { getExplorerUrl } from "../../utils/explorer-url";
-
-// Type definitions
-type CompoundResult = {
-  txId: string;
-  utxoCount: number;
-};
 
 type FrozenBalance = {
   matureUtxoCount: number;
@@ -18,45 +10,29 @@ type FrozenBalance = {
 };
 
 // Constants
-const HIGH_UTXO_THRESHOLD = 100; // Threshold for showing high UTXO warning
+const HIGH_UTXO_THRESHOLD = 20; // Threshold for showing high UTXO warning
 const UTXO_MIN_COUNT = 2;
 
 export const UtxoCompound: FC = () => {
   const [isCompounding, setIsCompounding] = useState(false);
-  const [compoundResult, setCompoundResult] = useState<CompoundResult | null>(
-    null
-  );
   const [error, setError] = useState<string | null>(null);
-  const [pendingResult, setPendingResult] = useState<CompoundResult | null>(
-    null
-  );
   const [frozenBalance, setFrozenBalance] = useState<FrozenBalance | null>(
     null
   );
 
   const walletStore = useWalletStore();
-  const { accountService, unlockedWallet, balance, address, selectedNetwork } =
-    walletStore;
+  const { accountService, unlockedWallet, balance, address } = walletStore;
 
   const compoundNotNeeded =
     balance?.matureUtxoCount && balance?.matureUtxoCount < UTXO_MIN_COUNT;
 
   // Monitor balance changes to detect when compound is complete
   useEffect(() => {
-    if (pendingResult && balance?.matureUtxoCount === 1 && !isCompounding) {
+    if (balance?.matureUtxoCount === 1 && !isCompounding) {
       // Compound is complete: we have exactly 1 UTXO and not processing anymore
-      setCompoundResult(pendingResult);
-      setPendingResult(null);
       setFrozenBalance(null); // Clear frozen balance to show final result
     }
-  }, [balance?.matureUtxoCount, isCompounding, pendingResult]);
-
-  const resetAllStates = useCallback(() => {
-    setError(null);
-    setCompoundResult(null);
-    setFrozenBalance(null);
-    setPendingResult(null);
-  }, []);
+  }, [balance?.matureUtxoCount, isCompounding]);
 
   const getUserFriendlyErrorMessage = useCallback((err: unknown): string => {
     if (!(err instanceof Error)) return "Transaction failed. Please try again.";
@@ -85,7 +61,8 @@ export const UtxoCompound: FC = () => {
     }
 
     setIsCompounding(true);
-    resetAllStates();
+    setError(null);
+    setFrozenBalance(null);
 
     // Freeze the balance display during processing
     setFrozenBalance({
@@ -107,65 +84,29 @@ export const UtxoCompound: FC = () => {
     }
   };
 
-  if (!balance) {
-    return (
-      <div className="p-4 text-center">
-        <p className="text-[var(--text-secondary)]">
-          Loading wallet information...
-        </p>
-      </div>
-    );
-  }
-
   // Use frozen balance during processing, otherwise use current balance
   const displayBalance = frozenBalance || balance;
 
-  const shouldShowCompound = Boolean(
-    balance?.matureUtxoCount && balance.matureUtxoCount >= 2
-  );
   const isHighUtxoCount = Boolean(
     displayBalance?.matureUtxoCount &&
       displayBalance.matureUtxoCount > HIGH_UTXO_THRESHOLD
   );
 
+  if (compoundNotNeeded) return;
+
   return (
-    <div className="space-y-4 p-4">
-      <div className="text-center">
-        <h3 className="mb-2 text-lg font-semibold">Compound UTXOs</h3>
-        <p className="mb-4 text-base text-[var(--text-secondary)]">
+    <div className="mt-1">
+      <div className="mb-1">
+        <h3 className="mb-2 text-base font-semibold">Compound UTXOs</h3>
+        <p className="text-xs text-[var(--text-secondary)]">
           Combine multiple UTXOs into fewer, larger ones to optimize wallet
           performance
         </p>
       </div>
 
-      {/* UTXO Information */}
-      <div className="border-primary-border bg-primary-bg rounded-lg border p-4">
-        <div className="grid grid-cols-2 gap-4 text-base">
-          <div>
-            <span className="text-[var(--text-secondary)]">Mature UTXOs:</span>
-            <div
-              className={clsx("font-semibold", {
-                "text-orange-400": isHighUtxoCount,
-              })}
-            >
-              {displayBalance?.matureUtxoCount ?? "-"}
-              {isHighUtxoCount && (
-                <span className="ml-1 text-xs text-orange-400">(High)</span>
-              )}
-            </div>
-          </div>
-          <div>
-            <span className="text-[var(--text-secondary)]">Total Balance:</span>
-            <div className="font-semibold">
-              {displayBalance?.matureDisplay} KAS
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Performance Warning */}
       {isHighUtxoCount && (
-        <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-orange-500 bg-orange-500 p-3">
+        <div className="bg-opacity-10 border-opacity-30 rounded-lg border border-orange-500 bg-orange-500">
           <div className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-400" />
             <div className="text-base">
@@ -181,32 +122,23 @@ export const UtxoCompound: FC = () => {
         </div>
       )}
 
-      {/* Information Box */}
-      <div className="border-primary-border bg-primary-bg rounded-lg border p-3">
-        <div className="flex w-full items-center justify-center gap-2">
-          <p className="text-base font-semibold">How it works:</p>
-        </div>
-        <ul className="space-y-1 text-center text-sm text-[var(--text-secondary)]">
-          <li>Combines multiple small UTXOs into fewer larger ones</li>
-        </ul>
-      </div>
-
       {/* Action Buttons */}
-      <div className="space-y-3">
+      <div className="my-1 space-y-1">
         {/* Show compound button only if we have enough UTXOs and not processing/completed */}
-        {shouldShowCompound &&
-          !isCompounding &&
-          !compoundResult &&
-          !pendingResult && (
-            <Button onClick={handleCompoundUtxos} variant="primary">
-              Compound {balance?.matureUtxoCount ?? 0} UTXOs
-            </Button>
-          )}
+        {!compoundNotNeeded && !isCompounding && (
+          <Button
+            onClick={handleCompoundUtxos}
+            variant="primary"
+            className="!p-1"
+          >
+            Compound {balance?.matureUtxoCount} UTXOs
+          </Button>
+        )}
 
         {/* Processing State */}
-        {(isCompounding || pendingResult) && !compoundResult && (
-          <div className="border-primary-border bg-primary-bg rounded-lg border p-4 text-center">
-            <div className="text-kas-secondary flex items-center justify-center gap-2">
+        {isCompounding && (
+          <div className="border-primary-border bg-primary-bg rounded-lg border p-1">
+            <div className="text-kas-secondary flex items-center gap-1">
               <RefreshCw className="h-5 w-5 animate-spin" />
               <span className="font-medium">
                 Processing compound transaction
@@ -224,34 +156,6 @@ export const UtxoCompound: FC = () => {
             <div className="text-base">
               <p className="font-medium">Error</p>
               <p className="mt-1">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {compoundResult && (
-        <div className="bg-opacity-20 border-opacity-50 rounded-lg border border-green-500 bg-green-600 p-3">
-          <div className="flex items-start gap-2">
-            <div className="text-base text-white">
-              <p className="font-semibold">Success</p>
-              <p className="mt-1">
-                Compound transaction successful! Your {compoundResult.utxoCount}{" "}
-                UTXOs have been consolidated into 1 larger UTXO. The transaction
-                is now confirming on the network.
-              </p>
-              <p className="text-[var(--text-secondary)]-200 mt-2">
-                <span className="text-[var(--text-secondary)]-300">
-                  Transaction ID:
-                </span>{" "}
-                <a
-                  href={getExplorerUrl(compoundResult.txId, selectedNetwork)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="break-all text-blue-300 underline hover:text-blue-200"
-                >
-                  {compoundResult.txId.substring(0, 8)}...
-                </a>
-              </p>
             </div>
           </div>
         </div>

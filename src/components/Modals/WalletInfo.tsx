@@ -1,4 +1,5 @@
 import { useWalletStore } from "../../store/wallet.store";
+import { UtxoCompound } from "./UtxoCompound";
 
 export const WalletInfo = () => {
   const unlockedWalletName = useWalletStore(
@@ -67,6 +68,7 @@ export const WalletInfo = () => {
             </span>
           </li>
         </ul>
+        <UtxoCompound />
       </div>
     </div>
   );
