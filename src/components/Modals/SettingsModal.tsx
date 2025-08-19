@@ -37,7 +37,7 @@ import {
 import { toHex, PROTOCOL } from "../../config/protocol";
 import { devMode } from "../../config/dev-mode";
 import { parseKaspaMessagePayload } from "../../utils/message-payload";
-import { tryBase64ToHex } from "../../utils/payload-encoding";
+import { tryParseBase64AsHexToHex } from "../../utils/payload-encoding";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -147,7 +147,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const messageType = parsed.type;
       const targetAlias = parsed.alias;
 
-      const hexEncryptedPayload = tryBase64ToHex(parsed.encryptedHex);
+      const hexEncryptedPayload = tryParseBase64AsHexToHex(parsed.encryptedHex);
 
       console.log({ messageType, targetAlias, hexEncryptedPayload });
     } catch (error) {

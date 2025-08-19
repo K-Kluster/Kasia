@@ -1,4 +1,5 @@
 import { PROTOCOL } from "../config/protocol";
+import { hexToString } from "./format";
 // singletons for encoding/decoding
 const _encoder = new TextEncoder();
 
@@ -12,16 +13,27 @@ export const hexToBytes = (hex: string): Uint8Array => {
   return out;
 };
 
-// try base64 conversion first, fallback to hex if it fails
-export const tryBase64ToHex = (input: string): string => {
-  const isHex = /^[0-9a-fA-F]+$/.test(input) && input.length % 2 === 0;
-  if (isHex) return input;
+// if it's a hex(base64(content)) content, return hex(content)
+// else if it's a hex(content) return hex(content)
+export const tryParseBase64AsHexToHex = (input: string): string => {
+  if (input.length <= 2) {
+    return input;
+  }
 
-  const isBase64 =
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?$/.test(
-      input
-    );
-  if (isBase64) return base64ToHex(input);
+  // "3d" is "=" sign
+  if (input.substring(input.length - 2) === "3d") {
+    const content = hexToString(input);
+    const isBase64 =
+      /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}(?:==)?|[A-Za-z0-9+/]{3}=?)?$/.test(
+        content
+      );
+
+    if (!isBase64) {
+      return input;
+    }
+
+    return base64ToHex(content);
+  }
 
   return input;
 };

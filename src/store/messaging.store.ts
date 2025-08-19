@@ -40,8 +40,6 @@ import {
   ContextualMessageResponse,
   HandshakeResponse,
 } from "../service/indexer/generated";
-import { tryBase64ToHex } from "../utils/payload-encoding";
-import { hexToString } from "../utils/format";
 
 // Helper function to determine network type from address
 function getNetworkTypeFromAddress(address: string): NetworkType {
@@ -186,7 +184,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           const decodedString = new TextDecoder().decode(bytes);
 
           // if its base64, decrypt
-          const encryptedHex = tryBase64ToHex(decodedString);
+          const encryptedHex = tryParseBase64AsHexToHex(decodedString);
 
           const decryptedContent = decrypt_message(
             new EncryptedMessage(encryptedHex),
@@ -362,7 +360,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             for (const handshake of handshakes.sort(
               (a, b) => Number(b.block_time) - Number(a.block_time)
             )) {
-              console.log({ handshake });
               const encryptedMessage = new EncryptedMessage(
                 handshake.message_payload
               );
@@ -630,11 +627,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
               return;
             }
 
-            // Process handshake if we're the recipient or if this is a response to our handshake
             if (
-              transaction.recipientAddress === address.toString() || // received handshake
-              (handshakePayload.isResponse &&
-                transaction.senderAddress === address.toString()) // our own response
+              // received handshake
+              transaction.recipientAddress === address.toString()
             ) {
               console.log("Processing handshake message:", {
                 senderAddress: transaction.senderAddress,
@@ -1200,7 +1195,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       );
 
       const payload = `${toHex("ciph_msg:1:handshake:")}${encryptedMessage.to_hex()}`;
-      console.log({ payload });
+      console.log({ payload, hex: encryptedMessage.to_hex() });
       // Send the handshake message
       console.log("Sending handshake message to:", recipientAddress);
       try {

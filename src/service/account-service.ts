@@ -36,18 +36,17 @@ import {
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { useDBStore } from "../store/db.store";
-import { PROTOCOL } from "../config/protocol";
+import { PROTOCOL, toHex } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
 import { parseKaspaMessagePayload } from "../utils/message-payload";
 import {
   hexToBytes,
   getEncoder,
   isMessagePayload,
-  tryBase64ToHex,
+  tryParseBase64AsHexToHex,
 } from "../utils/payload-encoding";
 import { WalletStorageService } from "./wallet-storage-service";
 import { MAX_TX_FEE } from "../config/constants";
-import { CipherHelper } from "../utils/cipher-helper";
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -1112,7 +1111,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     // @TODO: check how to do hex manipulation properly, currently parsed.encryptedHex is a hex
     // if we want to handle base64, it would need to find a way to do from/to hex properly in JS
     // from my tests, it seems that the utils alters the hex
-    const hexEncryptedPayload = tryBase64ToHex(parsed.encryptedHex);
+    const hexEncryptedPayload = tryParseBase64AsHexToHex(parsed.encryptedHex);
 
     console.log({ hexEncryptedPayload, base: parsed.encryptedHex });
 
@@ -1180,6 +1179,22 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
           decryptionSuccess &&
           (isHandshake || isMonitoredAddress || isCommForUs || isPaymentForUs)
         ) {
+          // this hack is necessary because we have inconsistencies between data parsed at historical level
+          // , at live level (here is live level), and when client is the creator of the event
+          // so be "re-build" it like the other places, ideally this shouldn't be necessary
+          let hackedContent = decryptedContent;
+
+          if (parsed.type === "handshake") {
+            // handhshake payload is expected to be utf-8 encoded
+            hackedContent = `${PROTOCOL.prefix.string}${PROTOCOL.headers.HANDSHAKE.string}${decryptedContent}`;
+          } else if (parsed.type === "message") {
+            // message payload is expected to be hex encoded
+            hackedContent = `${PROTOCOL.prefix.hex}${PROTOCOL.headers.COMM.hex}${toHex(parsed.alias ?? "UNKNOWN")}:${decryptedContent}`;
+          } else if (parsed.type === "payment") {
+            // payment payload is expected to be hex encoded
+            hackedContent = `${PROTOCOL.prefix.hex}${PROTOCOL.headers.PAYMENT.hex}${decryptedContent}`;
+          }
+
           const kasiaTransaction: KasiaTransaction = {
             transactionId: txId,
             senderAddress: senderAddress || "Unknown",
@@ -1187,7 +1202,7 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
             createdAt: new Date(blockTime),
             // @TODO(indexdb): how to get fees?
             fee: 0,
-            content: decryptedContent,
+            content: hackedContent,
             amount: Number(tx.outputs[0].value) / 100000000,
             payload: tx.payload,
           };

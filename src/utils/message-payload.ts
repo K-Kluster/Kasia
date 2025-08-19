@@ -1,4 +1,4 @@
-import { PROTOCOL, toHex } from "../config/protocol";
+import { PROTOCOL } from "../config/protocol";
 import { hexToString } from "./format";
 
 export type ParsedKaspaMessagePayload = {
@@ -33,7 +33,7 @@ export function parseKaspaMessagePayload(
     if (parts.length >= 3) {
       type = PROTOCOL.headers.HANDSHAKE.type;
       encryptedHex = payloadWithoutPrefix.substr(
-        PROTOCOL.headers.HANDSHAKE.hex.length + 2
+        PROTOCOL.headers.HANDSHAKE.hex.length
       );
     }
   } else if (payloadWithoutPrefix.startsWith(PROTOCOL.headers.COMM.hex)) {
