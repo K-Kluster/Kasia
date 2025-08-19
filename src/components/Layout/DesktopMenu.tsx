@@ -120,18 +120,6 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
                         <span className="text-sm">Withdraw Funds</span>
                       </li>
 
-                      {/* Compound */}
-                      <li
-                        onClick={() => {
-                          openModal("utxo-compound");
-                          setWalletMenuOpen(false);
-                        }}
-                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
-                      >
-                        <Wallet className="h-5 w-5" />
-                        <span className="text-sm">Compound UTXOs</span>
-                      </li>
-
                       {/* Seed */}
                       <li
                         onClick={() => {
@@ -276,18 +264,6 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
                       >
                         <Wallet className="h-5 w-5" />
                         <span className="text-sm">Withdraw Funds</span>
-                      </li>
-
-                      {/* Compound */}
-                      <li
-                        onClick={() => {
-                          openModal("utxo-compound");
-                          setWalletMenuOpen(false);
-                        }}
-                        className="hover:bg-secondary-bg flex cursor-pointer items-center gap-2 px-4 py-3"
-                      >
-                        <Wallet className="h-5 w-5" />
-                        <span className="text-sm">Compound UTXOs</span>
                       </li>
 
                       {/* Seed */}

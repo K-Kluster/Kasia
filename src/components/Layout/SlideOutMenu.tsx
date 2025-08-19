@@ -170,19 +170,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
 
                     <button
                       onClick={() => {
-                        openModal("utxo-compound");
-                        setActionsOpen(false);
-                      }}
-                      className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-gray-700"
-                    >
-                      <CreditCard className="h-5 w-5 text-[var(--text-primary)]" />
-                      <span className="text-sm text-[var(--text-primary)]">
-                        Compound UTXOs
-                      </span>
-                    </button>
-
-                    <button
-                      onClick={() => {
                         openModal("seed");
                         setActionsOpen(false);
                       }}

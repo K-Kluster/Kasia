@@ -15,7 +15,6 @@ export type ModalType =
   | "backup"
   | "delete"
   | "seed"
-  | "utxo-compound"
   | "settings"
   | "contact-info-modal"
   | "image";

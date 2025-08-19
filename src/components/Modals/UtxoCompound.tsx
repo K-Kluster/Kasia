@@ -1,5 +1,4 @@
 import { RefreshCw, AlertTriangle, XCircle } from "lucide-react";
-import { clsx } from "clsx";
 import { FC, useCallback, useEffect, useState } from "react";
 import { useWalletStore } from "../../store/wallet.store";
 import { Button } from "../Common/Button";

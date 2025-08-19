@@ -3,7 +3,6 @@ import { useWalletStore } from "../../store/wallet.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { Modal } from "../Common/modal";
 import { MessageBackup } from "../Modals/MessageBackup";
-import { UtxoCompound } from "../Modals/UtxoCompound";
 import { WalletAddressSection } from "../Modals/WalletAddressSection";
 import { WalletInfo } from "../Modals/WalletInfo";
 import { WalletSeedRetreiveDisplay } from "../Modals/WalletSeedRetreiveDisplay";
@@ -11,8 +10,7 @@ import { WalletWithdrawal } from "../Modals/WalletWithdrawal";
 import { LockedSettingsModal } from "../Modals/LockedSettingsModal";
 import { ContactInfoModal } from "../Modals/ContactInfoModal";
 import { NewChatForm } from "../NewChatForm";
-import { LoaderCircle, AlertTriangle, Info } from "lucide-react";
-import { Button } from "../Common/Button";
+import { LoaderCircle } from "lucide-react";
 import { ImagePresenter } from "../Modals/ImagePresenter";
 
 // This component subscribes to modal state and renders the appropriate modal
@@ -69,13 +67,6 @@ export const ModalHost = () => {
       {modals.seed && (
         <Modal onClose={() => closeModal("seed")}>
           <WalletSeedRetreiveDisplay />
-        </Modal>
-      )}
-
-      {/* UTXO Compound Modal */}
-      {modals["utxo-compound"] && (
-        <Modal onClose={() => closeModal("utxo-compound")}>
-          <UtxoCompound />
         </Modal>
       )}
 
