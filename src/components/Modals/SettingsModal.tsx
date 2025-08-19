@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useUiStore } from "../../store/ui.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useWalletStore } from "../../store/wallet.store";
@@ -36,8 +36,6 @@ import {
 } from "lucide-react";
 import { toHex, PROTOCOL } from "../../config/protocol";
 import { devMode } from "../../config/dev-mode";
-import { parseKaspaMessagePayload } from "../../utils/message-payload";
-import { tryParseBase64AsHexToHex } from "../../utils/payload-encoding";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -134,25 +132,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       ),
       customAmount: BigInt(0),
     });
-  };
-
-  const devTest = async () => {
-    try {
-      const parsed = parseKaspaMessagePayload(
-        "636970685f6d73673a313a68616e647368616b653a43acd91b987c5b02d5e456fa0287da319a3f9c34277496f20bbf0a48899db5537612c40a4e9d7d0b6172dc1b88eab3600f329d92dfb3809ae7555d9c018da90511fa385dda66df053028f0c11573b5dc313e18bc34cd544fdc9a544343576f6ec412929a46b3030d19d0c3e756a5a9c3e7f12c498c704adc9fe259d737d6bf04735ef7027510bfa129b066f9e08b"
-      );
-
-      console.log("parsed real time transaction payload", { parsed });
-
-      const messageType = parsed.type;
-      const targetAlias = parsed.alias;
-
-      const hexEncryptedPayload = tryParseBase64AsHexToHex(parsed.encryptedHex);
-
-      console.log({ messageType, targetAlias, hexEncryptedPayload });
-    } catch (error) {
-      console.error(error);
-    }
   };
 
   const onClearHistory = () => {
@@ -940,8 +919,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <h3 className="mb-4 text-lg font-medium">Development Mode</h3>
 
                 <Button onClick={sendSelfStash}>Trigger Send Self Stash</Button>
-
-                <Button onClick={devTest}>Try Payload </Button>
               </>
             ) : null}
           </div>
