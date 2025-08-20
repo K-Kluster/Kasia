@@ -13,7 +13,7 @@ type UtxoCompoundProps = {
 };
 
 // Constants
-const HIGH_UTXO_THRESHOLD = 1; // Threshold for showing high UTXO warning
+const HIGH_UTXO_THRESHOLD = 40; // Threshold for showing high UTXO warning
 const UTXO_MIN_COUNT = 2;
 
 export const UtxoCompound: FC<UtxoCompoundProps> = ({
@@ -29,7 +29,8 @@ export const UtxoCompound: FC<UtxoCompoundProps> = ({
   const { accountService, unlockedWallet, balance, address } = walletStore;
 
   const compoundNotNeeded =
-    balance?.matureUtxoCount && balance?.matureUtxoCount < UTXO_MIN_COUNT;
+    !balance?.matureUtxoCount ||
+    (balance?.matureUtxoCount && balance?.matureUtxoCount < UTXO_MIN_COUNT);
 
   // notify parent whenever frozen balance changes
   useEffect(() => {
