@@ -266,18 +266,16 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         this.receiveAddress.toString()
       );
 
-      // Initialize UTXO processor first
-      console.log("Starting UTXO processor...");
-      await this.processor.start();
-
-      // Set up event listeners before doing anything else
+      // Set up event listeners
       console.log("Setting up event listeners...");
-
-      // Set up balance change listener
       this.processor.addEventListener("balance", async () => {
         console.log("Balance event received");
         this._emitBalanceUpdate();
       });
+
+      // start the processor
+      console.log("Starting UTXO processor...");
+      await this.processor.start();
 
       // Only track primary address
       const addressesToTrack = [this.receiveAddress!];
@@ -293,9 +291,6 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         void this.processBlockEvent(event as unknown as BlockAddedData);
       });
       console.log("Successfully subscribed to block events");
-
-      // Get initial state one more time to ensure we're up to date
-      // this._emitBalanceUpdate();
 
       this.isStarted = true;
     } catch (error) {
