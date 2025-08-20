@@ -5,8 +5,11 @@ import {
   PaymentOutput,
   FeeSource,
   IGeneratorSettingsObject,
+  estimateTransactions,
+  kaspaToSompi,
 } from "kaspa-wasm";
 import { PriorityFeeConfig } from "../types/all";
+import { MAX_PRIORITY_FEE, MAX_TX_FEE } from "../config/constants";
 
 export class TransactionGeneratorService {
   /**
@@ -106,8 +109,11 @@ export class TransactionGeneratorService {
 
   /**
    * Create generator for payment and withdrawal transactions
+   *
+   * The behavior is a bit different than the others:
+   *   * fees are either receiver or sender pays depending on if amount === balance
    */
-  static createForPaymentOrWithdraw({
+  static async createForPaymentOrWithdraw({
     context,
     networkId,
     receiveAddress,
@@ -123,24 +129,59 @@ export class TransactionGeneratorService {
     amount: bigint;
     payload?: string | Uint8Array;
     priorityFee?: PriorityFeeConfig;
-  }): Generator {
+  }): Promise<Generator> {
     const matureBalance = context.balance?.mature ?? 0n;
     const isFullBalance = matureBalance === amount;
 
-    // for full balance, use ReceiverPays (no choice). For partial, use SenderPays
-    const finalPriorityFee = isFullBalance
-      ? { amount: BigInt(0), source: FeeSource.ReceiverPays }
+    const destinationAddressAsString = destinationAddress.toString();
+    const receiveAddressAsString = receiveAddress.toString();
+
+    let finalAmount = amount;
+
+    console.log({ matureBalance, isFullBalance, amount });
+
+    // case fullbalance, amount = amount - estimatedFees
+    // to avoid internal mis-handling (utxo outgoing being stucked in utxo context)
+    if (isFullBalance) {
+      const baseSettings: IGeneratorSettingsObject = {
+        changeAddress: new Address(receiveAddressAsString),
+        entries: context,
+        outputs: [
+          new PaymentOutput(new Address(destinationAddressAsString), amount),
+        ],
+        networkId,
+        priorityFee: { amount: BigInt(0), source: FeeSource.ReceiverPays },
+        ...(payload && { payload }),
+      };
+
+      const summary = await estimateTransactions(baseSettings);
+
+      // fool guard on estimated fees
+      if (summary.fees > MAX_PRIORITY_FEE) {
+        throw new Error("Unexpected high fees while trying to withdraw or pay");
+      }
+
+      finalAmount -= summary.fees;
+
+      console.log({ summary, finalAmount });
+    }
+
+    // if full amount, we enforce the payer pays the fees
+    const priorityFees: PriorityFeeConfig = isFullBalance
+      ? { amount: BigInt(0), source: FeeSource.SenderPays }
       : priorityFee || {
           amount: BigInt(0),
           source: FeeSource.SenderPays,
         };
 
     const settings: IGeneratorSettingsObject = {
-      changeAddress: receiveAddress,
       entries: context,
-      outputs: [new PaymentOutput(destinationAddress, amount)],
+      changeAddress: new Address(receiveAddressAsString),
+      outputs: [
+        new PaymentOutput(new Address(destinationAddressAsString), finalAmount),
+      ],
+      priorityFee: priorityFees,
       networkId,
-      priorityFee: finalPriorityFee,
       ...(payload && { payload }),
     };
     return new Generator(settings);

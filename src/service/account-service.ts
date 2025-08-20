@@ -559,13 +559,22 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     try {
       // Use our optimized generator creation method
-      const generator = TransactionGeneratorService.createForPaymentOrWithdraw({
-        context: this.context,
-        networkId: this.networkId,
-        receiveAddress: this.receiveAddress!,
-        destinationAddress: withdrawTransaction.address,
-        amount: withdrawTransaction.amount,
-        priorityFee: withdrawTransaction.priorityFee,
+      const generator =
+        await TransactionGeneratorService.createForPaymentOrWithdraw({
+          context: this.context,
+          networkId: this.networkId,
+          receiveAddress: this.receiveAddress!,
+          destinationAddress: withdrawTransaction.address,
+          amount: withdrawTransaction.amount,
+          priorityFee: withdrawTransaction.priorityFee,
+        });
+
+      this.processor.addEventListener("maturity", (tx) => {
+        console.log({ tx, ctx: this.context.getPending() });
+      });
+
+      this.processor.addEventListener("pending", (tx) => {
+        console.log({ tx, ctx: this.context.getPending() });
       });
 
       const pendingTransaction: PendingTransaction | null =
