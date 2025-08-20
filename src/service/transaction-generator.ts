@@ -124,11 +124,8 @@ export class TransactionGeneratorService {
     payload?: string | Uint8Array;
     priorityFee?: PriorityFeeConfig;
   }): Generator {
-    const isFullBalance = amount >= (context.balance?.mature ?? 0n);
-
-    const changeAddress = isFullBalance
-      ? new Address(destinationAddress.toString())
-      : receiveAddress;
+    const matureBalance = context.balance?.mature ?? 0n;
+    const isFullBalance = matureBalance === amount;
 
     // for full balance, use ReceiverPays (no choice). For partial, use SenderPays
     const finalPriorityFee = isFullBalance
@@ -139,14 +136,13 @@ export class TransactionGeneratorService {
         };
 
     const settings: IGeneratorSettingsObject = {
-      changeAddress,
+      changeAddress: receiveAddress,
       entries: context,
       outputs: [new PaymentOutput(destinationAddress, amount)],
       networkId,
       priorityFee: finalPriorityFee,
       ...(payload && { payload }),
     };
-
     return new Generator(settings);
   }
 }
