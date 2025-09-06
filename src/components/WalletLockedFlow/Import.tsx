@@ -25,6 +25,7 @@ export const Import = ({ onSuccess, onBack }: ImportWalletProps) => {
 
   const passwordRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const passphraseRef = useRef<HTMLInputElement>(null);
 
   const { createWallet } = useWalletStore();
 
@@ -44,12 +45,20 @@ export const Import = ({ onSuccess, onBack }: ImportWalletProps) => {
     }
     try {
       const mnemonic = new Mnemonic(mnemonicValue);
-      await createWallet(nameRef.current.value, mnemonic, pw, derivationType);
+      const passphrase = passphraseRef.current?.value || undefined;
+      await createWallet(
+        nameRef.current.value,
+        mnemonic,
+        pw,
+        derivationType,
+        passphrase
+      );
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid mnemonic");
     } finally {
       setMnemonicValue("");
+      if (passphraseRef.current?.value) passphraseRef.current.value = "";
       if (passwordRef.current?.value) passwordRef.current.value = "";
     }
   };
@@ -144,6 +153,7 @@ export const Import = ({ onSuccess, onBack }: ImportWalletProps) => {
       <MnemonicEntry
         seedPhraseLength={seedPhraseLength}
         onMnemonicChange={setMnemonicValue}
+        passphraseRef={passphraseRef}
       />
 
       <div className="mb-6">

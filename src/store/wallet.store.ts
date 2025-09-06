@@ -79,7 +79,8 @@ type WalletState = {
     name: string,
     mnemonic: Mnemonic,
     password: string,
-    derivationType?: WalletDerivationType
+    derivationType?: WalletDerivationType,
+    passphrase?: string
   ) => Promise<string>;
   deleteWallet: (walletId: string) => void;
   unlock: (walletId: string, password: string) => Promise<UnlockedWallet>;
@@ -174,13 +175,15 @@ export const useWalletStore = create<WalletState>((set, get) => {
       name: string,
       mnemonic: Mnemonic,
       password: string,
-      derivationType?: WalletDerivationType
+      derivationType?: WalletDerivationType,
+      passphrase?: string
     ) => {
       const walletId = _walletStorage.create(
         name,
         mnemonic,
         password,
-        derivationType
+        derivationType,
+        passphrase
       );
       get().loadWallets();
       return walletId;

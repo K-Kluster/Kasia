@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from "react";
 import { decryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
 import { StoredWallet } from "../../types/wallet.type";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, AlertTriangle } from "lucide-react";
 import clsx from "clsx";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast-helper";
@@ -13,6 +13,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
   const [showSeedPhrase, setShowSeedPhrase] = useState(false);
   const [seedPhrase, setSeedPhrase] = useState("");
   const [isBlurred, setIsBlurred] = useState(true);
+  const [hasPassphrase, setHasPassphrase] = useState(false);
   const selectedWalletId = useWalletStore((state) => state.selectedWalletId);
   const [blurTimeout, setBlurTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -66,6 +67,9 @@ export const WalletSeedRetreiveDisplay: FC = () => {
         toast.error("Wallet not found");
         return;
       }
+
+      // Check if wallet has a passphrase
+      setHasPassphrase(!!foundStoredWallet.encryptedPassphrase);
 
       // Decrypt the seed phrase
       const phrase = decryptXChaCha20Poly1305(
@@ -129,6 +133,20 @@ export const WalletSeedRetreiveDisplay: FC = () => {
           <p className="mb-2 p-2 text-center font-semibold">
             Your seed phrase:
           </p>
+          {hasPassphrase && (
+            <div className="mb-2 flex items-center gap-3 rounded-lg border border-[var(--accent-yellow)] bg-[var(--secondary-bg)] p-3 text-sm">
+              <AlertTriangle className="h-5 w-5 flex-shrink-0 text-[var(--text-warning)]" />
+              <div className="text-left">
+                <div className="text-[var(--text-warning)]">
+                  <strong>Important:</strong> This wallet was created with a
+                  BIP39 passphrase.
+                  <br />
+                  You'll need both the seed phrase AND the passphrase to recover
+                  this wallet elsewhere.
+                </div>
+              </div>
+            </div>
+          )}
           <div
             className={clsx(
               "word-break border-primary-border bg-primary-bg mb-4 rounded-3xl border px-4 py-3 font-mono break-all",
@@ -167,6 +185,7 @@ export const WalletSeedRetreiveDisplay: FC = () => {
                 setSeedPhrase("");
                 setPassword("");
                 setIsBlurred(true);
+                setHasPassphrase(false);
               }}
               variant="secondary"
               className="px-3 py-2 shadow"

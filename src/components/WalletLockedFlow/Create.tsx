@@ -53,7 +53,8 @@ export const CreateWallet = ({ onSuccess, onBack }: CreateWalletProps) => {
         nameRef.current.value,
         mnemonic,
         pw,
-        derivationType
+        derivationType,
+        undefined
       );
       onSuccess(id, mnemonic);
     } catch (err) {

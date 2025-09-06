@@ -19,6 +19,7 @@ export type UnlockedWallet = {
   receivePublicKey: PublicKey;
   // Add derivation type to unlocked wallet
   derivationType: WalletDerivationType;
+  passphrase?: string;
 };
 
 export type StoredWallet = {
@@ -29,6 +30,7 @@ export type StoredWallet = {
   accounts: { name: string }[];
   // Add derivation type to track wallet standard
   derivationType?: WalletDerivationType; // Optional for backward compatibility
+  encryptedPassphrase?: string;
 };
 
 export type WalletBalance = {
