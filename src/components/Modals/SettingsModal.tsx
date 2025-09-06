@@ -717,6 +717,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <>
                     <h3 className="mb-4 text-lg font-medium">Security</h3>
                     <div className="space-y-4">
+                      {/* Wallet Security */}
+                      <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
+                        <div className="text-text-warning mb-2 text-sm font-medium">
+                          Wallet Security
+                        </div>
+                        <div className="text-text-warning/80 text-xs">
+                          Your wallet is protected by your password. Keep your
+                          password and seed phrase secure.
+                        </div>
+                      </div>
+
                       {/* Change Password */}
                       <button
                         onClick={() => setShowPasswordChange(true)}
@@ -749,17 +760,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </div>
                         </div>
                       </button>
-
-                      {/* Wallet Security */}
-                      <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
-                        <div className="text-text-warning mb-2 text-sm font-medium">
-                          Wallet Security
-                        </div>
-                        <div className="text-text-warning/80 text-xs">
-                          Your wallet is protected by your password. Keep your
-                          password and seed phrase secure.
-                        </div>
-                      </div>
                     </div>
                   </>
                 ) : (
@@ -888,7 +888,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === "extras" && (
               <>
                 <div className="mt-4 space-y-6 sm:mt-0"></div>
-                <h3 className="mb-4 text-lg font-medium">Extras</h3>
+                <h3 className="mb-4 text-lg font-medium">Extra</h3>
                 {/* Warning */}
                 <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
                   <div className="text-text-warning mb-2 text-sm font-medium">
