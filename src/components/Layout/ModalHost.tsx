@@ -2,7 +2,6 @@ import { useUiStore } from "../../store/ui.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { NewBroadcast } from "../Modals/NewBroadcast";
 import { Modal } from "../Common/modal";
-import { MessageBackup } from "../Modals/MessageBackup";
 import { WalletAddressSection } from "../Modals/WalletAddressSection";
 import { Wallet } from "../Modals/Wallet";
 import { WalletSeedRetreiveDisplay } from "../Modals/WalletSeedRetreiveDisplay";
@@ -57,13 +56,6 @@ export const ModalHost = () => {
       {modals.withdraw && (
         <Modal onClose={() => closeModal("withdraw")}>
           <WalletWithdrawal />
-        </Modal>
-      )}
-
-      {/* Backup Modal */}
-      {modals.backup && (
-        <Modal onClose={() => closeModal("backup")}>
-          <MessageBackup />
         </Modal>
       )}
 

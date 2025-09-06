@@ -12,7 +12,6 @@ export type ModalType =
   | "address"
   | "walletInfo"
   | "withdraw"
-  | "backup"
   | "delete"
   | "seed"
   | "settings"
