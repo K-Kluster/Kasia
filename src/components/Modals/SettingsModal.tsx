@@ -88,7 +88,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: "security", label: "Security", icon: Shield },
     // only show if there are >0 flips
     ...(Object.keys(flips).length > 0
-      ? [{ id: "extras", label: "Extras", icon: RectangleEllipsis }]
+      ? [{ id: "extras", label: "Extra", icon: RectangleEllipsis }]
       : []),
     ...(devMode
       ? [
@@ -378,7 +378,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <nav
               className={clsx({
                 "flex space-x-4 overflow-x-auto pb-2": isMobile,
-                "space-y-1": !isMobile,
+                "space-y-2": !isMobile,
               })}
             >
               {tabs.map((tab) => (
@@ -386,16 +386,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={clsx(
-                    "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium transition-colors",
+                    "flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
                     {
                       "mx-1 min-w-14 flex-col items-center justify-center":
                         isMobile,
                       "w-full": !isMobile,
                       "text-primary border-primary border-b-2":
                         isMobile && activeTab === tab.id,
-                      "text-primary bg-primary-bg border-primary-border rounded-lg border":
+                      "text-primary bg-primary-bg border-kas-secondary rounded-lg border":
                         !isMobile && activeTab === tab.id,
-                      "text-muted-foreground": activeTab !== tab.id,
+                      "text-muted-foreground hover:text-primary border border-transparent":
+                        activeTab !== tab.id,
                     }
                   )}
                 >
@@ -415,11 +416,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             })}
           >
             {activeTab === "account" && (
-              <div className="mt-4 space-y-6 sm:mt-0">
+              <div className="mt-2 space-y-6 sm:mt-0">
                 {!showNameChange ? (
                   <>
                     <h3 className="mb-4 text-lg font-medium">Account</h3>
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {/* Current Wallet Info */}
                       {unlockedWallet && (
                         <div className="bg-primary-bg border-primary-border rounded-2xl border p-4">
@@ -435,7 +436,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* Change Wallet Name */}
                       <button
                         onClick={initializeNameChange}
-                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-colors"
+                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
                       >
                         <Edit3 className="h-5 w-5" />
                         <div className="text-left">
@@ -454,7 +455,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             openModal("backup");
                             onClose();
                           }}
-                          className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-colors"
+                          className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
                         >
                           <Download className="h-5 w-5" />
                           <div className="text-left">
@@ -474,7 +475,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           onClearHistory();
                           onClose();
                         }}
-                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-colors"
+                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
                       >
                         <Trash2 className="h-5 w-5 text-red-400/50" />
                         <div className="text-left">
@@ -490,7 +491,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <div className="mb-4 flex items-center gap-3">
+                    <div className="mb-2 flex items-center gap-3">
                       <button
                         onClick={resetNameChangeForm}
                         className="hover:text-primary text-muted-foreground p-1 transition-colors"
@@ -574,12 +575,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
             {activeTab === "theme" && (
               <div className="mt-4 space-y-6 sm:mt-0">
-                <h3 className="mb-4 text-lg font-medium">Theme</h3>
-                <div className="grid grid-cols-1 gap-4">
+                <h3 className="mb-2 text-lg font-medium">Theme</h3>
+                <div className="grid grid-cols-1 space-y-2">
                   <button
                     onClick={() => setTheme("light")}
                     className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-colors",
+                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
                       theme === "light"
                         ? "bg-kas-secondary/10 border-kas-secondary"
                         : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
@@ -591,7 +592,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     onClick={() => setTheme("dark")}
                     className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-colors",
+                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
                       theme === "dark"
                         ? "bg-kas-secondary/10 border-kas-secondary"
                         : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
@@ -603,7 +604,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     onClick={() => setTheme("system")}
                     className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-colors",
+                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
                       theme === "system"
                         ? "bg-kas-secondary/10 border-kas-secondary"
                         : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
@@ -615,7 +616,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     onClick={() => setTheme("custom")}
                     className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-colors",
+                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
                       theme === "custom"
                         ? "bg-kas-secondary/10 border-kas-secondary"
                         : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
@@ -663,8 +664,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             {activeTab === "network" && (
               <div className="mt-4 space-y-6 sm:mt-0">
-                <h3 className="mb-4 text-lg font-medium">Network</h3>
-                <div className="space-y-4">
+                <h3 className="mb-2 text-lg font-medium">Network</h3>
+                <div className="space-y-2">
                   {/* Network Selector */}
                   <div className="border-primary-border bg-primary-bg rounded-2xl border p-4">
                     <div className="mb-4 text-sm font-medium">
@@ -715,8 +716,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="mt-4 space-y-6 sm:mt-0">
                 {!showPasswordChange ? (
                   <>
-                    <h3 className="mb-4 text-lg font-medium">Security</h3>
-                    <div className="space-y-4">
+                    <h3 className="mb-2 text-lg font-medium">Security</h3>
+                    <div className="space-y-2">
                       {/* Wallet Security */}
                       <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
                         <div className="text-text-warning mb-2 text-sm font-medium">
@@ -731,7 +732,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {/* Change Password */}
                       <button
                         onClick={() => setShowPasswordChange(true)}
-                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-colors"
+                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
                       >
                         <Key className="h-5 w-5" />
                         <div className="text-left">
@@ -750,7 +751,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           onClose();
                           openModal("seed");
                         }}
-                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-colors"
+                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
                       >
                         <Key className="h-5 w-5" />
                         <div className="text-left">
@@ -888,7 +889,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeTab === "extras" && (
               <>
                 <div className="mt-4 space-y-6 sm:mt-0"></div>
-                <h3 className="mb-4 text-lg font-medium">Extra</h3>
+                <h3 className="mb-2 text-lg font-medium">Extra</h3>
                 {/* Warning */}
                 <div className="border-text-warning/50 bg-text-warning/5 rounded-2xl border p-4">
                   <div className="text-text-warning mb-2 text-sm font-medium">
