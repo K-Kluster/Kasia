@@ -71,7 +71,7 @@ export const Home = ({
           <div
             key={w.id}
             onClick={() => onSelectWallet(w)}
-            className="hover:border-kas-secondary border-primary-border group relative flex cursor-pointer flex-col items-start gap-2 rounded-xl border bg-[var(--primary-bg)] p-4 transition-all hover:bg-[var(--primary-bg)]/50 active:rounded-4xl sm:flex-row sm:items-center sm:justify-between"
+            className="hover:border-kas-secondary border-primary-border group relative flex cursor-pointer flex-col items-start gap-2 rounded-xl border bg-[var(--primary-bg)] p-4 transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl sm:flex-row sm:items-center sm:justify-between"
           >
             {/* delete icon positioned on the right */}
             <HoldToDelete

@@ -331,7 +331,7 @@ export const PriorityFeeSelector: FC<PriorityFeeSelectorProps> = ({
                   key={index}
                   onClick={() => handleFeeSelect(bucket)}
                   className={clsx(
-                    "flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 px-4 transition-all hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
+                    "flex w-full cursor-pointer items-center justify-between rounded-lg border p-2 px-4 transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
                     settings.selectedBucket === bucket.label
                       ? "border-[var(--kas-secondary)] bg-[var(--primary-bg)]/80"
                       : "border-[var(--border-color)] bg-[var(--primary-bg)]"
