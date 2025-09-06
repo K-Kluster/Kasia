@@ -121,6 +121,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   // Import/Export messages state
   const [showImportExport, setShowImportExport] = useState(false);
 
+  // Custom theme state
+  const [showCustomTheme, setShowCustomTheme] = useState(false);
+
   // Custom colors state
   const [tempCustomColors, setTempCustomColors] = useState(
     customColors || DEFAULT_COLORS
@@ -287,6 +290,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setShowImportExport(true);
   };
 
+  const initializeCustomTheme = () => {
+    setTheme("custom");
+    setShowCustomTheme(true);
+  };
+
   // Update temp colors when custom colors change
   useEffect(() => {
     if (customColors) {
@@ -359,6 +367,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
   }, [isOpen]);
 
+  // Reset custom theme state when switching away from custom theme
+  useEffect(() => {
+    if (theme !== "custom") {
+      setShowCustomTheme(false);
+    }
+  }, [theme]);
+
   if (!isOpen) return null;
 
   return (
@@ -427,7 +442,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="mt-2 space-y-6 sm:mt-0">
                 {!showNameChange && !showImportExport ? (
                   <>
-                    <h3 className="mb-4 text-lg font-medium">Account</h3>
+                    <h3 className="mb-2 text-lg font-medium">Account</h3>
                     <div className="space-y-2">
                       {/* Current Wallet Info */}
                       {unlockedWallet && (
@@ -595,89 +610,98 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
             {activeTab === "theme" && (
               <div className="mt-4 space-y-6 sm:mt-0">
-                <h3 className="mb-2 text-lg font-medium">Theme</h3>
-                <div className="grid grid-cols-1 space-y-2">
-                  <button
-                    onClick={() => setTheme("light")}
-                    className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
-                      theme === "light"
-                        ? "bg-kas-secondary/10 border-kas-secondary"
-                        : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
-                    )}
-                  >
-                    <Sun className="h-5 w-5 text-[var(--text-primary)]" />
-                    <span className="text-sm font-medium">Light</span>
-                  </button>
-                  <button
-                    onClick={() => setTheme("dark")}
-                    className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
-                      theme === "dark"
-                        ? "bg-kas-secondary/10 border-kas-secondary"
-                        : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
-                    )}
-                  >
-                    <Moon className="h-5 w-5 text-[var(--text-primary)]" />
-                    <span className="text-sm font-medium">Dark</span>
-                  </button>
-                  <button
-                    onClick={() => setTheme("system")}
-                    className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
-                      theme === "system"
-                        ? "bg-kas-secondary/10 border-kas-secondary"
-                        : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
-                    )}
-                  >
-                    <Monitor className="h-5 w-5 text-[var(--text-primary)]" />
-                    <span className="text-sm font-medium">System</span>
-                  </button>
-                  <button
-                    onClick={() => setTheme("custom")}
-                    className={clsx(
-                      "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl",
-                      theme === "custom"
-                        ? "bg-kas-secondary/10 border-kas-secondary"
-                        : "bg-primary-bg border-primary-border hover:bg-secondary-bg"
-                    )}
-                  >
-                    <Palette className="h-5 w-5 text-[var(--text-primary)]" />
-                    <span className="text-sm font-medium">Custom</span>
-                  </button>
-                </div>
-
-                {/* Custom Color Configuration - only show when custom theme is selected */}
-                {theme === "custom" && (
-                  <div className="mt-6 space-y-4">
-                    <h4 className="text-md font-medium">
-                      Custom Color Palette
-                    </h4>
-                    <div className="flex flex-wrap gap-4">
-                      {colorPickers.map((picker) => (
-                        <ColorPicker
-                          key={picker.key}
-                          color={tempCustomColors[picker.key]}
-                          onChange={(color) =>
-                            handleCustomColorChange(picker.key, color)
-                          }
-                          label={picker.label}
-                        />
-                      ))}
-                    </div>
-
-                    <div className="flex gap-2 pt-4">
-                      <Button onClick={applyCustomColors} variant="primary">
-                        Apply Colors
-                      </Button>
-                      <Button
-                        onClick={handleResetCustomColors}
-                        variant="secondary"
+                {!showCustomTheme ? (
+                  <>
+                    <h3 className="mb-2 text-lg font-medium">Theme</h3>
+                    <div className="grid grid-cols-1 space-y-2">
+                      <button
+                        onClick={() => setTheme("light")}
+                        className={clsx(
+                          "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
+                          theme === "light"
+                            ? "bg-kas-secondary/10 border-kas-secondary"
+                            : "bg-primary-bg border-primary-border"
+                        )}
                       >
-                        Reset to Default
-                      </Button>
+                        <Sun className="h-5 w-5 text-[var(--text-primary)]" />
+                        <span className="text-sm font-medium">Light</span>
+                      </button>
+                      <button
+                        onClick={() => setTheme("dark")}
+                        className={clsx(
+                          "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
+                          theme === "dark"
+                            ? "bg-kas-secondary/10 border-kas-secondary"
+                            : "bg-primary-bg border-primary-border"
+                        )}
+                      >
+                        <Moon className="h-5 w-5 text-[var(--text-primary)]" />
+                        <span className="text-sm font-medium">Dark</span>
+                      </button>
+                      <button
+                        onClick={() => setTheme("system")}
+                        className={clsx(
+                          "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
+                          theme === "system"
+                            ? "bg-kas-secondary/10 border-kas-secondary"
+                            : "bg-primary-bg border-primary-border"
+                        )}
+                      >
+                        <Monitor className="h-5 w-5 text-[var(--text-primary)]" />
+                        <span className="text-sm font-medium">System</span>
+                      </button>
+                      <button
+                        onClick={initializeCustomTheme}
+                        className={clsx(
+                          "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border p-4 transition-all duration-200 hover:bg-[var(--primary-bg)]/50 active:rounded-4xl",
+                          theme === "custom"
+                            ? "bg-kas-secondary/10 border-kas-secondary"
+                            : "bg-primary-bg border-primary-border"
+                        )}
+                      >
+                        <Palette className="h-5 w-5 text-[var(--text-primary)]" />
+                        <span className="text-sm font-medium">Custom</span>
+                      </button>
                     </div>
-                  </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-2 flex items-center gap-3">
+                      <button
+                        onClick={() => setShowCustomTheme(false)}
+                        className="hover:text-primary text-muted-foreground cursor-pointer p-1 transition-colors"
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                      </button>
+                      <h3 className="text-lg font-medium">Custom Theme</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex flex-wrap gap-4">
+                        {colorPickers.map((picker) => (
+                          <ColorPicker
+                            key={picker.key}
+                            color={tempCustomColors[picker.key]}
+                            onChange={(color) =>
+                              handleCustomColorChange(picker.key, color)
+                            }
+                            label={picker.label}
+                          />
+                        ))}
+                      </div>
+
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={applyCustomColors} variant="primary">
+                          Apply Colors
+                        </Button>
+                        <Button
+                          onClick={handleResetCustomColors}
+                          variant="secondary"
+                        >
+                          Reset to Default
+                        </Button>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -923,7 +947,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {Object.entries(flips).map(([flagKey, item]) => (
                   <div
                     key={flagKey}
-                    className="border-primary-border bg-primary-bg my-2 rounded-2xl border p-4"
+                    onClick={() =>
+                      setFlag(
+                        flagKey as FeatureFlags,
+                        !flags[flagKey as FeatureFlags]
+                      )
+                    }
+                    className="border-primary-border bg-primary-bg hover:bg-primary-bg/50 my-2 cursor-pointer rounded-2xl border p-4 transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
