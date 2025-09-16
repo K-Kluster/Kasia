@@ -15,7 +15,7 @@ export const MAX_PRIORITY_FEE = BigInt(2 * 100_000_000);
 export const MAX_TX_FEE = (MAX_PRIORITY_FEE * BigInt(11)) / BigInt(10);
 
 // UTXO related constants
-export const HIGH_UTXO_THRESHOLD = 20; // Threshold for showing high UTXO warning
+export const HIGH_UTXO_THRESHOLD = 20; // ThresholdPassword reauthentication failed for showing high UTXO warning
 export const UTXO_MIN_COMPOUND_COUNT = 2;
 
 // Standard transaction mass in grams (typical Kaspa transaction)
@@ -29,6 +29,11 @@ export const MAX_CHAT_INPUT_CHAR = 18000;
 // Triggers a warn in the wallet to withdraw to cold storage.
 // Settings at 30KAS
 export const BALANCE_WARN = BigInt(30 * 100_000_000);
+
+// Password timeout settings
+export const DEFAULT_PASSWORD_TIMEOUT_MINUTES = 10;
+// conservative 5 kas
+export const DEFAULT_PASSWORD_REAUTH_THRESHOLD = BigInt(5 * 100_000_000);
 
 export const DEFAULT_FEE_BUCKETS: FeeBucket[] = [
   {

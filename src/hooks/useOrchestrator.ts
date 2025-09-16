@@ -1,5 +1,6 @@
 import { useNetworkStore } from "../store/network.store";
 import { useWalletStore } from "../store/wallet.store";
+import { useAuthStore } from "../store/auth.store";
 import { NetworkType } from "../types/all";
 import { client as indexerClient } from "../service/indexer/generated/client.gen";
 import { useToastStore } from "../store/toast.store";
@@ -93,6 +94,8 @@ export const useOrchestrator = () => {
         opts.walletId,
         opts.walletPassword
       );
+
+      useAuthStore.getState().updateLastPasswordEntry();
     } catch (error) {
       console.error(error);
       throw new StartSessionInvalidPasswordException();

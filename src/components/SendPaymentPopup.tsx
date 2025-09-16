@@ -5,6 +5,10 @@ import { KasIcon } from "./icons/KasCoin";
 import { sompiToKaspaString, kaspaToSompi } from "kaspa-wasm";
 import { useWalletStore } from "../store/wallet.store";
 import { useMessagingStore } from "../store/messaging.store";
+import {
+  needsPasswordReauth,
+  showPasswordReauthModal,
+} from "../utils/password-reauth";
 import { encrypt_message } from "cipher";
 import { Address } from "kaspa-wasm";
 import { toast } from "../utils/toast-helper";
@@ -102,8 +106,16 @@ export const SendPaymentPopup: FC<{
       // Create the payment protocol payload using HEX headers (not string headers)
       const payloadHex = `${PROTOCOL.prefix.hex}${PROTOCOL.headers.PAYMENT.hex}${encryptedMessage.to_hex()}`;
 
+      // Check if we need password reauthentication
+      if (needsPasswordReauth(amountSompi)) {
+        const authSuccess = await showPasswordReauthModal();
+        if (!authSuccess) {
+          throw new Error("Password reauthentication aborted");
+        }
+      }
+
       // Send payment directly to recipient with message payload using new method
-      const txId = await walletStore.accountService.createPaymentWithMessage({
+      const txId = await walletStore.accountService!.createPaymentWithMessage({
         address: new Address(recipientAddress),
         amount: amountSompi,
         payload: payloadHex,
@@ -140,12 +152,7 @@ export const SendPaymentPopup: FC<{
 
       return txId;
     },
-    [
-      walletStore.accountService,
-      walletStore.address,
-      walletStore.unlockedWallet?.password,
-      storeKasiaTransactions,
-    ]
+    [walletStore, storeKasiaTransactions]
   );
 
   const handleSendPayment = useCallback(async () => {
@@ -216,11 +223,11 @@ export const SendPaymentPopup: FC<{
     payAmount,
     balance?.mature,
     balance?.matureDisplay,
-    walletStore.unlockedWallet?.password,
     payMessage,
     onPaymentSent,
     address,
     sendPaymentWithMessage,
+    walletStore,
   ]);
 
   // Check if user can send messages with payments (now simplified - no conversation required)

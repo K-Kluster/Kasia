@@ -6,7 +6,7 @@ import { BALANCE_WARN } from "../../config/constants";
 import { Button } from "../Common/Button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { HIGH_UTXO_THRESHOLD } from "../../config/constants";
-import { useNetworkStore } from "../../store/network.store";
+import { getKasUnitDisplay } from "../../utils/network-display";
 
 type FrozenBalance = { matureUtxoCount: number; matureDisplay: string };
 
@@ -20,7 +20,6 @@ export const Wallet = () => {
   const closeModal = useUiStore((s) => s.closeModal);
   const unlockedWalletName = useWalletStore((s) => s.unlockedWallet?.name);
   const walletBalance = useWalletStore((s) => s.balance);
-  const network = useNetworkStore((s) => s.network);
 
   // use frozen balance if available, otherwise use current balance
   const currentBalance = frozenBalance
@@ -36,7 +35,7 @@ export const Wallet = () => {
     (currentBalance?.matureUtxoCount ?? 0) > HIGH_UTXO_THRESHOLD;
   const isExpanded = isUtxoExpanded || shouldAutoExpand;
 
-  const kasUnitDisplay = network === "mainnet" ? "KAS" : "TKAS";
+  const kasUnitDisplay = getKasUnitDisplay();
 
   return (
     <div className="my-2 sm:mx-2">

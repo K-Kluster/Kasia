@@ -1,6 +1,10 @@
 import { useComposerStore } from "../../store/message-composer.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { useMessagingStore } from "../../store/messaging.store";
+import {
+  needsPasswordReauth,
+  showPasswordReauthModal,
+} from "../../utils/password-reauth";
 import { Address } from "kaspa-wasm";
 import { toast } from "../../utils/toast-helper";
 import { unknownErrorToErrorLike } from "../../utils/errors";

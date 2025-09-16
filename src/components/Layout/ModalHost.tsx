@@ -14,6 +14,7 @@ import { ImagePresenter } from "../Modals/ImagePresenter";
 import { BroadcastParticipantInfo } from "../Modals/BroadcastParticipantInfo";
 import { QrScannerModal } from "../Modals/QrScannerModal";
 import { OffChainHandshakeModal } from "../Modals/OffChainHandshakeModal";
+import { PasswordReauthModal } from "../Modals/PasswordReauthModal";
 import { useBroadcastStore } from "../../store/broadcast.store";
 
 // This component subscribes to modal state and renders the appropriate modal
@@ -146,6 +147,16 @@ export const ModalHost = () => {
           onClose={() => closeModal("offchain-handshake")}
           kaspaAddress={walletStore.address?.toString() || ""}
         />
+      )}
+
+      {/* Password Reauthentication Modal */}
+      {modals["password-reauth"] && (
+        <Modal
+          onClose={() => closeModal("password-reauth")}
+          className="!w-auto"
+        >
+          <PasswordReauthModal />
+        </Modal>
       )}
     </>
   );

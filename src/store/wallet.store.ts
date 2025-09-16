@@ -410,7 +410,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
         console.log("Sending protocol message to:", toAddress.toString());
         const encryptedMessage = encrypt_message(toAddress.toString(), message);
 
-        return await state.accountService.sendMessageWithContext({
+        return await state.accountService!.sendMessageWithContext({
           message: encryptedMessage.to_hex(),
           toAddress,
           theirAlias: myAlias,
@@ -481,6 +481,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       }
       return _accountService.getMatureUtxos();
     },
+
     setSelectedNetwork: (network: NetworkType) =>
       set({ selectedNetwork: network }),
 

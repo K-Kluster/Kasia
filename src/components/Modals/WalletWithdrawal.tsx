@@ -1,6 +1,10 @@
 import { ChangeEvent, FC, useCallback, useState } from "react";
 import { kaspaToSompi, sompiToKaspaString } from "kaspa-wasm";
 import { useWalletStore } from "../../store/wallet.store";
+import {
+  needsPasswordReauth,
+  showPasswordReauthModal,
+} from "../../utils/password-reauth";
 import { Button } from "../Common/Button";
 import { toast } from "../../utils/toast-helper";
 import { pasteFromClipboard } from "../../utils/clipboard";
@@ -26,8 +30,9 @@ export const WalletWithdrawal: FC = () => {
   const openModal = useUiStore((s) => s.openModal);
   const setQrScannerCallback = useUiStore((s) => s.setQrScannerCallback);
 
-  const accountService = useWalletStore((store) => store.accountService);
-  const balance = useWalletStore((store) => store.balance);
+  const walletStore = useWalletStore();
+  const balance = walletStore.balance;
+  const accountService = walletStore.accountService;
 
   // Check if camera feature is enabled
   const { flags } = useFeatureFlagsStore();
@@ -114,20 +119,25 @@ export const WalletWithdrawal: FC = () => {
     try {
       setIsSending(true);
 
-      if (!accountService) {
-        return;
-      }
-
       if (!withdrawAddress || !withdrawAmount) {
         throw new Error("Please enter both Address and Amount");
       }
+
       if (!withdrawAddress.toLowerCase().startsWith("kaspa")) {
         throw new Error("Address must be of type Kaspa");
       }
 
       const amount = kaspaToSompi(withdrawAmount);
-      if (amount === undefined) {
-        throw new Error("Please enter a valid amount");
+      if (!amount) {
+        throw new Error("Invalid amount");
+      }
+
+      // Check if we need password reauthentication
+      if (needsPasswordReauth(amount)) {
+        const authSuccess = await showPasswordReauthModal();
+        if (!authSuccess) {
+          throw new Error("Password reauthentication failed");
+        }
       }
 
       // Use mature balance directly since it's already in KAS
@@ -146,11 +156,11 @@ export const WalletWithdrawal: FC = () => {
         );
       }
 
-      const txId = await accountService.createWithdrawTransaction({
+      const txId = await accountService!.createWithdrawTransaction({
         address: new Address(withdrawAddress),
         amount: amount,
         priorityFee: { amount: BigInt(0), source: FeeSource.SenderPays },
-      }); //withdrawAddress, amount);
+      });
       console.log(`UTXO Compounding succeed, txid: ${txId}`);
       setWithdrawAddress("");
       setWithdrawAmount("");

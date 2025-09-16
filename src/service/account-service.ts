@@ -24,6 +24,7 @@ import { WalletStorageService } from "./wallet-storage-service";
 import { TransactionGeneratorService } from "./transaction-generator";
 import { MAX_TX_FEE } from "../config/constants";
 import { ensureAddressPrefix } from "../utils/network";
+import { useAuthStore } from "../store/auth.store";
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -336,6 +337,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     pendingTransaction: PendingTransaction,
     privateKeyGenerator: PrivateKeyGenerator
   ): Promise<string> {
+    // Check if password reauth is required before signing
+    const amountToCheck =
+      pendingTransaction.paymentAmount ?? pendingTransaction.feeAmount ?? 0n;
+    if (useAuthStore.getState().requiresPasswordReauth(amountToCheck)) {
+      throw new Error("PASSWORD_REAUTH_REQUIRED");
+    }
+
     // Validate transaction fee (to make sure its not super high!) before proceeding
     this.validateTransactionFee(pendingTransaction.feeAmount);
 

@@ -382,4 +382,28 @@ export class WalletStorageService {
     // Save to localStorage first - if this fails, original state is preserved
     localStorage.setItem(this._storageKey, JSON.stringify(updatedWallets));
   }
+
+  /**
+   * Verify that a password is correct for a wallet by decrypting the phrase
+   * We could probably find a better way
+   */
+  verifyPassword(walletId: string, password: string): void {
+    const walletsString = localStorage.getItem(this._storageKey);
+    if (!walletsString) throw new Error("No wallets found");
+
+    const wallets = JSON.parse(walletsString) as StoredWallet[];
+    const wallet = wallets.find((w) => w.id === walletId);
+
+    if (!wallet) {
+      throw new Error("Wallet not found");
+    }
+
+    try {
+      // try to decrypt, if successfull its discarded anyway
+      decryptXChaCha20Poly1305(wallet.encryptedPhrase, password);
+    } catch (error) {
+      console.error("Password verification failed:", error);
+      throw new Error("Invalid password");
+    }
+  }
 }
