@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { NetworkSelector } from "../NetworkSelector";
 import { NetworkType } from "../../types/all";
 import { Wallet } from "../../types/wallet.type";

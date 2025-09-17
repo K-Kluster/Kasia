@@ -15,7 +15,7 @@ export const MAX_PRIORITY_FEE = BigInt(2 * 100_000_000);
 export const MAX_TX_FEE = (MAX_PRIORITY_FEE * BigInt(11)) / BigInt(10);
 
 // UTXO related constants
-export const HIGH_UTXO_THRESHOLD = 20; // ThresholdPassword reauthentication failed for showing high UTXO warning
+export const HIGH_UTXO_THRESHOLD = 20; // Threshold for showing high UTXO warning
 export const UTXO_MIN_COMPOUND_COUNT = 2;
 
 // Standard transaction mass in grams (typical Kaspa transaction)
