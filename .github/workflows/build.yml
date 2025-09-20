@@ -596,6 +596,9 @@ jobs:
       - name: Install Typescript CLI
         run: npm install -g typescript
 
+      - name: Remove Tauri Before Build property
+        run: sed -i '/"beforeBuildCommand":/d' tauri.conf.json
+
       - name: Build App
         run: tauri ios build -- --export-method app-store-connect
 
