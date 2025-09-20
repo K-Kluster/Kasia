@@ -25,6 +25,7 @@
     }
   },
   "bundle": {
+    "category": "Utility",
     "active": true,
     "targets": ["app", "appimage", "deb", "dmg", "msi", "nsis"],
     "icon": [
@@ -49,6 +50,7 @@
           "/usr/LICENSE": "../LICENSE"
         }
       }
-    }
+    },
+    "iOS": {}
   }
 }

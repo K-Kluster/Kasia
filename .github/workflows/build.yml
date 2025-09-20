@@ -500,6 +500,7 @@ jobs:
       IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
       IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
       KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      IOS_MOBILE_PROVISION: ${{ secrets.IOS_PROFILE }}
     needs: build-web-app
     steps:
       - uses: actions/checkout@v4
@@ -552,11 +553,6 @@ jobs:
 
           # verify identities
           security find-identity -v -p codesigning "$KEYCHAIN_NAME"
-
-      - name: Install provisioning profile
-        run: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "$IOS_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
