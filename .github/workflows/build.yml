@@ -545,8 +545,7 @@ jobs:
             -P "$IOS_CERTIFICATE_PASSWORD" \
             -T /usr/bin/codesign \
             -T /usr/bin/security \
-            -T /usr/bin/xcodebuild \
-            -v
+            -T /usr/bin/xcodebuild
 
           # Allow Apple tools to access the private key non-interactively
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
