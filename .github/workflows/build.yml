@@ -525,6 +525,7 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" "$HOME/Library/Keychains/login.keychain-db"
 
+
           echo "$IOS_CERTIFICATE" | (base64 --decode 2>/dev/null || base64 -d 2>/dev/null || base64 -D) > signing.p12
 
           test -s signing.p12 || { echo "Decoded signing.p12 is empty"; exit 1; }
