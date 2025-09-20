@@ -496,6 +496,10 @@ jobs:
 
   build-ios-app:
     runs-on: macos-14
+    env:
+      IOS_CERTIFICATE: ${{ secrets.IOS_CERTIFICATE }}
+      IOS_CERTIFICATE_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
     needs: build-web-app
     steps:
       - uses: actions/checkout@v4
