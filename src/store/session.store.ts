@@ -71,6 +71,10 @@ export const useSessionState = create<SessionState>((set, get) => {
       return data?.data ?? null;
     },
     async hasSession(tenantId) {
+      if (!core.isTauri()) {
+        return false;
+      }
+
       // temporary disable for iOS
       if (platform() === "ios") {
         return false;
@@ -86,6 +90,10 @@ export const useSessionState = create<SessionState>((set, get) => {
       });
     },
     async setSession(tenantId, password) {
+      if (!core.isTauri()) {
+        return;
+      }
+
       // temporary disable for iOS
       if (platform() === "ios") {
         return;
