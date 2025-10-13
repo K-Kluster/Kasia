@@ -36,9 +36,10 @@ export class BlockProcessorService extends EventEmitter<{
   // ordering matters, Set is safe as per MDN documentation
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
   private processedTransactionIds: Set<string> = new Set();
-  private monitoredConversations: Set<string> = new Set(); // Store monitored aliases
-  private monitoredAddresses: Map<string, string> = new Map(); // Store address -> alias mappings
-  private readonly MAX_TRANSACTION_IDS_RETENTION_COUNT = 1_000; // Prevent unlimited growth
+  private monitoredConversations: Set<string> = new Set();
+  private monitoredAddresses: Map<string, string> = new Map();
+  private readonly MAX_TRANSACTION_IDS_RETENTION_COUNT = 1_000;
+  private boundProcessBlockAdded: (event: IBlockAdded) => Promise<void>;
 
   constructor(
     private readonly rpc: RpcClient,
@@ -47,19 +48,18 @@ export class BlockProcessorService extends EventEmitter<{
   ) {
     super();
 
+    this.boundProcessBlockAdded = this.processBlockAdded.bind(this);
     this.init();
   }
 
   private async init() {
-    this.rpc.addEventListener("block-added", this.processBlockAdded.bind(this));
+    this.rpc.addEventListener("block-added", this.boundProcessBlockAdded);
     await this.rpc.subscribeBlockAdded();
   }
 
-  stop() {
-    this.rpc.removeEventListener(
-      "block-added",
-      this.processBlockAdded.bind(this)
-    );
+  async stop() {
+    this.rpc.removeEventListener("block-added", this.boundProcessBlockAdded);
+    await this.rpc.unsubscribeBlockAdded();
   }
 
   private async processBlockAdded(_event: IBlockAdded) {

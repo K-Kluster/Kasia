@@ -49,6 +49,7 @@ import {
 } from "../service/import-export-service";
 import { useNetworkStore } from "./network.store";
 import { historicalLoader_loadSendAndReceivedHandshake } from "../utils/historical-loader";
+import { validateAlias } from "../utils/alias-validator";
 
 interface MessagingState {
   isLoaded: boolean;
@@ -113,6 +114,12 @@ interface MessagingState {
   // Nickname management
   setContactNickname: (address: string, nickname?: string) => Promise<void>;
   removeContactNickname: (address: string) => Promise<void>;
+  // Alias management
+  updateConversationAliases: (
+    conversationId: string,
+    myAlias?: string,
+    theirAlias?: string
+  ) => Promise<void>;
 
   // self stash management
   createSelfStash: (handshakeData: {
@@ -431,6 +438,129 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
           return;
         }
       }
+      // =======
+
+      //         if (!oooc) {
+      //           oooc = {
+      //             conversation: conversationWithContact.conversation,
+      //             contact: conversationWithContact.contact,
+      //             events: [],
+      //           };
+      //         } else {
+      //           // update the conversation reference with the latest from manager
+      //           // this ensures alias updates from self-stash are reflected (newer than db aliases)
+      //           oooc.conversation = conversationWithContact.conversation;
+      //           oooc.contact = conversationWithContact.contact;
+      //         }
+
+      //         const kasiaHandshakesToPersist: Handshake[] = [];
+
+      //         if (lastSentHS) {
+      //           kasiaHandshakesToPersist.push({
+      //             __type: "handshake",
+      //             amount: 0.2,
+      //             contactId: oooc.contact.id,
+      //             conversationId: oooc.conversation.id,
+      //             content: "Handshake Sent",
+      //             fromMe: true,
+      //             createdAt: new Date(Number(lastSentHS.selfStash.block_time)),
+      //             tenantId: unlockedWallet.id,
+      //             transactionId: lastSentHS.selfStash.tx_id,
+      //             id: `${unlockedWallet.id}_${lastSentHS.selfStash.tx_id}`,
+      //             fee: 0,
+      //           });
+      //         }
+
+      //         if (lastReceivedHS) {
+      //           kasiaHandshakesToPersist.push({
+      //             __type: "handshake",
+      //             amount: 0.2,
+      //             contactId: oooc.contact.id,
+      //             conversationId: oooc.conversation.id,
+      //             content: JSON.stringify(lastReceivedHS.payload),
+      //             fromMe: false,
+      //             createdAt: new Date(Number(lastReceivedHS.handshake.block_time)),
+      //             tenantId: unlockedWallet.id,
+      //             transactionId: lastReceivedHS.handshake.tx_id,
+      //             id: `${unlockedWallet.id}_${lastReceivedHS.handshake.tx_id}`,
+      //             fee: 0,
+      //           });
+      //         }
+
+      //         console.log("saving", {
+      //           kasiaHandshakeToPersist: kasiaHandshakesToPersist,
+      //         });
+
+      //         for (const kasiaHSToPersist of kasiaHandshakesToPersist) {
+      //           try {
+      //             await repositories.handshakeRepository.saveHandshake(
+      //               kasiaHSToPersist
+      //             );
+      //           } catch (error) {
+      //             console.error(
+      //               "Messaging Store - Error while persisting handshake",
+      //               error
+      //             );
+      //             continue;
+      //           }
+
+      //           oooc.events.push(kasiaHSToPersist);
+      //         }
+
+      //         oooc.events.sort(
+      //           (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+      //         );
+
+      //         ooocsByAddress.set(senderAddress, oooc);
+      //       };
+
+      //       await Promise.all([...uniqueSenderAddresses].map(processOneSender));
+
+      //       repositories.metadataRepository.store({
+      //         lastSavedHandshakeBlockTime: lastProcessedSavedHandshakeBlockTime,
+      //         lastHandshakeBlockTime: lastProcessedHandhshakeBlockTime,
+      //       });
+
+      //       console.log("Loading Strategy - handshake history reconciliation loaded");
+
+      //       set({
+      //         oneOnOneConversations: Array.from(ooocsByAddress.values()),
+      //       });
+
+      //       // 5. lazily trigger historical polling of events for each conversation
+      //       console.log("Lazy historical polling of events for each conversation");
+
+      //       Promise.all(
+      //         Array.from(ooocsByAddress.values()).map(async (oooc) => {
+      //           // optimization possibility: fetch only events that are after last known conversation event
+
+      //           // also included previously unknown handhshakes message history fetching
+      //           // this is useful mainly on a new device, where we have no history of received messages
+
+      //           // include current conversation participant's alias
+      //           const resolvedUnknownHandshakesAlisesForThisConversation =
+      //             resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
+      //               oooc.contact.kaspaAddress
+      //             ] ?? new Set<string>();
+      //           if (oooc.conversation.theirAlias) {
+      //             resolvedUnknownHandshakesAlisesForThisConversation.add(
+      //               oooc.conversation.theirAlias
+      //             );
+      //           }
+
+      //           return _fetchHistoricalForConversation(
+      //             oooc,
+      //             resolvedUnknownHandshakesAlisesForThisConversation,
+      //             address,
+      //             repositories
+      //           );
+      //         })
+      //       );
+
+      //       set({
+      //         isLoaded: true,
+      //       });
+      // >>>>>>> 0da279b (feat: temp alias)
     },
     stop() {
       _historicalSyncer = null!;
@@ -891,11 +1021,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             updatedConversationWithContacts[ooocToUpdateIndex] =
               updatedConversation;
 
-            console.log(
-              "updatedConversationWithContacts",
-              updatedConversationWithContacts
-            );
-
             return { oneOnOneConversations: updatedConversationWithContacts };
           });
         } finally {
@@ -1342,6 +1467,77 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
     removeContactNickname: async (address: string) => {
       return g().setContactNickname(address, undefined);
+    },
+
+    updateConversationAliases: async (
+      conversationId: string,
+      myAlias?: string,
+      theirAlias?: string
+    ) => {
+      const manager = g().conversationManager;
+      if (!manager) {
+        throw new Error("Conversation manager not initialized");
+      }
+
+      // validate em
+      if (myAlias !== undefined && myAlias !== "") {
+        const validationError = validateAlias(myAlias);
+        if (validationError) {
+          throw new Error(`Invalid myAlias: ${validationError}`);
+        }
+      }
+
+      if (theirAlias !== undefined && theirAlias !== "") {
+        const validationError = validateAlias(theirAlias);
+        if (validationError) {
+          throw new Error(`Invalid theirAlias: ${validationError}`);
+        }
+      }
+
+      const oneOnOneConversationIndex = g().oneOnOneConversations.findIndex(
+        (oooc) => oooc.conversation.id === conversationId
+      );
+
+      if (oneOnOneConversationIndex === -1) {
+        throw new Error("Conversation not found");
+      }
+
+      // prepare the update object with only the fields that are provided
+      const updates: Pick<Conversation, "id"> & Partial<Conversation> = {
+        id: conversationId,
+      };
+
+      if (myAlias !== undefined && myAlias !== "") {
+        updates.myAlias = myAlias;
+      }
+
+      if (theirAlias !== undefined && theirAlias !== "") {
+        updates.theirAlias = theirAlias;
+      }
+
+      // update via conversation manager (includes persistence)
+      await manager.updateConversation(updates);
+
+      // get the updated conversation from manager
+      const updatedConversationWithContact =
+        manager.getConversationWithContactByConversationId(conversationId);
+
+      if (!updatedConversationWithContact) {
+        throw new Error("Failed to get updated conversation");
+      }
+
+      // update local state efficiently using map
+      const updatedConversations = g().oneOnOneConversations.map(
+        (oooc, index) =>
+          index === oneOnOneConversationIndex
+            ? {
+                ...oooc,
+                conversation: updatedConversationWithContact.conversation,
+              }
+            : oooc
+      );
+
+      set({ oneOnOneConversations: updatedConversations });
     },
 
     async ingestRawResolvedKasiaTransaction(tx) {

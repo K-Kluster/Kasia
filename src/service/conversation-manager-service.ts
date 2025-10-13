@@ -269,6 +269,14 @@ export class ConversationManagerService {
       : null;
   }
 
+  public getConversationWithContactByConversationId(
+    conversationId: string
+  ): { conversation: Conversation; contact: Contact } | null {
+    return (
+      this.conversationWithContactByConversationId.get(conversationId) || null
+    );
+  }
+
   public getActiveConversationsWithContact(): {
     conversation: ActiveConversation;
     contact: Contact;

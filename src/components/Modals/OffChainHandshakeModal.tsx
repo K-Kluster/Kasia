@@ -6,13 +6,13 @@ import { Clipboard, QrCode, CheckCircle } from "lucide-react";
 import { useFeatureFlagsStore } from "../../store/featureflag.store";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useUiStore } from "../../store/ui.store";
-import { useWalletStore } from "../../store/wallet.store";
 import { toast } from "../../utils/toast-helper";
 import { pasteFromClipboard } from "../../utils/clipboard";
 import { Button } from "../Common/Button";
-import clsx from "clsx";
-import { Address, kaspaToSompi } from "kaspa-wasm";
+import { clsx } from "clsx";
+import { Address } from "kaspa-wasm";
 import { ALIAS_LENGTH } from "../../config/constants";
+import { useSelfStash } from "../../hooks/useSelfStash";
 
 interface OffChainHandshakeModalProps {
   isOpen: boolean;
@@ -30,9 +30,6 @@ export const OffChainHandshakeModal: React.FC<OffChainHandshakeModalProps> = ({
   const [theirAliasForUs, setTheirAliasForUs] = useState<string>("");
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isCreating, setIsCreating] = useState<boolean>(false);
-  const [isCreatingSelfStash, setIsCreatingSelfStash] =
-    useState<boolean>(false);
-  const [selfStashCompleted, setSelfStashCompleted] = useState<boolean>(false);
   const [isQrOpen, setIsQrOpen] = useState<boolean>(false);
   const [activeQrSection, setActiveQrSection] = useState<string | null>(null);
   const [hideTitles, setHideTitles] = useState<boolean>(false);
@@ -44,19 +41,22 @@ export const OffChainHandshakeModal: React.FC<OffChainHandshakeModalProps> = ({
   const cameraEnabled = useFeatureFlagsStore((s) => s.flags.enabledcamera);
   const {
     createOffChainHandshake: createOffChainHandshake,
-    createSelfStash,
-    setOpenedRecipient,
     generateUniqueAlias,
   } = useMessagingStore();
   const { openModal, setQrScannerCallback, modals } = useUiStore();
-  const balanceMature = useWalletStore((s) => s.balance?.mature);
 
-  const maxDustAmount = kaspaToSompi("0.19")!;
-
-  // check if user has sufficient funds for self stash (0.2 KAS minimum)
-  const hasSufficientFundsForSelfStash = balanceMature
-    ? balanceMature >= BigInt(maxDustAmount)
-    : false;
+  // use self stash hook for handling handshake save logic
+  const {
+    isCreating: isCreatingSelfStash,
+    isCompleted: selfStashCompleted,
+    hasSufficientFunds: hasSufficientFundsForSelfStash,
+    handleCreateSelfStash,
+  } = useSelfStash({
+    partnerAddress,
+    ourAlias: ourAliasForPartner,
+    theirAlias: theirAliasForUs,
+    onCompleted: onClose,
+  });
 
   // validate partner address (so we know the alias is right)
   const validatePartnerAddress = (
@@ -220,41 +220,6 @@ export const OffChainHandshakeModal: React.FC<OffChainHandshakeModalProps> = ({
       );
     } finally {
       setIsCreating(false);
-    }
-  };
-
-  // create a self stash transaction using the store function
-  const handleCreateSelfStash = async () => {
-    setIsCreatingSelfStash(true);
-    try {
-      // create single self-stash for off-chain handshake (contains both aliases)
-      await createSelfStash({
-        type: "initiation",
-        partnerAddress,
-        ourAlias: ourAliasForPartner,
-        theirAlias: theirAliasForUs,
-      });
-
-      setSelfStashCompleted(true);
-
-      // select the newly created conversation
-      setOpenedRecipient(partnerAddress);
-
-      toast.success("Handshake Saved");
-
-      // close the modal after a brief delay to let user see the success message
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (error) {
-      console.error("Failed to create self stash:", error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed to save off-chain handshake"
-      );
-    } finally {
-      setIsCreatingSelfStash(false);
     }
   };
 

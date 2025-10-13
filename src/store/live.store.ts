@@ -15,7 +15,7 @@ interface LiveState {
   walletReceiveAddressString: string | undefined;
 
   start: (rpc: RpcClient, walletReceiveAddressString: string) => void;
-  stop: () => void;
+  stop: () => Promise<void>;
 }
 
 export const useLiveStore = create<LiveState>((set, get) => {
@@ -76,7 +76,7 @@ export const useLiveStore = create<LiveState>((set, get) => {
         boundOnRawKasiaTransactionReceived
       );
     },
-    stop() {
+    async stop() {
       get().rpc?.removeEventListener("disconnect", boundOnStop);
       get().rpc?.addEventListener("connect", boundOnStart);
 
@@ -85,7 +85,7 @@ export const useLiveStore = create<LiveState>((set, get) => {
         boundOnRawKasiaTransactionReceived
       );
 
-      get().blockProcessorService?.stop();
+      await get().blockProcessorService?.stop();
       get().saars?.stop();
       set({
         saars: undefined,
