@@ -50,16 +50,29 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
     }
   };
 
-  const send = async (myAlias: string) => {
+  const send = async (aliasToSendTo: string) => {
     toast.removeAll();
     if (!recipient) {
       toast.error("Error, please select a contact.");
       return;
     }
-    if (!myAlias) {
+    if (!aliasToSendTo) {
       toast.error("Valid Alias needed for sending.");
       return;
     }
+
+    // Get conversation details for logging
+    const conversationWithContact =
+      messageStore.conversationManager?.getConversationWithContactByAddress(
+        recipient
+      );
+    console.log("[useMessageComposer] Sending message:", {
+      recipient,
+      aliasToSendTo,
+      conversationMyAlias: conversationWithContact?.conversation.myAlias,
+      conversationTheirAlias: conversationWithContact?.conversation.theirAlias,
+      note: "Should send to theirAlias (recipient monitors this)",
+    });
     if (!walletStore.unlockedWallet) {
       toast.error("Error, reload app.");
       return;
@@ -104,7 +117,7 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
       txId = await walletStore.sendMessageWithContext({
         message: messageToSend,
         toAddress: new Address(recipient),
-        myAlias,
+        aliasToSendTo,
         priorityFee: priority,
       });
 
@@ -119,7 +132,7 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
           .toString(),
         recipientAddress: recipient,
         createdAt: new Date(),
-        content: `${PROTOCOL.prefix.hex}${PROTOCOL.headers.COMM.hex}${myAlias}:${decryptedContent}`,
+        content: `${PROTOCOL.prefix.hex}${PROTOCOL.headers.COMM.hex}${aliasToSendTo}:${decryptedContent}`,
         amount: 20000000,
         fee: feeState.value || 0,
         payload: "",
@@ -141,7 +154,7 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
     /**
      * Send a message to the recipient
      *
-     * param myAlias - My alias (optional)
+     * param aliasToSendTo - The alias to send to (should be theirAlias)
      */
     send,
     /**

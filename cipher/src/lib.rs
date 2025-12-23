@@ -2,6 +2,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305, KeyInit, Nonce,
     aead::{Aead, AeadCore, OsRng, Payload},
 };
+use hkdf::Hkdf;
 use k256::{
     PublicKey, SecretKey,
     ecdh::{EphemeralSecret, diffie_hellman},
@@ -9,6 +10,7 @@ use k256::{
 use kaspa_addresses::Address;
 use kaspa_wallet_keys::privatekey::PrivateKey as WalletPrivateKey;
 use secp256k1::{PublicKey as SecpPublicKey, XOnlyPublicKey};
+use sha2::Sha256;
 use std::ops::Deref;
 use wasm_bindgen::{JsError, UnwrapThrowExt, prelude::wasm_bindgen};
 
@@ -332,6 +334,111 @@ pub fn decrypt_with_secret_key(
     }
 }
 
+/// Derives my alias (the one I monitor for incoming messages).
+/// Uses HKDF("chat" || shared_secret || my_public_key).
+///
+/// # Arguments
+/// * `my_private_key` - My wallet private key
+/// * `their_address` - Their Kaspa address
+///
+/// # Returns
+/// A 12-character hex string (6 bytes) representing my alias
+#[wasm_bindgen]
+pub fn derive_my_alias(
+    my_private_key: WalletPrivateKey,
+    their_address: &str,
+) -> Result<String, JsError> {
+    // Get my public key from my private key
+    let my_public_key = my_private_key.to_public_key()
+        .map_err(|_| JsError::new("Failed to derive public key"))?;
+    
+    // Use the X-only public key bytes for the context (32 bytes)
+    let my_pubkey_bytes = my_public_key.xonly_public_key.serialize().to_vec();
+    
+    derive_alias_with_context(&my_private_key, their_address, &my_pubkey_bytes)
+}
+
+/// Derives their alias (the one I send messages to).
+/// Uses HKDF("chat" || shared_secret || their_xonly_public_key).
+///
+/// # Arguments
+/// * `my_private_key` - My wallet private key
+/// * `their_address` - Their Kaspa address
+///
+/// # Returns
+/// A 12-character hex string (6 bytes) representing their alias
+#[wasm_bindgen]
+pub fn derive_their_alias(
+    my_private_key: WalletPrivateKey,
+    their_address: &str,
+) -> Result<String, JsError> {
+    // Parse their address to extract their public key
+    let address = Address::try_from(their_address)
+        .map_err(|e| JsError::new(&format!("Invalid address: {}", e)))?;
+    
+    // Extract X-only public key from address (32 bytes, no parity)
+    let their_xonly_pk = XOnlyPublicKey::from_slice(address.payload.as_slice())
+        .map_err(|e| JsError::new(&format!("Invalid public key in address: {}", e)))?;
+    
+    // Use X-only bytes (32 bytes) to avoid parity ambiguity
+    // This matches what derive_my_alias does for consistency
+    let their_pubkey_bytes = their_xonly_pk.serialize().to_vec();
+    
+    derive_alias_with_context(&my_private_key, their_address, &their_pubkey_bytes)
+}
+
+/// Internal function to derive an alias using ECDH + HKDF with a public key context.
+/// 
+/// # Arguments
+/// * `my_private_key` - My wallet private key
+/// * `their_address` - Their Kaspa address
+/// * `context_pubkey` - The public key to use as context (either mine or theirs)
+///
+/// # Returns
+/// A 12-character hex string (6 bytes)
+fn derive_alias_with_context(
+    my_private_key: &WalletPrivateKey,
+    their_address: &str,
+    context_pubkey: &[u8],
+) -> Result<String, JsError> {
+    // Parse their address to extract their public key
+    let address = Address::try_from(their_address)
+        .map_err(|e| JsError::new(&format!("Invalid address: {}", e)))?;
+    
+    // Extract X-only public key from address
+    let their_xonly_pk = XOnlyPublicKey::from_slice(address.payload.as_slice())
+        .map_err(|e| JsError::new(&format!("Invalid public key in address: {}", e)))?;
+    
+    // Convert to full public key (assuming even parity)
+    let their_pk_even = SecpPublicKey::from_x_only_public_key(their_xonly_pk, secp256k1::Parity::Even);
+    
+    // Convert to k256 PublicKey
+    let their_pk = PublicKey::from_sec1_bytes(&their_pk_even.serialize())
+        .map_err(|e| JsError::new(&format!("Failed to parse public key: {}", e)))?;
+    
+    // Convert my private key to k256 SecretKey
+    let my_sk = SecretKey::from_slice(&my_private_key.secret_bytes())
+        .map_err(|_| JsError::new("Invalid private key"))?;
+    
+    // Perform ECDH to get shared secret
+    let shared_secret = diffie_hellman(my_sk.to_nonzero_scalar(), their_pk.as_affine());
+    
+    // Construct info string: "chat" || shared_secret || context_pubkey
+    let mut info = Vec::new();
+    info.extend_from_slice(b"chat");
+    info.extend_from_slice(shared_secret.raw_secret_bytes());
+    info.extend_from_slice(context_pubkey);
+    
+    // Use HKDF to derive deterministic alias from shared secret with context
+    let hkdf = Hkdf::<Sha256>::new(None, shared_secret.raw_secret_bytes());
+    let mut alias_bytes = [0u8; 6]; // 6 bytes = 12 hex characters
+    hkdf.expand(&info, &mut alias_bytes)
+        .map_err(|_| JsError::new("HKDF expansion failed"))?;
+    
+    // Convert to hex string
+    Ok(hex::encode(alias_bytes))
+}
+
 // tests
 #[cfg(test)]
 mod tests {
@@ -360,5 +467,84 @@ mod tests {
         let encrypted_message = encrypt_message(&receiver_address.to_string(), message).unwrap();
         let decrypted_message = decrypt_message(encrypted_message, wallet_private_key).unwrap();
         assert_eq!(message.to_owned(), decrypted_message);
+    }
+
+    #[test]
+    fn test_asymmetric_alias_derivation() {
+        // Create Alice's keypair
+        let alice_sk = SecretKey::random(&mut OsRng);
+        let alice_pk = alice_sk.public_key();
+        let alice_secp_pk = SecpPublicKey::from_slice(&alice_pk.to_sec1_bytes()).unwrap();
+        let alice_wallet_pk = WalletPublicKey::from(alice_secp_pk);
+        let alice_address = alice_wallet_pk.to_address(NetworkType::Testnet).unwrap();
+        let alice_private_key = WalletPrivateKey::try_from_slice(alice_sk.to_bytes().as_slice()).unwrap();
+
+        // Create Bob's keypair
+        let bob_sk = SecretKey::random(&mut OsRng);
+        let bob_pk = bob_sk.public_key();
+        let bob_secp_pk = SecpPublicKey::from_slice(&bob_pk.to_sec1_bytes()).unwrap();
+        let bob_wallet_pk = WalletPublicKey::from(bob_secp_pk);
+        let bob_address = bob_wallet_pk.to_address(NetworkType::Testnet).unwrap();
+        let bob_private_key = WalletPrivateKey::try_from_slice(bob_sk.to_bytes().as_slice()).unwrap();
+
+        // Alice derives her aliases for conversation with Bob
+        let alice_my_alias = derive_my_alias(alice_private_key.clone(), &bob_address.to_string()).unwrap();
+        let alice_their_alias = derive_their_alias(alice_private_key.clone(), &bob_address.to_string()).unwrap();
+
+        // Bob derives his aliases for conversation with Alice
+        let bob_my_alias = derive_my_alias(bob_private_key.clone(), &alice_address.to_string()).unwrap();
+        let bob_their_alias = derive_their_alias(bob_private_key.clone(), &alice_address.to_string()).unwrap();
+
+        // Verify asymmetric property: Alice's theirAlias should equal Bob's myAlias
+        assert_eq!(
+            alice_their_alias, bob_my_alias,
+            "Alice's theirAlias must match Bob's myAlias (Alice sends to Bob's listening alias)"
+        );
+
+        // Verify asymmetric property: Bob's theirAlias should equal Alice's myAlias
+        assert_eq!(
+            bob_their_alias, alice_my_alias,
+            "Bob's theirAlias must match Alice's myAlias (Bob sends to Alice's listening alias)"
+        );
+
+        // Verify privacy property: myAliases should be different
+        assert_ne!(
+            alice_my_alias, bob_my_alias,
+            "Alice and Bob should have different myAliases (privacy: different aliases in each direction)"
+        );
+
+        // Verify aliases are 12 characters (6 bytes in hex)
+        assert_eq!(alice_my_alias.len(), 12, "Alias should be 12 hex characters (6 bytes)");
+        assert_eq!(alice_their_alias.len(), 12, "Alias should be 12 hex characters (6 bytes)");
+        assert_eq!(bob_my_alias.len(), 12, "Alias should be 12 hex characters (6 bytes)");
+        assert_eq!(bob_their_alias.len(), 12, "Alias should be 12 hex characters (6 bytes)");
+
+        println!("✅ Asymmetric alias test passed!");
+        println!("   Alice myAlias: {}", alice_my_alias);
+        println!("   Alice theirAlias: {}", alice_their_alias);
+        println!("   Bob myAlias: {}", bob_my_alias);
+        println!("   Bob theirAlias: {}", bob_their_alias);
+    }
+
+    #[test]
+    fn test_alias_determinism() {
+        // Create keypairs
+        let alice_sk = SecretKey::random(&mut OsRng);
+        let alice_private_key = WalletPrivateKey::try_from_slice(alice_sk.to_bytes().as_slice()).unwrap();
+        
+        let bob_sk = SecretKey::random(&mut OsRng);
+        let bob_pk = bob_sk.public_key();
+        let bob_secp_pk = SecpPublicKey::from_slice(&bob_pk.to_sec1_bytes()).unwrap();
+        let bob_wallet_pk = WalletPublicKey::from(bob_secp_pk);
+        let bob_address = bob_wallet_pk.to_address(NetworkType::Testnet).unwrap();
+
+        // Derive aliases twice
+        let alias1 = derive_my_alias(alice_private_key.clone(), &bob_address.to_string()).unwrap();
+        let alias2 = derive_my_alias(alice_private_key.clone(), &bob_address.to_string()).unwrap();
+
+        // Should be identical (deterministic)
+        assert_eq!(alias1, alias2, "Alias derivation must be deterministic");
+        
+        println!("✅ Determinism test passed! Alias: {}", alias1);
     }
 }
