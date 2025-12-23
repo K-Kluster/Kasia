@@ -3,16 +3,24 @@ import { Conversation } from "../store/repository/conversation.repository";
 
 export interface HandshakePayload {
   type: "handshake";
-  /**
-   * my alias, the one I write to
-   */
-  alias: string;
-  theirAlias?: string; // Used in response to confirm both aliases
   timestamp: number;
   version: number; // for future protocol upgrades
   recipientAddress?: string; // Only used for initial handshake
   sendToRecipient?: boolean; // Flag to indicate if message should be sent to recipient
   isResponse?: boolean; // Flag to indicate this is a response
+
+  /**
+   * @deprecated Aliases are no longer exchanged in handshakes.
+   * They are now derived deterministically using ECDH + HKDF.
+   * Both parties independently derive myAlias and theirAlias from the shared secret.
+   */
+  alias?: string;
+
+  /**
+   * @deprecated Aliases are no longer exchanged in handshakes.
+   * See alias deprecation note above.
+   */
+  theirAlias?: string;
 }
 
 export type SavedHandshakePayload = HandshakePayload & {

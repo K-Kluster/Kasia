@@ -100,15 +100,23 @@ interface MessagingState {
   // New function to manually respond to a handshake
   respondToHandshake: (handshakeId: string) => Promise<string>;
 
-  // Create offline handshake (both parties exchange info manually)
+  // Create offline handshake (aliases are now derived deterministically)
+  /**
+   * @deprecated Manual alias exchange is no longer needed. Aliases are derived deterministically.
+   */
   createOffChainHandshake: (
     partnerAddress: string,
-    ourAliasForPartner: string,
-    theirAliasForUs: string
+    ourAliasForPartner?: string,
+    theirAliasForUs?: string
   ) => Promise<{ conversationId: string; contactId: string }>;
 
   // Generate unique alias for conversations
   generateUniqueAlias: () => string;
+
+  // Create discrete conversation (no handshake required)
+  createDiscreteConversation: (
+    recipientAddress: string
+  ) => Promise<{ conversationId: string; contactId: string }>;
 
   // Nickname management
   setContactNickname: (address: string, nickname?: string) => Promise<void>;
@@ -1008,13 +1016,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const { contact, conversation } =
         await manager.initiateHandshake(recipientAddress);
 
-      // Create the handshake payload
+      // Create the handshake payload (aliases no longer exchanged - they're derived deterministically)
       const handshakePayload: HandshakePayload = {
         type: "handshake",
-        alias: conversation.myAlias,
         timestamp: Date.now(),
         version: 1,
       };
+
+      console.log(
+        "[initiateHandshake] Conversation aliases => myAlias:",
+        conversation.myAlias,
+        "theirAlias:",
+        conversation.theirAlias
+      );
 
       // their payload
       const encryptedMessageForThem = encrypt_message(
@@ -1116,27 +1130,22 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const manager = g().conversationManager;
       return manager ? manager.getPendingConversationsWithContact() : [];
     },
-    // add an offline handshake
+
+    /**
+     * @deprecated Manual alias exchange is no longer needed. Aliases are derived deterministically.
+     */
     createOffChainHandshake: async (
       partnerAddress: string,
-      ourAliasForPartner: string,
-      theirAliasForUs: string
+      _ourAliasForPartner?: string,
+      _theirAliasForUs?: string
     ) => {
       const manager = g().conversationManager;
-
       if (!manager) {
         throw new Error("Conversation manager not initialized");
       }
 
-      // Call the service method
-      const result = await manager.createOffChainHandshake(
-        partnerAddress,
-        ourAliasForPartner,
-        theirAliasForUs
-      );
-
-      // Refresh conversation manager to pick up the new conversation
-      await manager.loadConversations();
+      // Call the service method (aliases are now derived, not provided)
+      const result = await manager.createOffChainHandshake(partnerAddress);
 
       // Refresh the UI state to trigger re-render with the new contact
       await g().hydrateOneonOneConversations();
@@ -1152,6 +1161,36 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       return manager.generateUniqueAlias();
+    },
+
+    createDiscreteConversation: async (recipientAddress: string) => {
+      const manager = g().conversationManager;
+      if (!manager) {
+        throw new Error("Conversation manager not initialized");
+      }
+
+      // Create discrete conversation (no handshake required)
+      const { conversation, contact } =
+        await manager.createDiscreteConversation(recipientAddress);
+
+      console.log(
+        "[createDiscreteConversation] Created discrete conversation with",
+        recipientAddress
+      );
+      console.log(
+        "[createDiscreteConversation] Aliases => myAlias:",
+        conversation.myAlias,
+        "theirAlias:",
+        conversation.theirAlias
+      );
+
+      // Refresh the UI state to show the new conversation
+      await g().hydrateOneonOneConversations();
+
+      return {
+        conversationId: conversation.id,
+        contactId: contact.id,
+      };
     },
 
     respondToHandshake: async (handshakeId: string) => {
@@ -1188,17 +1227,21 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         // Create handshake response
         await manager.createHandshakeResponse(conversation.id);
 
+        // Aliases are no longer exchanged - they're derived deterministically
         const handshakeResponsePayload: HandshakePayload = {
           type: "handshake",
-          alias: conversation.myAlias,
-          // create handshake response already check if their alias is set, else it throws
-          theirAlias: conversation.theirAlias!,
           timestamp: Date.now(),
           version: 1,
           isResponse: true,
         };
 
         console.log("Handshake response to send:", handshakeResponsePayload);
+        console.log(
+          "[respondToHandshake] Conversation aliases => myAlias:",
+          conversation.myAlias,
+          "theirAlias:",
+          conversation.theirAlias
+        );
 
         const payload = `${toHex("ciph_msg:1:handshake:")}${encrypt_message(recipientAddress, JSON.stringify(handshakeResponsePayload)).to_hex()}`;
 

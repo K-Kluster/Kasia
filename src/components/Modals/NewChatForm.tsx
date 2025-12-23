@@ -40,6 +40,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
+  const [discreteMode, setDiscreteMode] = useState(false);
 
   // kns related
   const [isResolvingKns, setIsResolvingKns] = useState(false);
@@ -309,10 +310,46 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       return;
     }
 
-    setShowConfirmation(true);
+    // For discrete mode, skip confirmation and create directly
+    if (discreteMode) {
+      await createDiscreteConversation();
+    } else {
+      setShowConfirmation(true);
+    }
   };
 
-  // Update confirmHandshake to use knsRecipientAddress
+  // Create discrete conversation without handshake
+  const createDiscreteConversation = async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      await messageStore.createDiscreteConversation(knsRecipientAddress);
+      messageStore.setOpenedRecipient(knsRecipientAddress);
+
+      if (
+        detectedRecipientInputValueFormat === "kns" &&
+        resolvedRecipientAddress
+      ) {
+        messageStore.setContactNickname(
+          resolvedRecipientAddress,
+          recipientInputValue
+        );
+      }
+
+      onClose();
+    } catch (error) {
+      console.error("Failed to create discrete conversation:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to create discrete conversation"
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Confirm and send handshake transaction
   const confirmHandshake = async () => {
     setError(null);
     setIsLoading(true);
@@ -321,7 +358,6 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
       const amountSompi = kaspaToSompi(handshakeAmount);
 
       // Initiate handshake with custom amount
-
       await messageStore.initiateHandshake(knsRecipientAddress, amountSompi);
       messageStore.setOpenedRecipient(knsRecipientAddress);
 
@@ -334,7 +370,6 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           recipientInputValue
         );
       }
-      // Close the form
 
       onClose();
     } catch (error) {
@@ -514,7 +549,28 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           )}
         </div>
 
-        <div className={"mb-5"}>
+        {/* Discrete Conversation Mode Toggle */}
+        <div className="mb-5">
+          <label className="flex cursor-pointer items-center gap-2">
+            <input
+              type="checkbox"
+              checked={discreteMode}
+              onChange={(e) => setDiscreteMode(e.target.checked)}
+              disabled={isLoading}
+              className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[var(--button-primary)] focus:ring-2 focus:ring-[var(--button-primary)]"
+            />
+            <span className="text-sm font-medium">
+              Discrete Conversation (no handshake required)
+            </span>
+          </label>
+          <p className="mt-2 text-xs text-[var(--text-secondary)]">
+            Start monitoring for messages immediately without sending an
+            on-chain handshake. Both parties can communicate using deterministic
+            aliases derived from your wallet addresses.
+          </p>
+        </div>
+
+        <div className={clsx("mb-5", discreteMode && "opacity-50")}>
           <label
             className="mb-[5px] block text-[14px] font-bold"
             htmlFor="handshakeAmount"
@@ -522,13 +578,13 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
             Handshake Amount (KAS)
           </label>
           <input
-            className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 text-base focus:ring-2 focus:outline-none"
+            className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 text-base focus:ring-2 focus:outline-none disabled:cursor-not-allowed"
             type="text"
             id="handshakeAmount"
             value={handshakeAmount}
             onChange={(e) => handleAmountChange(e.target.value)}
             placeholder="0.2"
-            disabled={isLoading}
+            disabled={discreteMode || isLoading}
           />
           <div className="mb-2.5 flex gap-2">
             <button
@@ -547,7 +603,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                     : undefined,
               }}
               onClick={() => handleQuickAmount("0.2")}
-              disabled={isLoading}
+              disabled={discreteMode || isLoading}
             >
               0.2
             </button>
@@ -567,7 +623,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                     : undefined,
               }}
               onClick={() => handleQuickAmount("0.5")}
-              disabled={isLoading}
+              disabled={discreteMode || isLoading}
             >
               0.5
             </button>
@@ -585,7 +641,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                   handshakeAmount !== "1" ? "var(--button-primary)" : undefined,
               }}
               onClick={() => handleQuickAmount("1")}
-              disabled={isLoading}
+              disabled={discreteMode || isLoading}
             >
               1
             </button>
@@ -605,7 +661,13 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
         <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
           <Button type="submit" disabled={isLoading} variant="primary">
-            {isLoading ? "Initiating..." : "Start Chat"}
+            {isLoading
+              ? discreteMode
+                ? "Creating..."
+                : "Initiating..."
+              : discreteMode
+                ? "Start Discrete Chat"
+                : "Start Chat"}
           </Button>
           <Button onClick={onClose} disabled={isLoading} variant="secondary">
             Cancel

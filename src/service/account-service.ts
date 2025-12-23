@@ -787,12 +787,13 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
       throw new Error("Could not find conversation for the given alias");
     }
 
-    console.log("Encryption details:", {
-      conversationPartnerAddress: conversationWithContact.contact.kaspaAddress,
+    console.log("[account-service] sendMessageWithContext - Alias details:", {
+      aliasProvidedToSend: sendMessage.theirAlias,
+      conversationMyAlias: conversationWithContact.conversation.myAlias,
+      conversationTheirAlias: conversationWithContact.conversation.theirAlias,
+      recipientAddress: conversationWithContact.contact.kaspaAddress,
       ourAddress: this.recv.toString(),
-      theirAlias: sendMessage.theirAlias,
-      destinationAddress: this.recv.toString(),
-      conversation: conversationWithContact,
+      note: "Publishing message with theirAlias - recipient should be monitoring this",
     });
 
     // Create the payload with conversation context
@@ -802,6 +803,11 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
 
     // Build the full protocol string with all components
     const protocolString = `ciph_msg:1:comm:${sendMessage.theirAlias}:${base64String}`;
+    console.log("[account-service] Built protocol string:", {
+      protocolString: protocolString.substring(0, 50) + "...",
+      aliasInMessage: sendMessage.theirAlias,
+      note: "This is what will be published on-chain",
+    });
     const payloadBytes = getEncoder().encode(protocolString);
 
     const payload = payloadBytes;
