@@ -1,7 +1,6 @@
 # Deterministic Asymmetric Aliases
 
-**Version:** 3.0.0  
-**Last Updated:** December 23, 2024
+**Version:** 3.0.0
 
 ## Overview
 
@@ -307,7 +306,6 @@ console.log('[Incoming] Message alias:', incomingMessage.targetAlias);
 **Common causes:**
 1. Different addresses used (typo, wrong network prefix)
 2. Wrong private key used for derivation
-3. Parity issue (fixed in v3.0.0)
 
 **Verify:**
 ```typescript
@@ -436,10 +434,6 @@ await send(conversation.theirAlias);
 - [ ] Verify different aliases in each direction
 - [ ] Check on-chain messages show different aliases
 
-## Additional Resources
-
-- **Debugging Guide:** See `/DEBUGGING_ALIAS_ROUTING.md` for comprehensive logging details and debugging message routing issues
-
 ## Quick Reference
 
 ### Derivation Formula
@@ -456,6 +450,6 @@ theirAlias = hex(HKDF-SHA256(ECDH(my_sk, their_pk), "chat" + secret + THEIR_pk_x
 
 ---
 
-**Status:** ✅ Implementation complete, WASM rebuilt, ready for testing  
-**Bug Fixes:** Fixed parity ambiguity issue (Dec 23, 2024)  
-**New Features:** Discrete conversations, enhanced logging
+**Status:** ✅ Implementation complete  
+**Version:** 3.0.0 - Asymmetric Deterministic Aliases  
+**Features:** Discrete conversations (no-handshake mode), deterministic alias derivation
