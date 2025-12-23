@@ -30,7 +30,7 @@ export interface WalletStoreSendMessageArgs {
 export interface WalletStoreSendContextualMessageArgs {
   message: string;
   toAddress: Address;
-  myAlias: string;
+  aliasToSendTo: string; // The alias to include in the message (should be theirAlias)
   priorityFee?: PriorityFeeConfig;
 }
 
@@ -383,7 +383,7 @@ export const useWalletStore = create<WalletState>((set, get) => {
       message,
       toAddress,
       priorityFee,
-      myAlias,
+      aliasToSendTo,
     }) => {
       const state = get();
       if (!state.unlockedWallet || !state.accountService) {
@@ -391,14 +391,18 @@ export const useWalletStore = create<WalletState>((set, get) => {
       }
 
       try {
-        // Check if this is a handshake message
-        console.log("Sending protocol message to:", toAddress.toString());
+        console.log("[wallet.store] Sending message:", {
+          toAddress: toAddress.toString(),
+          aliasToSendTo,
+          note: "This alias will be included in the published message protocol string",
+        });
+
         const encryptedMessage = encrypt_message(toAddress.toString(), message);
 
         return await state.accountService.sendMessageWithContext({
           message: encryptedMessage.to_hex(),
           toAddress,
-          theirAlias: myAlias,
+          theirAlias: aliasToSendTo,
           priorityFee,
         });
       } catch (error) {
