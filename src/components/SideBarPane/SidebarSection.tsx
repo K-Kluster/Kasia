@@ -49,10 +49,6 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
     openModal("new-chat");
   };
 
-  const handleOffChainHandshake = () => {
-    openModal("offchain-handshake");
-  };
-
   const handleNewBroadcast = () => {
     openModal("new-broadcast");
   };
@@ -131,7 +127,6 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
                 broadcastEnabled={broadcastEnabled}
                 isBroadcastMode={isBroadcastMode}
                 onNewChat={handleNewChat}
-                onOffChainHandshake={handleOffChainHandshake}
                 onNewBroadcast={handleNewBroadcast}
               />
             </div>
@@ -143,7 +138,6 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
               broadcastEnabled={broadcastEnabled}
               isBroadcastMode={isBroadcastMode}
               onNewChat={handleNewChat}
-              onOffChainHandshake={handleOffChainHandshake}
               onNewBroadcast={handleNewBroadcast}
               collapsed={true}
             />

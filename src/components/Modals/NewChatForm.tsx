@@ -23,6 +23,7 @@ import {
   FeatureFlags,
 } from "../../store/featureflag.store";
 import { pasteFromClipboard } from "../../utils/clipboard";
+import { toast } from "../../utils/toast-helper";
 
 interface NewChatFormProps {
   onClose: () => void;
@@ -335,6 +336,11 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
           recipientInputValue
         );
       }
+
+      // Show success notification
+      toast.success(
+        "Discrete conversation started! You can now send messages without an on-chain handshake. \n\nNote: User will only receive messages if they've reciprocated with their own discrete conversation."
+      );
 
       onClose();
     } catch (error) {
