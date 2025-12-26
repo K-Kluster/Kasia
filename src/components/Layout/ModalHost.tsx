@@ -13,7 +13,6 @@ import { LoaderCircle } from "lucide-react";
 import { ImagePresenter } from "../Modals/ImagePresenter";
 import { BroadcastParticipantInfo } from "../Modals/BroadcastParticipantInfo";
 import { QrScannerModal } from "../Modals/QrScannerModal";
-import { OffChainHandshakeModal } from "../Modals/OffChainHandshakeModal";
 import { DeleteWalletModal } from "../Modals/DeleteWalletModal";
 import { useBroadcastStore } from "../../store/broadcast.store";
 import { KASPA_DONATION_ADDRESS } from "../../config/constants";
@@ -146,15 +145,6 @@ export const ModalHost = () => {
 
       {/* QR Scanner Modal */}
       {modals["qr-scanner"] && <QrScannerModal />}
-
-      {/* Offline Handshake Modal */}
-      {modals["offchain-handshake"] && (
-        <OffChainHandshakeModal
-          isOpen={modals["offchain-handshake"] || false}
-          onClose={() => closeModal("offchain-handshake")}
-          kaspaAddress={walletStore.address?.toString() || ""}
-        />
-      )}
 
       {/* Delete Wallet Modal */}
       {modals.delete && (

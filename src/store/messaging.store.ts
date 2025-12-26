@@ -1116,7 +1116,99 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const validatedPayload: HandshakePayload =
         manager.parseHandshakePayload(payload);
 
-      return await manager.processHandshake(senderAddress, validatedPayload);
+      const result = await manager.processHandshake(
+        senderAddress,
+        validatedPayload
+      );
+
+      // If the result indicates we should send an automatic response (e.g., for existing active conversations)
+      if (
+        result &&
+        typeof result === "object" &&
+        "shouldSendResponse" in result &&
+        "conversationId" in result
+      ) {
+        const typedResult = result as {
+          shouldSendResponse: boolean;
+          conversationId: string;
+        };
+        if (typedResult.shouldSendResponse) {
+          console.log(
+            "[processHandshake] Automatically sending handshake response for conversation:",
+            typedResult.conversationId
+          );
+          try {
+            // Send automatic response transaction
+            const walletStore = useWalletStore.getState();
+            const repositories = useDBStore.getState().repositories;
+
+            if (!walletStore.unlockedWallet?.password || !walletStore.address) {
+              console.error(
+                "[processHandshake] Cannot send automatic response - wallet not unlocked"
+              );
+              return result;
+            }
+
+            const conversation =
+              await repositories.conversationRepository.getConversation(
+                typedResult.conversationId
+              );
+            const contact = await repositories.contactRepository.getContact(
+              conversation.contactId
+            );
+
+            // Create handshake response (updates conversation status to active if needed)
+            await manager.createHandshakeResponse(conversation.id);
+
+            // Build handshake response payload
+            const handshakeResponsePayload: HandshakePayload = {
+              type: "handshake",
+              timestamp: Date.now(),
+              version: 1,
+              isResponse: true,
+            };
+
+            const payload = `${toHex("ciph_msg:1:handshake:")}${encrypt_message(contact.kaspaAddress, JSON.stringify(handshakeResponsePayload)).to_hex()}`;
+
+            // Send the handshake response transaction
+            const txId = await walletStore.sendTransaction({
+              payload,
+              toAddress: new Address(contact.kaspaAddress),
+              password: walletStore.unlockedWallet.password,
+              customAmount: kaspaToSompi("0.2"),
+            });
+
+            console.log(
+              "[processHandshake] Automatic handshake response sent, txId:",
+              txId
+            );
+
+            // Save handshake event
+            const eventToAdd: Handshake = {
+              __type: "handshake",
+              amount: 0.2,
+              contactId: contact.id,
+              conversationId: conversation.id,
+              content: "Automatic handshake response",
+              createdAt: new Date(),
+              fromMe: true,
+              id: `${walletStore.unlockedWallet.id}_${txId}`,
+              tenantId: walletStore.unlockedWallet.id,
+              transactionId: txId,
+              fee: 0,
+            };
+
+            await repositories.handshakeRepository.saveHandshake(eventToAdd);
+          } catch (error) {
+            console.error(
+              "[processHandshake] Failed to send automatic response:",
+              error
+            );
+          }
+        }
+      }
+
+      return result;
     },
     getActiveConversationsWithContacts: () => {
       const manager = g().conversationManager;

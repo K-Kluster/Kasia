@@ -317,6 +317,11 @@ export class ConversationManagerService {
           );
         }
 
+        // Track if conversation was already active before processing
+        const wasAlreadyActive =
+          existingConversationAndContactByAddress.conversation.status ===
+          "active";
+
         // if conversation was initiated by me, and not yet active, it becomes active.
         if (
           existingConversationAndContactByAddress.conversation.status !==
@@ -326,6 +331,9 @@ export class ConversationManagerService {
           (
             existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
           ).status = "active";
+          console.log(
+            "[processHandshake] Activated pending conversation that I initiated"
+          );
         }
 
         await this.repositories.conversationRepository.saveConversation(
@@ -335,6 +343,26 @@ export class ConversationManagerService {
           existingConversationAndContactByAddress.conversation,
           existingConversationAndContactByAddress.contact
         );
+
+        // If conversation was already active (e.g., from a discrete chat) AND this is NOT a response,
+        // we need to send a handshake response to acknowledge the sender's handshake and activate their conversation.
+        // This handles the case where:
+        // 1. User A and B had a discrete chat (both active)
+        // 2. User A deletes their conversation
+        // 3. User A initiates a new handshake (creates pending conversation)
+        // 4. User B receives handshake (already has active conversation)
+        // 5. User B needs to respond so User A's conversation becomes active
+        if (wasAlreadyActive && !payload.isResponse) {
+          console.log(
+            "[processHandshake] Existing active conversation received non-response handshake - caller should send automatic response"
+          );
+          return {
+            shouldSendResponse: true,
+            conversationId:
+              existingConversationAndContactByAddress.conversation.id,
+          };
+        }
+
         return;
       }
 
