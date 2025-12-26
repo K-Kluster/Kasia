@@ -21,7 +21,6 @@ export type ModalType =
   | "new-broadcast"
   | "broadcast-participant-info"
   | "qr-scanner"
-  | "offchain-handshake"
   | "donation";
 type Theme = "light" | "dark" | "system" | "custom";
 
