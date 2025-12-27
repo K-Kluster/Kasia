@@ -1261,6 +1261,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         throw new Error("Conversation manager not initialized");
       }
 
+      const repositories = useDBStore.getState().repositories;
+      const walletStore = useWalletStore.getState();
+
+      if (!walletStore.unlockedWallet) {
+        throw new Error("Wallet not unlocked");
+      }
+
       // Create discrete conversation (no handshake required)
       const { conversation, contact } =
         await manager.createDiscreteConversation(recipientAddress);
@@ -1274,6 +1281,43 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         conversation.myAlias,
         "theirAlias:",
         conversation.theirAlias
+      );
+
+      // Create an off-chain system message to mark the start of the discrete conversation
+      const systemMessage: Message = {
+        __type: "message",
+        id: `${walletStore.unlockedWallet.id}_discrete_start_${conversation.id}`,
+        conversationId: conversation.id,
+        contactId: contact.id,
+        content:
+          "Discrete chat initiated. Messages will only be received if the other party is monitoring your address (via their own discrete chat or an existing conversation).",
+        amount: 0,
+        fromMe: true,
+        createdAt: new Date(),
+        tenantId: walletStore.unlockedWallet.id,
+        transactionId: `discrete_start_${conversation.id}`,
+        fee: 0,
+      };
+
+      // Save the system message locally
+      await repositories.messageRepository.saveMessage(systemMessage);
+
+      console.log(
+        "[createDiscreteConversation] Created system message:",
+        systemMessage.id
+      );
+
+      // Create self-stash for discrete conversation to sync across devices
+      const selfStashTxId = await g().createSelfStash({
+        type: "initiation",
+        partnerAddress: recipientAddress,
+        ourAlias: conversation.myAlias,
+        theirAlias: conversation.theirAlias ?? undefined,
+      });
+
+      console.log(
+        "[createDiscreteConversation] Self-stash created:",
+        selfStashTxId
       );
 
       // Refresh the UI state to show the new conversation
