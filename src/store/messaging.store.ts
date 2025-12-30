@@ -143,7 +143,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     isFromMe: boolean
   ): boolean => {
     if (isFromMe) return true;
-    return Boolean(conversation.theirAlias) && conversation.status === "active";
+    // Allow incoming messages if:
+    // 1. Conversation is active, OR
+    // 2. Conversation was initiated by me (e.g., discrete chat) - I explicitly chose to communicate
+    return (
+      Boolean(conversation.theirAlias) &&
+      (conversation.status === "active" || conversation.initiatedByMe)
+    );
   };
 
   const _fetchHistoricalForConversation = async (
@@ -1307,18 +1313,35 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         systemMessage.id
       );
 
-      // Create self-stash for discrete conversation to sync across devices
-      const selfStashTxId = await g().createSelfStash({
-        type: "initiation",
-        partnerAddress: recipientAddress,
-        ourAlias: conversation.myAlias,
-        theirAlias: conversation.theirAlias ?? undefined,
-      });
+      // Optionally create self-stash for cross-device sync (requires minimal funds for network fees)
+      // Check if user has sufficient balance before attempting
+      const minFeeAmount = BigInt(100000); // ~0.001 KAS for network fees
+      const currentBalance = walletStore.balance;
 
-      console.log(
-        "[createDiscreteConversation] Self-stash created:",
-        selfStashTxId
-      );
+      if (currentBalance && currentBalance.mature >= minFeeAmount) {
+        try {
+          const selfStashTxId = await g().createSelfStash({
+            type: "initiation",
+            partnerAddress: recipientAddress,
+            ourAlias: conversation.myAlias,
+            theirAlias: conversation.theirAlias ?? undefined,
+          });
+
+          console.log(
+            "[createDiscreteConversation] Self-stash created for cross-device sync:",
+            selfStashTxId
+          );
+        } catch (error) {
+          console.warn(
+            "[createDiscreteConversation] Failed to create self-stash (conversation still works locally):",
+            error instanceof Error ? error.message : error
+          );
+        }
+      } else {
+        console.log(
+          "[createDiscreteConversation] Skipping self-stash - insufficient balance for network fees (conversation works locally)"
+        );
+      }
 
       // Refresh the UI state to show the new conversation
       await g().hydrateOneonOneConversations();
@@ -1593,12 +1616,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         throw new Error("Account service not available");
       }
 
-      // check if user has sufficient funds (0.2 KAS minimum)
-      const minAmount = BigInt(20000000);
+      // check if user has sufficient funds for network fees (not 0.2 KAS like handshakes)
+      const minFeeAmount = BigInt(100000); // ~0.001 KAS for network fees
       const currentBalance = walletStore.balance;
-      if (!currentBalance || currentBalance.mature < minAmount) {
+      if (!currentBalance || currentBalance.mature < minFeeAmount) {
         throw new Error(
-          "Insufficient funds. you need at least 0.2 KAS for self stash."
+          "Insufficient funds. You need at least ~0.001 KAS for network fees to create self-stash."
         );
       }
 
