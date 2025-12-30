@@ -306,14 +306,14 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateAndPrepareHandshake()) {
-      return;
-    }
-
-    // For discrete mode, skip confirmation and create directly
+    // For discrete mode, skip handshake validation and create directly
     if (discreteMode) {
       await createDiscreteConversation();
     } else {
+      // Only validate handshake for regular mode
+      if (!validateAndPrepareHandshake()) {
+        return;
+      }
       setShowConfirmation(true);
     }
   };
@@ -321,6 +321,23 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   // Create discrete conversation without handshake
   const createDiscreteConversation = async () => {
     setError(null);
+
+    // Basic validation for discrete mode
+    if (!knsRecipientAddress) {
+      setError("Please enter a valid Kaspa address");
+      return;
+    }
+
+    // Check if conversation already exists
+    const existingConversationWithContact = messageStore
+      .getConversationsWithContacts()
+      .find((oooc) => oooc.contact.kaspaAddress === knsRecipientAddress);
+
+    if (existingConversationWithContact) {
+      setError("You already have an active conversation with this address");
+      return;
+    }
+
     setIsLoading(true);
     try {
       await messageStore.createDiscreteConversation(knsRecipientAddress);
