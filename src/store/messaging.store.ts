@@ -1622,7 +1622,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       // check if user has sufficient funds for network fees (not 0.2 KAS like handshakes)
-      const minFeeAmount = BigInt(20000000); // ~0.001 KAS for network fees
+      const minFeeAmount = BigInt(20000000);
       const currentBalance = walletStore.balance;
       if (!currentBalance || currentBalance.mature < minFeeAmount) {
         throw new Error(
