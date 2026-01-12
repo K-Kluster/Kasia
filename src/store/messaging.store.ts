@@ -1316,7 +1316,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
       // Optionally create self-stash for cross-device sync (requires minimal funds for network fees)
       // Check if user has sufficient balance before attempting
-      const minFeeAmount = BigInt(100000); // ~0.001 KAS for network fees
+      const minFeeAmount = BigInt(20000000); // ~0.2 KAS for network fees
       const currentBalance = walletStore.balance;
 
       if (currentBalance && currentBalance.mature >= minFeeAmount) {
@@ -1626,7 +1626,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const currentBalance = walletStore.balance;
       if (!currentBalance || currentBalance.mature < minFeeAmount) {
         throw new Error(
-          "Insufficient funds. You need at least ~0.001 KAS for network fees to create self-stash."
+          "Insufficient funds. You need at least ~0.2 KAS for network fees to create self-stash."
         );
       }
 
