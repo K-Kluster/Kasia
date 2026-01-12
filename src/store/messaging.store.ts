@@ -20,6 +20,7 @@ import {
 } from "kaspa-wasm";
 import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
+import { toast } from "../utils/toast-helper";
 import {
   ConversationEvents,
   HandshakePayload,
@@ -1341,6 +1342,10 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         console.log(
           "[createDiscreteConversation] Skipping self-stash - insufficient balance for network fees (conversation works locally)"
         );
+        toast.warning(
+          "Chat created locally only. Insufficient balance for cross-device sync. Chat history won't be available on other devices.",
+          8000
+        );
       }
 
       // Refresh the UI state to show the new conversation
@@ -1617,7 +1622,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       // check if user has sufficient funds for network fees (not 0.2 KAS like handshakes)
-      const minFeeAmount = BigInt(100000); // ~0.001 KAS for network fees
+      const minFeeAmount = BigInt(20000000); // ~0.001 KAS for network fees
       const currentBalance = walletStore.balance;
       if (!currentBalance || currentBalance.mature < minFeeAmount) {
         throw new Error(
