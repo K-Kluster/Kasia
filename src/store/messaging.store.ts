@@ -18,6 +18,7 @@ import {
   encryptXChaCha20Poly1305,
   kaspaToSompi,
 } from "kaspa-wasm";
+import { MIN_NETWORK_FEE } from "../config/constants";
 import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
 import { toast } from "../utils/toast-helper";
@@ -1316,7 +1317,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
       // Optionally create self-stash for cross-device sync (requires minimal funds for network fees)
       // Check if user has sufficient balance before attempting
-      const minFeeAmount = BigInt(20000000); // ~0.2 KAS for network fees
+      const minFeeAmount = MIN_NETWORK_FEE;
       const currentBalance = walletStore.balance;
 
       if (currentBalance && currentBalance.mature >= minFeeAmount) {
@@ -1622,7 +1623,7 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       // check if user has sufficient funds for network fees (not 0.2 KAS like handshakes)
-      const minFeeAmount = BigInt(20000000);
+      const minFeeAmount = MIN_NETWORK_FEE;
       const currentBalance = walletStore.balance;
       if (!currentBalance || currentBalance.mature < minFeeAmount) {
         throw new Error(

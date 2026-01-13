@@ -5,7 +5,7 @@ import { Address } from "kaspa-wasm";
 import { toast } from "../../utils/toast-helper";
 import { unknownErrorToErrorLike } from "../../utils/errors";
 import { prepareFileForUpload } from "../../service/upload-file-service";
-import { MAX_PAYLOAD_SIZE } from "../../config/constants";
+import { MAX_PAYLOAD_SIZE, MIN_NETWORK_FEE } from "../../config/constants";
 import { KasiaTransaction, FeeState } from "../../types/all";
 import { FileData } from "../../store/repository/message.repository";
 import { PROTOCOL } from "../../config/protocol";
@@ -133,7 +133,7 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
         recipientAddress: recipient,
         createdAt: new Date(),
         content: `${PROTOCOL.prefix.hex}${PROTOCOL.headers.COMM.hex}${aliasToSendTo}:${decryptedContent}`,
-        amount: 20000000,
+        amount: Number(MIN_NETWORK_FEE),
         fee: feeState.value || 0,
         payload: "",
       };
