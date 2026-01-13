@@ -226,15 +226,25 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     [rpc]
   );
 
+  useEffect(() => {
+    if (discreteMode) {
+      setRecipientWarning(null);
+      setIsCheckingRecipient(false);
+    }
+  }, [discreteMode]);
+
   // Debounced recipient balance check (use knsRecipientAddress)
   useEffect(() => {
+    if (discreteMode) {
+      return;
+    }
     const timeoutId = setTimeout(() => {
       if (knsRecipientAddress) {
         checkRecipientBalance(knsRecipientAddress);
       }
     }, 1000);
     return () => clearTimeout(timeoutId);
-  }, [knsRecipientAddress, checkRecipientBalance]);
+  }, [knsRecipientAddress, checkRecipientBalance, discreteMode]);
 
   const handleAmountChange = (value: string) => {
     // Allow decimal numbers
@@ -554,12 +564,12 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
                 {knsError}
               </div>
             )}
-          {isCheckingRecipient && (
+          {!discreteMode && isCheckingRecipient && (
             <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
               Checking recipient balance...
             </div>
           )}
-          {recipientWarning && (
+          {!discreteMode && recipientWarning && (
             <div className="text-accent-yellow mt-2 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4]">
               {recipientWarning}
             </div>
