@@ -12,7 +12,7 @@ import clsx from "clsx";
 import { knsIntegrationService_getDomainResolution } from "../../service/integrations/kns-integration-service";
 import { unknownErrorToErrorLike } from "../../utils/errors";
 import { KaspaAddress } from "../KaspaAddress";
-import { Textarea } from "@headlessui/react";
+import { Textarea, Switch } from "@headlessui/react";
 import { Button } from "../Common/Button";
 import { StringCopy } from "../Common/StringCopy";
 import { Clipboard, QrCode, AlertTriangle } from "lucide-react";
@@ -492,7 +492,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     <>
       <h3 className="mb-5 text-base font-semibold">Start New Conversation</h3>
       <form onSubmit={handleSubmit}>
-        <div className={"mb-5"}>
+        <div className={"mb-3"}>
           <label
             className="mb-[5px] block text-[14px] font-bold"
             htmlFor="recipientAddress"
@@ -579,104 +579,151 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
         {/* Discrete Conversation Mode Toggle */}
         <div className="mb-5">
           <label className="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
+            <Switch
               checked={discreteMode}
-              onChange={(e) => setDiscreteMode(e.target.checked)}
+              onChange={setDiscreteMode}
               disabled={isLoading}
-              className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[var(--button-primary)] focus:ring-2 focus:ring-[var(--button-primary)]"
-            />
-            <span className="text-sm font-medium">
+              className={clsx(
+                "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
+                {
+                  "bg-kas-secondary": discreteMode,
+                  "bg-gray-300": !discreteMode,
+                },
+                isLoading && "cursor-not-allowed opacity-50"
+              )}
+            >
+              <span
+                className={clsx(
+                  "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                  {
+                    "translate-x-6": discreteMode,
+                    "translate-x-1": !discreteMode,
+                  }
+                )}
+              />
+            </Switch>
+            <span
+              className={clsx(
+                "text-sm font-medium",
+                discreteMode ? "text-text-primary" : "text-text-secondary"
+              )}
+            >
               Discrete Conversation (no handshake required)
             </span>
           </label>
           <p className="mt-2 text-xs text-[var(--text-secondary)]">
-            Start monitoring for messages immediately without sending an
-            on-chain handshake. Both parties can communicate using deterministic
-            aliases derived from your wallet addresses.
+            Add contact and establish secret without sending an on-chain
+            handshake.
+            {discreteMode && (
+              <>
+                {" "}
+                No transaction is sent, concealing your interaction. The other
+                party must also add you discretely for this to work.
+              </>
+            )}
           </p>
         </div>
 
-        <div className={clsx("mb-5", discreteMode && "opacity-50")}>
-          <label
-            className="mb-[5px] block text-[14px] font-bold"
-            htmlFor="handshakeAmount"
+        <div
+          className={clsx(
+            "transition-all duration-300 ease-in-out",
+            discreteMode
+              ? "max-h-0 overflow-hidden opacity-0"
+              : "mb-5 max-h-96 opacity-100"
+          )}
+        >
+          <div
+            className={clsx(
+              "transition-all duration-300 ease-in-out",
+              discreteMode
+                ? "mb-0 max-h-0 overflow-hidden opacity-0"
+                : "mb-[5px] max-h-10 opacity-100"
+            )}
           >
-            Handshake Amount (KAS)
-          </label>
-          <input
-            className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 text-base focus:ring-2 focus:outline-none disabled:cursor-not-allowed"
-            type="text"
-            id="handshakeAmount"
-            value={handshakeAmount}
-            onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="0.2"
-            disabled={discreteMode || isLoading}
-          />
-          <div className="mb-2.5 flex gap-2">
-            <button
-              type="button"
-              className={clsx(
-                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
-                {
-                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
-                    handshakeAmount === "0.2",
-                }
-              )}
-              style={{
-                color:
-                  handshakeAmount !== "0.2"
-                    ? "var(--button-primary)"
-                    : undefined,
-              }}
-              onClick={() => handleQuickAmount("0.2")}
-              disabled={discreteMode || isLoading}
+            <label
+              className="block text-[14px] font-bold"
+              htmlFor="handshakeAmount"
             >
-              0.2
-            </button>
-            <button
-              type="button"
-              className={clsx(
-                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
-                {
-                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
-                    handshakeAmount === "0.5",
-                }
-              )}
-              style={{
-                color:
-                  handshakeAmount !== "0.5"
-                    ? "var(--button-primary)"
-                    : undefined,
-              }}
-              onClick={() => handleQuickAmount("0.5")}
-              disabled={discreteMode || isLoading}
-            >
-              0.5
-            </button>
-            <button
-              type="button"
-              className={clsx(
-                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
-                {
-                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
-                    handshakeAmount === "1",
-                }
-              )}
-              style={{
-                color:
-                  handshakeAmount !== "1" ? "var(--button-primary)" : undefined,
-              }}
-              onClick={() => handleQuickAmount("1")}
-              disabled={discreteMode || isLoading}
-            >
-              1
-            </button>
+              Handshake Amount (KAS)
+            </label>
           </div>
-          <div className="mt-4 text-xs text-[var(--text-secondary)]">
-            Default: 0.2 KAS. Higher amounts help recipients respond even if
-            they have no KAS. This creates a better experience for newcomers to
-            Kasia.
+          <div>
+            <input
+              className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 text-base focus:ring-2 focus:outline-none disabled:cursor-not-allowed"
+              type="text"
+              id="handshakeAmount"
+              value={handshakeAmount}
+              onChange={(e) => handleAmountChange(e.target.value)}
+              placeholder="0.2"
+              disabled={discreteMode || isLoading}
+            />
+            <div className="mb-2.5 flex gap-2">
+              <button
+                type="button"
+                className={clsx(
+                  "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                  {
+                    "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                      handshakeAmount === "0.2",
+                  }
+                )}
+                style={{
+                  color:
+                    handshakeAmount !== "0.2"
+                      ? "var(--button-primary)"
+                      : undefined,
+                }}
+                onClick={() => handleQuickAmount("0.2")}
+                disabled={discreteMode || isLoading}
+              >
+                0.2
+              </button>
+              <button
+                type="button"
+                className={clsx(
+                  "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                  {
+                    "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                      handshakeAmount === "0.5",
+                  }
+                )}
+                style={{
+                  color:
+                    handshakeAmount !== "0.5"
+                      ? "var(--button-primary)"
+                      : undefined,
+                }}
+                onClick={() => handleQuickAmount("0.5")}
+                disabled={discreteMode || isLoading}
+              >
+                0.5
+              </button>
+              <button
+                type="button"
+                className={clsx(
+                  "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                  {
+                    "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                      handshakeAmount === "1",
+                  }
+                )}
+                style={{
+                  color:
+                    handshakeAmount !== "1"
+                      ? "var(--button-primary)"
+                      : undefined,
+                }}
+                onClick={() => handleQuickAmount("1")}
+                disabled={discreteMode || isLoading}
+              >
+                1
+              </button>
+            </div>
+            <div className="mt-4 text-xs text-[var(--text-secondary)]">
+              Default: 0.2 KAS. Higher amounts help recipients respond even if
+              they have no KAS. This creates a better experience for newcomers
+              to Kasia.
+            </div>
           </div>
         </div>
 
