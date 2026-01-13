@@ -10,6 +10,7 @@ import { Address } from "kaspa-wasm";
 import { toast } from "../utils/toast-helper";
 import { KasiaTransaction } from "../types/all";
 import { PROTOCOL } from "../config/protocol";
+import { MIN_NETWORK_FEE } from "../config/constants";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { XIcon } from "lucide-react";
 
@@ -163,10 +164,9 @@ export const SendPaymentPopup: FC<{
       return;
     }
 
-    // Check minimum amount (0.19 KAS dust limit)
-    const minAmount = kaspaToSompi("0.19");
-    if (amountSompi < minAmount!) {
-      toast.error("Amount must be greater than 0.19 KAS");
+    // Check minimum amount (0.2 KAS minimum)
+    if (amountSompi < MIN_NETWORK_FEE) {
+      toast.error("Amount must be greater than 0.2 KAS");
       return;
     }
 

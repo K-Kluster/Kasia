@@ -12,8 +12,9 @@ import {
   useFeatureFlagsStore,
   FeatureFlags,
 } from "../../store/featureflag.store";
+import { MIN_NETWORK_FEE } from "../../config/constants";
 
-const maxDustAmount = kaspaToSompi("0.19")!;
+const minAmount = MIN_NETWORK_FEE;
 
 export const WalletWithdrawal: FC = () => {
   const [withdrawAddress, setWithdrawAddress] = useState("");
@@ -67,8 +68,8 @@ export const WalletWithdrawal: FC = () => {
       }
 
       // Check if amount is too small
-      if (validatedAmountAsSompi < maxDustAmount) {
-        setAmountInputError("Amount must be greater than 0.19 KAS.");
+      if (validatedAmountAsSompi < minAmount) {
+        setAmountInputError("Amount must be greater than 0.2 KAS.");
         return;
       }
 

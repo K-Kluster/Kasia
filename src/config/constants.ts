@@ -53,6 +53,9 @@ export const DEFAULT_FEE_BUCKETS: FeeBucket[] = [
   },
 ];
 
+// Network fee constants
+export const MIN_NETWORK_FEE = BigInt(20000000); // ~0.2 KAS minimum network fee
+
 // message composer height constants
 export const MESSAGE_COMPOSER_MIN_HEIGHT = 47;
 export const MESSAGE_COMPOSER_MAX_ROWS = 3;
