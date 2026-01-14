@@ -1,35 +1,10 @@
 import { FC, useMemo, useState, useEffect, useRef } from "react";
-import { decodePayload } from "../../../utils/format";
 import { useMessagingStore } from "../../../store/messaging.store";
-import { AvatarHash } from "../../icons/AvatarHash";
+import { Avatar } from "./Avatar";
 import { PROTOCOL } from "../../../config/protocol";
 import clsx from "clsx";
 import { Contact } from "../../../store/repository/contact.repository";
-import { getFileTypeFromContent } from "../../../utils/parse-message";
-
-function getMessagePreview(content: string) {
-  // check if it's a file or image message
-  const fileType = getFileTypeFromContent(content);
-
-  if (fileType) {
-    try {
-      const parsed = JSON.parse(content);
-      return parsed.name || (fileType === "image" ? "Image" : "File");
-    } catch {
-      return fileType === "image" ? "Image" : "File";
-    }
-  }
-
-  // For regular messages, try to decode if it's encrypted
-  if (content.startsWith(PROTOCOL.prefix.string)) {
-    const decoded = decodePayload(content);
-    return decoded
-      ? decoded.slice(0, 40) + (decoded.length > 40 ? "..." : "")
-      : "Encrypted message";
-  }
-
-  return content.slice(0, 40) + (content.length > 40 ? "..." : "");
-}
+import { getMessagePreview } from "../../../utils/message-preview";
 
 export const ContactCard: FC<{
   contact: Contact;
@@ -155,35 +130,15 @@ export const ContactCard: FC<{
         title={displayName}
         onClick={() => onClick?.(contact)}
       >
-        <div className="relative h-8 w-8">
-          {/* hash */}
-          <AvatarHash
-            address={contact.kaspaAddress}
-            size={32}
-            selected={isSelected}
-            className={clsx(
-              { "opacity-80": !!avatarLetter },
-              showNewMsgAlert && "animate-spin opacity-90"
-            )}
-          />
-          {/* letter */}
-          {avatarLetter && (
-            <span
-              className={clsx(
-                "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                "pointer-events-none select-none",
-                "flex h-8 w-8 items-center justify-center",
-                "rounded-full text-sm leading-none font-bold tracking-wide text-[var(--text-primary)]/80"
-              )}
-            >
-              {avatarLetter}
-            </span>
-          )}
-          {/* ring hugging the avatar, only when selected */}
-          {isSelected && (
-            <div className="ring-kas-secondary pointer-events-none absolute inset-0 rounded-full ring-2" />
-          )}
-        </div>
+        <Avatar
+          address={contact.kaspaAddress}
+          size={32}
+          displayName={displayName}
+          isSelected={isSelected}
+          isGroup={false}
+          collapsed={true}
+          className={clsx(showNewMsgAlert && "animate-spin opacity-90")}
+        />
       </div>
     );
   }
@@ -212,31 +167,14 @@ export const ContactCard: FC<{
       )}
       <div className="flex items-center gap-3">
         {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          <div className="relative h-10 w-10">
-            <AvatarHash
-              address={contact.kaspaAddress}
-              size={40}
-              selected={isSelected}
-              className={clsx({ "opacity-80": !!avatarLetter })}
-            />
-            {avatarLetter && (
-              <span
-                className={clsx(
-                  "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
-                  "pointer-events-none select-none",
-                  "flex h-10 w-10 items-center justify-center",
-                  "rounded-full text-sm leading-none font-bold tracking-wide text-[var(--text-primary)]/80"
-                )}
-              >
-                {avatarLetter}
-              </span>
-            )}
-            {isSelected && (
-              <div className="ring-kas-secondary pointer-events-none absolute inset-0 animate-pulse rounded-full ring-2 blur-sm filter" />
-            )}
-          </div>
-        </div>
+        <Avatar
+          address={contact.kaspaAddress}
+          size={40}
+          displayName={displayName}
+          isSelected={isSelected}
+          isGroup={false}
+          collapsed={false}
+        />
 
         {/* Contact Info */}
         <div className="min-w-0 flex-1">

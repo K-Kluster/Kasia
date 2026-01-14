@@ -45,7 +45,7 @@ export const BroadcastMessagesList: FC<BroadcastMessagesListProps> = memo(
 
           // show date time stamp if:
           // - this is the first message of today
-          // - or, this is not the first message and there's a 5min+ gap
+          // - or, this is not the first message and there's a 30min+ gap
           // - or, this is the first message
           const showSeparator =
             isFirstToday ||
@@ -53,7 +53,7 @@ export const BroadcastMessagesList: FC<BroadcastMessagesListProps> = memo(
               previousMessage &&
               message.timestamp.getTime() -
                 previousMessage.timestamp.getTime() >
-                5 * 60 * 1000) ||
+                30 * 60 * 1000) ||
             (idx === 0 && !isToday(dateObj));
 
           // if there's a separator, treat as new group

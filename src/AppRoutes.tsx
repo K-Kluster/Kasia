@@ -90,6 +90,10 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({
               element={<DirectsContainer />}
             />
             <Route
+              path=":walletId/directs/group/:groupId"
+              element={<DirectsContainer />}
+            />
+            <Route
               path=":walletId/broadcasts"
               element={<BroadcastsContainer />}
             />

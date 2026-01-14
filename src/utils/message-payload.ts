@@ -1,13 +1,19 @@
 import { PROTOCOL } from "../config/protocol";
 import { hexToString } from "./format";
 import { ITransaction } from "wasm/kaspa";
-import { ExplorerTransaction } from "../types/transactions";
 
 export type ParsedKaspaMessagePayload = {
   type: string;
   alias?: string;
   scope?: string;
   encryptedHex: string;
+  // group message specific fields
+  groupId?: string;
+  epoch?: number;
+  senderId?: string;
+  senderPubKey?: string; // 33 bytes compressed secp256k1 hex
+  messageId?: string;
+  signature?: string;
 };
 
 /**
@@ -98,6 +104,25 @@ export function parseKaspaMessagePayload(
       encryptedHex = payloadWithoutPrefix.substr(
         PROTOCOL.headers.BROADCAST.hex.length + 2 + channelName.length * 2
       );
+    }
+  } else if (payloadWithoutPrefix.startsWith(PROTOCOL.headers.GCOMM.hex)) {
+    const payloadWithoutPrefixStr = hexToString(payloadWithoutPrefix);
+    const parts = payloadWithoutPrefixStr.split(":");
+
+    // 1:gcomm:group_id:epoch:sender_id:sender_pub:msg_id:ciphertext:sig
+    if (parts.length >= 9) {
+      type = PROTOCOL.headers.GCOMM.type;
+
+      return {
+        type,
+        encryptedHex: parts[7], // ciphertext
+        groupId: parts[2],
+        epoch: parseInt(parts[3], 10),
+        senderId: parts[4],
+        senderPubKey: parts[5], // 33 bytes compressed hex
+        messageId: parts[6],
+        signature: parts[8],
+      };
     }
   }
 

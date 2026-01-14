@@ -18,10 +18,13 @@ export type ModalType =
   | "contact-info-modal"
   | "image"
   | "new-chat"
+  | "new-group"
   | "new-broadcast"
   | "broadcast-participant-info"
+  | "group-participant-info"
   | "qr-scanner"
-  | "donation";
+  | "donation"
+  | "group-info";
 type Theme = "light" | "dark" | "system" | "custom";
 
 type UiState = {
@@ -64,6 +67,14 @@ type UiState = {
   // Delete wallet modal state
   pendingDeleteWalletId: string | null;
   setPendingDeleteWalletId: (id: string | null) => void;
+
+  // Group info modal state
+  groupInfoModalGroup:
+    | import("../store/repository/group.repository").Group
+    | null;
+  setGroupInfoModalGroup: (
+    group: import("../store/repository/group.repository").Group | null
+  ) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -223,4 +234,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   // Delete wallet state
   pendingDeleteWalletId: null,
   setPendingDeleteWalletId: (id) => set({ pendingDeleteWalletId: id }),
+
+  // Group info modal state
+  groupInfoModalGroup: null,
+  setGroupInfoModalGroup: (group) => set({ groupInfoModalGroup: group }),
 }));

@@ -23,12 +23,18 @@ import {
   FeatureFlags,
 } from "../../store/featureflag.store";
 import { pasteFromClipboard } from "../../utils/clipboard";
+import { NewGroupModal } from "./NewGroupModal";
+import { useDBStore } from "../../store/db.store";
 
 interface NewChatFormProps {
   onClose: () => void;
+  initialTab?: "chat" | "group";
 }
 
-export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
+export const NewChatForm: React.FC<NewChatFormProps> = ({
+  onClose,
+  initialTab = "chat",
+}) => {
   const [recipientInputValue, setRecipientInputValue] = useState("");
   const [resolvedRecipientAddress, setResolvedRecipientAddress] = useState<
     string | null
@@ -41,6 +47,8 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isCheckingRecipient, setIsCheckingRecipient] = useState(false);
   const [discreteMode, setDiscreteMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<"chat" | "group">(initialTab);
+  const [contactCount, setContactCount] = useState(0);
 
   // kns related
   const [isResolvingKns, setIsResolvingKns] = useState(false);
@@ -52,6 +60,7 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
   const walletStore = useWalletStore();
   const balance = useWalletStore((state) => state.balance);
   const rpc = useWalletStore((s) => s.rpc);
+  const { repositories } = useDBStore();
 
   const openModal = useUiStore((s) => s.openModal);
   const setQrScannerCallback = useUiStore((s) => s.setQrScannerCallback);
@@ -109,6 +118,22 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
+
+  // Load contact count
+  useEffect(() => {
+    if (repositories) {
+      repositories.contactRepository.getContacts().then((contacts) => {
+        setContactCount(contacts.length);
+      });
+    }
+  }, [repositories]);
+
+  // Ensure group tab is not active if user doesn't have enough contacts
+  useEffect(() => {
+    if (activeTab === "group" && contactCount < 2) {
+      setActiveTab("chat");
+    }
+  }, [contactCount, activeTab]);
 
   // KNS domain resolution effect
   useEffect(() => {
@@ -480,217 +505,272 @@ export const NewChatForm: React.FC<NewChatFormProps> = ({ onClose }) => {
 
   return (
     <>
-      <h3 className="mb-5 text-base font-semibold">Start New Conversation</h3>
-      <form onSubmit={handleSubmit}>
-        <div className={"mb-5"}>
-          <label
-            className="mb-[5px] block text-[14px] font-bold"
-            htmlFor="recipientAddress"
+      {/* Tab Navigation */}
+      <div className="mb-4">
+        <div className="flex border-b border-[var(--primary-border)]">
+          <button
+            onClick={() => setActiveTab("chat")}
+            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "chat"
+                ? "border-[var(--button-primary)] text-[var(--button-primary)]"
+                : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
           >
-            Recipient Address
-          </label>
-          <div className="relative">
-            <Textarea
-              ref={recipientInputRef}
-              className="bg-primary-bg border-primary-border w-full resize-none rounded-lg border p-2 pr-24 text-base text-[var(--text-primary)] placeholder-gray-400 focus:border-[var(--button-primary)]/80 focus:ring-2 focus:outline-none"
-              rows={3}
-              id="recipientAddress"
-              value={recipientInputValue}
-              onChange={(e) =>
-                setRecipientInputValue(e.target.value.toLowerCase())
-              }
-              placeholder="Kaspa address or KNS domain"
-              disabled={isLoading}
-              required
-              autoComplete="off"
-            />
-            <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
-              <button
-                type="button"
-                onClick={handlePaste}
-                className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border px-1.5 py-1 transition-colors"
-                title="Paste from clipboard"
-                disabled={isLoading}
+            New Chat
+          </button>
+          <button
+            onClick={() => contactCount >= 2 && setActiveTab("group")}
+            disabled={contactCount < 2}
+            title={
+              contactCount < 2
+                ? "You need at least 2 contacts to create a group"
+                : ""
+            }
+            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "group"
+                ? "border-[var(--button-primary)] text-[var(--button-primary)]"
+                : contactCount < 2
+                  ? "cursor-not-allowed border-transparent text-[var(--text-secondary)] opacity-50"
+                  : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            New Group
+          </button>
+        </div>
+      </div>
+
+      {activeTab === "chat" && (
+        <>
+          <h3 className="mb-5 text-base font-semibold">
+            Start New Conversation
+          </h3>
+          <form onSubmit={handleSubmit}>
+            <div className={"mb-5"}>
+              <label
+                className="mb-[5px] block text-[14px] font-bold"
+                htmlFor="recipientAddress"
               >
-                <Clipboard size={16} />
-              </button>
-              {cameraEnabled && (
+                Recipient Address
+              </label>
+              <div className="relative">
+                <Textarea
+                  ref={recipientInputRef}
+                  className="bg-primary-bg border-primary-border w-full resize-none rounded-lg border p-2 pr-24 text-base text-[var(--text-primary)] placeholder-gray-400 focus:border-[var(--button-primary)]/80 focus:ring-2 focus:outline-none"
+                  rows={3}
+                  id="recipientAddress"
+                  value={recipientInputValue}
+                  onChange={(e) =>
+                    setRecipientInputValue(e.target.value.toLowerCase())
+                  }
+                  placeholder="Kaspa address or KNS domain"
+                  disabled={isLoading}
+                  required
+                  autoComplete="off"
+                />
+                <div className="absolute right-2 bottom-2 flex gap-1 pb-1">
+                  <button
+                    type="button"
+                    onClick={handlePaste}
+                    className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border px-1.5 py-1 transition-colors"
+                    title="Paste from clipboard"
+                    disabled={isLoading}
+                  >
+                    <Clipboard size={16} />
+                  </button>
+                  {cameraEnabled && (
+                    <button
+                      type="button"
+                      className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border p-1"
+                      onClick={handleQrScan}
+                      title="Scan QR code"
+                      disabled={isLoading}
+                    >
+                      <QrCode className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {isResolvingKns &&
+                detectedRecipientInputValueFormat === "kns" && (
+                  <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
+                    Resolving KNS domain...
+                  </div>
+                )}
+              {resolvedRecipientAddress &&
+                detectedRecipientInputValueFormat === "kns" &&
+                !isResolvingKns &&
+                !knsError && (
+                  <div className="mt-2 mb-4 flex justify-start break-all">
+                    <KaspaAddress address={resolvedRecipientAddress} />
+                    <StringCopy
+                      text={resolvedRecipientAddress}
+                      alertText="Address Copied"
+                      titleText="Copy Address"
+                      className="ml-2"
+                    />
+                  </div>
+                )}
+              {knsError &&
+                detectedRecipientInputValueFormat === "kns" &&
+                !isResolvingKns && (
+                  <div className="mt-2 mb-4 rounded-lg border border-[rgba(255,68,68,0.3)] bg-[rgba(255,68,68,0.1)] p-2.5 text-sm text-[var(--accent-red)]">
+                    {knsError}
+                  </div>
+                )}
+              {isCheckingRecipient && (
+                <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
+                  Checking recipient balance...
+                </div>
+              )}
+              {recipientWarning && (
+                <div className="text-accent-yellow mt-2 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4]">
+                  {recipientWarning}
+                </div>
+              )}
+            </div>
+
+            {/* Discrete Conversation Mode Toggle */}
+            <div className="mb-5">
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={discreteMode}
+                  onChange={(e) => setDiscreteMode(e.target.checked)}
+                  disabled={isLoading}
+                  className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[var(--button-primary)] focus:ring-2 focus:ring-[var(--button-primary)]"
+                />
+                <span className="text-sm font-medium">
+                  Discrete Conversation (no handshake required)
+                </span>
+              </label>
+              <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                Start monitoring for messages immediately without sending an
+                on-chain handshake. Both parties can communicate using
+                deterministic aliases derived from your wallet addresses.
+              </p>
+            </div>
+
+            <div className={clsx("mb-5", discreteMode && "opacity-50")}>
+              <label
+                className="mb-[5px] block text-[14px] font-bold"
+                htmlFor="handshakeAmount"
+              >
+                Handshake Amount (KAS)
+              </label>
+              <input
+                className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 text-base focus:ring-2 focus:outline-none disabled:cursor-not-allowed"
+                type="text"
+                id="handshakeAmount"
+                value={handshakeAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                placeholder="0.2"
+                disabled={discreteMode || isLoading}
+              />
+              <div className="mb-2.5 flex gap-2">
                 <button
                   type="button"
-                  className="bg-kas-secondary/10 border-kas-secondary cursor-pointer rounded-lg border p-1"
-                  onClick={handleQrScan}
-                  title="Scan QR code"
-                  disabled={isLoading}
+                  className={clsx(
+                    "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                    {
+                      "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                        handshakeAmount === "0.2",
+                    }
+                  )}
+                  style={{
+                    color:
+                      handshakeAmount !== "0.2"
+                        ? "var(--button-primary)"
+                        : undefined,
+                  }}
+                  onClick={() => handleQuickAmount("0.2")}
+                  disabled={discreteMode || isLoading}
                 >
-                  <QrCode className="h-4 w-4" />
+                  0.2
                 </button>
-              )}
+                <button
+                  type="button"
+                  className={clsx(
+                    "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                    {
+                      "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                        handshakeAmount === "0.5",
+                    }
+                  )}
+                  style={{
+                    color:
+                      handshakeAmount !== "0.5"
+                        ? "var(--button-primary)"
+                        : undefined,
+                  }}
+                  onClick={() => handleQuickAmount("0.5")}
+                  disabled={discreteMode || isLoading}
+                >
+                  0.5
+                </button>
+                <button
+                  type="button"
+                  className={clsx(
+                    "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
+                    {
+                      "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
+                        handshakeAmount === "1",
+                    }
+                  )}
+                  style={{
+                    color:
+                      handshakeAmount !== "1"
+                        ? "var(--button-primary)"
+                        : undefined,
+                  }}
+                  onClick={() => handleQuickAmount("1")}
+                  disabled={discreteMode || isLoading}
+                >
+                  1
+                </button>
+              </div>
+              <div className="mt-4 text-xs text-[var(--text-secondary)]">
+                Default: 0.2 KAS. Higher amounts help recipients respond even if
+                they have no KAS. This creates a better experience for newcomers
+                to Kasia.
+              </div>
             </div>
-          </div>
 
-          {isResolvingKns && detectedRecipientInputValueFormat === "kns" && (
-            <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
-              Resolving KNS domain...
-            </div>
-          )}
-          {resolvedRecipientAddress &&
-            detectedRecipientInputValueFormat === "kns" &&
-            !isResolvingKns &&
-            !knsError && (
-              <div className="mt-2 mb-4 flex justify-start break-all">
-                <KaspaAddress address={resolvedRecipientAddress} />
-                <StringCopy
-                  text={resolvedRecipientAddress}
-                  alertText="Address Copied"
-                  titleText="Copy Address"
-                  className="ml-2"
-                />
+            {error && (
+              <div className="mb-4 rounded-lg border border-[rgba(255,68,68,0.3)] bg-[rgba(255,68,68,0.1)] p-2.5 text-sm text-[#ff4444]">
+                {error}
               </div>
             )}
-          {knsError &&
-            detectedRecipientInputValueFormat === "kns" &&
-            !isResolvingKns && (
-              <div className="mt-2 mb-4 rounded-lg border border-[rgba(255,68,68,0.3)] bg-[rgba(255,68,68,0.1)] p-2.5 text-sm text-[var(--accent-red)]">
-                {knsError}
-              </div>
-            )}
-          {isCheckingRecipient && (
-            <div className="font-italic mt-1.5 text-xs text-[rgba(255,255,255,0.6)]">
-              Checking recipient balance...
+
+            <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
+              <Button type="submit" disabled={isLoading} variant="primary">
+                {isLoading
+                  ? discreteMode
+                    ? "Creating..."
+                    : "Initiating..."
+                  : discreteMode
+                    ? "Start Discrete Chat"
+                    : "Start Chat"}
+              </Button>
+              <Button
+                onClick={onClose}
+                disabled={isLoading}
+                variant="secondary"
+              >
+                Cancel
+              </Button>
             </div>
-          )}
-          {recipientWarning && (
-            <div className="text-accent-yellow mt-2 rounded-2xl border border-yellow-400/30 bg-yellow-400/10 px-2.5 py-2 text-[13px] leading-[1.4]">
-              {recipientWarning}
-            </div>
-          )}
-        </div>
+          </form>
+        </>
+      )}
 
-        {/* Discrete Conversation Mode Toggle */}
-        <div className="mb-5">
-          <label className="flex cursor-pointer items-center gap-2">
-            <input
-              type="checkbox"
-              checked={discreteMode}
-              onChange={(e) => setDiscreteMode(e.target.checked)}
-              disabled={isLoading}
-              className="h-4 w-4 cursor-pointer rounded border-gray-300 text-[var(--button-primary)] focus:ring-2 focus:ring-[var(--button-primary)]"
-            />
-            <span className="text-sm font-medium">
-              Discrete Conversation (no handshake required)
-            </span>
-          </label>
-          <p className="mt-2 text-xs text-[var(--text-secondary)]">
-            Start monitoring for messages immediately without sending an
-            on-chain handshake. Both parties can communicate using deterministic
-            aliases derived from your wallet addresses.
-          </p>
-        </div>
-
-        <div className={clsx("mb-5", discreteMode && "opacity-50")}>
-          <label
-            className="mb-[5px] block text-[14px] font-bold"
-            htmlFor="handshakeAmount"
-          >
-            Handshake Amount (KAS)
-          </label>
-          <input
-            className="border-primary-border focus:ring-kas-secondary/80 bg-input-bg mb-2 box-border flex h-10 w-full items-center rounded-lg border px-3 py-2 text-base focus:ring-2 focus:outline-none disabled:cursor-not-allowed"
-            type="text"
-            id="handshakeAmount"
-            value={handshakeAmount}
-            onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="0.2"
-            disabled={discreteMode || isLoading}
-          />
-          <div className="mb-2.5 flex gap-2">
-            <button
-              type="button"
-              className={clsx(
-                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
-                {
-                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
-                    handshakeAmount === "0.2",
-                }
-              )}
-              style={{
-                color:
-                  handshakeAmount !== "0.2"
-                    ? "var(--button-primary)"
-                    : undefined,
-              }}
-              onClick={() => handleQuickAmount("0.2")}
-              disabled={discreteMode || isLoading}
-            >
-              0.2
-            </button>
-            <button
-              type="button"
-              className={clsx(
-                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
-                {
-                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
-                    handshakeAmount === "0.5",
-                }
-              )}
-              style={{
-                color:
-                  handshakeAmount !== "0.5"
-                    ? "var(--button-primary)"
-                    : undefined,
-              }}
-              onClick={() => handleQuickAmount("0.5")}
-              disabled={discreteMode || isLoading}
-            >
-              0.5
-            </button>
-            <button
-              type="button"
-              className={clsx(
-                "flex h-9 flex-1 cursor-pointer items-center justify-center rounded-3xl border border-[var(--button-primary)] bg-[var(--button-primary)]/20 px-2 py-1 text-sm font-medium transition-all duration-200 ease-in-out hover:-translate-y-px hover:border-[var(--button-primary)]/60 hover:bg-[var(--button-primary)]/30 disabled:transform-none disabled:cursor-not-allowed disabled:border-[var(--button-primary)]/20 disabled:bg-[var(--button-primary)]/10 disabled:text-[var(--button-primary)]/30",
-                {
-                  "border-[var(--button-primary)] !bg-[var(--button-primary)] text-[var(--text-primary)]":
-                    handshakeAmount === "1",
-                }
-              )}
-              style={{
-                color:
-                  handshakeAmount !== "1" ? "var(--button-primary)" : undefined,
-              }}
-              onClick={() => handleQuickAmount("1")}
-              disabled={discreteMode || isLoading}
-            >
-              1
-            </button>
-          </div>
-          <div className="mt-4 text-xs text-[var(--text-secondary)]">
-            Default: 0.2 KAS. Higher amounts help recipients respond even if
-            they have no KAS. This creates a better experience for newcomers to
-            Kasia.
-          </div>
-        </div>
-
-        {error && (
-          <div className="mb-4 rounded-lg border border-[rgba(255,68,68,0.3)] bg-[rgba(255,68,68,0.1)] p-2.5 text-sm text-[#ff4444]">
-            {error}
-          </div>
-        )}
-
-        <div className="flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
-          <Button type="submit" disabled={isLoading} variant="primary">
-            {isLoading
-              ? discreteMode
-                ? "Creating..."
-                : "Initiating..."
-              : discreteMode
-                ? "Start Discrete Chat"
-                : "Start Chat"}
-          </Button>
-          <Button onClick={onClose} disabled={isLoading} variant="secondary">
-            Cancel
-          </Button>
-        </div>
-      </form>
+      {activeTab === "group" && (
+        <NewGroupModal
+          isOpen={true}
+          onClose={() => setActiveTab("chat")}
+          onGroupCreated={onClose}
+        />
+      )}
     </>
   );
 };

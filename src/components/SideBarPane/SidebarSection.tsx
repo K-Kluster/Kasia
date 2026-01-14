@@ -1,5 +1,5 @@
 import { FC, useState } from "react";
-import { Menu, Search, X } from "lucide-react";
+import { Menu, Search, X, Users } from "lucide-react";
 import clsx from "clsx";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useUiStore } from "../../store/ui.store";
@@ -14,9 +14,11 @@ import { HoldablePlusButton } from "./HoldablePlusButton";
 
 interface SidebarSectionProps {
   onContactClicked: (contact: Contact) => void;
+  onGroupClicked: (groupId: string) => void;
   onModeChange: (isBroadcastMode: boolean) => void;
   openedRecipient: string | null;
   walletAddress: string | undefined;
+  walletId: string | undefined;
   mobileView: "contacts" | "messages";
   contactsCollapsed: boolean;
   setContactsCollapsed: (v: boolean) => void;
@@ -25,9 +27,11 @@ interface SidebarSectionProps {
 
 export const SidebarSection: FC<SidebarSectionProps> = ({
   onContactClicked,
+  onGroupClicked,
   onModeChange,
   openedRecipient,
   walletAddress,
+  walletId,
   mobileView,
   contactsCollapsed,
   setContactsCollapsed,
@@ -123,6 +127,7 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
                   shouldShow={broadcastEnabled && !showSearch}
                 />
               )}
+
               <HoldablePlusButton
                 broadcastEnabled={broadcastEnabled}
                 isBroadcastMode={isBroadcastMode}
@@ -132,8 +137,15 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
             </div>
           </div>
         ) : (
-          /* Plus button when collapsed */
-          <div className="flex w-full justify-center">
+          /* Buttons when collapsed */
+          <div className="flex w-full flex-col gap-2">
+            <button
+              onClick={() => openModal("new-group")}
+              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 transition-all hover:text-[var(--kas-primary)] focus:outline-none active:scale-90 active:opacity-80"
+              title="New Group"
+            >
+              <Users className="mx-auto h-6 w-6" />
+            </button>
             <HoldablePlusButton
               broadcastEnabled={broadcastEnabled}
               isBroadcastMode={isBroadcastMode}
@@ -157,6 +169,7 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
           <ContactList
             searchQuery={searchQuery}
             onContactClicked={onContactClicked}
+            onGroupClicked={onGroupClicked}
             openedRecipient={openedRecipient}
             contactsCollapsed={contactsCollapsed}
             setMobileView={setMobileView}

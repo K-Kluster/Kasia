@@ -1,4 +1,4 @@
-import { useRef, useState, DragEvent, useEffect } from "react";
+import { useRef, useState, DragEvent, useEffect, useMemo } from "react";
 import {
   useComposerSlice,
   useComposerStore,
@@ -16,6 +16,7 @@ import { SendPaymentPopup } from "../../../SendPaymentPopup";
 import { MessageInput } from "../Utilities/MessageInput";
 import { FeeDisplay } from "../Utilities/FeeDisplay";
 import { useMessagingStore } from "../../../../store/messaging.store";
+import { useGroupStore } from "../../../../store/group.store";
 import { useFeeEstimate } from "../../../../hooks/MessageComposer/useFeeEstimate";
 import { toast } from "../../../../utils/toast-helper";
 import { MAX_CHAT_INPUT_CHAR } from "../../../../config/constants";
@@ -26,49 +27,111 @@ import {
   FeatureFlags,
 } from "../../../../store/featureflag.store";
 
-export const DirectComposer = ({ recipient }: { recipient?: string }) => {
+interface DirectComposerProps {
+  recipient?: string;
+  groupId?: string;
+}
+
+export const DirectComposer = ({ recipient, groupId }: DirectComposerProps) => {
+  const isGroupMode = !!groupId;
+  const draftKey = groupId || recipient;
+
   const attachment = useComposerSlice((s) => s.attachment);
   const sendState = useComposerSlice((s) => s.sendState);
   const priority = useComposerSlice((s) => s.priority);
   const setDraft = useComposerStore((s) => s.setDraft);
+  const setAttachment = useComposerStore((s) => s.setAttachment);
 
   const draft = useComposerSlice((s) =>
-    recipient ? s.drafts[recipient] || "" : ""
+    draftKey ? s.drafts[draftKey] || "" : ""
   );
 
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const isMobile = useIsMobile();
+  const [isGroupSending, setIsGroupSending] = useState(false);
+
+  const groupStore = useGroupStore();
+  const selectedGroup = useMemo(
+    () => (isGroupMode ? groupStore.getGroupWithMessages(groupId) : null),
+    [isGroupMode, groupId, groupStore]
+  );
+
+  const groupRootEpoch = selectedGroup?.group.groupRootEpoch;
+  const blindingKey = selectedGroup?.group.blindingKey;
+  const currentEpoch = selectedGroup?.group.currentEpoch;
+  const deviceId = selectedGroup?.group.deviceId;
+  const nextMsgCounter = selectedGroup?.group.msgCounter ?? 0;
+
+  const groupOptions = useMemo(() => {
+    if (
+      !isGroupMode ||
+      !selectedGroup ||
+      !groupRootEpoch ||
+      !blindingKey ||
+      currentEpoch === undefined ||
+      !deviceId
+    )
+      return undefined;
+    return {
+      isGroup: true,
+      groupId,
+      groupRootEpoch,
+      blindingKey,
+      epoch: currentEpoch,
+      deviceId,
+      msgCounter: nextMsgCounter,
+    };
+  }, [
+    isGroupMode,
+    selectedGroup,
+    groupId,
+    groupRootEpoch,
+    blindingKey,
+    currentEpoch,
+    deviceId,
+    nextMsgCounter,
+  ]);
 
   const feeState = useFeeEstimate({
-    toSelf: true,
-    recipient,
+    toSelf: !isGroupMode, // Only use toSelf for non-group messages
+    recipient: isGroupMode ? undefined : recipient,
     draft,
     attachment,
+    groupOptions,
   });
-  const { send, attach } = useMessageComposer(feeState, recipient);
+
+  const { send, attach } = useMessageComposer(
+    feeState,
+    isGroupMode ? undefined : recipient,
+    isGroupMode
+  );
   const setPriority = useComposerStore((s) => s.setPriority);
   const setSendState = useComposerStore((s) => s.setSendState);
 
   const oooc = useMessagingStore((s) =>
-    recipient
+    recipient && !isGroupMode
       ? s.oneOnOneConversations.find(
           ({ contact }) => contact.kaspaAddress === recipient
         )
       : undefined
   );
   const conversation = oooc?.conversation;
-  const canCompose =
-    !!conversation &&
-    (conversation.status === "active" ||
-      (conversation.status === "pending" && conversation.initiatedByMe));
+
+  // for groups, always allow composing; for directs, check conversation status
+  const canCompose = isGroupMode
+    ? true
+    : !!conversation &&
+      (conversation.status === "active" ||
+        (conversation.status === "pending" && conversation.initiatedByMe));
 
   // Check if camera feature is enabled
   const { flags } = useFeatureFlagsStore();
   const cameraEnabled = flags[FeatureFlags.ENABLED_CAMERA];
 
   const guardReady = () => {
+    if (isGroupMode) return true;
     if (!canCompose) {
       toast.error("Accept or send handshake to chat");
       return false;
@@ -86,9 +149,9 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
         `Over max message length of ${MAX_CHAT_INPUT_CHAR}, message trimmed.`
       );
       const trimmedDraft = draft.slice(0, MAX_CHAT_INPUT_CHAR);
-      if (recipient) setDraft(recipient, trimmedDraft);
+      if (draftKey) setDraft(draftKey, trimmedDraft);
     }
-  }, [draft, recipient, setDraft]);
+  }, [draft, draftKey, setDraft]);
 
   const openFileDialog = () => {
     if (!guardReady()) return;
@@ -151,20 +214,47 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
 
   const handleDraftChange = (value: string) => {
     if (!guardReady()) return;
-    if (recipient) setDraft(recipient, value);
+    if (draftKey) setDraft(draftKey, value);
     if (sendState.status === "error") setSendState({ status: "idle" });
   };
 
   const onSend = async () => {
-    if (!guardReady() || !conversation || !canCompose) return;
+    if (!guardReady()) return;
 
-    // Guard: theirAlias must exist to send messages
+    // group mode - send to group
+    if (isGroupMode && groupId) {
+      if (!draft.trim() && !attachment) {
+        toast.error("Please enter a message or attach a file.");
+        return;
+      }
+      setIsGroupSending(true);
+      try {
+        await groupStore.sendGroupMessage(
+          groupId,
+          draft.trim(),
+          attachment || undefined
+        );
+        setDraft(groupId, "");
+        setAttachment(null);
+      } catch (error) {
+        console.error("Failed to send group message:", error);
+        toast.error("Failed to send message");
+      } finally {
+        setIsGroupSending(false);
+      }
+      return;
+    }
+
+    // direct mode - send to conversation
+    if (!conversation || !canCompose) return;
+
+    // guard: theirAlias must exist to send messages
     if (!conversation.theirAlias) {
       toast.error("Cannot send: recipient alias not yet established");
       return;
     }
 
-    // CRITICAL: Send to theirAlias (recipient monitors this), not myAlias!
+    // send to theirAlias (recipient monitors this), not myAlias
     console.log("[DirectComposer] Sending message:", {
       myAlias: conversation.myAlias,
       theirAlias: conversation.theirAlias,
@@ -214,11 +304,11 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
                           openFileDialog();
                           close();
                         }}
-                        className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5 active:scale-90 active:opacity-80"
+                        className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-white/5 active:scale-90 active:opacity-80 disabled:opacity-20"
                       >
                         <Paperclip className="m-2 size-5" />
                       </button>
-                      {recipient && (
+                      {recipient && !isGroupMode && (
                         <SendPaymentPopup
                           address={recipient}
                           onPaymentSent={close}
@@ -239,13 +329,17 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
             onSend={onSend}
             onPaste={handlePaste}
             placeholder={
-              canCompose
-                ? "Type your message..."
-                : isMobile
-                  ? "Handshake required..."
-                  : "Accept or send handshake to chat..."
+              isGroupMode
+                ? "Type a message to the group..."
+                : canCompose
+                  ? "Type your message..."
+                  : isMobile
+                    ? "Handshake required..."
+                    : "Accept or send handshake to chat..."
             }
-            disabled={sendState.status === "loading" || !canCompose}
+            disabled={
+              sendState.status === "loading" || isGroupSending || !canCompose
+            }
           />
 
           <div className="absolute right-2 flex h-full items-center gap-1">

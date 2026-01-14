@@ -22,8 +22,13 @@ import {
   BroadcastChannelRepository,
 } from "./broadcast-channel.repository";
 import { MetaRespository } from "./meta.repository";
+import { GroupRepository, DbGroup, GroupStatus } from "./group.repository";
+import {
+  GroupMessageRepository,
+  DbGroupMessage,
+} from "./group-message.repository";
 
-const CURRENT_DB_VERSION = 3;
+const CURRENT_DB_VERSION = 4;
 
 export class DBNotFoundException extends Error {
   constructor() {
@@ -109,6 +114,28 @@ export interface KasiaDBSchema extends DBSchema {
     value: DbBroadcastChannel;
     indexes: {
       "by-tenant-id": string;
+    };
+  };
+  groups: {
+    key: string;
+    value: DbGroup;
+    indexes: {
+      "by-tenant-id": string;
+      "by-tenant-id-status": [string, GroupStatus];
+      "by-tenant-id-last-activity": [string, Date];
+      "by-tenant-id-status-last-activity": [string, GroupStatus, Date];
+    };
+  };
+  groupMessages: {
+    key: string;
+    value: DbGroupMessage;
+    indexes: {
+      "by-id": string;
+      "by-tenant-id": string;
+      "by-tenant-id-group-id": [string, string];
+      "by-tenant-id-group-id-epoch": [string, string, number];
+      "by-tenant-id-created-at": [string, Date];
+      "by-tenant-id-group-id-created-at": [string, string, Date];
     };
   };
 }
@@ -259,10 +286,51 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         console.log("Database schema initiated to v1");
       }
 
-      if (oldVersion <= 3) {
-        // HERE next migration, first increase CURRENT_DB_VERSION then implement with oldVersion <= CURRENT_DB_VERSION - 1
-        // add more if branching for each next version
-        // BROADCAST CHANNELS
+      if (oldVersion < 4) {
+        // VERSION 4: Add groups and group messages tables
+        const groupsStore = db.createObjectStore("groups", {
+          keyPath: "id",
+        });
+        groupsStore.createIndex("by-tenant-id", "tenantId");
+        groupsStore.createIndex("by-tenant-id-status", ["tenantId", "status"]);
+        groupsStore.createIndex("by-tenant-id-last-activity", [
+          "tenantId",
+          "lastActivityAt",
+        ]);
+        groupsStore.createIndex("by-tenant-id-status-last-activity", [
+          "tenantId",
+          "status",
+          "lastActivityAt",
+        ]);
+
+        // GROUP MESSAGES
+        const groupMessagesStore = db.createObjectStore("groupMessages", {
+          keyPath: "id",
+        });
+        groupMessagesStore.createIndex("by-id", "id", { unique: true });
+        groupMessagesStore.createIndex("by-tenant-id", "tenantId");
+        groupMessagesStore.createIndex("by-tenant-id-group-id", [
+          "tenantId",
+          "groupId",
+        ]);
+        groupMessagesStore.createIndex("by-tenant-id-group-id-epoch", [
+          "tenantId",
+          "groupId",
+          "epoch",
+        ]);
+        groupMessagesStore.createIndex("by-tenant-id-created-at", [
+          "tenantId",
+          "createdAt",
+        ]);
+        groupMessagesStore.createIndex("by-tenant-id-group-id-created-at", [
+          "tenantId",
+          "groupId",
+          "createdAt",
+        ]);
+
+        console.log(
+          "Database schema updated to v4 (groups and group messages)"
+        );
       }
     },
   });
@@ -278,6 +346,8 @@ export class Repositories {
   public readonly savedHandshakeRepository: SavedHandhshakeRepository;
   public readonly broadcastChannelRepository: BroadcastChannelRepository;
   public readonly metadataRepository: MetaRespository;
+  public readonly groupRepository: GroupRepository;
+  public readonly groupMessageRepository: GroupMessageRepository;
 
   constructor(
     readonly db: KasiaDB,
@@ -329,6 +399,14 @@ export class Repositories {
     );
 
     this.metadataRepository = new MetaRespository(tenantId);
+
+    this.groupRepository = new GroupRepository(db, tenantId, walletPassword);
+
+    this.groupMessageRepository = new GroupMessageRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
   }
 
   async getKasiaEventsByConversationId(

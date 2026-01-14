@@ -1,11 +1,19 @@
 import { FC } from "react";
 import { ContactCard } from "./ContactCard";
+import { GroupCardInline } from "./GroupCard";
 import { useMessagingStore } from "../../../store/messaging.store";
+import { useGroupStore, GroupWithMessages } from "../../../store/group.store";
 import { Contact } from "../../../store/repository/contact.repository";
+
+// unified conversation item type
+type ConversationItem =
+  | { type: "contact"; contact: Contact; lastActivity: Date | null }
+  | { type: "group"; group: GroupWithMessages; lastActivity: Date | null };
 
 interface ContactListProps {
   searchQuery: string;
   onContactClicked: (contact: Contact) => void;
+  onGroupClicked: (groupId: string) => void;
   openedRecipient: string | null;
   contactsCollapsed: boolean;
   setMobileView: (v: "contacts" | "messages") => void;
@@ -15,99 +23,123 @@ interface ContactListProps {
 export const ContactList: FC<ContactListProps> = ({
   searchQuery,
   onContactClicked,
+  onGroupClicked,
   openedRecipient,
   contactsCollapsed,
   setMobileView,
   isMobile,
 }) => {
   const messageStore = useMessagingStore();
+  const groupStore = useGroupStore();
 
-  const contacts = messageStore.oneOnOneConversations.map(
-    (oooc) => oooc.contact
-  );
-  // order contacts by last activity (most recent first)
-  const orderedContacts = contacts.sort((a, b) => {
-    const conversationA = messageStore.oneOnOneConversations.find(
-      (oooc) => oooc.contact.id === a.id
-    );
-    const conversationB = messageStore.oneOnOneConversations.find(
-      (oooc) => oooc.contact.id === b.id
-    );
+  // build unified list of contacts and groups
+  const conversationItems: ConversationItem[] = [];
 
-    const lastEventA = conversationA?.events?.at(-1);
-    const lastEventB = conversationB?.events?.at(-1);
+  // add contacts
+  messageStore.oneOnOneConversations.forEach((oooc) => {
+    const lastEvent = oooc.events?.at(-1);
+    conversationItems.push({
+      type: "contact",
+      contact: oooc.contact,
+      lastActivity: lastEvent?.createdAt || null,
+    });
+  });
 
-    // if both have events, sort by most recent
-    if (lastEventA?.createdAt && lastEventB?.createdAt) {
-      return lastEventB.createdAt.getTime() - lastEventA.createdAt.getTime();
+  // add groups
+  groupStore.getAllGroupsWithMessages().forEach((gwm) => {
+    conversationItems.push({
+      type: "group",
+      group: gwm,
+      lastActivity: gwm.lastMessage?.createdAt || gwm.group.lastActivityAt,
+    });
+  });
+
+  // sort by last activity (most recent first)
+  const sortedItems = conversationItems.sort((a, b) => {
+    if (a.lastActivity && b.lastActivity) {
+      return b.lastActivity.getTime() - a.lastActivity.getTime();
     }
+    if (a.lastActivity && !b.lastActivity) return -1;
+    if (!a.lastActivity && b.lastActivity) return 1;
 
-    // if only one has events, prioritize the one with events
-    if (lastEventA?.createdAt && !lastEventB?.createdAt) return -1;
-    if (!lastEventA?.createdAt && lastEventB?.createdAt) return 1;
-
-    // if neither has events, sort alphabetically by name or address
-    const nameA = a.name?.trim() || a.kaspaAddress;
-    const nameB = b.name?.trim() || b.kaspaAddress;
+    // fallback: sort by name
+    const nameA =
+      a.type === "contact"
+        ? a.contact.name?.trim() || a.contact.kaspaAddress
+        : a.group.group.name;
+    const nameB =
+      b.type === "contact"
+        ? b.contact.name?.trim() || b.contact.kaspaAddress
+        : b.group.group.name;
     return nameA.localeCompare(nameB);
   });
 
-  // get contacts to display - filter them by search if needed
-  const contactsToDisplay = (() => {
-    if (!searchQuery.trim()) return orderedContacts;
+  // filter by search
+  const itemsToDisplay = (() => {
+    if (!searchQuery.trim()) return sortedItems;
     const q = searchQuery.toLowerCase();
-    const matches = new Map<string, Contact>();
 
-    // first, add all contacts that match by name or address
-    orderedContacts.forEach((contact) => {
-      if (
-        contact.name?.toLowerCase().includes(q) ||
-        contact.kaspaAddress.toLowerCase().includes(q)
-      ) {
-        matches.set(contact.kaspaAddress, contact);
+    return sortedItems.filter((item) => {
+      if (item.type === "contact") {
+        return (
+          item.contact.name?.toLowerCase().includes(q) ||
+          item.contact.kaspaAddress.toLowerCase().includes(q)
+        );
+      } else {
+        return item.group.group.name.toLowerCase().includes(q);
       }
     });
-
-    // then, add contacts from messages that match content
-    messageStore.oneOnOneConversations.forEach((oneOnOneConversation) => {
-      oneOnOneConversation.events.forEach((event) => {
-        if (event.content.includes(q)) {
-          // only add if not already present
-          if (!matches.has(oneOnOneConversation.contact.kaspaAddress)) {
-            matches.set(
-              oneOnOneConversation.contact.kaspaAddress,
-              oneOnOneConversation.contact
-            );
-          }
-        }
-      });
-    });
-
-    return [...matches.values()];
   })();
 
-  if (!contactsCollapsed && contactsToDisplay.length === 0) {
+  const selectedGroupId = groupStore.selectedGroupId;
+
+  if (!contactsCollapsed && itemsToDisplay.length === 0) {
     return (
       <div className="m-5 overflow-hidden rounded-[12px] bg-[rgba(0,0,0,0.2)] px-5 py-10 text-center text-[var(--text-secondary)] italic">
-        {searchQuery ? "No search results" : "No Contacts Yet"}
+        {searchQuery ? "No search results" : "No Conversations Yet"}
       </div>
     );
   }
 
   return (
     <>
-      {contactsToDisplay.map((contact, index) => (
-        <ContactCard
-          key={`contact-${contact.id}-${index}`}
-          contact={contact}
-          isSelected={contact.kaspaAddress === openedRecipient}
-          collapsed={contactsCollapsed}
-          onClick={() => {
-            onContactClicked(contact);
-            if (isMobile) setMobileView("messages");
-          }}
-        />
-      ))}
+      {itemsToDisplay.map((item, index) => {
+        if (item.type === "contact") {
+          return (
+            <ContactCard
+              key={`contact-${item.contact.id}-${index}`}
+              contact={item.contact}
+              isSelected={
+                item.contact.kaspaAddress === openedRecipient &&
+                !selectedGroupId
+              }
+              collapsed={contactsCollapsed}
+              onClick={() => {
+                // clear group selection when clicking a contact
+                groupStore.setSelectedGroup(null);
+                onContactClicked(item.contact);
+                if (isMobile) setMobileView("messages");
+              }}
+            />
+          );
+        } else {
+          // group card using existing ContactCard styling
+          return (
+            <GroupCardInline
+              key={`group-${item.group.group.id}-${index}`}
+              groupWithMessages={item.group}
+              isSelected={selectedGroupId === item.group.group.id}
+              collapsed={contactsCollapsed}
+              onClick={() => {
+                // clear contact selection when clicking a group
+                messageStore.setOpenedRecipient(null);
+                onGroupClicked(item.group.group.id);
+                if (isMobile) setMobileView("messages");
+              }}
+            />
+          );
+        }
+      })}
     </>
   );
 };

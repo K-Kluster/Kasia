@@ -9,12 +9,15 @@ import { WalletWithdrawal } from "../Modals/WalletWithdrawal";
 import { LockedSettingsModal } from "../Modals/LockedSettingsModal";
 import { ContactInfoModal } from "../Modals/ContactInfoModal";
 import { NewChatForm } from "../Modals/NewChatForm";
+import { GroupInfoModal } from "../Modals/GroupInfoModal";
 import { LoaderCircle } from "lucide-react";
 import { ImagePresenter } from "../Modals/ImagePresenter";
 import { BroadcastParticipantInfo } from "../Modals/BroadcastParticipantInfo";
+import { GroupParticipantInfo } from "../Modals/GroupParticipantInfo";
 import { QrScannerModal } from "../Modals/QrScannerModal";
 import { DeleteWalletModal } from "../Modals/DeleteWalletModal";
 import { useBroadcastStore } from "../../store/broadcast.store";
+import { useGroupStore } from "../../store/group.store";
 import { KASPA_DONATION_ADDRESS } from "../../config/constants";
 
 // This component subscribes to modal state and renders the appropriate modal
@@ -32,6 +35,14 @@ export const ModalHost = () => {
     (state) => state.selectedParticipant
   );
   const { setSelectedParticipant } = useBroadcastStore();
+  const groupParticipant = useGroupStore(
+    (state) => state.selectedGroupParticipant
+  );
+  const { setSelectedGroupParticipant } = useGroupStore();
+  const groupInfoModalGroup = useUiStore((state) => state.groupInfoModalGroup);
+  const setGroupInfoModalGroup = useUiStore(
+    (state) => state.setGroupInfoModalGroup
+  );
 
   return (
     <>
@@ -113,7 +124,20 @@ export const ModalHost = () => {
       {/* New Chat Form Modal */}
       {modals["new-chat"] && (
         <Modal onClose={() => closeModal("new-chat")}>
-          <NewChatForm onClose={() => closeModal("new-chat")} />
+          <NewChatForm
+            onClose={() => closeModal("new-chat")}
+            initialTab="chat"
+          />
+        </Modal>
+      )}
+
+      {/* New Group Modal */}
+      {modals["new-group"] && (
+        <Modal onClose={() => closeModal("new-group")}>
+          <NewChatForm
+            onClose={() => closeModal("new-group")}
+            initialTab="group"
+          />
         </Modal>
       )}
 
@@ -143,6 +167,26 @@ export const ModalHost = () => {
         </Modal>
       )}
 
+      {/* Group Participant Info Modal */}
+      {modals["group-participant-info"] && groupParticipant && (
+        <Modal
+          onClose={() => {
+            closeModal("group-participant-info");
+            setSelectedGroupParticipant(null);
+          }}
+        >
+          <GroupParticipantInfo
+            address={groupParticipant.address}
+            nickname={groupParticipant.nickname}
+            isAdmin={groupParticipant.isAdmin}
+            onClose={() => {
+              closeModal("group-participant-info");
+              setSelectedGroupParticipant(null);
+            }}
+          />
+        </Modal>
+      )}
+
       {/* QR Scanner Modal */}
       {modals["qr-scanner"] && <QrScannerModal />}
 
@@ -152,6 +196,25 @@ export const ModalHost = () => {
           isOpen={modals.delete || false}
           onClose={() => closeModal("delete")}
         />
+      )}
+
+      {/* Group Info Modal */}
+      {modals["group-info"] && groupInfoModalGroup && (
+        <Modal
+          onClose={() => {
+            closeModal("group-info");
+            setGroupInfoModalGroup(null);
+          }}
+        >
+          <GroupInfoModal
+            group={groupInfoModalGroup}
+            isOpen={true}
+            onClose={() => {
+              closeModal("group-info");
+              setGroupInfoModalGroup(null);
+            }}
+          />
+        </Modal>
       )}
     </>
   );

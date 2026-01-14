@@ -126,6 +126,24 @@ type WalletState = {
     priorityFee?: PriorityFeeConfig
   ) => Promise<GeneratorSummary>;
 
+  estimateSendGroupMessageFees: (
+    groupId: string,
+    groupRootEpoch: string,
+    blindingKey: string,
+    epoch: number,
+    deviceId: string,
+    msgCounter: number,
+    message: string,
+    attachment?: {
+      type: string;
+      name: string;
+      mimeType: string;
+      content: string;
+      size: number;
+    },
+    priorityFee?: PriorityFeeConfig
+  ) => Promise<GeneratorSummary>;
+
   // Actions
   setSelectedNetwork: (network: NetworkType) => void;
   setRpc: (client: RpcClient | null) => void;
@@ -365,6 +383,41 @@ export const useWalletStore = create<WalletState>((set, get) => {
         toAddress,
         priorityFee,
         channelName,
+      });
+    },
+
+    estimateSendGroupMessageFees: async (
+      groupId: string,
+      groupRootEpoch: string,
+      blindingKey: string,
+      epoch: number,
+      deviceId: string,
+      msgCounter: number,
+      message: string,
+      attachment?: {
+        type: string;
+        name: string;
+        mimeType: string;
+        content: string;
+        size: number;
+      },
+      priorityFee?: PriorityFeeConfig
+    ) => {
+      const state = get();
+      if (!state.unlockedWallet || !state.accountService) {
+        throw new Error("Wallet not unlocked or account service not running");
+      }
+
+      return state.accountService.estimateSendGroupMessageFees({
+        groupId,
+        groupRootEpoch,
+        blindingKey,
+        epoch,
+        deviceId,
+        msgCounter,
+        message,
+        attachment,
+        priorityFee,
       });
     },
     sendTransaction: async (args) => {

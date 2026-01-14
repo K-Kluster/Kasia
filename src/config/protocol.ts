@@ -4,7 +4,10 @@ type Kind =
   | "comm"
   | "payment"
   | "self_stash"
-  | "bcast";
+  | "bcast"
+  | "gcomm"
+  | "gctl_root"
+  | "gctl_epoch";
 type Prefix = { type: Kind; string: string; hex: string };
 
 export const VERSION = "1";
@@ -36,5 +39,8 @@ export const PROTOCOL = {
     PAYMENT: mk("payment"),
     SELF_STASH: mk("self_stash"),
     BROADCAST: mk("bcast"),
+    GCOMM: mk("gcomm"),
+    GCTL_ROOT: mk("gctl_root"),
+    GCTL_EPOCH: mk("gctl_epoch"),
   },
 } as const;

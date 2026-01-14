@@ -471,6 +471,7 @@ dependencies = [
  "kaspa-addresses",
  "kaspa-wallet-keys",
  "kaspa-wrpc-client",
+ "rand 0.8.5",
  "secp256k1",
  "sha2",
  "uuid 1.16.0",

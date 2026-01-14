@@ -7,13 +7,19 @@ import { useMessagingStore } from "../store/messaging.store";
 
 export const BroadcastsContainer: FC = () => {
   const navigate = useNavigate();
-  const { walletId, contactId, channelId, isCurrentlyInBroadcastMode } =
-    useMessengerRouting();
+  const {
+    walletId,
+    contactId,
+    channelId,
+    groupId,
+    isCurrentlyInBroadcastMode,
+  } = useMessengerRouting();
   const messageStore = useMessagingStore();
 
   const { mobileView, setMobileView, isMobile } = useMobileViewManager(
     contactId,
     channelId,
+    groupId,
     isCurrentlyInBroadcastMode,
     messageStore.isLoaded
   );

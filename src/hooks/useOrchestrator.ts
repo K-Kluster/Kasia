@@ -10,6 +10,7 @@ import { useLiveStore } from "../store/live.store";
 import { useBroadcastStore } from "../store/broadcast.store";
 import { useFeatureFlagsStore, FeatureFlags } from "../store/featureflag.store";
 import { getEffectiveIndexerUrl } from "../utils/indexer-settings";
+import { useGroupStore } from "../store/group.store";
 
 export type ConnectOpts = {
   networkType?: NetworkType;
@@ -124,6 +125,19 @@ export const useOrchestrator = () => {
     });
 
     await messagingStore.load(receivedAddressString);
+
+    // load group store before starting live store so group messages can be processed
+    const groupStore = useGroupStore.getState();
+    const { conversationManager } = useMessagingStore.getState();
+    if (unlockedWallet && conversationManager && receivedAddressString) {
+      if (!groupStore.isLoaded) {
+        await groupStore.load(
+          receivedAddressString,
+          unlockedWallet,
+          conversationManager
+        );
+      }
+    }
 
     // load broadcast channels async so we can start processing them straight away
     const isBroadcastEnabled =

@@ -17,3 +17,4 @@ export { MessageContentRouter } from "./Generator/MessageContentRouter";
 // utils
 export { generateBubbleClasses } from "./Utils/BubbleClassGenerator";
 export { generateAddressColor } from "./Utils/bubble-color-generator";
+export { MessageBubble } from "./MessageBubble";

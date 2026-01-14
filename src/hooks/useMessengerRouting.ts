@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router";
 import { useMessagingStore } from "../store/messaging.store";
 import { useWalletStore } from "../store/wallet.store";
 import { useBroadcastStore } from "../store/broadcast.store";
+import { useGroupStore } from "../store/group.store";
 import { Contact } from "../store/repository/contact.repository";
 
 // this is used to route between the modes (contacts and directs)
@@ -11,7 +12,7 @@ export const useMessengerRouting = () => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { walletId, contactId, channelId } = params;
+  const { walletId, contactId, channelId, groupId } = params;
 
   const messageStore = useMessagingStore();
   const walletStore = useWalletStore();
@@ -69,6 +70,16 @@ export const useMessengerRouting = () => {
     messageStore,
     walletStore.unlockedWallet?.id,
   ]);
+
+  // effect to sync selected group with url
+  useEffect(() => {
+    const { setSelectedGroup, selectedGroupId } = useGroupStore.getState();
+    if (groupId && groupId !== selectedGroupId) {
+      setSelectedGroup(groupId);
+    } else if (!groupId && selectedGroupId) {
+      setSelectedGroup(null);
+    }
+  }, [groupId]);
 
   // effect to sync selected channel with url
   useEffect(() => {
@@ -154,6 +165,11 @@ export const useMessengerRouting = () => {
     navigate(`/${walletId}/directs/${contact.id}`);
   };
 
+  const onGroupClicked = (groupId: string) => {
+    // navigate to the group's url
+    navigate(`/${walletId}/directs/group/${groupId}`);
+  };
+
   const onModeChange = (isBroadcastMode: boolean) => {
     setIsBroadcastMode(isBroadcastMode);
 
@@ -168,10 +184,12 @@ export const useMessengerRouting = () => {
     walletId,
     contactId,
     channelId,
+    groupId,
     contactAddress,
     channelName,
     isCurrentlyInBroadcastMode,
     onContactClicked,
+    onGroupClicked,
     onModeChange,
   };
 };

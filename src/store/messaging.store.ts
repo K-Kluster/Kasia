@@ -49,7 +49,12 @@ import {
   importData,
 } from "../service/import-export-service";
 import { useNetworkStore } from "./network.store";
+import { useGroupStore } from "./group.store";
 import { historicalLoader_loadSendAndReceivedHandshake } from "../utils/historical-loader";
+import type {
+  GroupControlPayload,
+  GroupEpochPayload,
+} from "../service/group-manager-service";
 
 interface MessagingState {
   isLoaded: boolean;
@@ -151,6 +156,114 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       Boolean(conversation.theirAlias) &&
       (conversation.status === "active" || conversation.initiatedByMe)
     );
+  };
+
+  const _handleGroupControlMessage = async (
+    decryptedContent: string,
+    senderAddress: string,
+    options?: { logSuccess?: boolean; swallowErrors?: boolean }
+  ): Promise<boolean> => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(decryptedContent);
+    } catch {
+      return false;
+    }
+
+    const isGroupControlPayload = (
+      value: unknown
+    ): value is GroupControlPayload => {
+      if (!value || typeof value !== "object") return false;
+      const payload = value as Partial<GroupControlPayload>;
+      return (
+        payload.type === "gctl_root" &&
+        typeof payload.v === "number" &&
+        typeof payload.group_id === "string" &&
+        typeof payload.epoch === "number" &&
+        typeof payload.group_root_epoch === "string" &&
+        typeof payload.blinding_key === "string" &&
+        typeof payload.admin_signing_pub === "string"
+      );
+    };
+
+    const isGroupEpochPayload = (
+      value: unknown
+    ): value is GroupEpochPayload => {
+      if (!value || typeof value !== "object") return false;
+      const payload = value as Partial<GroupEpochPayload>;
+      return (
+        payload.type === "gctl_epoch" &&
+        typeof payload.v === "number" &&
+        typeof payload.group_id === "string" &&
+        typeof payload.epoch === "number" &&
+        (payload.reason === "add" ||
+          payload.reason === "remove" ||
+          payload.reason === "rotate")
+      );
+    };
+
+    if (!isGroupControlPayload(parsed) && !isGroupEpochPayload(parsed)) {
+      return false;
+    }
+
+    const groupStore = useGroupStore.getState();
+
+    const processRoot = async (
+      payload: GroupControlPayload
+    ): Promise<boolean> => {
+      if (!groupStore.processRootDistribution) return false;
+      await groupStore.processRootDistribution(payload, senderAddress);
+      return true;
+    };
+
+    const processEpoch = async (
+      payload: GroupEpochPayload
+    ): Promise<boolean> => {
+      if (!groupStore.processEpochChange) return false;
+      await groupStore.processEpochChange(payload, senderAddress);
+      return true;
+    };
+
+    const isRoot =
+      (parsed as GroupControlPayload | GroupEpochPayload).type === "gctl_root";
+    const run = isRoot
+      ? () => processRoot(parsed as GroupControlPayload)
+      : () => processEpoch(parsed as GroupEpochPayload);
+
+    if (options?.swallowErrors) {
+      try {
+        const processed = await run();
+        if (processed && options?.logSuccess) {
+          console.log(
+            isRoot
+              ? `Processed group root distribution from ${senderAddress}`
+              : `Processed group epoch change from ${senderAddress}`
+          );
+        }
+      } catch (error) {
+        console.error(
+          isRoot
+            ? "Error processing root distribution:"
+            : "Error processing epoch change:",
+          error
+        );
+      }
+      return true;
+    }
+
+    try {
+      const processed = await run();
+      if (processed && options?.logSuccess) {
+        console.log(
+          isRoot
+            ? `Processed group root distribution from ${senderAddress}`
+            : `Processed group epoch change from ${senderAddress}`
+        );
+      }
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const _fetchHistoricalForConversation = async (
@@ -753,10 +866,38 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             continue;
           }
 
-          const existingConversationWithContactIndex =
+          let existingConversationWithContactIndex =
             state.oneOnOneConversations.findIndex(
               (c) => c.contact.kaspaAddress === participantAddress
             );
+
+          // if conversation doesn't exist but this is a COMM message for us (alias matches),
+          // auto-create a discrete conversation (this happens when someone sends us a message
+          // before we've created a conversation with them)
+          if (
+            existingConversationWithContactIndex === -1 &&
+            transaction.content.startsWith(PROTOCOL.prefix.hex) &&
+            transaction.content.includes(PROTOCOL.headers.COMM.hex) &&
+            !isFromMe
+          ) {
+            console.log(
+              `Auto-creating discrete conversation with ${participantAddress} after receiving COMM message`
+            );
+            try {
+              await g().createDiscreteConversation(participantAddress);
+              // refresh state to get the new conversation
+              existingConversationWithContactIndex =
+                g().oneOnOneConversations.findIndex(
+                  (c) => c.contact.kaspaAddress === participantAddress
+                );
+            } catch (error) {
+              console.error(
+                "Failed to auto-create discrete conversation:",
+                error
+              );
+              // continue - we'll throw the error below
+            }
+          }
 
           if (existingConversationWithContactIndex === -1) {
             throw new Error("Conversation not found, ignoring message");
@@ -835,6 +976,16 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             const decryptedContent = transaction.content.substring(
               transaction.content.indexOf(":") + 1
             );
+
+            // check if this is a group control message - don't store these as regular messages
+            const handledGroupControl = await _handleGroupControlMessage(
+              decryptedContent,
+              transaction.senderAddress,
+              { swallowErrors: true }
+            );
+            if (handledGroupControl) {
+              continue;
+            }
 
             const message: Message = {
               __type: "message",
@@ -1554,6 +1705,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     async ingestRawResolvedKasiaTransaction(tx) {
       // note: ideally we wouldn't have "too much" cross-store dependency
       // or at least in a determined way that would prevent bi-directional dependencies
+
+      // skip group messages - they're handled separately in block-processor-service
+      if (tx.parsedPayload.type === "gcomm") {
+        return;
+      }
+
       const unlockedWallet = useWalletStore.getState().unlockedWallet;
 
       if (!unlockedWallet) {
@@ -1564,10 +1721,38 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
       const privateKey = WalletStorageService.getPrivateKey(unlockedWallet);
 
-      const decryptedContent = decrypt_message(
-        new EncryptedMessage(tx.parsedPayload.encryptedHex),
-        new PrivateKey(privateKey.toString())
-      );
+      let decryptedContent: string;
+      try {
+        decryptedContent = decrypt_message(
+          new EncryptedMessage(tx.parsedPayload.encryptedHex),
+          new PrivateKey(privateKey.toString())
+        );
+      } catch (error) {
+        // decryption failed - this could happen if:
+        // 1. the message is corrupted
+        // 2. we don't have the right key (conversation not properly set up)
+        // 3. it's a message we're not meant to decrypt
+        // 4. for group root distribution: the 1-on-1 conversation might not be established yet
+        console.warn(
+          `Failed to decrypt message from ${tx.senderAddressString} (tx: ${tx.id}, type: ${tx.parsedPayload.type}):`,
+          error
+        );
+        // skip processing this transaction
+        return;
+      }
+
+      // check if this is a group control message
+      if (tx.parsedPayload.type === "comm") {
+        const handledGroupControl = await _handleGroupControlMessage(
+          decryptedContent,
+          tx.senderAddressString,
+          { logSuccess: true }
+        );
+        if (handledGroupControl) {
+          // don't process as regular COMM message
+          return;
+        }
+      }
       // this hack is necessary because we have inconsistencies between data parsed at historical level
       // , at live level (here is live level), and when client is the creator of the event
       // so be "re-build" it like the other places, ideally this shouldn't be necessary
@@ -1591,7 +1776,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         transactionId: tx.id,
         senderAddress: tx.senderAddressString,
         recipientAddress: tx.recipientAddressString,
-        createdAt: new Date(Number(tx.header.timestamp)),
+        createdAt: new Date(
+          typeof tx.header.timestamp === "bigint"
+            ? Number(tx.header.timestamp)
+            : typeof tx.header.timestamp === "string"
+              ? parseInt(tx.header.timestamp, 10)
+              : Number(tx.header.timestamp)
+        ),
         // TODO: gas only is additional fees and not base fees based on mass?
         fee: 0, // Number(tx.transaction.gas),
         content: hackedContent,

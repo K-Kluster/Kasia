@@ -19,11 +19,22 @@ import { TransactionId } from "../types/transactions";
 import { useMessagingStore } from "../store/messaging.store";
 import { PROTOCOL } from "../config/protocol";
 import { PLACEHOLDER_ALIAS } from "../config/constants";
-import { hexToBytes, getEncoder } from "../utils/payload-encoding";
+import { hexToBytes, bytesToHex, getEncoder } from "../utils/payload-encoding";
 import { WalletStorageService } from "./wallet-storage-service";
 import { TransactionGeneratorService } from "./transaction-generator";
 import { MAX_TX_FEE } from "../config/constants";
 import { ensureAddressPrefix } from "../utils/network";
+import {
+  derive_sender_key,
+  derive_sender_nonce_key,
+  derive_sender_id,
+  derive_blinded_group_id,
+  build_msg_id,
+  build_group_aad,
+  group_encrypt,
+  sign_message,
+  get_xonly_pubkey,
+} from "cipher";
 
 // strictly typed events
 type AccountServiceEvents = {
@@ -57,6 +68,24 @@ type EstimateSendBroadcastFeesArgs = EstimateSendFeesArgs & {
   channelName: string;
 };
 
+type EstimateSendGroupMessageFeesArgs = {
+  groupId: string;
+  groupRootEpoch: string;
+  blindingKey: string;
+  epoch: number;
+  deviceId: string;
+  msgCounter: number;
+  message: string;
+  attachment?: {
+    type: string;
+    name: string;
+    mimeType: string;
+    content: string;
+    size: number;
+  };
+  priorityFee?: PriorityFeeConfig;
+};
+
 type SendMessageWithContextArgs = {
   toAddress: Address;
   message: string;
@@ -83,6 +112,24 @@ type CreateBroadcastTransactionArgs = {
   channelName: string;
   message: string;
   priorityFee?: PriorityFeeConfig; // Add priority fee support
+};
+
+type SendGroupMessageArgs = {
+  groupId: string;
+  groupRootEpoch: string; // 32 bytes hex - derived by admin, distributed to members
+  blindingKey: string; // 32 bytes hex - for deriving per-user blinded group ID
+  epoch: number;
+  deviceId: string; // 16 bytes hex - persistent per device
+  msgCounter: number; // monotonic counter per (group_id, epoch, device_id)
+  message: string;
+  attachment?: {
+    type: string;
+    name: string;
+    mimeType: string;
+    content: string;
+    size: number;
+  };
+  priorityFee?: PriorityFeeConfig;
 };
 
 type CreatePaymentWithMessageArgs = {
@@ -745,6 +792,168 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
     }
   }
 
+  // estimation for group messages
+  public async estimateSendGroupMessageFees(
+    groupMessage: EstimateSendGroupMessageFeesArgs
+  ): Promise<GeneratorSummary> {
+    this.assertReady();
+
+    const minimumAmount = kaspaToSompi("0.2");
+    if (!minimumAmount) {
+      throw new Error("Minimum amount missing");
+    }
+
+    if (!groupMessage.groupId || groupMessage.groupId.length !== 64) {
+      throw new Error("Invalid group ID (must be 32 bytes hex)");
+    }
+
+    if (
+      !groupMessage.groupRootEpoch ||
+      groupMessage.groupRootEpoch.length !== 64
+    ) {
+      throw new Error("Invalid group root epoch (must be 32 bytes hex)");
+    }
+
+    if (!groupMessage.blindingKey || groupMessage.blindingKey.length !== 64) {
+      throw new Error("Invalid blinding key (must be 32 bytes hex)");
+    }
+
+    if (!groupMessage.deviceId || groupMessage.deviceId.length !== 32) {
+      throw new Error("Invalid device ID (must be 16 bytes hex)");
+    }
+
+    if (!groupMessage.message.trim() && !groupMessage.attachment) {
+      throw new Error("Message content or attachment is required");
+    }
+
+    // get x-only pubkey for schnorr signature and blinded group id (32 bytes)
+    const privateKey = WalletStorageService.getPrivateKey(this.unlockedWallet);
+    const senderXonlyPubKeyBytes = get_xonly_pubkey(
+      hexToBytes(privateKey.toString())
+    );
+    const senderXonlyPubKey = bytesToHex(senderXonlyPubKeyBytes);
+
+    // derive sender's blinded group ID
+    const blindingKeyBytes = hexToBytes(groupMessage.blindingKey);
+    const blindedGroupIdBytes = derive_blinded_group_id(
+      blindingKeyBytes,
+      senderXonlyPubKeyBytes
+    );
+    const blindedGroupId = bytesToHex(blindedGroupIdBytes);
+
+    console.log("=== ESTIMATING GROUP MESSAGE FEES ===");
+    console.log({
+      groupId: groupMessage.groupId,
+      blindedGroupId: blindedGroupId.substring(0, 16) + "...",
+      epoch: groupMessage.epoch,
+      msgCounter: groupMessage.msgCounter,
+      messageLength: groupMessage.message.length,
+    });
+
+    try {
+      const groupIdBytes = hexToBytes(groupMessage.groupId);
+      const groupRootEpochBytes = hexToBytes(groupMessage.groupRootEpoch);
+      const deviceIdBytes = hexToBytes(groupMessage.deviceId);
+
+      // 1. build deterministic msg_id = device_id || msg_counter (24 bytes)
+      const msgIdBytes = build_msg_id(
+        deviceIdBytes,
+        BigInt(groupMessage.msgCounter)
+      );
+      const msgId = bytesToHex(msgIdBytes);
+
+      // 2. derive sender_id = SHA256(sender_address)
+      const senderIdBytes = derive_sender_id(this.recv.toString());
+
+      // 3. derive sender keys from group_root_epoch
+      const senderKeyBytes = derive_sender_key(
+        groupRootEpochBytes,
+        groupIdBytes,
+        BigInt(groupMessage.epoch),
+        senderIdBytes
+      );
+
+      const senderNonceKeyBytes = derive_sender_nonce_key(
+        groupRootEpochBytes,
+        groupIdBytes,
+        BigInt(groupMessage.epoch),
+        senderIdBytes
+      );
+
+      // 4. build AAD
+      const aad = build_group_aad(
+        1, // version
+        groupIdBytes,
+        BigInt(groupMessage.epoch),
+        senderIdBytes,
+        msgIdBytes
+      );
+
+      // 5. encrypt the message (or attachment)
+      let messageToEncrypt = groupMessage.message;
+      if (groupMessage.attachment) {
+        messageToEncrypt = groupMessage.attachment.content;
+      }
+      const messageBytes = new TextEncoder().encode(messageToEncrypt);
+      const ciphertext = group_encrypt(
+        senderKeyBytes,
+        senderNonceKeyBytes,
+        msgIdBytes,
+        messageBytes,
+        aad
+      );
+
+      // 6. sign AAD || ciphertext
+      const ciphertextBytes = new Uint8Array(ciphertext);
+      const signatureData = new Uint8Array(aad.length + ciphertextBytes.length);
+      signatureData.set(aad, 0);
+      signatureData.set(ciphertextBytes, aad.length);
+
+      const signatureBytes = sign_message(
+        hexToBytes(privateKey.toString()),
+        signatureData
+      );
+
+      if (!signatureBytes) {
+        throw new Error("Failed to sign group message");
+      }
+
+      const signature = bytesToHex(signatureBytes);
+
+      // 7. build on-chain payload
+      // ciph_msg:1:gcomm:{blinded_group_id}:{epoch}:{sender_id}:{sender_pub}:{msg_id}:{ciphertext}:{sig}
+      const senderIdHex = bytesToHex(senderIdBytes);
+      const ciphertextHex = bytesToHex(ciphertextBytes);
+
+      const protocolString = `ciph_msg:1:gcomm:${blindedGroupId}:${groupMessage.epoch}:${senderIdHex}:${senderXonlyPubKey}:${msgId}:${ciphertextHex}:${signature}`;
+      const payloadBytes = getEncoder().encode(protocolString);
+
+      console.log(
+        `Estimated group message payload (${payloadBytes.length} bytes)`
+      );
+
+      // 8. estimate fee for the transaction
+      const estimate = await TransactionGeneratorService.createForTransaction({
+        context: this.ctx,
+        networkId: this.networkId,
+        receiveAddress: this.recv,
+        destinationAddress: this.recv,
+        amount: minimumAmount,
+        payload: payloadBytes,
+        priorityFee: groupMessage.priorityFee,
+      }).estimate();
+
+      console.log(
+        `Group message fee estimate: ${Number(estimate.fees) / 100_000_000} KAS (${estimate.fees} sompi)`
+      );
+
+      return estimate;
+    } catch (error) {
+      console.error("Error estimating group message fees:", error);
+      throw error;
+    }
+  }
+
   public getMatureUtxos() {
     this.assertReady();
     return this.ctx.getMatureRange(0, this.ctx.matureLength);
@@ -855,5 +1064,186 @@ export class AccountService extends EventEmitter<AccountServiceEvents> {
         this.processor.removeEventListener("maturity", oneTimeListen);
       }, 10_000);
     });
+  }
+
+  /**
+   * send a group message
+   *
+   * flow:
+   * 1. build deterministic msg_id = device_id || msg_counter
+   * 2. derive sender_id = SHA256(sender_address)
+   * 3. derive sender_key and sender_nonce_key from group_root_epoch
+   * 4. build AAD = version || "gcomm" || group_id || epoch || sender_id || msg_id
+   * 5. encrypt message with AEAD
+   * 6. sign AAD || ciphertext
+   * 7. send on-chain
+   */
+  public async sendGroupMessage(
+    groupMessage: SendGroupMessageArgs
+  ): Promise<TransactionId> {
+    this.assertReady();
+
+    const minimumAmount = kaspaToSompi("0.2");
+    if (!minimumAmount) {
+      throw new Error("Minimum amount missing");
+    }
+
+    if (!groupMessage.groupId || groupMessage.groupId.length !== 64) {
+      throw new Error("Invalid group ID (must be 32 bytes hex)");
+    }
+
+    if (
+      !groupMessage.groupRootEpoch ||
+      groupMessage.groupRootEpoch.length !== 64
+    ) {
+      throw new Error("Invalid group root epoch (must be 32 bytes hex)");
+    }
+
+    if (!groupMessage.blindingKey || groupMessage.blindingKey.length !== 64) {
+      throw new Error("Invalid blinding key (must be 32 bytes hex)");
+    }
+
+    if (!groupMessage.deviceId || groupMessage.deviceId.length !== 32) {
+      throw new Error("Invalid device ID (must be 16 bytes hex)");
+    }
+
+    if (!groupMessage.message.trim() && !groupMessage.attachment) {
+      throw new Error("Message content or attachment is required");
+    }
+
+    // get x-only pubkey for schnorr signature and blinded group id (32 bytes)
+    const privateKey = WalletStorageService.getPrivateKey(this.unlockedWallet);
+    const senderXonlyPubKeyBytes = get_xonly_pubkey(
+      hexToBytes(privateKey.toString())
+    );
+    const senderXonlyPubKey = bytesToHex(senderXonlyPubKeyBytes);
+
+    // derive sender's blinded group ID for on-chain privacy
+    const blindingKeyBytes = hexToBytes(groupMessage.blindingKey);
+    const blindedGroupIdBytes = derive_blinded_group_id(
+      blindingKeyBytes,
+      senderXonlyPubKeyBytes
+    );
+    const blindedGroupId = bytesToHex(blindedGroupIdBytes);
+
+    console.log("=== SENDING GROUP MESSAGE ===");
+    console.log({
+      groupId: groupMessage.groupId,
+      blindedGroupId: blindedGroupId.substring(0, 16) + "...", // privacy: don't log full blinded ID
+      epoch: groupMessage.epoch,
+      msgCounter: groupMessage.msgCounter,
+      messageLength: groupMessage.message.length,
+    });
+
+    try {
+      const groupIdBytes = hexToBytes(groupMessage.groupId);
+      const groupRootEpochBytes = hexToBytes(groupMessage.groupRootEpoch);
+      const deviceIdBytes = hexToBytes(groupMessage.deviceId);
+
+      // 1. build deterministic msg_id = device_id || msg_counter (24 bytes)
+      const msgIdBytes = build_msg_id(
+        deviceIdBytes,
+        BigInt(groupMessage.msgCounter)
+      );
+      const msgId = bytesToHex(msgIdBytes);
+
+      console.log(
+        `Built msg_id: ${msgId} (counter: ${groupMessage.msgCounter})`
+      );
+
+      // 2. derive sender_id = SHA256(sender_address)
+      const senderIdBytes = derive_sender_id(this.recv.toString());
+
+      // 3. derive sender keys from group_root_epoch
+      const senderKeyBytes = derive_sender_key(
+        groupRootEpochBytes,
+        groupIdBytes,
+        BigInt(groupMessage.epoch),
+        senderIdBytes
+      );
+
+      const senderNonceKeyBytes = derive_sender_nonce_key(
+        groupRootEpochBytes,
+        groupIdBytes,
+        BigInt(groupMessage.epoch),
+        senderIdBytes
+      );
+
+      console.log("Derived sender keys successfully");
+
+      // 4. build AAD
+      const aad = build_group_aad(
+        1, // version
+        groupIdBytes,
+        BigInt(groupMessage.epoch),
+        senderIdBytes,
+        msgIdBytes
+      );
+
+      console.log(`Built AAD (${aad.length} bytes)`);
+
+      // 5. encrypt the message (or attachment)
+      let messageToEncrypt = groupMessage.message;
+      if (groupMessage.attachment) {
+        messageToEncrypt = groupMessage.attachment.content;
+      }
+      const messageBytes = new TextEncoder().encode(messageToEncrypt);
+      const ciphertext = group_encrypt(
+        senderKeyBytes,
+        senderNonceKeyBytes,
+        msgIdBytes,
+        messageBytes,
+        aad
+      );
+
+      console.log(`Encrypted message (${ciphertext.length} bytes)`);
+
+      // 6. sign AAD || ciphertext
+      const privateKey = WalletStorageService.getPrivateKey(
+        this.unlockedWallet
+      );
+      const ciphertextBytes = new Uint8Array(ciphertext);
+      const signatureData = new Uint8Array(aad.length + ciphertextBytes.length);
+      signatureData.set(aad, 0);
+      signatureData.set(ciphertextBytes, aad.length);
+
+      const signatureBytes = sign_message(
+        hexToBytes(privateKey.toString()),
+        signatureData
+      );
+
+      if (!signatureBytes) {
+        throw new Error("Failed to sign group message");
+      }
+
+      const signature = bytesToHex(signatureBytes);
+      console.log(`Signed message (${signature.length / 2} bytes)`);
+
+      // 7. build on-chain payload
+      // ciph_msg:1:gcomm:{blinded_group_id}:{epoch}:{sender_id}:{sender_pub}:{msg_id}:{ciphertext}:{sig}
+      // NOTE: we use blinded_group_id on-chain for privacy - each sender has a different blinded ID
+      // recipients can match incoming blinded_group_id against computed values for known members
+      const senderIdHex = bytesToHex(senderIdBytes);
+      const ciphertextHex = bytesToHex(ciphertextBytes);
+
+      const protocolString = `ciph_msg:1:gcomm:${blindedGroupId}:${groupMessage.epoch}:${senderIdHex}:${senderXonlyPubKey}:${msgId}:${ciphertextHex}:${signature}`;
+      const payloadBytes = getEncoder().encode(protocolString);
+
+      console.log(`Built protocol payload (${payloadBytes.length} bytes)`);
+
+      // 8. send the transaction (to our own address for group messages)
+      const txId = await this.createTransaction({
+        address: this.recv, // group messages are sent to self
+        amount: minimumAmount,
+        payload: payloadBytes,
+        priorityFee: groupMessage.priorityFee,
+      });
+
+      console.log(`Group message sent with txId: ${txId}`);
+      return txId;
+    } catch (error) {
+      console.error("Error sending group message:", error);
+      throw error;
+    }
   }
 }

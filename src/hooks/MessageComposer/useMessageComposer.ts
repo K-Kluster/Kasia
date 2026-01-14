@@ -10,7 +10,11 @@ import { KasiaTransaction, FeeState } from "../../types/all";
 import { FileData } from "../../store/repository/message.repository";
 import { PROTOCOL } from "../../config/protocol";
 
-export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
+export const useMessageComposer = (
+  feeState: FeeState,
+  recipient?: string,
+  isGroupMessage?: boolean
+) => {
   const {
     attachment,
     priority,
@@ -26,9 +30,16 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
   const messageStore = useMessagingStore();
 
   const attach = async (file: File, source: string = "File") => {
+    // Group messages have much more protocol overhead which learns to higher transaction mass
+    // Direct: ~50 bytes overhead, Group: ~400 bytes overhead
+    // TO DO: Increase this (well can probably just calculate it). We have currently reduced by 70% but this is a low bar for now
+    const maxPayloadSize = isGroupMessage
+      ? MAX_PAYLOAD_SIZE * 0.3
+      : MAX_PAYLOAD_SIZE;
+
     const { fileMessage, error } = await prepareFileForUpload(
       file,
-      MAX_PAYLOAD_SIZE,
+      maxPayloadSize,
       {},
       (status) => {
         toast.info(status);

@@ -1,10 +1,11 @@
 import { FC, useEffect, useState, useRef } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Users, Info, Crown } from "lucide-react";
 
 import { DirectsList } from "./Directs/DirectsList";
 import { DirectComposer } from "./Composing/Directs/DirectComposer";
 import { useMessagingStore } from "../../store/messaging.store";
 import { useWalletStore } from "../../store/wallet.store";
+import { useGroupStore } from "../../store/group.store";
 import { KaspaAddress } from "../KaspaAddress";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -12,16 +13,24 @@ import { ContactMenu } from "../ContactMenu";
 import { useUiStore } from "../../store/ui.store";
 
 import { Contact } from "../../store/repository/contact.repository";
+import { Avatar } from "../SideBarPane/Directs/Avatar";
 import { Button } from "../Common/Button";
+import { GroupMessagesList } from "./Groups/GroupMessagesList";
 
 export const DirectsSection: FC<{
   mobileView: "contacts" | "messages";
   setMobileView: (v: "contacts" | "messages") => void;
 }> = ({ mobileView, setMobileView }) => {
   const messageStore = useMessagingStore();
-  const address = useWalletStore((s) => s.address);
   const isMobile = useIsMobile();
+  const { address } = useWalletStore();
 
+  // group state
+  const groupStore = useGroupStore();
+  const selectedGroupId = groupStore.selectedGroupId;
+  const groupWithMessages = selectedGroupId
+    ? groupStore.getGroupWithMessages(selectedGroupId)
+    : null;
   const oneOnOneConversations = useMessagingStore(
     (s) => s.oneOnOneConversations
   );
@@ -34,9 +43,19 @@ export const DirectsSection: FC<{
       )
     : null;
 
-  const boxState = !oneOnOneConversations.length
+  // determine what state we're in - mutually exclusive (group takes priority)
+  const isGroupView = !!selectedGroupId && !!groupWithMessages;
+  const isDirectView =
+    !isGroupView && !!openedRecipient && !!oneOnOneConversation;
+  const hasConversations =
+    oneOnOneConversations.length > 0 || groupStore.groups.length > 0;
+
+  // check if current user is admin of the selected group
+  const isAdmin = groupWithMessages?.group.adminAddress === address?.toString();
+
+  const boxState = !hasConversations
     ? "new"
-    : !openedRecipient
+    : !openedRecipient && !selectedGroupId
       ? "unfiltered"
       : "filtered";
 
@@ -153,15 +172,40 @@ export const DirectsSection: FC<{
 
   const openModal = useUiStore((state) => state.openModal);
   const setOneOnOneConversation = useUiStore((s) => s.setOneOnOneConversation);
+  const { setGroupInfoModalGroup } = useUiStore();
 
-  if (!oneOnOneConversation && boxState !== "new") {
-    return null;
+  // scroll to bottom for group messages
+  const groupMessagesRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isGroupView && groupMessagesRef.current) {
+      groupMessagesRef.current.scrollTo({
+        top: groupMessagesRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [isGroupView, groupWithMessages?.messages.length]);
+
+  // nothing selected and no conversations
+  if (boxState === "unfiltered" && !isGroupView && !isDirectView) {
+    return (
+      <div
+        className={`flex flex-[2] flex-col overflow-x-hidden ${isMobile ? "" : "border-primary-border border-l"} ${isMobile && mobileView === "contacts" ? "hidden" : ""}`}
+      >
+        <div className="h-[60px] bg-[var(--secondary-bg)] p-4" />
+        <div className="bg-primary-bg flex flex-1 items-center justify-center">
+          <div className="text-center text-[var(--text-secondary)] italic">
+            Select a conversation to start messaging
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div
       className={`flex flex-[2] flex-col overflow-x-hidden ${isMobile ? "" : "border-primary-border border-l"} ${isMobile && mobileView === "contacts" ? "hidden" : ""}`}
     >
+      {/* KNS moved modal */}
       {showKnsMovedModal &&
         knsMovedDomain &&
         knsMovedNewAddress &&
@@ -231,6 +275,7 @@ export const DirectsSection: FC<{
             </div>
           </div>
         )}
+
       {boxState === "new" && (
         /* ONBOARDING ─ show help when no contacts exist */
         <>
@@ -244,8 +289,83 @@ export const DirectsSection: FC<{
         </>
       )}
 
-      {boxState === "filtered" && oneOnOneConversation && (
-        /* A CONVERSATION IS OPEN */
+      {/* GROUP VIEW */}
+      {isGroupView && groupWithMessages && (
+        <>
+          {/* group header */}
+          <div className="flex h-[60px] items-center justify-between bg-[var(--secondary-bg)] px-4">
+            <div className="flex items-center">
+              <button
+                onClick={() => {
+                  setMobileView("contacts");
+                  groupStore.setSelectedGroup(null);
+                }}
+                className="mr-1 cursor-pointer p-1 sm:hidden"
+                aria-label="Back to contacts"
+              >
+                <ChevronLeft className="size-6" />
+              </button>
+              {/* group avatar */}
+              <div className="mr-2">
+                <Avatar
+                  address={groupWithMessages.group.adminAddress}
+                  size={32}
+                  displayName={groupWithMessages.group.name}
+                  isGroup={true}
+                  collapsed={true}
+                />
+              </div>
+              <div className="flex flex-col">
+                <h3 className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
+                  <span>{groupWithMessages.group.name}</span>
+                  <Users className="size-4 text-[var(--text-secondary)]" />
+                  {isAdmin && <Crown className="size-4 text-amber-500" />}
+                </h3>
+                <span className="text-xs text-[var(--text-secondary)]">
+                  {groupWithMessages.group.members.length} members
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (groupWithMessages) {
+                  setGroupInfoModalGroup(groupWithMessages.group);
+                  openModal("group-info");
+                }
+              }}
+              className="hover:bg-primary-bg/50 rounded-lg p-2 transition-colors"
+              title="Group info"
+            >
+              <Info className="size-5 text-[var(--text-secondary)]" />
+            </button>
+          </div>
+
+          {/* group messages */}
+          <div
+            className="bg-primary-bg flex flex-1 flex-col overflow-x-hidden overflow-y-auto px-1 py-4 pb-8 sm:px-2"
+            ref={groupMessagesRef}
+          >
+            {groupWithMessages.messages.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center text-[var(--text-secondary)] italic">
+                  Start the conversation in {groupWithMessages.group.name}
+                </div>
+              </div>
+            ) : (
+              <GroupMessagesList
+                messages={groupWithMessages.messages}
+                group={groupWithMessages.group}
+              />
+            )}
+          </div>
+
+          {/* group composer - uses same DirectComposer with groupId */}
+          <DirectComposer groupId={selectedGroupId!} />
+        </>
+      )}
+
+      {/* DIRECT VIEW */}
+      {isDirectView && oneOnOneConversation && (
         <>
           <div className="flex h-[60px] items-center justify-between bg-[var(--secondary-bg)] px-4">
             {/* mobile back button */}

@@ -43,7 +43,7 @@ export class SenderAndAcceptanceResolutionService extends EventEmitter<LiveServi
   private acceptingBlockByTransactionId: Record<string, string> = {};
 
   // https://262.ecma-international.org/6.0/#sec-ordinary-object-internal-methods-and-internal-slots-ownpropertykeys
-  // iteration is ordered ascending as per the spec
+  // iteration is ordered ascending
   // warning: can contains duplicate elements, for two timestamp same block id can appear
   // it's safe in our case because we only use it as a garbage collection marker
   private acceptingBlocksByFirstSeen: Record<number, Set<string>> = {};

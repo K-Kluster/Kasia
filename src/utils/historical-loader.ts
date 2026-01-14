@@ -146,18 +146,20 @@ export const historicalLoader_loadSendAndReceivedHandshake = async (
       }
 
       // mark the discovered alias
-      const existing =
-        !resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
-          handshake.sender
-        ];
-      if (!existing) {
-        resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
-          handshake.sender
-        ] = new Set(handshakePayload.alias);
-      } else {
-        resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
-          handshake.sender
-        ].add(handshakePayload.alias);
+      if (handshakePayload.alias) {
+        const existing =
+          !resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
+            handshake.sender
+          ];
+        if (!existing) {
+          resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
+            handshake.sender
+          ] = new Set([handshakePayload.alias]);
+        } else {
+          resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
+            handshake.sender
+          ].add(handshakePayload.alias);
+        }
       }
     } catch {
       // no-op

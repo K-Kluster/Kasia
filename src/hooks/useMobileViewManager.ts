@@ -4,6 +4,7 @@ import { useIsMobile } from "./useIsMobile";
 export const useMobileViewManager = (
   contactId: string | undefined,
   channelId: string | undefined,
+  groupId: string | undefined,
   isCurrentlyInBroadcastMode: boolean,
   messageStoreLoaded: boolean
 ) => {
@@ -16,11 +17,12 @@ export const useMobileViewManager = (
   useEffect(() => {
     const syncToWidth = () => {
       if (isMobile) {
-        // on mobile, show messages if there's an opened conversation or broadcast channel (based on url)
+        // on mobile, show messages if there's an opened conversation, broadcast channel, or group (based on url)
         const hasOpenedConversation = contactId;
         const hasOpenedBroadcast = isCurrentlyInBroadcastMode && channelId;
+        const hasOpenedGroup = groupId;
 
-        if (hasOpenedConversation || hasOpenedBroadcast) {
+        if (hasOpenedConversation || hasOpenedBroadcast || hasOpenedGroup) {
           setMobileView("messages");
         } else {
           setMobileView("contacts");
@@ -35,13 +37,14 @@ export const useMobileViewManager = (
     return () => window.removeEventListener("resize", syncToWidth);
   }, [contactId, channelId, isMobile, isCurrentlyInBroadcastMode]);
 
-  // effect to update mobile view when URL changes (contact/channel selection)
+  // effect to update mobile view when URL changes (contact/channel/group selection)
   useEffect(() => {
     if (isMobile && messageStoreLoaded) {
       const hasOpenedConversation = contactId;
       const hasOpenedBroadcast = isCurrentlyInBroadcastMode && channelId;
+      const hasOpenedGroup = groupId;
 
-      if (hasOpenedConversation || hasOpenedBroadcast) {
+      if (hasOpenedConversation || hasOpenedBroadcast || hasOpenedGroup) {
         setMobileView("messages");
       } else {
         setMobileView("contacts");
@@ -51,6 +54,7 @@ export const useMobileViewManager = (
     isMobile,
     contactId,
     channelId,
+    groupId,
     messageStoreLoaded,
     isCurrentlyInBroadcastMode,
   ]);

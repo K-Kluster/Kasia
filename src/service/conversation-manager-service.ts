@@ -863,15 +863,6 @@ export class ConversationManagerService {
           alias: conversationAndContact.conversation.myAlias,
           address: conversationAndContact.contact.kaspaAddress,
         });
-
-        console.log("[getMonitoredConversations] Monitoring conversation:", {
-          myAlias: conversationAndContact.conversation.myAlias,
-          theirAlias: conversationAndContact.conversation.theirAlias,
-          partnerAddress: conversationAndContact.contact.kaspaAddress,
-          conversationId: conversationAndContact.conversation.id,
-          status: conversationAndContact.conversation.status,
-          note: "We monitor myAlias. Partner sends to theirAlias which equals our myAlias",
-        });
       });
 
     return monitored;

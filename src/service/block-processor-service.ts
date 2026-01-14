@@ -17,6 +17,21 @@ import EventEmitter from "eventemitter3";
 import { devMode } from "../config/dev-mode";
 import { useBroadcastStore } from "../store/broadcast.store";
 import { getTransactionId } from "../types/transactions";
+import {
+  derive_sender_key,
+  derive_sender_nonce_key,
+  derive_sender_id,
+  derive_blinded_group_id,
+  build_group_aad,
+  group_decrypt,
+  verify_signature,
+} from "cipher";
+import { useWalletStore } from "../store/wallet.store";
+import { WalletStorageService } from "./wallet-storage-service";
+import { XOnlyPublicKey } from "kaspa-wasm";
+import { getNetworkTypeFromAddress } from "../utils/network";
+import { deriveMyAlias } from "../utils/deterministic-alias";
+import { useGroupStore } from "../store/group.store";
 
 export type RawResolvedKasiaTransaction = {
   id: string;
@@ -143,17 +158,6 @@ export class BlockProcessorService extends EventEmitter<{
       const messageType = parsed.type;
       const targetAlias = parsed.alias;
 
-      // Log incoming message alias check
-      if (messageType === PROTOCOL.headers.COMM.type && targetAlias) {
-        console.log("[block-processor] Incoming message alias check:", {
-          targetAlias,
-          isMonitored: this.monitoredConversations.has(targetAlias),
-          monitoredAliases: Array.from(this.monitoredConversations),
-          senderAddress: resolvedSenderAddress,
-          note: "Message is for us if targetAlias matches one of our monitored myAliases",
-        });
-      }
-
       const isCommForUs =
         messageType === PROTOCOL.headers.COMM.type &&
         targetAlias &&
@@ -169,23 +173,84 @@ export class BlockProcessorService extends EventEmitter<{
         return;
       }
 
-      // if this is a comm message but isn't monitored by us, we can stop straight away
+      // if this is a comm message but isn't monitored by us, check if we should auto-create conversation
       if (
         messageType === PROTOCOL.headers.COMM.type &&
         targetAlias &&
         !this.monitoredConversations.has(targetAlias)
       ) {
-        if (devMode)
-          console.log(
-            `Block Processor - Received a message that isn't for us`,
-            {
-              monitored: this.monitoredConversations,
-              targetAlias,
-              parsed,
-              txId,
+        // check if this alias would be our myAlias for this sender
+        // if so, auto-create a discrete conversation so we can receive the message
+        try {
+          const messagingStore = useMessagingStore.getState();
+          const walletStore = useWalletStore.getState();
+          const unlockedWallet = walletStore.unlockedWallet;
+
+          if (unlockedWallet && messagingStore.conversationManager) {
+            // derive what our myAlias would be for this sender
+            const privateKey =
+              WalletStorageService.getPrivateKey(unlockedWallet);
+            const wouldBeMyAlias = deriveMyAlias(
+              privateKey.toString(),
+              resolvedSenderAddress
+            );
+
+            // if the alias matches, auto-create discrete conversation
+            if (wouldBeMyAlias === targetAlias) {
+              console.log(
+                `Auto-creating discrete conversation with ${resolvedSenderAddress} - received message with matching alias`
+              );
+              await messagingStore.createDiscreteConversation(
+                resolvedSenderAddress
+              );
+              // update monitored conversations to include the new alias
+              this.updateMonitoredConversations();
+              // now the alias should be monitored, continue processing
+            } else {
+              if (devMode)
+                console.log(
+                  `Block Processor - Received a message that isn't for us`,
+                  {
+                    monitored: this.monitoredConversations,
+                    targetAlias,
+                    wouldBeMyAlias,
+                    senderAddress: resolvedSenderAddress,
+                    parsed,
+                    txId,
+                  }
+                );
+              return;
             }
+          } else {
+            if (devMode)
+              console.log(
+                `Block Processor - Received a message that isn't for us`,
+                {
+                  monitored: this.monitoredConversations,
+                  targetAlias,
+                  parsed,
+                  txId,
+                }
+              );
+            return;
+          }
+        } catch (error) {
+          console.error(
+            "Error checking if alias matches for auto-creation:",
+            error
           );
-        return;
+          if (devMode)
+            console.log(
+              `Block Processor - Received a message that isn't for us`,
+              {
+                monitored: this.monitoredConversations,
+                targetAlias,
+                parsed,
+                txId,
+              }
+            );
+          return;
+        }
       }
 
       // handle broadcast messages separately (they are never encrypted)
@@ -198,6 +263,20 @@ export class BlockProcessorService extends EventEmitter<{
           );
         }
         return; // broadcasts don't go through regular encrypted message processing
+      }
+
+      // handle group messages separately
+      if (messageType === PROTOCOL.headers.GCOMM.type) {
+        await this.processGroupMessage({
+          id: txId,
+          transaction: tx,
+          header,
+          senderAddressString: resolvedSenderAddress,
+          recipientAddressString: this.walletReceiveAddressString,
+          recipientOutputAmount: BigInt(0), // group messages don't transfer value
+          parsedPayload: parsed,
+        });
+        return; // group messages don't go through regular encrypted message processing
       }
 
       // note: hacky way of determining the recipient and the amount
@@ -303,15 +382,6 @@ export class BlockProcessorService extends EventEmitter<{
       this.monitoredConversations.clear();
       this.monitoredAddresses.clear();
       const conversations = conversationManager.getMonitoredConversations();
-
-      console.log("[block-processor] Updating monitored aliases:", {
-        count: conversations.length,
-        aliases: conversations.map((c) => ({
-          alias: c.alias,
-          address: c.address,
-          note: "Monitoring myAlias for incoming messages",
-        })),
-      });
 
       // Silently update monitored conversations
       conversations.forEach((conv) => {
@@ -451,6 +521,290 @@ export class BlockProcessorService extends EventEmitter<{
       );
     } catch (error) {
       console.error(`Error processing broadcast transaction ${txId}:`, error);
+    }
+  }
+
+  private async processGroupMessage(
+    rawResolvedKasiaTransaction: RawResolvedKasiaTransaction
+  ): Promise<void> {
+    const {
+      id: txId,
+      parsedPayload,
+      header,
+      senderAddressString,
+    } = rawResolvedKasiaTransaction;
+
+    try {
+      // check if wallet and conversation manager are initialized before processing
+      // this prevents errors when blocks arrive before initialization is complete
+      const messagingStore = useMessagingStore.getState();
+      const walletStore = useWalletStore.getState();
+      const unlockedWallet = walletStore.unlockedWallet;
+      const conversationManager = messagingStore.conversationManager;
+
+      if (!unlockedWallet || !conversationManager) {
+        console.error(
+          "Cannot process group message: wallet or conversation manager not initialized"
+        );
+        return;
+      }
+
+      console.log(`Processing group message ${txId}:`, parsedPayload);
+
+      // validate group message fields
+      if (!parsedPayload.groupId || parsedPayload.groupId.length !== 64) {
+        console.error("Invalid group ID in group message");
+        return;
+      }
+
+      if (parsedPayload.epoch === undefined || parsedPayload.epoch < 0) {
+        console.error("Invalid epoch in group message");
+        return;
+      }
+
+      if (
+        !parsedPayload.senderId ||
+        !parsedPayload.messageId ||
+        !parsedPayload.signature
+      ) {
+        console.error("Missing required fields in group message");
+        return;
+      }
+
+      const repositories = useDBStore.getState().repositories;
+
+      // ensure group store is loaded before processing group messages
+      // this ensures groups are hydrated from database with all root secrets
+      const groupStore = useGroupStore.getState();
+      if (!groupStore.isLoaded) {
+        console.log(
+          "Group store not loaded yet, loading before processing group message"
+        );
+        await groupStore.load(
+          this.walletReceiveAddressString,
+          unlockedWallet,
+          conversationManager
+        );
+      }
+
+      // the on-chain message contains a blinded_group_id (per-user for privacy)
+      // we need to find which group this message belongs to by computing
+      // expected blinded IDs for the sender's pubkey across all our groups
+      const blindedGroupIdFromMessage = parsedPayload.groupId; // this is actually the blinded ID now
+
+      // we need the sender's pubkey to compute the expected blinded ID
+      if (!parsedPayload.senderPubKey) {
+        console.error(
+          `Missing sender public key, cannot match blinded group ID`
+        );
+        return;
+      }
+
+      const senderPubKeyBytes = hexToBytes(parsedPayload.senderPubKey);
+      try {
+        const networkType = getNetworkTypeFromAddress(senderAddressString);
+        const derivedAddress = new XOnlyPublicKey(parsedPayload.senderPubKey)
+          .toAddress(networkType)
+          .toString();
+
+        if (derivedAddress !== senderAddressString) {
+          console.error(
+            `Sender pubkey does not match sender address for ${senderAddressString}`
+          );
+          return;
+        }
+      } catch (error) {
+        console.error(
+          "Failed to derive sender address from pubkey for group message:",
+          error
+        );
+        return;
+      }
+
+      // get all groups and find which one matches
+      let group;
+
+      const allGroups = await repositories.groupRepository.getActiveGroups();
+
+      for (const candidateGroup of allGroups) {
+        // compute what blinded ID this sender would have for this group
+        const blindingKeyBytes = hexToBytes(candidateGroup.blindingKey);
+        const expectedBlindedIdBytes = derive_blinded_group_id(
+          blindingKeyBytes,
+          senderPubKeyBytes
+        );
+        const expectedBlindedId = Array.from(expectedBlindedIdBytes)
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        if (expectedBlindedId === blindedGroupIdFromMessage) {
+          group = candidateGroup;
+          break;
+        }
+      }
+
+      if (!group) {
+        console.log(
+          `No matching group found for blinded ID ${blindedGroupIdFromMessage.substring(0, 16)}...`
+        );
+        return;
+      }
+
+      // check if message is from a group member
+      const senderMember = group.members.find(
+        (m) => m.address === senderAddressString
+      );
+      if (!senderMember) {
+        console.error(
+          `Message from non-member ${senderAddressString} for group ${group.id}`
+        );
+        return;
+      }
+
+      // check for replay attack - ensure we haven't seen this message ID before
+      // use the real group.id for storage, not the blinded ID
+      const hasSeenMessage =
+        await repositories.groupMessageRepository.hasMessageId(
+          group.id,
+          senderAddressString,
+          parsedPayload.epoch,
+          parsedPayload.messageId
+        );
+
+      if (hasSeenMessage) {
+        console.warn(
+          `Replay attack detected: message ${parsedPayload.messageId} already seen from ${senderAddressString}`
+        );
+        return;
+      }
+
+      // get group_root_epoch for decryption
+      // all members use the same group_root_epoch
+      const groupRootEpoch = group.groupRootEpoch;
+      if (!groupRootEpoch) {
+        console.error(`No group root epoch for group ${group.id}`);
+        return;
+      }
+
+      // derive sender keys
+      // IMPORTANT: use the real group.id for all cryptographic operations, not the blinded ID
+      const groupIdBytes = hexToBytes(group.id);
+      const groupRootEpochBytes = hexToBytes(groupRootEpoch);
+
+      // derive sender_id = SHA256(sender_address_bytes)
+      const senderIdBytes = derive_sender_id(senderAddressString);
+      const msgIdBytes = hexToBytes(parsedPayload.messageId);
+
+      // derive sender keys from group_root_epoch
+      const senderKeyBytes = derive_sender_key(
+        groupRootEpochBytes,
+        groupIdBytes,
+        BigInt(parsedPayload.epoch),
+        senderIdBytes
+      );
+
+      const senderNonceKeyBytes = derive_sender_nonce_key(
+        groupRootEpochBytes,
+        groupIdBytes,
+        BigInt(parsedPayload.epoch),
+        senderIdBytes
+      );
+
+      // build AAD
+      const aad = build_group_aad(
+        1, // version
+        groupIdBytes,
+        BigInt(parsedPayload.epoch),
+        senderIdBytes,
+        msgIdBytes
+      );
+
+      // verify signature
+      const ciphertextBytes = hexToBytes(parsedPayload.encryptedHex);
+
+      // concatenate aad + ciphertext for signature verification
+      const signatureDataLength = aad.length + ciphertextBytes.length;
+      const signatureData = new Uint8Array(signatureDataLength);
+      signatureData.set(aad, 0);
+      signatureData.set(ciphertextBytes, aad.length);
+
+      const signatureBytes = hexToBytes(parsedPayload.signature);
+
+      // use sender's public key from the on-chain payload (already extracted above)
+      // this allows members to verify signatures without pre-shared keys
+      const signatureValid = verify_signature(
+        senderPubKeyBytes,
+        signatureData,
+        signatureBytes
+      );
+
+      if (!signatureValid) {
+        console.error(
+          `Invalid signature on group message from ${senderAddressString}`
+        );
+        return;
+      }
+
+      // update member's signing pub key if not already set
+      // this caches the key for future reference
+      if (!senderMember.signingPubKey) {
+        senderMember.signingPubKey = parsedPayload.senderPubKey;
+        await repositories.groupRepository.saveGroup(group);
+      }
+
+      // decrypt the message
+      const plaintext = group_decrypt(
+        senderKeyBytes,
+        senderNonceKeyBytes,
+        msgIdBytes,
+        ciphertextBytes,
+        aad
+      );
+
+      const decryptedContent = new TextDecoder().decode(plaintext);
+
+      // store the decrypted group message
+      // convert timestamp to number (handle BigInt, string, or number)
+      const timestampValue =
+        typeof header.timestamp === "bigint"
+          ? Number(header.timestamp)
+          : typeof header.timestamp === "string"
+            ? parseInt(header.timestamp, 10)
+            : Number(header.timestamp);
+
+      const groupMessage = {
+        id: `${repositories.tenantId}_${txId}`,
+        tenantId: repositories.tenantId,
+        groupId: group.id, // use real group ID, not blinded ID
+        senderAddress: senderAddressString,
+        epoch: parsedPayload.epoch,
+        messageId: parsedPayload.messageId,
+        transactionId: txId,
+        createdAt: new Date(timestampValue),
+        content: decryptedContent,
+        isFromMe: senderAddressString === this.walletReceiveAddressString,
+      };
+
+      await repositories.groupMessageRepository.saveGroupMessage(groupMessage);
+
+      // update in-memory store
+      useGroupStore.getState().processReceivedGroupMessage(groupMessage);
+
+      // update group last activity
+      await repositories.groupRepository.updateLastActivity(
+        group.id,
+        new Date()
+      );
+
+      console.log(
+        `Successfully processed group message from ${senderAddressString} in group ${parsedPayload.groupId}`
+      );
+
+      // don't emit "newTransaction" - group messages are handled separately
+      // emitting would cause them to go through regular COMM message processing
+      // TODO
+    } catch (error) {
+      console.error(`Error processing group message ${txId}:`, error);
     }
   }
 }

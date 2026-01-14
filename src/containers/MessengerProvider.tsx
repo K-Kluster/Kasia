@@ -7,6 +7,7 @@ import { useUiStore } from "../store/ui.store";
 import { useBroadcastStore } from "../store/broadcast.store";
 import { useComposerStore } from "../store/message-composer.store";
 import { useLiveStore } from "../store/live.store";
+import { useGroupStore } from "../store/group.store";
 import { useMessengerRouting } from "../hooks/useMessengerRouting";
 import { useMobileViewManager } from "../hooks/useMobileViewManager";
 import { SidebarSection } from "../components/SideBarPane/SidebarSection";
@@ -21,10 +22,14 @@ export const MessengerProvider: FC = () => {
     walletId,
     contactId,
     channelId,
+    groupId,
     isCurrentlyInBroadcastMode,
     onContactClicked,
+    onGroupClicked,
     onModeChange,
   } = useMessengerRouting();
+
+  const isCurrentlyOnDirectsPage = location.pathname.includes("/directs");
 
   const [contactsCollapsed, setContactsCollapsed] = useState(false);
   const messageStore = useMessagingStore();
@@ -34,6 +39,7 @@ export const MessengerProvider: FC = () => {
   const { mobileView, setMobileView, isMobile } = useMobileViewManager(
     contactId,
     channelId,
+    groupId,
     isCurrentlyInBroadcastMode,
     messageStore.isLoaded
   );
@@ -58,9 +64,10 @@ export const MessengerProvider: FC = () => {
       !isMobile &&
       messageStore.isLoaded &&
       walletStore.isAccountServiceRunning &&
-      !contactId && // no contact selected in url
-      messageStore.oneOnOneConversations.length > 0 &&
-      !isCurrentlyInBroadcastMode // only for direct messages
+      isCurrentlyOnDirectsPage &&
+      !contactId &&
+      !groupId &&
+      messageStore.oneOnOneConversations.length > 0
     ) {
       const unlockedWalletId = walletStore.unlockedWallet?.id;
       if (unlockedWalletId) {
@@ -99,12 +106,13 @@ export const MessengerProvider: FC = () => {
   }, [
     messageStore.isLoaded,
     contactId,
+    groupId,
     messageStore.oneOnOneConversations,
     walletStore.isAccountServiceRunning,
     walletStore.address,
     walletStore.unlockedWallet?.id,
     isMobile,
-    isCurrentlyInBroadcastMode,
+    isCurrentlyOnDirectsPage,
     navigate,
     walletId,
   ]);
@@ -175,8 +183,10 @@ export const MessengerProvider: FC = () => {
       const walletStore = useWalletStore.getState();
       const uiStore = useUiStore.getState();
       const composerStore = useComposerStore.getState();
+      const groupStore = useGroupStore.getState();
 
       messageStore.stop();
+      groupStore.stop();
       walletStore.lock();
       uiStore.setSettingsOpen(false);
       uiStore.closeAllModals();
@@ -199,9 +209,11 @@ export const MessengerProvider: FC = () => {
           <>
             <SidebarSection
               onContactClicked={onContactClicked}
+              onGroupClicked={onGroupClicked}
               onModeChange={onModeChange}
               openedRecipient={messageStore.openedRecipient}
               walletAddress={walletStore.address?.toString()}
+              walletId={walletId}
               mobileView={mobileView}
               contactsCollapsed={contactsCollapsed}
               setContactsCollapsed={setContactsCollapsed}

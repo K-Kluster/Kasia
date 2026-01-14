@@ -13,6 +13,13 @@ export const hexToBytes = (hex: string): Uint8Array => {
   return out;
 };
 
+// generic Uint8Array → hex
+export const bytesToHex = (bytes: Uint8Array): string => {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+};
+
 // if it's a hex(base64(content)) content, return hex(content)
 // else if it's a hex(content) return hex(content)
 export const tryParseBase64AsHexToHex = (input: string): string => {

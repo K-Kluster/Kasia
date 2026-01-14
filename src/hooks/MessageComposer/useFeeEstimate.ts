@@ -13,6 +13,7 @@ export const useFeeEstimate = ({
   draft,
   attachment,
   broadcastOptions,
+  groupOptions,
 }: {
   toSelf?: boolean;
   recipient?: string;
@@ -21,6 +22,15 @@ export const useFeeEstimate = ({
   broadcastOptions?: {
     isBroadcast: boolean;
     channelName: string;
+  };
+  groupOptions?: {
+    isGroup: boolean;
+    groupId: string;
+    groupRootEpoch: string;
+    blindingKey: string;
+    epoch: number;
+    deviceId: string;
+    msgCounter: number;
   };
 }) => {
   const [feeState, setFeeState] = useState<FeeState>({ status: "idle" });
@@ -33,6 +43,7 @@ export const useFeeEstimate = ({
     unlockedWallet,
     estimateSendMessageFees,
     estimateSendBroadcastFees,
+    estimateSendGroupMessageFees,
     address,
     balance,
   } = useWalletStore();
@@ -41,28 +52,32 @@ export const useFeeEstimate = ({
   const addressString = address?.toString();
   const isBroadcast = broadcastOptions?.isBroadcast ?? false;
   const broadcastChannelName = broadcastOptions?.channelName ?? "";
+  const isGroup = groupOptions?.isGroup ?? false;
 
   useEffect(() => {
-    // when toSelf is true, we need user's address; otherwise we need recipient
     const targetAddress = toSelf ? addressString : recipient;
-
-    if (
-      !targetAddress ||
-      (!draft && !attachment) ||
+    const hasContent = draft || attachment;
+    const shouldSkip =
+      (!targetAddress && !isGroup) ||
+      !hasContent ||
       !unlockedWallet ||
-      sendStatus === "loading"
-    ) {
+      sendStatus === "loading";
+
+    if (shouldSkip) {
       setFeeState({ status: "idle" });
       return;
     }
 
-    // For broadcasts, we need channel options
     if (isBroadcast && !broadcastChannelName) {
       setFeeState({ status: "idle" });
       return;
     }
 
-    // check if we have funds available
+    if (isGroup && !groupOptions) {
+      setFeeState({ status: "idle" });
+      return;
+    }
+
     if (!matureBalance || matureBalance === 0n) {
       setFeeState({
         status: "error",
@@ -71,67 +86,87 @@ export const useFeeEstimate = ({
       return;
     }
 
-    let parsedAddress: Address;
-    try {
-      parsedAddress = new Address(targetAddress);
-    } catch {
-      setFeeState({
-        status: "error",
-        error: new Error("Invalid address"),
-      });
-      return;
+    let parsedAddress: Address | undefined;
+    if (!isGroup) {
+      const addressToUse = isBroadcast ? addressString : targetAddress;
+
+      if (!addressToUse) {
+        setFeeState({
+          status: "error",
+          error: new Error("Address is required"),
+        });
+        return;
+      }
+      try {
+        parsedAddress = new Address(addressToUse);
+      } catch {
+        setFeeState({
+          status: "error",
+          error: new Error("Invalid address"),
+        });
+        return;
+      }
     }
 
     setFeeState({ status: "loading" });
     let isCancelled = false;
 
-    // debounce the fee estimation
-    const timeoutId = setTimeout(() => {
-      // use attachment content if available, otherwise use draft text
-      const messageContent = attachment ? attachment.content : draft || "";
+    const messageContent = attachment ? attachment.content : draft || "";
 
-      const estimatePromise = isBroadcast
+    const estimatePromise = isGroup
+      ? estimateSendGroupMessageFees(
+          groupOptions!.groupId,
+          groupOptions!.groupRootEpoch,
+          groupOptions!.blindingKey,
+          groupOptions!.epoch,
+          groupOptions!.deviceId,
+          groupOptions!.msgCounter,
+          messageContent,
+          attachment ?? undefined,
+          priority
+        )
+      : isBroadcast
         ? estimateSendBroadcastFees(
             messageContent,
-            parsedAddress,
+            parsedAddress!,
             broadcastChannelName,
             priority
           )
-        : estimateSendMessageFees(messageContent, parsedAddress, priority);
+        : estimateSendMessageFees(messageContent, parsedAddress!, priority);
 
-      estimatePromise
-        .then((estimate) => {
-          if (!isCancelled) {
-            const fee = Number(estimate.fees) / 100_000_000;
-            setFeeState({ status: "idle", value: fee });
-          }
-        })
-        .catch((error) => {
-          if (!isCancelled) {
-            setFeeState({ status: "error", error: error as Error });
-          }
-        });
-    }, 400);
+    estimatePromise
+      .then((estimate) => {
+        if (!isCancelled) {
+          const fee = Number(estimate.fees) / 100_000_000;
+          setFeeState({ status: "idle", value: fee });
+        }
+      })
+      .catch((error) => {
+        if (!isCancelled) {
+          setFeeState({ status: "error", error: error as Error });
+        }
+      });
 
     return () => {
-      // prevent promise from updating state after cleanup
       isCancelled = true;
-      clearTimeout(timeoutId);
     };
   }, [
-    toSelf,
-    recipient,
-    addressString,
     draft,
     attachment,
+    toSelf,
+    addressString,
+    recipient,
+    isGroup,
+    unlockedWallet,
+    sendStatus,
     isBroadcast,
     broadcastChannelName,
-    priority,
-    sendStatus,
-    unlockedWallet,
-    estimateSendMessageFees,
-    estimateSendBroadcastFees,
+    groupOptions,
     matureBalance,
+    estimateSendGroupMessageFees,
+    estimateSendBroadcastFees,
+    estimateSendMessageFees,
+    priority,
   ]);
 
   return feeState;
