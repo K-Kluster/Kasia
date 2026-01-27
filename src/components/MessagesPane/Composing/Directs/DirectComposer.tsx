@@ -164,13 +164,6 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
       return;
     }
 
-    // CRITICAL: Send to theirAlias (recipient monitors this), not myAlias!
-    console.log("[DirectComposer] Sending message:", {
-      myAlias: conversation.myAlias,
-      theirAlias: conversation.theirAlias,
-      sendingTo: conversation.theirAlias,
-      note: "Sending to theirAlias - recipient should be monitoring this",
-    });
     await send(conversation.theirAlias);
   };
 

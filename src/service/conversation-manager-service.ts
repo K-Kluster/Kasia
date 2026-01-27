@@ -230,15 +230,6 @@ export class ConversationManagerService {
         recipientAddress
       );
 
-      console.log(
-        "[createDiscreteConversation] Derived aliases for",
-        recipientAddress,
-        "=> myAlias:",
-        myAlias,
-        "theirAlias:",
-        theirAlias
-      );
-
       // Create conversation in active state (no handshake needed)
       const conversation: ActiveConversation = {
         id: uuidv4(),
@@ -256,11 +247,6 @@ export class ConversationManagerService {
       );
 
       this.inMemorySyncronization(conversation, contact);
-
-      console.log(
-        "[createDiscreteConversation] Created discrete conversation - now monitoring myAlias:",
-        myAlias
-      );
 
       return {
         conversation,
@@ -1003,15 +989,6 @@ export class ConversationManagerService {
     const { myAlias, theirAlias } = deriveConversationAliases(
       privateKey,
       partnerAddress
-    );
-
-    console.log(
-      "[createOffChainHandshake] Derived aliases for",
-      partnerAddress,
-      "=> myAlias:",
-      myAlias,
-      "theirAlias:",
-      theirAlias
     );
 
     // Create conversation

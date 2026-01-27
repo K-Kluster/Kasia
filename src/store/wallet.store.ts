@@ -391,12 +391,6 @@ export const useWalletStore = create<WalletState>((set, get) => {
       }
 
       try {
-        console.log("[wallet.store] Sending message:", {
-          toAddress: toAddress.toString(),
-          aliasToSendTo,
-          note: "This alias will be included in the published message protocol string",
-        });
-
         const encryptedMessage = encrypt_message(toAddress.toString(), message);
 
         return await state.accountService.sendMessageWithContext({

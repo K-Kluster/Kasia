@@ -143,17 +143,6 @@ export class BlockProcessorService extends EventEmitter<{
       const messageType = parsed.type;
       const targetAlias = parsed.alias;
 
-      // Log incoming message alias check
-      if (messageType === PROTOCOL.headers.COMM.type && targetAlias) {
-        console.log("[block-processor] Incoming message alias check:", {
-          targetAlias,
-          isMonitored: this.monitoredConversations.has(targetAlias),
-          monitoredAliases: Array.from(this.monitoredConversations),
-          senderAddress: resolvedSenderAddress,
-          note: "Message is for us if targetAlias matches one of our monitored myAliases",
-        });
-      }
-
       const isCommForUs =
         messageType === PROTOCOL.headers.COMM.type &&
         targetAlias &&
@@ -303,15 +292,6 @@ export class BlockProcessorService extends EventEmitter<{
       this.monitoredConversations.clear();
       this.monitoredAddresses.clear();
       const conversations = conversationManager.getMonitoredConversations();
-
-      console.log("[block-processor] Updating monitored aliases:", {
-        count: conversations.length,
-        aliases: conversations.map((c) => ({
-          alias: c.alias,
-          address: c.address,
-          note: "Monitoring myAlias for incoming messages",
-        })),
-      });
 
       // Silently update monitored conversations
       conversations.forEach((conv) => {

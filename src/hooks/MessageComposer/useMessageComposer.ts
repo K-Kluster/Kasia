@@ -66,13 +66,6 @@ export const useMessageComposer = (feeState: FeeState, recipient?: string) => {
       messageStore.conversationManager?.getConversationWithContactByAddress(
         recipient
       );
-    console.log("[useMessageComposer] Sending message:", {
-      recipient,
-      aliasToSendTo,
-      conversationMyAlias: conversationWithContact?.conversation.myAlias,
-      conversationTheirAlias: conversationWithContact?.conversation.theirAlias,
-      note: "Should send to theirAlias (recipient monitors this)",
-    });
     if (!walletStore.unlockedWallet) {
       toast.error("Error, reload app.");
       return;
