@@ -102,16 +102,6 @@ interface MessagingState {
   // New function to manually respond to a handshake
   respondToHandshake: (handshakeId: string) => Promise<string>;
 
-  // Create offline handshake (aliases are now derived deterministically)
-  /**
-   * @deprecated Manual alias exchange is no longer needed. Aliases are derived deterministically.
-   */
-  createOffChainHandshake: (
-    partnerAddress: string,
-    ourAliasForPartner?: string,
-    theirAliasForUs?: string
-  ) => Promise<{ conversationId: string; contactId: string }>;
-
   // Generate unique alias for conversations
   generateUniqueAlias: () => string;
 
@@ -1229,28 +1219,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     getPendingConversationsWithContact: () => {
       const manager = g().conversationManager;
       return manager ? manager.getPendingConversationsWithContact() : [];
-    },
-
-    /**
-     * @deprecated Manual alias exchange is no longer needed. Aliases are derived deterministically.
-     */
-    createOffChainHandshake: async (
-      partnerAddress: string,
-      _ourAliasForPartner?: string,
-      _theirAliasForUs?: string
-    ) => {
-      const manager = g().conversationManager;
-      if (!manager) {
-        throw new Error("Conversation manager not initialized");
-      }
-
-      // Call the service method (aliases are now derived, not provided)
-      const result = await manager.createOffChainHandshake(partnerAddress);
-
-      // Refresh the UI state to trigger re-render with the new contact
-      await g().hydrateOneonOneConversations();
-
-      return result;
     },
 
     generateUniqueAlias: () => {
