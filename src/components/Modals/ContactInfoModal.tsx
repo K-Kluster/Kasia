@@ -307,16 +307,15 @@ export const ContactInfoModal: FC<ContactInfoModalProps> = ({ oooc }) => {
                 <div className="font-mono text-sm break-all text-[var(--text-primary)]">
                   {currentOooc.conversation.theirAlias ?? "N/A"}
                 </div>
-                {currentOooc.conversation.theirAlias && (
-                  <button
-                    onClick={() => setEditingAlias("their")}
-                    className="relative cursor-pointer rounded p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
-                    disabled={isSaving}
-                  >
-                    <Pencil className="size-3" />
-                    <span className="absolute inset-0 p-3" />
-                  </button>
-                )}
+
+                <button
+                  onClick={() => setEditingAlias("their")}
+                  className="relative cursor-pointer rounded p-1 text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
+                  disabled={isSaving}
+                >
+                  <Pencil className="size-3" />
+                  <span className="absolute inset-0 p-3" />
+                </button>
               </div>
             )}
           </div>
