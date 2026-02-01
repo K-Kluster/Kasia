@@ -7,3 +7,7 @@
 4. upload the `.zip` file and click `Save and Deploy`
 
 Alternatively, if you wish to deploy a "staging" or "beta" version, you can tick `preview` while uploading the compressed build file. This will create a new application that will be up for testing, prior publishing it to production.
+
+## Alternatively with Wrangler
+- `npx wrangler pages deploy dist --project-name kasia --branch master`
+- or for staging: `npx wrangler pages deploy dist --project-name kasia --branch staging`
