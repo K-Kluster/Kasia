@@ -4,6 +4,7 @@ import { NetworkType } from "../../types/all";
 const knsApiRoots = {
   mainnet: "https://api.knsdomains.org/mainnet/api/v1",
   "testnet-10": "https://api.knsdomains.org/tn10/api/v1",
+  "testnet-12": "https://api.knsdomains.org/tn12/api/v1", //this wont work but its ok
 };
 
 export interface KNSDomainResolution {
@@ -23,7 +24,11 @@ export const knsIntegrationService_getDomainResolution = async (
   network: NetworkType,
   name: string
 ): Promise<KNSDomainResolution | null> => {
-  if (network !== "mainnet" && network !== "testnet-10") {
+  if (
+    network !== "mainnet" &&
+    network !== "testnet-10" &&
+    network !== "testnet-12"
+  ) {
     throw new Error("Unsupported network");
   }
 

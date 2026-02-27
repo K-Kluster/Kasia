@@ -15,13 +15,16 @@ export type ModalType =
   | "delete"
   | "seed"
   | "settings"
+  | "settings-unlocked"
   | "contact-info-modal"
   | "image"
   | "new-chat"
   | "new-broadcast"
   | "broadcast-participant-info"
   | "qr-scanner"
-  | "donation";
+  | "offchain-handshake"
+  | "donation"
+  | "confirm";
 type Theme = "light" | "dark" | "system" | "custom";
 
 type UiState = {
@@ -64,6 +67,17 @@ type UiState = {
   // Delete wallet modal state
   pendingDeleteWalletId: string | null;
   setPendingDeleteWalletId: (id: string | null) => void;
+
+  // Confirmation modal state
+  confirmationConfig: {
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  } | null;
+  setConfirmationConfig: (config: UiState["confirmationConfig"]) => void;
 };
 
 // Get initial theme from localStorage or default to system
@@ -223,4 +237,8 @@ export const useUiStore = create<UiState>()((set, get) => ({
   // Delete wallet state
   pendingDeleteWalletId: null,
   setPendingDeleteWalletId: (id) => set({ pendingDeleteWalletId: id }),
+
+  // Confirmation modal state
+  confirmationConfig: null,
+  setConfirmationConfig: (config) => set({ confirmationConfig: config }),
 }));

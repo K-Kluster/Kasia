@@ -9,6 +9,7 @@ import { UnlockedWallet } from "../types/wallet.type";
 import { useLiveStore } from "../store/live.store";
 import { useBroadcastStore } from "../store/broadcast.store";
 import { useFeatureFlagsStore, FeatureFlags } from "../store/featureflag.store";
+import { useBlocklistStore } from "../store/blocklist.store";
 import { getEffectiveIndexerUrl } from "../utils/indexer-settings";
 
 export type ConnectOpts = {
@@ -123,6 +124,17 @@ export const useOrchestrator = () => {
       conversationManager: null,
     });
 
+    // load blocked addresses BEFORE messaging store to prevent rehydrating blocked contacts
+    try {
+      await useBlocklistStore.getState().loadBlockedAddresses();
+      console.log("Blocked addresses loaded");
+    } catch (error) {
+      console.error(
+        "Failed to load blocked addresses during initialization:",
+        error
+      );
+    }
+
     await messagingStore.load(receivedAddressString);
 
     // load broadcast channels async so we can start processing them straight away
@@ -132,7 +144,25 @@ export const useOrchestrator = () => {
       useBroadcastStore
         .getState()
         .loadChannels()
-        .then(() => console.log("Broadcast channels loaded"))
+        .then(async () => {
+          console.log("Broadcast channels loaded");
+
+          // Add default broadcast channel if not already added
+          const defaultsLoaded = localStorage.getItem(
+            "kasia-load-defaults-true"
+          );
+          if (!defaultsLoaded) {
+            try {
+              await useBroadcastStore
+                .getState()
+                .addChannel("kasia-general", "default");
+              localStorage.setItem("kasia-load-defaults-true", "true");
+              console.log("Added default broadcast channel: kasia-general");
+            } catch (error) {
+              console.error("Failed to add default broadcast channel:", error);
+            }
+          }
+        })
         .catch((error) =>
           console.error(
             "Failed to load broadcast channels during initialization:",
@@ -183,6 +213,9 @@ export const useOrchestrator = () => {
 
     // clear broadcast store to prevent channel/message bleed
     broadcastStore.reset();
+
+    // clear blocklist store to prevent address list bleed
+    useBlocklistStore.getState().reset();
   };
 
   return { connect, startSession, onPause, onResume };

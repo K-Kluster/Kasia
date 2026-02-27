@@ -22,8 +22,12 @@ import {
   BroadcastChannelRepository,
 } from "./broadcast-channel.repository";
 import { MetaRespository } from "./meta.repository";
+import {
+  DbBlockedAddress,
+  BlockedAddressRepository,
+} from "./blocked-address.repository";
 
-const CURRENT_DB_VERSION = 3;
+const CURRENT_DB_VERSION = 5;
 
 export class DBNotFoundException extends Error {
   constructor() {
@@ -111,13 +115,21 @@ export interface KasiaDBSchema extends DBSchema {
       "by-tenant-id": string;
     };
   };
+  blockedAddresses: {
+    key: string;
+    value: DbBlockedAddress;
+    indexes: {
+      "by-tenant-id": string;
+      "by-tenant-id-timestamp": [string, Date];
+    };
+  };
 }
 
 export type KasiaDB = IDBPDatabase<KasiaDBSchema>;
 
 export const openDatabase = async (): Promise<KasiaDB> => {
   return openDB<KasiaDBSchema>("kasia-db", CURRENT_DB_VERSION, {
-    upgrade(db, oldVersion, newVersion, transaction) {
+    async upgrade(db, oldVersion, newVersion, transaction) {
       console.log(
         `[DB] - Identity database upgrade from version ${oldVersion} to ${newVersion}`
       );
@@ -260,9 +272,54 @@ export const openDatabase = async (): Promise<KasiaDB> => {
       }
 
       if (oldVersion <= 3) {
+        // blocked addresses
+        const blockedAddressesStore = db.createObjectStore("blockedAddresses", {
+          keyPath: "id",
+        });
+        blockedAddressesStore.createIndex("by-tenant-id", "tenantId");
+        blockedAddressesStore.createIndex("by-tenant-id-timestamp", [
+          "tenantId",
+          "timestamp",
+        ]);
+
+        console.log("Database schema upgraded to v4 - blocked addresses");
+      }
+
+      if (oldVersion <= 4) {
+        // Migration to v4: Add status field to existing messages and payments
+        const messagesStore = transaction.objectStore("messages");
+        let cursor = await messagesStore.openCursor();
+
+        while (cursor) {
+          const message = cursor.value;
+          // add default status to existing messages that don't have it
+          if (!message.status) {
+            message.status = "confirmed";
+            await cursor.update(message);
+          }
+          cursor = await cursor.continue();
+        }
+
+        const paymentsStore = transaction.objectStore("payments");
+        let paymentCursor = await paymentsStore.openCursor();
+
+        while (paymentCursor) {
+          const payment = paymentCursor.value;
+          // add default status to existing payments that don't have it
+          if (!payment.status) {
+            payment.status = "confirmed";
+            await paymentCursor.update(payment);
+          }
+          paymentCursor = await paymentCursor.continue();
+        }
+
+        console.log(
+          "[DB] - Migrated to v4: Added status field to messages and payments"
+        );
+      }
+      if (oldVersion <= 5) {
         // HERE next migration, first increase CURRENT_DB_VERSION then implement with oldVersion <= CURRENT_DB_VERSION - 1
         // add more if branching for each next version
-        // BROADCAST CHANNELS
       }
     },
   });
@@ -277,6 +334,7 @@ export class Repositories {
   public readonly handshakeRepository: HandshakeRepository;
   public readonly savedHandshakeRepository: SavedHandhshakeRepository;
   public readonly broadcastChannelRepository: BroadcastChannelRepository;
+  public readonly blockedAddressRepository: BlockedAddressRepository;
   public readonly metadataRepository: MetaRespository;
 
   constructor(
@@ -328,6 +386,12 @@ export class Repositories {
       walletPassword
     );
 
+    this.blockedAddressRepository = new BlockedAddressRepository(
+      db,
+      tenantId,
+      walletPassword
+    );
+
     this.metadataRepository = new MetaRespository(tenantId);
   }
 
@@ -360,5 +424,55 @@ export class Repositories {
         .catch(() => false),
     ]);
     return !!message || !!payment || !!handshake;
+  }
+
+  /**
+   * delete all messages, payments, handshakes and optionally conversation and contact for a given contact
+   */
+  async deleteAllDataForContact(
+    contactId: string,
+    options?: { deleteConversation?: boolean; deleteContact?: boolean }
+  ): Promise<void> {
+    try {
+      // get the conversation for this contact
+      const conversation = await this.conversationRepository
+        .getConversationByContactId(contactId)
+        .catch(() => null);
+
+      if (conversation) {
+        // delete all messages, payments, and handshakes for this conversation
+        const [messages, payments, handshakes] = await Promise.all([
+          this.messageRepository.getMessagesByConversationId(conversation.id),
+          this.paymentRepository.getPaymentsByConversationId(conversation.id),
+          this.handshakeRepository.getHanshakesByConversationId(
+            conversation.id
+          ),
+        ]);
+
+        // delete all events
+        await Promise.all([
+          ...messages.map((m) => this.messageRepository.deleteMessage(m.id)),
+          ...payments.map((p) => this.paymentRepository.deletePayment(p.id)),
+          ...handshakes.map((h) =>
+            this.handshakeRepository.deleteHandshake(h.id)
+          ),
+        ]);
+
+        // delete conversation if requested
+        if (options?.deleteConversation) {
+          await this.conversationRepository.deleteConversation(conversation.id);
+        }
+      }
+
+      // delete contact if requested
+      if (options?.deleteContact) {
+        await this.contactRepository.deleteContact(contactId);
+      }
+
+      console.log(`Deleted all data for contact ${contactId}`);
+    } catch (error) {
+      console.error("Error deleting contact data:", error);
+      throw error;
+    }
   }
 }

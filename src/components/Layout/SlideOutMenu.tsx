@@ -10,9 +10,7 @@ import {
 } from "lucide-react";
 import { Settings } from "lucide-react";
 import { useUiStore } from "../../store/ui.store";
-import { SettingsModal } from "../Modals/SettingsModal";
 import { isIndexerDisabled } from "../../utils/indexer-settings";
-import { ConnectionIndicator } from "../Common/ConnectionIndicator";
 
 type SlideOutMenuProps = {
   address?: string;
@@ -29,7 +27,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
   const setSettingsOpen = useUiStore((s) => s.setSettingsOpen);
 
   const { openModal } = useUiStore();
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -150,7 +147,7 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
           {/* Sign Out Section */}
           <div className="border-primary-border mt-auto border-t p-3">
             <button
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => openModal("settings-unlocked")}
               className="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-4 transition-colors active:bg-gray-700"
             >
               <Settings className="h-5 w-5 text-[var(--text-primary)]" />
@@ -171,12 +168,6 @@ export const SlideOutMenu: FC<SlideOutMenuProps> = ({
           </div>
         </div>
       </aside>
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      />
     </>
   );
 };

@@ -1,16 +1,6 @@
 import { create } from "zustand";
 import { KasiaDB, openDatabase, Repositories } from "./repository/db";
 import { UnlockedWallet } from "../types/wallet.type";
-import { v4 } from "uuid";
-import {
-  LEGACY_STORAGE_KEY,
-  loadLegacyMessages,
-} from "../service/storage-encryption";
-import { PROTOCOL } from "../config/protocol";
-import { FileData, Message } from "./repository/message.repository";
-import { Handshake } from "./repository/handshake.repository";
-import { Payment } from "./repository/payment.repository";
-import { LegacyMessage } from "../types/legacy";
 
 interface DBState {
   db: KasiaDB | undefined;

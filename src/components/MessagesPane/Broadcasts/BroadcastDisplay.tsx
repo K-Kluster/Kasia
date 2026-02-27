@@ -114,6 +114,7 @@ export const BroadcastDisplay: FC<BroadcastDisplayProps> = ({
         <MessageContent
           content={message.content}
           isDecrypting={false}
+          isBroadcast={true}
           isOutgoing={isOutgoing}
         />
         {renderTimestamp()}

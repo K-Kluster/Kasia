@@ -71,8 +71,8 @@ export const CreateWallet = ({ onSuccess, onBack }: CreateWalletProps) => {
 
       onSuccess(id, mnemonic);
     } catch (err) {
-      console.error("Wallet creation error:", err);
-      setError(err instanceof Error ? err.message : "Failed to create wallet");
+      console.error("Account creation error:", err);
+      setError(err instanceof Error ? err.message : "Failed to create account");
     } finally {
       setIsCreating(false);
       if (passwordRef.current?.value) passwordRef.current.value = "";
@@ -91,17 +91,17 @@ export const CreateWallet = ({ onSuccess, onBack }: CreateWalletProps) => {
 
   return (
     <>
-      <h2 className="mb-3 text-center text-lg font-bold">Create Wallet</h2>
+      <h2 className="mb-3 text-center text-lg font-bold">Create Account</h2>
 
       <div className="my-1">
         <label className="mb-3 block text-base font-semibold">
-          Wallet Name
+          Account Name
         </label>
         <div>
           <input
             ref={nameRef}
             type="text"
-            placeholder="My Wallet"
+            placeholder="My Account"
             maxLength={25}
             onChange={handleNameChange}
             className="border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:!border-[var(--color-kas-secondary)] focus:outline-none"

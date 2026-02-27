@@ -1,7 +1,6 @@
-import { FC, useState } from "react";
+import { FC } from "react";
 import clsx from "clsx";
 import { PanelLeftOpen, Settings, ArrowLeft, User, Wallet } from "lucide-react";
-import { SettingsModal } from "../Modals/SettingsModal";
 import { useUiStore } from "../../store/ui.store";
 import { useWalletStore } from "../../store/wallet.store";
 
@@ -19,7 +18,6 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
 }) => {
   const openModal = useUiStore((s) => s.openModal);
   const lockWallet = useWalletStore((s) => s.lock);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   return (
     <div className="border-primary-border bg-secondary-bg border-t p-2 select-none">
@@ -59,7 +57,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
 
             {/* settings */}
             <button
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => openModal("settings-unlocked")}
               className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 hover:text-[var(--kas-primary)] focus:outline-none active:scale-90 active:opacity-80"
               aria-label="Settings"
             >
@@ -90,7 +88,7 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
 
             {/* settings */}
             <button
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => openModal("settings-unlocked")}
               className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 hover:text-[var(--kas-primary)] focus:outline-none active:scale-90 active:opacity-80"
               aria-label="Settings"
             >
@@ -147,11 +145,6 @@ export const DesktopMenu: FC<DesktopMenuProps> = ({
           )}
         </button>
       </div>
-
-      <SettingsModal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-      />
     </div>
   );
 };

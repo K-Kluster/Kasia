@@ -44,6 +44,7 @@ import { HoldToDelete } from "../Common/HoldToDelete";
 import { AppVersion } from "../App/AppVersion";
 import { toast } from "../../utils/toast-helper";
 import { Donations } from "../Common/Donations";
+import { BlockList } from "./SubSettings/BlockList";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -95,7 +96,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: "security", label: "Security", icon: Shield },
     // only show if there are >0 flips
     ...(Object.keys(flips).length > 0
-      ? [{ id: "extras", label: "Extra", icon: RectangleEllipsis }]
+      ? [
+          {
+            id: "extras",
+            label: isMobile ? "Feat." : "Features",
+            icon: RectangleEllipsis,
+          },
+        ]
       : []),
     ...(devMode
       ? [
@@ -129,6 +136,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Delete all messages state
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+
+  // Blocklist state
+  const [showBlocklist, setShowBlocklist] = useState(false);
 
   // Custom theme state
   const [showCustomTheme, setShowCustomTheme] = useState(false);
@@ -238,18 +248,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleNameChange = async () => {
     if (!selectedWalletId) {
-      setNameChangeError("No wallet selected");
+      setNameChangeError("No account selected");
       return;
     }
 
     // Basic validation (real-time validation handles most cases)
     if (!newWalletName.trim()) {
-      setNameChangeError("Please enter a wallet name");
+      setNameChangeError("Please enter an account name");
       return;
     }
 
     if (newWalletName.trim().length < 2) {
-      setNameChangeError("Wallet name must be at least 2 characters long");
+      setNameChangeError("Account name must be at least 2 characters long");
       return;
     }
 
@@ -272,7 +282,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       }, 2000);
     } catch (error) {
       setNameChangeError(
-        error instanceof Error ? error.message : "Failed to change wallet name"
+        error instanceof Error ? error.message : "Failed to change account name"
       );
     } finally {
       setIsChangingName(false);
@@ -346,7 +356,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
     const currentWallet = wallets.find((w) => w.id === selectedWalletId);
     if (currentWallet && newWalletName.trim() === currentWallet.name) {
-      setNameChangeError("This is already your current wallet name");
+      setNameChangeError("This is already your current account name");
       return;
     }
 
@@ -358,7 +368,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     );
 
     if (nameExists) {
-      setNameChangeError("A wallet with this name already exists");
+      setNameChangeError("An account with this name already exists");
       return;
     }
 
@@ -366,18 +376,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setNameChangeError("");
   }, [newWalletName, wallets, selectedWalletId, showNameChange]);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add("settings-modal-open");
-    } else {
-      document.body.classList.remove("settings-modal-open");
-    }
-    return () => {
-      document.body.classList.remove("settings-modal-open");
-    };
-  }, [isOpen]);
-
-  // Reset custom theme state when switching away from custom theme
+  // reset custom theme state when switching away from custom theme
   useEffect(() => {
     if (theme !== "custom") {
       setShowCustomTheme(false);
@@ -432,9 +431,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         isMobile && activeTab === tab.id,
                       "text-primary bg-primary-bg border-kas-secondary rounded-lg border":
                         !isMobile && activeTab === tab.id,
-                      "text-muted-foreground hover:text-primary border-b-2 border-transparent":
+                      "hover:text-primary border-b-2 border-transparent":
                         isMobile && activeTab !== tab.id,
-                      "text-muted-foreground hover:text-primary border border-transparent":
+                      "hover:text-primary border border-transparent":
                         !isMobile && activeTab !== tab.id,
                     }
                   )}
@@ -474,13 +473,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="mb-2 text-sm font-bold">
                             Your Wallet:
                           </div>
-                          <div className="text-muted-foreground text-lg font-bold">
+                          <div className="text-lg font-bold">
                             {unlockedWallet.name}
                           </div>
                         </div>
                       )}
 
-                      {/* Change Wallet Name */}
+                      {/* Change Account Name */}
                       <button
                         onClick={initializeNameChange}
                         className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
@@ -488,10 +487,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <Edit3 className="h-5 w-5" />
                         <div className="text-left">
                           <div className="text-sm font-medium">
-                            Change Wallet Name
+                            Change Account Name
                           </div>
                           <div className="text-muted-foreground text-xs">
-                            Update your wallet's display name
+                            Update your accounts's display name
                           </div>
                         </div>
                       </button>
@@ -506,7 +505,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             <div className="text-sm font-medium">
                               Import / Export Messages
                             </div>
-                            <div className="text-muted-foreground text-xs">
+                            <div className="text-xs">
                               Backup or restore your message history
                             </div>
                           </div>
@@ -524,7 +523,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           <div className="text-sm font-medium">
                             Delete All Messages
                           </div>
-                          <div className="text-muted-foreground text-xs">
+                          <div className="text-xs">
                             Permanently remove all conversations and data
                           </div>
                         </div>
@@ -536,12 +535,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="mb-2 flex items-center gap-3">
                       <button
                         onClick={resetNameChangeForm}
-                        className="hover:text-primary text-muted-foreground cursor-pointer p-1 transition-colors"
+                        className="hover:text-primary cursor-pointer p-1 transition-colors"
                       >
                         <ArrowLeft className="h-5 w-5" />
                       </button>
                       <h3 className="text-lg font-medium">
-                        Change Wallet Name
+                        Change Account Name
                       </h3>
                     </div>
 
@@ -549,29 +548,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {nameChangeSuccess ? (
                         <div className="border-primary-border rounded-lg border p-4 text-center">
                           <div className="mb-2 text-green-500">
-                            Wallet name changed successfully!
+                            Account name changed successfully!
                           </div>
                           <div className="text-muted-foreground text-sm">
-                            Your wallet name has been updated.
+                            Your account name has been updated.
                           </div>
                         </div>
                       ) : (
                         <form onSubmit={handleNameChange} className="space-y-4">
-                          {/* Wallet Name Input */}
+                          {/* Account Name Input */}
                           <div>
                             <label
-                              htmlFor="wallet-name"
+                              htmlFor="account-name"
                               className="mb-2 block text-sm font-medium"
                             >
-                              Wallet Name
+                              Account Name
                             </label>
                             <input
                               type="text"
-                              id="wallet-name"
+                              id="account-name"
                               value={newWalletName}
                               onChange={(e) => setNewWalletName(e.target.value)}
                               className="border-primary-border bg-primary-bg text-primary focus:ring-kas-secondary/80 w-full rounded-lg border p-3 text-base focus:ring-2 focus:outline-none sm:text-sm"
-                              placeholder="Enter wallet name"
+                              placeholder="Enter account name"
                               disabled={isChangingName}
                               maxLength={50}
                             />
@@ -617,7 +616,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="mb-2 flex items-center gap-3">
                       <button
                         onClick={() => setShowImportExport(false)}
-                        className="hover:text-primary text-muted-foreground cursor-pointer p-1 transition-colors"
+                        className="hover:text-primary cursor-pointer p-1 transition-colors"
                       >
                         <ArrowLeft className="h-5 w-5" />
                       </button>
@@ -632,7 +631,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="mb-2 flex items-center gap-3">
                       <button
                         onClick={() => setShowDeleteAll(false)}
-                        className="hover:text-primary text-muted-foreground cursor-pointer p-1 transition-colors"
+                        className="hover:text-primary cursor-pointer p-1 transition-colors"
                       >
                         <ArrowLeft className="h-5 w-5" />
                       </button>
@@ -651,7 +650,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="mb-4 text-sm font-medium">
                           Confirm Deletion
                         </div>
-                        <div className="text-muted-foreground mb-4 text-sm">
+                        <div className="mb-4 text-sm">
                           Click and hold the delete button below to confirm you
                           want to permanently delete all messages.
                         </div>
@@ -735,7 +734,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="mb-2 flex items-center gap-3">
                       <button
                         onClick={() => setShowCustomTheme(false)}
-                        className="hover:text-primary text-muted-foreground cursor-pointer p-1 transition-colors"
+                        className="hover:text-primary cursor-pointer p-1 transition-colors"
                       >
                         <ArrowLeft className="h-5 w-5" />
                       </button>
@@ -781,13 +780,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="mb-2 text-sm font-medium">
                       Current Network
                     </div>
-                    <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-xs">
                       <div
                         className={clsx(
                           "h-2 w-2 rounded-full",
                           networkStore.isConnected
-                            ? "bg-green-500"
-                            : "bg-red-500"
+                            ? "bg-[var(--accent-green)]"
+                            : "bg-[var(--accent-red)]"
                         )}
                       />
                       {networkStore.network}{" "}
@@ -796,7 +795,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         : "(Disconnected)"}
                     </div>
                     {networkStore.nodeUrl && (
-                      <div className="text-muted-foreground mt-2 text-xs">
+                      <div className="mt-2 text-xs">
                         <div className="text-xs break-all">
                           {networkStore.nodeUrl}
                         </div>
@@ -808,13 +807,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             )}
             {activeTab === "security" && (
               <div className="mt-3 space-y-6 sm:mt-0">
-                {!showPasswordChange ? (
+                {!showPasswordChange && !showBlocklist ? (
                   <>
                     <h3 className="mb-4 text-lg font-medium">Security</h3>
                     <div className="space-y-2">
-                      {/* Wallet Security */}
-                      <WarningBlock title="Wallet Security">
-                        Your wallet is protected by your password. Keep your
+                      {/* Account Security */}
+                      <WarningBlock title="Account Security">
+                        Your account is protected by your password. Keep your
                         password and seed phrase secure.
                       </WarningBlock>
 
@@ -829,7 +828,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             Change Password
                           </div>
                           <div className="text-muted-foreground text-xs">
-                            Update the password used to unlock your wallet
+                            Update the password used to unlock your account
                           </div>
                         </div>
                       </button>
@@ -846,18 +845,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div className="text-left">
                           <div className="text-sm font-medium">Seed Phrase</div>
                           <div className="text-muted-foreground text-xs">
-                            View Your Wallets Seed Phrase
+                            View Your Accounts Seed Phrase
+                          </div>
+                        </div>
+                      </button>
+
+                      {/* Blocklist */}
+                      <button
+                        onClick={() => setShowBlocklist(true)}
+                        className="bg-primary-bg hover:bg-primary-bg/50 border-primary-border flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-4 transition-all duration-200 active:rounded-4xl"
+                      >
+                        <Shield className="h-5 w-5" />
+                        <div className="text-left">
+                          <div className="text-sm font-medium">Blocklist</div>
+                          <div className="text-xs">
+                            Manage blocked addresses and privacy settings
                           </div>
                         </div>
                       </button>
                     </div>
                   </>
-                ) : (
+                ) : showPasswordChange ? (
                   <>
                     <div className="mb-4 flex items-center gap-3">
                       <button
                         onClick={resetPasswordChangeForm}
-                        className="hover:text-primary text-muted-foreground cursor-pointer p-1 transition-colors"
+                        className="hover:text-primary cursor-pointer p-1 transition-colors"
                       >
                         <ArrowLeft className="h-5 w-5" />
                       </button>
@@ -871,7 +884,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             Password changed successfully!
                           </div>
                           <div className="text-muted-foreground text-sm">
-                            Your wallet password has been updated.
+                            Your account password has been updated.
                           </div>
                         </div>
                       ) : (
@@ -950,67 +963,199 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       )}
                     </div>
                   </>
-                )}
+                ) : showBlocklist ? (
+                  <>
+                    <div className="mb-4 flex items-center gap-3">
+                      <button
+                        onClick={() => setShowBlocklist(false)}
+                        className="hover:text-primary cursor-pointer p-1 transition-colors"
+                      >
+                        <ArrowLeft className="h-5 w-5" />
+                      </button>
+                      <h3 className="text-lg font-medium">Blocklist</h3>
+                    </div>
+                    <BlockList />
+                  </>
+                ) : null}
               </div>
             )}
             {activeTab === "extras" && (
               <div className="mt-3 space-y-6 sm:mt-0">
-                <h3 className="mb-4 text-lg font-medium">Extra</h3>
+                <h3 className="mb-4 text-lg font-medium">Features</h3>
+                <div className="mt-3 space-y-6 overflow-hidden sm:mt-0">
+                  <h3 className="mb-4 text-lg font-medium">Extra</h3>
 
-                <div className="space-y-2">
-                  {/* Warning */}
-                  <WarningBlock title="Warning">
-                    Some of these features are in beta or expose you to external
-                    content
-                  </WarningBlock>
-                  {Object.entries(flips).map(([flagKey, item]) => (
-                    <div
-                      key={flagKey}
-                      onClick={() =>
-                        setFlag(
-                          flagKey as FeatureFlags,
-                          !flags[flagKey as FeatureFlags]
-                        )
-                      }
-                      className="border-primary-border bg-primary-bg hover:bg-primary-bg/50 my-2 cursor-pointer rounded-2xl border p-4 transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="mb-1 text-sm font-semibold">
-                            {item.label}
+                  <div className="space-y-2">
+                    {/* Warning */}
+                    <WarningBlock title="Warning">
+                      Some of these features are in beta or expose you to
+                      external content
+                    </WarningBlock>
+                    {Object.entries(flips).map(([flagKey, item]) => (
+                      <div
+                        key={flagKey}
+                        onClick={() =>
+                          setFlag(
+                            flagKey as FeatureFlags,
+                            !flags[flagKey as FeatureFlags]
+                          )
+                        }
+                        className="border-primary-border bg-primary-bg hover:bg-primary-bg/50 my-2 cursor-pointer rounded-2xl border p-4 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="mb-1 text-sm font-semibold">
+                              {item.label}
+                            </div>
+                            <div className="text-xs whitespace-pre-line">
+                              {item.desc}
+                            </div>
                           </div>
-                          <div className="text-muted-foreground text-xs whitespace-pre-line">
-                            {item.desc}
-                          </div>
-                        </div>
-                        <Switch
-                          checked={flags[flagKey as FeatureFlags] || false}
-                          onChange={(enabled) =>
-                            setFlag(flagKey as FeatureFlags, enabled)
-                          }
-                          className={clsx(
-                            "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
-                            {
-                              "bg-kas-secondary":
-                                flags[flagKey as FeatureFlags],
-                              "bg-gray-300": !flags[flagKey as FeatureFlags],
+                          <Switch
+                            checked={flags[flagKey as FeatureFlags] || false}
+                            onChange={(enabled) =>
+                              setFlag(flagKey as FeatureFlags, enabled)
                             }
-                          )}
-                        >
-                          <span
                             className={clsx(
-                              "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                              "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
                               {
-                                "translate-x-6": flags[flagKey as FeatureFlags],
-                                "translate-x-1":
-                                  !flags[flagKey as FeatureFlags],
+                                "bg-kas-secondary":
+                                  flags[flagKey as FeatureFlags],
+                                "bg-gray-300": !flags[flagKey as FeatureFlags],
                               }
                             )}
-                          />
-                        </Switch>
+                          >
+                            <span
+                              className={clsx(
+                                "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                {
+                                  "translate-x-6":
+                                    flags[flagKey as FeatureFlags],
+                                  "translate-x-1":
+                                    !flags[flagKey as FeatureFlags],
+                                }
+                              )}
+                            />
+                          </Switch>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  {Object.entries(flips)
+                    .filter(([, item]) => !item.parent) // only render parent flags at top level
+                    .map(([flagKey, item]) => {
+                      const isEnabled = flags[flagKey as FeatureFlags];
+
+                      // find child flags for this parent
+                      const childFlags = Object.entries(flips).filter(
+                        ([, childItem]) => childItem.parent === flagKey
+                      );
+
+                      return (
+                        <div key={flagKey} className="my-2">
+                          {/* Parent Flag */}
+                          <div
+                            onClick={() =>
+                              setFlag(flagKey as FeatureFlags, !isEnabled)
+                            }
+                            className="border-primary-border bg-primary-bg hover:bg-primary-bg/50 cursor-pointer rounded-2xl border p-4 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="mb-1 text-sm font-semibold">
+                                  {item.label}
+                                </div>
+                                <div className="text-muted-foreground text-xs whitespace-pre-line">
+                                  {item.desc}
+                                </div>
+                              </div>
+                              <Switch
+                                checked={isEnabled}
+                                onChange={(enabled) =>
+                                  setFlag(flagKey as FeatureFlags, enabled)
+                                }
+                                className={clsx(
+                                  "relative inline-flex h-6 w-11 cursor-pointer items-center rounded-full transition-colors",
+                                  {
+                                    "bg-kas-secondary": isEnabled,
+                                    "bg-gray-300": !isEnabled,
+                                  }
+                                )}
+                              >
+                                <span
+                                  className={clsx(
+                                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                                    {
+                                      "translate-x-6": isEnabled,
+                                      "translate-x-1": !isEnabled,
+                                    }
+                                  )}
+                                />
+                              </Switch>
+                            </div>
+                          </div>
+
+                          {/* Child flags - only show when parent is enabled */}
+                          {isEnabled && childFlags.length > 0 && (
+                            <div className="mt-2 space-y-2 pl-4">
+                              {childFlags.map(([childKey, childItem]) => {
+                                const isChildEnabled =
+                                  flags[childKey as FeatureFlags];
+                                return (
+                                  <div
+                                    key={childKey}
+                                    onClick={() =>
+                                      setFlag(
+                                        childKey as FeatureFlags,
+                                        !isChildEnabled
+                                      )
+                                    }
+                                    className="border-primary-border bg-primary-bg/80 hover:bg-primary-bg/60 cursor-pointer rounded-xl border p-3 transition-colors"
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="text-sm font-medium">
+                                          {childItem.label}
+                                        </div>
+                                        <div className="text-muted-foreground text-xs whitespace-pre-line">
+                                          {childItem.desc}
+                                        </div>
+                                      </div>
+                                      <Switch
+                                        checked={isChildEnabled}
+                                        onChange={(enabled) =>
+                                          setFlag(
+                                            childKey as FeatureFlags,
+                                            enabled
+                                          )
+                                        }
+                                        className={clsx(
+                                          "relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors",
+                                          {
+                                            "bg-kas-secondary": isChildEnabled,
+                                            "bg-gray-300": !isChildEnabled,
+                                          }
+                                        )}
+                                      >
+                                        <span
+                                          className={clsx(
+                                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                            {
+                                              "translate-x-5": isChildEnabled,
+                                              "translate-x-1": !isChildEnabled,
+                                            }
+                                          )}
+                                        />
+                                      </Switch>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                 </div>
               </div>
             )}

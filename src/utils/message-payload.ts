@@ -1,7 +1,6 @@
 import { PROTOCOL } from "../config/protocol";
 import { hexToString } from "./format";
 import { ITransaction } from "wasm/kaspa";
-import { ExplorerTransaction } from "../types/transactions";
 
 export type ParsedKaspaMessagePayload = {
   type: string;

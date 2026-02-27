@@ -2,6 +2,7 @@ import { IBlockAdded, ITransaction, RpcClient } from "kaspa-wasm";
 import { BlockAddedData, Header } from "../types/all";
 import { SenderAndAcceptanceResolutionService } from "./sender-and-acceptance-resolution-service";
 import { useMessagingStore } from "../store/messaging.store";
+import { useWalletStore } from "../store/wallet.store";
 import {
   isKasiaTransaction,
   ParsedKaspaMessagePayload,
@@ -17,6 +18,7 @@ import EventEmitter from "eventemitter3";
 import { devMode } from "../config/dev-mode";
 import { useBroadcastStore } from "../store/broadcast.store";
 import { getTransactionId } from "../types/transactions";
+import { useBlocklistStore } from "../store/blocklist.store";
 
 export type RawResolvedKasiaTransaction = {
   id: string;
@@ -103,18 +105,57 @@ export class BlockProcessorService extends EventEmitter<{
 
       // mark as processed optimistically
       this.processedTransactionIds.add(txId);
+      const parsed = parseKaspaMessagePayload(tx.payload);
 
+      const messageType = parsed.type;
+
+      /*
+       * Temp solution to mark out pending messages and payments as confirmed
+       * This is planned to be refactored once there are some node updates
+       * We should wait until kaspa core finally implements vccv2, taking them ages
+       */
       if (
         await useDBStore.getState().repositories.doesKasiaEventExistsById(txId)
       ) {
-        console.log(`Transaction ${txId} already processed`);
+        // try to flip pending direct message to confirmed (even if already stored)
+        const unlockedWallet = useWalletStore.getState().unlockedWallet;
+        const repositories = useDBStore.getState().repositories;
+        if (unlockedWallet && repositories) {
+          const eventId = `${unlockedWallet.id}_${txId}`;
+          try {
+            let existingEvent;
+            switch (messageType) {
+              case "comm":
+                existingEvent =
+                  await repositories.messageRepository.getMessage(eventId);
+                break;
+              case "payment":
+                existingEvent =
+                  await repositories.paymentRepository.getPayment(eventId);
+                break;
+              default:
+                console.error(`Unknown message type: ${messageType}`);
+                return;
+            }
+            if (existingEvent?.status === "pending") {
+              await useMessagingStore
+                .getState()
+                .updateEventStatus(
+                  txId,
+                  "confirmed",
+                  repositories,
+                  existingEvent
+                );
+            }
+          } catch (e) {
+            console.log("Error updating direct status to 'confirmed':", e);
+          }
+        }
         return;
       }
-
       /*
        * Temp hacky solution to mark out pending broadcasts as confirmed
-       * This is planned to be unified with a single pending set so we can extend
-       * the same functionality to outgoing chat messages too
+       * Currently only updates in memory broadcasts
        */
       const broadcastStore = useBroadcastStore.getState();
       const existingPendingMessage = broadcastStore.findMessageByTxId(txId);
@@ -137,11 +178,20 @@ export class BlockProcessorService extends EventEmitter<{
       // try to resolve sender
       const resolvedSenderData = await this.saars.askResolution(txId);
       const resolvedSenderAddress = resolvedSenderData.sender.toString();
-
-      const parsed = parseKaspaMessagePayload(tx.payload);
-
-      const messageType = parsed.type;
       const targetAlias = parsed.alias;
+
+      // check if sender is blocked - reject direct messages, allow broadcasts to be filtered by UI
+      const blocklistStore = useBlocklistStore.getState();
+      const isSenderBlocked = blocklistStore.isBlocked(resolvedSenderAddress);
+
+      if (isSenderBlocked && messageType !== PROTOCOL.headers.BROADCAST.type) {
+        if (devMode) {
+          console.log(
+            `Block Processor - Rejecting message from blocked address: ${resolvedSenderAddress}`
+          );
+        }
+        return; // don't process messages from blocked addresses
+      }
 
       // Log incoming message alias check
       if (messageType === PROTOCOL.headers.COMM.type && targetAlias) {
@@ -303,15 +353,6 @@ export class BlockProcessorService extends EventEmitter<{
       this.monitoredConversations.clear();
       this.monitoredAddresses.clear();
       const conversations = conversationManager.getMonitoredConversations();
-
-      console.log("[block-processor] Updating monitored aliases:", {
-        count: conversations.length,
-        aliases: conversations.map((c) => ({
-          alias: c.alias,
-          address: c.address,
-          note: "Monitoring myAlias for incoming messages",
-        })),
-      });
 
       // Silently update monitored conversations
       conversations.forEach((conv) => {

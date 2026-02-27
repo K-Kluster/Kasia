@@ -1,5 +1,6 @@
 import { encryptXChaCha20Poly1305, decryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { TransactionId } from "../../types/transactions";
+import { TransactionStatus } from "../../types/all";
 import { KasiaDB, DBNotFoundException } from "./db";
 
 export type DbPayment = {
@@ -15,6 +16,7 @@ export type DbPayment = {
   createdAt: Date;
   transactionId: TransactionId;
   contactId: string;
+  status: TransactionStatus;
   /**
    * encrypted data shaped as `json(PaymentBag)`
    */
@@ -180,6 +182,7 @@ export class PaymentRepository {
       conversationId: payment.conversationId,
       createdAt: payment.createdAt,
       contactId: payment.contactId,
+      status: payment.status,
       encryptedData: encryptXChaCha20Poly1305(
         JSON.stringify({
           amount: payment.amount,
@@ -204,6 +207,7 @@ export class PaymentRepository {
       contactId: dbPayment.contactId,
       conversationId: dbPayment.conversationId,
       createdAt: dbPayment.createdAt,
+      status: dbPayment.status,
       transactionId: dbPayment.transactionId,
       fee: paymentBag.fee,
       amount: paymentBag.amount,

@@ -1,6 +1,7 @@
 import { useComposerStore } from "../../store/message-composer.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { useMessagingStore } from "../../store/messaging.store";
+import { MARKDOWN_PREFIX } from "../../config/constants";
 import { Address } from "kaspa-wasm";
 import { toast } from "../../utils/toast-helper";
 import { unknownErrorToErrorLike } from "../../utils/errors";

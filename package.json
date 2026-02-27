@@ -41,7 +41,9 @@
     "qrcode": "1.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-markdown": "10.1.0",
     "react-router": "7.12.0",
+    "remark-breaks": "4.0.0",
     "tauri-plugin-app-events-api": "0.2.0",
     "uuid": "11.1.0",
     "zustand": "5.0.5"

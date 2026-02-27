@@ -4,8 +4,6 @@ import {
   SavedHandshakePayload,
 } from "src/types/messaging.types";
 import { v4 as uuidv4 } from "uuid";
-import { ALIAS_LENGTH } from "../config/constants";
-import { isAlias } from "../utils/alias-validator";
 import { DBNotFoundException, Repositories } from "../store/repository/db";
 import {
   Conversation,
@@ -17,6 +15,7 @@ import { Handshake } from "../store/repository/handshake.repository";
 import { deriveConversationAliases } from "../utils/deterministic-alias";
 import { useWalletStore } from "../store/wallet.store";
 import { WalletStorageService } from "./wallet-storage-service";
+import { useBlocklistStore } from "../store/blocklist.store";
 
 export class ConversationManagerService {
   private static readonly STORAGE_KEY_PREFIX = "encrypted_conversations";
@@ -280,6 +279,15 @@ export class ConversationManagerService {
     payload: HandshakePayload
   ): Promise<unknown> {
     try {
+      // check if sender is blocked before processing handshake
+      const blocklistStore = useBlocklistStore.getState();
+      if (blocklistStore.isBlocked(senderAddress)) {
+        console.log(
+          `Conversation Manager - Rejecting handshake from blocked address: ${senderAddress}`
+        );
+        return; // don't process handshakes from blocked addresses
+      }
+
       // STEP 1 – look up strictly by sender address only
       const existingConversationAndContactByAddress =
         this.getConversationWithContactByAddress(senderAddress);
@@ -503,6 +511,33 @@ export class ConversationManagerService {
     return true;
   }
 
+  // clears in-memory (non db) state for a conversation by address
+  // needed edge case of blocking > ublocking and tryint to re add contact
+  public clearConversationByAddress(address: string): boolean {
+    const conversationId = this.addressToConversation.get(address);
+    if (!conversationId) return false;
+
+    const conversationWithContact =
+      this.conversationWithContactByConversationId.get(conversationId);
+    if (!conversationWithContact) {
+      // just clear the address mapping if conversation not found
+      this.addressToConversation.delete(address);
+      return true;
+    }
+
+    const { conversation } = conversationWithContact;
+
+    // clear all in-memory maps
+    this.conversationWithContactByConversationId.delete(conversationId);
+    this.addressToConversation.delete(address);
+    this.aliasToConversation.delete(conversation.myAlias);
+    if (conversation.theirAlias) {
+      this.aliasToConversation.delete(conversation.theirAlias);
+    }
+
+    return true;
+  }
+
   public async updateConversation(
     conversation: Pick<Conversation, "id"> & Partial<Conversation>
   ) {
@@ -598,6 +633,13 @@ export class ConversationManagerService {
     recipientAddress: string,
     initiatedByMe: boolean
   ): Promise<{ conversation: Conversation; contact: Contact }> {
+    // prevent creating conversations with blocked addresses
+    if (this.isAddressBlocked(recipientAddress)) {
+      throw new Error(
+        `Cannot create conversation with blocked address: ${recipientAddress}`
+      );
+    }
+
     const contact = await this.repositories.contactRepository
       .getContactByKaspaAddress(recipientAddress)
       .catch(async (error) => {
@@ -661,6 +703,13 @@ export class ConversationManagerService {
     payload: SavedHandshakePayload,
     transactionId: string
   ): Promise<{ conversation: Conversation; contact: Contact }> {
+    // check if address is blocked before processing
+    if (this.isAddressBlocked(payload.recipientAddress)) {
+      throw new Error(
+        `Cannot hydrate blocked address: ${payload.recipientAddress}`
+      );
+    }
+
     const contact = await this.repositories.contactRepository
       .getContactByKaspaAddress(payload.recipientAddress)
       .catch(async (error) => {
@@ -754,11 +803,15 @@ export class ConversationManagerService {
   }
 
   private isValidKaspaAddress(address: string): boolean {
-    // Check for both mainnet and testnet address formats
+    // check for both mainnet and testnet address formats
     return (
       (address.startsWith("kaspa:") || address.startsWith("kaspatest:")) &&
       address.length > 10
     );
+  }
+
+  private isAddressBlocked(address: string): boolean {
+    return useBlocklistStore.getState().isBlocked(address);
   }
 
   /**
@@ -769,6 +822,12 @@ export class ConversationManagerService {
     payload: HandshakePayload,
     senderAddress: string
   ) {
+    // ignore handshakes from blocked addresses
+    if (this.isAddressBlocked(senderAddress)) {
+      console.log(`Ignoring handshake from blocked address: ${senderAddress}`);
+      return;
+    }
+
     // Derive deterministic aliases based on sender's address
     const privateKey = this.getPrivateKey();
     const { myAlias, theirAlias } = deriveConversationAliases(
@@ -955,5 +1014,110 @@ export class ConversationManagerService {
       typeof conv.lastActivityAt === "object" &&
       typeof conv.initiatedByMe === "boolean"
     );
+  }
+
+  /**
+   * Create an offline handshake between two parties
+   * @param partnerAddress The partner's Kaspa address
+   * @param ourAliasForPartner Our alias for the partner
+   * @param theirAliasForUs Their alias for us
+   * @returns Object containing conversationId and contactId
+   */
+  public async createOffChainHandshake(
+    partnerAddress: string,
+    ourAliasForPartner: string,
+    theirAliasForUs: string
+  ): Promise<{ conversationId: string; contactId: string }> {
+    // prevent creating offline handshakes with blocked addresses
+    if (this.isAddressBlocked(partnerAddress)) {
+      throw new Error(
+        `Cannot create handshake with blocked address: ${partnerAddress}`
+      );
+    }
+
+    // check if contact already exists - for offline handshakes, we should only create new contacts
+    let contact: Contact;
+    try {
+      await this.repositories.contactRepository.getContactByKaspaAddress(
+        partnerAddress
+      );
+      throw new Error(`Cannot create handshake. Contact already exists.`);
+    } catch (error) {
+      if (error instanceof DBNotFoundException) {
+        // contact doesn't exist, create a new one
+        const newContact = {
+          id: uuidv4(),
+          kaspaAddress: partnerAddress,
+          timestamp: new Date(),
+          name: undefined,
+          tenantId: this.repositories.tenantId,
+        };
+        await this.repositories.contactRepository.saveContact(newContact);
+        contact = newContact;
+      } else {
+        // throw it if its not our expected error
+        throw error;
+      }
+    }
+
+    // Create conversation
+    const conversation: Conversation = {
+      id: uuidv4(),
+      myAlias: ourAliasForPartner,
+      theirAlias: theirAliasForUs,
+      lastActivityAt: new Date(),
+      status: "active",
+      initiatedByMe: true,
+      contactId: contact.id,
+      tenantId: this.repositories.tenantId,
+    };
+
+    await this.repositories.conversationRepository.saveConversation(
+      conversation
+    );
+
+    // Create handshake records (both outgoing and incoming)
+    const now = new Date();
+
+    // Outgoing handshake (from us to partner)
+    const outgoingHandshake: Omit<Handshake, "tenantId"> = {
+      id: uuidv4(),
+      conversationId: conversation.id,
+      createdAt: now,
+      transactionId: `offline_${Date.now()}_outgoing`,
+      contactId: contact.id,
+      amount: 0.2,
+      fee: 0,
+      content: `Offline handshake initiated with ${partnerAddress}`,
+      fromMe: true,
+      __type: "handshake",
+    };
+
+    // Incoming handshake (from partner to us)
+    const incomingHandshake: Omit<Handshake, "tenantId"> = {
+      id: uuidv4(),
+      conversationId: conversation.id,
+      createdAt: new Date(now.getTime() + 1000),
+      transactionId: `offline_${Date.now()}_incoming`,
+      contactId: contact.id,
+      amount: 0.2,
+      fee: 0,
+      content: `Offline handshake response from ${partnerAddress}`,
+      fromMe: false,
+      __type: "handshake",
+    };
+
+    await Promise.all([
+      this.repositories.handshakeRepository.saveHandshake(outgoingHandshake),
+      this.repositories.handshakeRepository.saveHandshake(incomingHandshake),
+    ]);
+
+    // Update in-memory state
+    this.inMemorySyncronization(conversation, contact);
+
+    return {
+      conversationId: conversation.id,
+      contactId: contact.id,
+    };
   }
 }

@@ -63,22 +63,22 @@ export const Import = ({ onSuccess, onBack }: ImportWalletProps) => {
 
   return (
     <>
-      <h2 className="text-center text-lg font-bold">Import Wallet</h2>
+      <h2 className="text-center text-lg font-bold">Import Account</h2>
       <WarningBlock
         title={"Import at your own risk"}
         children={
-          "For security reasons, ideally create a new wallet and transfer a small amount of funds. Import an existing wallet only if absolutely necessary and only when it holds a low balance."
+          "For security reasons, ideally create a new account and transfer a small amount of funds. Import an existing kaspa wallet only if absolutely necessary and only when it holds a low balance."
         }
         className="my-2 py-2!"
       />
       <div className="mb-3">
         <label className="mb-3 block text-base font-semibold text-[var(--text-primary)]">
-          Wallet Name
+          Account Name
         </label>
         <input
           ref={nameRef}
           type="text"
-          placeholder="My Wallet"
+          placeholder="My Account"
           onChange={handleInputChange}
           className="focus:!border-kas-primary border-primary-border w-full rounded-3xl border bg-[var(--input-bg)] p-2.5 px-4 text-base transition-all duration-200 focus:outline-none"
         />

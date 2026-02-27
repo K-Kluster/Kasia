@@ -77,9 +77,9 @@ npm run dev
 You can also configure environment variables by copying the `.env.dist` file to `.env` and modifying the variables as needed. Here are some example configurations:
 
 ```bash
-# mainnet or testnet-10
+# mainnet, testnet-10 or testnet-12
 VITE_DEFAULT_KASPA_NETWORK=mainnet
-VITE_ALLOWED_KASPA_NETWORKS=mainnet,testnet-10
+VITE_ALLOWED_KASPA_NETWORKS=mainnet,testnet-10,testnet-12
 VITE_DISABLE_PASSWORD_REQUIREMENTS=true
 # info, warn, error, silent
 VITE_LOG_LEVEL=info
@@ -88,6 +88,9 @@ VITE_LOG_LEVEL=info
 VITE_INDEXER_MAINNET_URL=
 VITE_INDEXER_TESTNET_URL=
 ```
+
+### Testnet-12
+Note: Running testnet-12 will require downloading the wasm-sdk from a build artifact. If this is something you want to do - contact on discord for help.
 
 ## Historical Messages
 For UX purposes, Kasia team built [Kasia Indexer](https://github.com/K-Kluster/kasia-indexer), while not required, it offers cross-device synchronization capabilities. In short, it scans the Kaspa network continuously and store the Kasia protocol messages.

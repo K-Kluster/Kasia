@@ -1,21 +1,34 @@
 import { FC, useState, useRef, useEffect } from "react";
 import clsx from "clsx";
 import { parseMessageForDisplay } from "../../../../utils/message-format";
+import { MARKDOWN_PREFIX } from "../../../../config/constants";
+import { MarkdownRenderer } from "./MarkdownRenderer";
+import { useFeatureFlagsStore } from "../../../../store/featureflag.store";
 
 type MessageContentProps = {
   content: string;
   isDecrypting: boolean;
+  isBroadcast?: boolean;
   isOutgoing?: boolean;
 };
 
 export const MessageContent: FC<MessageContentProps> = ({
   content,
   isDecrypting,
+  isBroadcast = false,
   isOutgoing = true,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [shouldCollapse, setShouldCollapse] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const imageLinksEnabled = useFeatureFlagsStore(
+    (state) => state.flags.broadcast_image_links
+  );
+
+  const clickableLinksEnabled = useFeatureFlagsStore(
+    (state) => state.flags.broadcast_links
+  );
 
   // check if content should be collapsed based on line count, length or some combo
   useEffect(() => {
@@ -39,9 +52,26 @@ export const MessageContent: FC<MessageContentProps> = ({
     );
   }
 
-  // render plain text with newlines as <br /> and \\n as literal text
+  // render content (markdown or plain text)
   if (typeof content === "string") {
-    const parsedContent = parseMessageForDisplay(content);
+    // check if content starts with markdown flag and process content
+    const isMarkdown = content.startsWith(MARKDOWN_PREFIX);
+    const displayContent = isMarkdown
+      ? content.slice(MARKDOWN_PREFIX.length)
+      : content;
+
+    // preserve multiple consecutive newlines by replacing them with non-breaking spaces
+    const formattedContent = displayContent.replace(/\n{2,}/g, "\n\u00A0\n");
+
+    const renderedContent = isMarkdown ? (
+      <MarkdownRenderer
+        content={formattedContent}
+        enableMdLinks={clickableLinksEnabled || !isBroadcast}
+        enableMdImages={imageLinksEnabled || !isBroadcast}
+      />
+    ) : (
+      parseMessageForDisplay(displayContent)
+    );
 
     return (
       <div>
@@ -61,7 +91,7 @@ export const MessageContent: FC<MessageContentProps> = ({
                 : "none",
           }}
         >
-          {parsedContent}
+          {renderedContent}
         </div>
 
         {shouldCollapse && (

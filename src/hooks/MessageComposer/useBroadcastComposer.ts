@@ -1,11 +1,18 @@
 import { useComposerStore } from "../../store/message-composer.store";
 import { useWalletStore } from "../../store/wallet.store";
 import { useBroadcastStore } from "../../store/broadcast.store";
+import {
+  useFeatureFlagsStore,
+  FeatureFlags,
+} from "../../store/featureflag.store";
+import { MARKDOWN_PREFIX } from "../../config/constants";
 import { toast } from "../../utils/toast-helper";
 
 export const useBroadcastComposer = (channelName?: string) => {
   const { sendState, setSendState, clearDraft } = useComposerStore();
   const { addMessage, updateMessageStatus } = useBroadcastStore();
+  const { flags } = useFeatureFlagsStore();
+  const markdownEnabled = flags[FeatureFlags.MARKDOWN];
 
   const draft = useComposerStore((s) =>
     channelName ? s.drafts[channelName] || "" : ""
@@ -34,8 +41,10 @@ export const useBroadcastComposer = (channelName?: string) => {
     try {
       setSendState({ status: "loading" });
 
+      const messageToSend = draft;
+
       const txId = await walletStore.sendBroadcastWithContext({
-        message: draft,
+        message: messageToSend,
         channelName: channelName.toLowerCase(),
         priorityFee: useComposerStore.getState().priority,
       });
@@ -46,7 +55,7 @@ export const useBroadcastComposer = (channelName?: string) => {
         id: txId,
         channelName: channelName.toLowerCase(),
         senderAddress: walletStore.address!.toString(),
-        content: draft,
+        content: messageToSend,
         timestamp: new Date(),
         transactionId: txId,
         status: "pending",

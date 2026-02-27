@@ -109,7 +109,7 @@ export const UtxoCompound: FC<UtxoCompoundProps> = ({
           Compound UTXOs
         </h3>
         <p className="text-center text-sm text-[var(--text-secondary)] sm:text-left">
-          Combine multiple UTXOs into fewer, larger ones to optimize wallet
+          Combine multiple UTXOs into fewer, larger ones to optimize account
           performance. This creates a tx and sends all funds automatically to
           yourself. Network fees will apply.
         </p>

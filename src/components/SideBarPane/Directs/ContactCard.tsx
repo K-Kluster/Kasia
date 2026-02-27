@@ -3,9 +3,11 @@ import { decodePayload } from "../../../utils/format";
 import { useMessagingStore } from "../../../store/messaging.store";
 import { AvatarHash } from "../../icons/AvatarHash";
 import { PROTOCOL } from "../../../config/protocol";
+import { MARKDOWN_PREFIX } from "../../../config/constants";
 import clsx from "clsx";
 import { Contact } from "../../../store/repository/contact.repository";
 import { getFileTypeFromContent } from "../../../utils/parse-message";
+import { stripMarkdown } from "../../../utils/markdown";
 
 function getMessagePreview(content: string) {
   // check if it's a file or image message
@@ -20,15 +22,29 @@ function getMessagePreview(content: string) {
     }
   }
 
-  // For regular messages, try to decode if it's encrypted
+  let messageContent: string;
   if (content.startsWith(PROTOCOL.prefix.string)) {
     const decoded = decodePayload(content);
-    return decoded
-      ? decoded.slice(0, 40) + (decoded.length > 40 ? "..." : "")
-      : "Encrypted message";
+    if (!decoded) return "Encrypted message";
+    messageContent = decoded;
+  } else {
+    messageContent = content;
   }
 
-  return content.slice(0, 40) + (content.length > 40 ? "..." : "");
+  const isMarkdown = messageContent.startsWith(MARKDOWN_PREFIX);
+  if (isMarkdown) {
+    const processedContent = messageContent.slice(MARKDOWN_PREFIX.length);
+    // strip off the markdown flags, so we can just render the content 'plain' in the preview
+    const plainTextContent = stripMarkdown(processedContent);
+    return (
+      plainTextContent.slice(0, 40) +
+      (plainTextContent.length > 40 ? "..." : "")
+    );
+  }
+
+  return (
+    messageContent.slice(0, 40) + (messageContent.length > 40 ? "..." : "")
+  );
 }
 
 export const ContactCard: FC<{

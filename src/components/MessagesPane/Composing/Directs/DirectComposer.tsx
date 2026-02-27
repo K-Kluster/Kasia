@@ -18,7 +18,10 @@ import { FeeDisplay } from "../Utilities/FeeDisplay";
 import { useMessagingStore } from "../../../../store/messaging.store";
 import { useFeeEstimate } from "../../../../hooks/MessageComposer/useFeeEstimate";
 import { toast } from "../../../../utils/toast-helper";
-import { MAX_CHAT_INPUT_CHAR } from "../../../../config/constants";
+import {
+  MAX_CHAT_INPUT_CHAR,
+  MARKDOWN_PREFIX,
+} from "../../../../config/constants";
 import { cameraPermissionService } from "../../../../service/camera-permission-service";
 import { useIsMobile } from "../../../../hooks/useIsMobile";
 import {
@@ -40,6 +43,10 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const isMobile = useIsMobile();
+
+  const { flags } = useFeatureFlagsStore();
+  const cameraEnabled = flags[FeatureFlags.ENABLED_CAMERA];
+  const markdownEnabled = flags[FeatureFlags.MARKDOWN];
 
   const feeState = useFeeEstimate({
     toSelf: true,
@@ -63,10 +70,6 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
     !!conversation &&
     (conversation.status === "active" ||
       (conversation.status === "pending" && conversation.initiatedByMe));
-
-  // Check if camera feature is enabled
-  const { flags } = useFeatureFlagsStore();
-  const cameraEnabled = flags[FeatureFlags.ENABLED_CAMERA];
 
   const guardReady = () => {
     if (!canCompose) {
@@ -233,7 +236,13 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
 
           <MessageInput
             ref={messageInputRef}
-            value={canCompose ? draft : ""}
+            value={
+              canCompose
+                ? markdownEnabled && draft.startsWith(MARKDOWN_PREFIX)
+                  ? draft.slice(MARKDOWN_PREFIX.length)
+                  : draft
+                : ""
+            }
             onChange={handleDraftChange}
             onDragOver={isDragOver}
             onSend={onSend}

@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { TransactionStatus } from "../../../../types/all";
 
 type GroupPosition = "single" | "top" | "middle" | "bottom";
 type BubbleClassOptions = {
@@ -6,7 +7,7 @@ type BubbleClassOptions = {
   groupPosition: GroupPosition;
   className?: string;
   noBubble?: boolean;
-  status?: "pending" | "confirmed" | "failed";
+  status?: TransactionStatus;
   customBorderColor?: string;
 };
 

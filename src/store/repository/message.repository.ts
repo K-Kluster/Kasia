@@ -1,5 +1,6 @@
 import { encryptXChaCha20Poly1305, decryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { TransactionId } from "../../types/transactions";
+import { TransactionStatus } from "../../types/all";
 import { DBNotFoundException, KasiaDB } from "./db";
 
 export type DbMessage = {
@@ -15,6 +16,7 @@ export type DbMessage = {
   createdAt: Date;
   transactionId: TransactionId;
   contactId: string;
+  status: TransactionStatus;
   /**
    * encrypted data shaped as `json(MessageBag)`
    */
@@ -191,6 +193,7 @@ export class MessageRepository {
       conversationId: message.conversationId,
       createdAt: message.createdAt,
       contactId: message.contactId,
+      status: message.status,
       encryptedData: encryptXChaCha20Poly1305(
         JSON.stringify({
           fileData: message.fileData,
@@ -217,6 +220,7 @@ export class MessageRepository {
       conversationId: dbMessage.conversationId,
       createdAt: dbMessage.createdAt,
       transactionId: dbMessage.transactionId,
+      status: dbMessage.status,
       fee: messageBag.fee,
       fileData: messageBag.fileData,
       amount: messageBag.amount,

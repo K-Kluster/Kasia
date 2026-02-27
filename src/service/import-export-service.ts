@@ -6,6 +6,7 @@ import type { Handshake } from "../store/repository/handshake.repository";
 import type { Payment } from "../store/repository/payment.repository";
 import type { DecryptionTrial } from "../store/repository/decryption-trial.repository";
 import type { SavedHandshake } from "../store/repository/saved-handshake.repository";
+import type { BlockedAddress } from "../store/repository/blocked-address.repository";
 
 /**
  * Normalize string dates to Date objects in the backup data
@@ -44,6 +45,9 @@ const normalizeDates = (backup: BackupV2): BackupV2 => {
     savedHandshakes: backup.savedHandshakes.map((sh) =>
       normalizeDateField(sh, "createdAt")
     ),
+    blockedAddresses: backup.blockedAddresses.map((blockedAddress) =>
+      normalizeDateField(blockedAddress, "timestamp")
+    ),
   };
 };
 
@@ -61,10 +65,11 @@ export type BackupV2 = {
   payments: Payment[];
   decryptionTrials: DecryptionTrial[];
   savedHandshakes: SavedHandshake[];
+  blockedAddresses: BlockedAddress[];
 };
 
 /**
- * Export contacts, conversations, messages, handshakes, payments and self handshakes,
+ * Export contacts, conversations, messages, handshakes, payments, self handshakes, and blocked addresses,
  */
 export const exportData = async (
   repositories: Repositories
@@ -77,6 +82,7 @@ export const exportData = async (
     payments,
     decryptionTrials,
     savedHandshakes,
+    blockedAddresses,
   ] = await Promise.all([
     repositories.messageRepository.getMessages(),
     repositories.contactRepository.getContacts(),
@@ -85,6 +91,7 @@ export const exportData = async (
     repositories.paymentRepository.getPayments(),
     repositories.decryptionTrialRepository.getDecryptionTrials(),
     repositories.savedHandshakeRepository.getAllSavedHandshakes(),
+    repositories.blockedAddressRepository.getBlockedAddresses(),
   ]);
 
   return {
@@ -96,6 +103,7 @@ export const exportData = async (
     payments,
     decryptionTrials,
     savedHandshakes,
+    blockedAddresses,
   };
 };
 
@@ -121,6 +129,9 @@ export const importData = async (
       ),
       repositories.savedHandshakeRepository.saveBulk(
         normalizedBackup.savedHandshakes
+      ),
+      repositories.blockedAddressRepository.saveBulk(
+        normalizedBackup.blockedAddresses
       ),
     ]);
   } catch (error) {

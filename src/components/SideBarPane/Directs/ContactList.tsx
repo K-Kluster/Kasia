@@ -20,17 +20,17 @@ export const ContactList: FC<ContactListProps> = ({
   setMobileView,
   isMobile,
 }) => {
-  const messageStore = useMessagingStore();
-
-  const contacts = messageStore.oneOnOneConversations.map(
-    (oooc) => oooc.contact
+  const oneOnOneConversations = useMessagingStore(
+    (state) => state.oneOnOneConversations
   );
+
+  const contacts = oneOnOneConversations.map((oooc) => oooc.contact);
   // order contacts by last activity (most recent first)
   const orderedContacts = contacts.sort((a, b) => {
-    const conversationA = messageStore.oneOnOneConversations.find(
+    const conversationA = oneOnOneConversations.find(
       (oooc) => oooc.contact.id === a.id
     );
-    const conversationB = messageStore.oneOnOneConversations.find(
+    const conversationB = oneOnOneConversations.find(
       (oooc) => oooc.contact.id === b.id
     );
 
@@ -69,7 +69,7 @@ export const ContactList: FC<ContactListProps> = ({
     });
 
     // then, add contacts from messages that match content
-    messageStore.oneOnOneConversations.forEach((oneOnOneConversation) => {
+    oneOnOneConversations.forEach((oneOnOneConversation) => {
       oneOnOneConversation.events.forEach((event) => {
         if (event.content.includes(q)) {
           // only add if not already present

@@ -44,7 +44,7 @@ export const Wallet = () => {
         <div className="flex items-baseline justify-between">
           <div className="min-w-0">
             <h4 className="text-text-primary text-sm font-bold tracking-wide uppercase">
-              Wallet
+              Account
             </h4>
             <div className="truncate text-base font-semibold">
               {unlockedWalletName}

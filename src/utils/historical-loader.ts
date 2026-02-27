@@ -14,6 +14,7 @@ import {
 import { MetadataV1 } from "../store/repository/meta.repository";
 import { ConversationManagerService } from "../service/conversation-manager-service";
 import { Handshake } from "../store/repository/handshake.repository";
+import { useBlocklistStore } from "../store/blocklist.store";
 
 export const historicalLoader_loadSendAndReceivedHandshake = async (
   repositories: Repositories,
@@ -122,6 +123,15 @@ export const historicalLoader_loadSendAndReceivedHandshake = async (
       continue;
     }
 
+    // if handshake is in blocked list, ignore
+    const blocklistStore = useBlocklistStore.getState();
+    if (blocklistStore.blockedAddresses.has(handshake.sender)) {
+      console.log(
+        `Skipping historical handshake processing for blocked address: ${handshake.sender}`
+      );
+      continue;
+    }
+
     try {
       const encryptedMessage = new EncryptedMessage(handshake.message_payload);
 
@@ -138,6 +148,7 @@ export const historicalLoader_loadSendAndReceivedHandshake = async (
       // only consider the last saved handshake for our recipient
       // since we loop by last first, we can skip this iteration if already exist
       const handshakes = lastReceivedHSBySenderAddress.get(handshake.sender);
+
       if (!handshakes) {
         lastReceivedHSBySenderAddress.set(handshake.sender, {
           handshake,

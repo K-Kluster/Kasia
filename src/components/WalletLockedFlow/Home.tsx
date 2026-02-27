@@ -57,7 +57,7 @@ export const Home = ({
       </div>
       <TrustMessage />
       <h2 className="text-text-primary mt-2 mb-2 text-center text-xl font-semibold select-none sm:mt-2 sm:mb-3 sm:text-2xl">
-        {wallets.length <= 0 ? "No Wallets Found" : "Select Wallet"}
+        {wallets.length <= 0 ? "No Account Found" : "Select Account"}
       </h2>
       <div className="mb-3 flex flex-col gap-2 overflow-y-auto sm:gap-3">
         {wallets.map((w) => (
@@ -107,7 +107,7 @@ export const Home = ({
                   onComplete={() => onDeleteWallet(w.id)}
                   size="md"
                   className="z-20 text-[var(--text-secondary)] transition-all duration-600 sm:opacity-0 sm:group-hover:opacity-70"
-                  title="Click and hold to delete wallet"
+                  title="Click and hold to delete account"
                   hoverClass="hover:text-red-500"
                 />
               </div>
@@ -121,10 +121,10 @@ export const Home = ({
       </div>
       <div className="mt-8 flex flex-col justify-center gap-2 sm:flex-row-reverse sm:gap-4">
         <Button variant="primary" onClick={() => onStepChange("create")}>
-          Create Wallet
+          Create Account
         </Button>
         <Button variant="secondary" onClick={() => onStepChange("import")}>
-          Import Wallet
+          Import Account
         </Button>
       </div>
     </>

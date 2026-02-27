@@ -31,6 +31,8 @@ export const MAX_CHAT_INPUT_CHAR = 18000;
 // broadcast channel name length limit, at 36 due to having parity with a uuid char length
 export const MAX_BROADCAST_CHANNEL_NAME = 36;
 
+export const MARKDOWN_PREFIX = "§";
+
 // Triggers a warn in the wallet to withdraw to cold storage.
 // Settings at 30KAS
 export const BALANCE_WARN = BigInt(30 * 100_000_000);

@@ -18,7 +18,7 @@ export const SeedPhraseDisplay = ({
 
   return (
     <>
-      <h2 className="text-center text-lg font-bold">Wallet Created</h2>
+      <h2 className="text-center text-lg font-bold">Account Created</h2>
       <div className="border-primary-border my-5 flex w-full flex-col items-center rounded-2xl border bg-[var(--primary-bg)] px-4 py-4">
         <p className="font-semibold">
           Please save your mnemonic phrase securely:
@@ -27,7 +27,8 @@ export const SeedPhraseDisplay = ({
           Please keep your seed phrase safe, if you lose your seed phrase there
           is no recovery.
           <br />
-          Remember: Anyone with your seed phrase can access your wallet.
+          Remember: Anyone with your seed phrase can access your account and
+          messages.
         </WarningBlock>
         <div
           className={`mb-3.5 grid w-full grid-cols-3 gap-2.5 p-2 transition-all duration-300 ease-linear ${
@@ -83,7 +84,7 @@ export const SeedPhraseDisplay = ({
         variant="secondary"
         className="mx-auto px-4 py-2 text-sm"
       >
-        Back to Wallets
+        Back to Accounts
       </Button>
     </>
   );

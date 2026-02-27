@@ -6,6 +6,8 @@ import {
   MESSAGE_COMPOSER_MAX_HEIGHT,
 } from "../../../../config/constants";
 import { MAX_CHAT_INPUT_CHAR } from "../../../../config/constants";
+import { useFeatureFlagsStore } from "../../../../store/featureflag.store";
+import { MARKDOWN_PREFIX } from "../../../../config/constants";
 
 interface InputBasicProps {
   value: string;
@@ -43,8 +45,19 @@ export const InputBasic = forwardRef<HTMLTextAreaElement, InputBasicProps>(
     const [showScroll, setShowScroll] = useState(false);
     const isMobile = useIsMobile();
 
+    const markdownEnabled = useFeatureFlagsStore(
+      (state) => state.flags.markdown
+    );
+
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      onChange(e.target.value);
+      let newValue = e.target.value;
+
+      // add markdown prefix if markdown is enabled and there's real content
+      if (markdownEnabled) {
+        newValue = newValue.trim().length > 0 ? MARKDOWN_PREFIX + newValue : "";
+      }
+
+      onChange(newValue);
 
       // auto-resize logic - measure with minimal height
       const originalHeight = e.target.style.height;

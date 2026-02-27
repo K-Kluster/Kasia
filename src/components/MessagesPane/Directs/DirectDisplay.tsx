@@ -127,6 +127,10 @@ export const DirectDisplay: FC<DirectDisplayProps> = ({
             generateBubbleClasses({
               isOutgoing,
               groupPosition,
+              status:
+                event.__type === "message" || event.__type === "payment"
+                  ? event.status
+                  : "confirmed",
             })
         )}
       >

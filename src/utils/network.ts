@@ -21,7 +21,7 @@ export function ensureAddressPrefix(
   }
 
   // Add appropriate prefix based on network
-  if (networkId === "testnet-10" || networkId === "testnet-11") {
+  if (networkId === "testnet-10" || networkId === "testnet-12") {
     return `kaspatest:${address}`;
   } else if (networkId === "mainnet") {
     return `kaspa:${address}`;

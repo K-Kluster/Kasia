@@ -5,7 +5,7 @@ import { Wallet } from "../../types/wallet.type";
 import { Button } from "../Common/Button";
 import { WalletFlowErrorMessage } from "./WalletFlowErrorMessage";
 import { Loader2 } from "lucide-react";
-import clsx from "clsx";
+
 import {
   StartSessionInvalidPasswordException,
   useOrchestrator,
@@ -50,7 +50,7 @@ export const Unlock = ({
   const onUnlockWallet = async () => {
     const pass = passwordRef.current?.value;
     if (!selectedWalletId || !pass) {
-      setError("Please enter your wallet password");
+      setError("Please enter your account password");
       return;
     }
     setError(null);
@@ -72,7 +72,7 @@ export const Unlock = ({
       const msg =
         err instanceof StartSessionInvalidPasswordException
           ? "Incorrect password. Please try again."
-          : "Failed to unlock wallet. Please try again.";
+          : "Failed to unlock account. Please try again.";
       setError(msg);
     } finally {
       setUnlocking(false);
@@ -128,7 +128,7 @@ export const Unlock = ({
       {unlocking ? (
         <div className="relative my-2 flex h-full flex-col items-center justify-center space-y-4">
           <span className="text-sm font-medium tracking-wide text-gray-300 sm:text-lg">
-            Unlocking Wallet…
+            Unlocking Account
           </span>
           <Loader2 className="my-2 h-14 w-14 animate-spin text-gray-500" />
         </div>

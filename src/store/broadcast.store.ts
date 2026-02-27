@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { TransactionStatus } from "../types/all";
 import { useDBStore } from "./db.store";
 import { BroadcastChannel } from "./repository/broadcast-channel.repository";
 import { v4 } from "uuid";
@@ -12,7 +13,7 @@ export type BroadcastMessage = {
   content: string;
   timestamp: Date;
   transactionId: string | null;
-  status: "pending" | "confirmed" | "failed";
+  status: TransactionStatus;
 };
 
 // Add normalization utility at the top level

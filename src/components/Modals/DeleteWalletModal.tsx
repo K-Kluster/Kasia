@@ -46,11 +46,11 @@ export const DeleteWalletModal: FC<DeleteWalletModalProps> = ({
     <Modal onClose={handleCancel} className="max-w-sm select-none">
       <div className="w-full p-2">
         <h2 className="mb-4 text-xl font-semibold text-[var(--text-primary)]">
-          Delete Wallet
+          Delete Account
         </h2>
 
         <p className="mb-6 text-center text-[var(--text-secondary)] sm:text-left">
-          Are you sure you want to delete the wallet{" "}
+          Are you sure you want to delete the accounts{" "}
           <span className="font-semibold text-[var(--text-primary)]">
             "{wallet.name}"
           </span>
@@ -58,8 +58,8 @@ export const DeleteWalletModal: FC<DeleteWalletModalProps> = ({
         </p>
 
         <WarningBlock title="Warning" className="mb-6">
-          This action cannot be undone. All wallet data will be permanently
-          removed.
+          This action cannot be undone. All account data and funds will be
+          permanently removed.
         </WarningBlock>
 
         <div className="flex gap-3">

@@ -71,7 +71,7 @@ export const TrustMessage: FC = () => {
         className="border-primary-border bg-primary-bg mt-3 cursor-pointer rounded-2xl border p-1 sm:p-2"
         onClick={() => setOpenWhy((v) => !v)}
       >
-        <div className="flex w-full items-center justify-center gap-2 py-1">
+        <div className="mx-2 flex w-full items-center justify-center gap-2 py-1">
           <div className="flex h-6 w-6 items-center justify-center rounded-full">
             <KasIcon
               className="h-12 w-12 scale-180"
@@ -79,8 +79,8 @@ export const TrustMessage: FC = () => {
               kClassName="fill-[#ffffff]"
             />
           </div>
-          <span className="text-sm font-medium text-[var(--text-secondary)] select-none">
-            Why do I need a Kaspa wallet?
+          <span className="text-center text-sm font-medium text-[var(--text-secondary)] select-none">
+            Why do I need a Seed Phrase?
           </span>
         </div>
 
@@ -90,11 +90,11 @@ export const TrustMessage: FC = () => {
             openWhy ? "mt-2 max-h-40 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <p className="break-word w-full text-center text-sm leading-relaxed text-[var(--text-secondary)]">
-            Kasia is messaging app that protects your privacy. Your Kaspa wallet
-            acts as your secure login – no email, phone number, or personal
-            details needed. Messages are encrypted and sequenced on the Kaspa
-            blockDAG, making them completely private and decentralized.
+          <p className="break-word w-full px-0.5 text-center text-sm leading-relaxed text-[var(--text-secondary)]">
+            Kasia is a messaging app that protects your privacy. Your seed
+            phrase is your secure login—no email, phone number, or personal
+            details required. It proves ownership of your identity and allows
+            you to recover access if your device is lost or replaced.
           </p>
           <p className="break-word w-full text-center text-xs leading-relaxed text-[var(--text-secondary)]">
             Kasia is community built by volunteers.

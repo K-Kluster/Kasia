@@ -11,6 +11,11 @@ import { MessageInput } from "../Utilities/MessageInput";
 import { FeeDisplay } from "../Utilities/FeeDisplay";
 import { useFeeEstimate } from "../../../../hooks/MessageComposer/useFeeEstimate";
 import { useIsMobile } from "../../../../hooks/useIsMobile";
+import {
+  useFeatureFlagsStore,
+  FeatureFlags,
+} from "../../../../store/featureflag.store";
+import { MARKDOWN_PREFIX } from "../../../../config/constants";
 
 export const BroadcastComposer = ({ channelName }: { channelName: string }) => {
   const setDraft = useComposerStore((s: ComposerState) => s.setDraft);
@@ -25,6 +30,9 @@ export const BroadcastComposer = ({ channelName }: { channelName: string }) => {
   const { sendBroadcast } = useBroadcastComposer(channelName);
   const messageInputRef = useRef<HTMLTextAreaElement | null>(null);
   const isMobile = useIsMobile();
+
+  const { flags } = useFeatureFlagsStore();
+  const markdownEnabled = flags[FeatureFlags.MARKDOWN];
 
   // readines check
   const canBroadcast = !!channelName && !!sendBroadcast;
@@ -71,7 +79,13 @@ export const BroadcastComposer = ({ channelName }: { channelName: string }) => {
         <div className="relative flex items-center">
           <MessageInput
             ref={messageInputRef}
-            value={canBroadcast ? draft : ""}
+            value={
+              canBroadcast
+                ? markdownEnabled && draft.startsWith(MARKDOWN_PREFIX)
+                  ? draft.slice(MARKDOWN_PREFIX.length)
+                  : draft
+                : ""
+            }
             onChange={handleDraftChange}
             onSend={onSend}
             onDragOver={false}
