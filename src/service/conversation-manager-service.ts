@@ -135,6 +135,21 @@ export class ConversationManagerService {
           conversationAndContact &&
           conversationAndContact.conversation.status === "active"
         ) {
+          if (conversationAndContact.conversation.version === 1) {
+            conversationAndContact.conversation.lastActivityAt = new Date();
+            await this.repositories.conversationRepository.saveConversation(
+              conversationAndContact.conversation
+            );
+            this.inMemorySyncronization(
+              conversationAndContact.conversation,
+              conversationAndContact.contact
+            );
+            return {
+              conversation: conversationAndContact.conversation,
+              contact: conversationAndContact.contact,
+            };
+          }
+
           throw new Error(
             "Active conversation already exists with this address"
           );
@@ -248,6 +263,7 @@ export class ConversationManagerService {
         initiatedByMe: true,
         contactId: contact.id,
         tenantId: this.repositories.tenantId,
+        version: 2,
       };
 
       await this.repositories.conversationRepository.saveConversation(
@@ -300,7 +316,7 @@ export class ConversationManagerService {
       if (existingConversationAndContactByAddress) {
         // Derive aliases to verify they match (sanity check for deterministic system)
         const privateKey = this.getPrivateKey();
-        const { myAlias, theirAlias } = deriveConversationAliases(
+        const { myAlias } = deriveConversationAliases(
           privateKey,
           senderAddress
         );
@@ -325,11 +341,6 @@ export class ConversationManagerService {
           );
         }
 
-        // Track if conversation was already active before processing
-        const wasAlreadyActive =
-          existingConversationAndContactByAddress.conversation.status ===
-          "active";
-
         // if conversation was initiated by me, and not yet active, it becomes active.
         if (
           existingConversationAndContactByAddress.conversation.status !==
@@ -351,25 +362,6 @@ export class ConversationManagerService {
           existingConversationAndContactByAddress.conversation,
           existingConversationAndContactByAddress.contact
         );
-
-        // If conversation was already active (e.g., from a discrete chat) AND this is NOT a response,
-        // we need to send a handshake response to acknowledge the sender's handshake and activate their conversation.
-        // This handles the case where:
-        // 1. User A and B had a discrete chat (both active)
-        // 2. User A deletes their conversation
-        // 3. User A initiates a new handshake (creates pending conversation)
-        // 4. User B receives handshake (already has active conversation)
-        // 5. User B needs to respond so User A's conversation becomes active
-        if (wasAlreadyActive && !payload.isResponse) {
-          console.log(
-            "[processHandshake] Existing active conversation received non-response handshake - caller should send automatic response"
-          );
-          return {
-            shouldSendResponse: true,
-            conversationId:
-              existingConversationAndContactByAddress.conversation.id,
-          };
-        }
 
         return;
       }
@@ -538,6 +530,36 @@ export class ConversationManagerService {
     return true;
   }
 
+  public async setConversationVersionByAddress(
+    address: string,
+    version: 1 | 2
+  ): Promise<boolean> {
+    const conversationWithContact =
+      this.getConversationWithContactByAddress(address);
+    if (!conversationWithContact) {
+      return false;
+    }
+
+    if (conversationWithContact.conversation.version === version) {
+      return true;
+    }
+
+    const updatedConversation: Conversation = {
+      ...conversationWithContact.conversation,
+      version,
+      lastActivityAt: new Date(),
+    };
+
+    await this.repositories.conversationRepository.saveConversation(
+      updatedConversation
+    );
+    this.inMemorySyncronization(
+      updatedConversation,
+      conversationWithContact.contact
+    );
+    return true;
+  }
+
   public async updateConversation(
     conversation: Pick<Conversation, "id"> & Partial<Conversation>
   ) {
@@ -685,6 +707,7 @@ export class ConversationManagerService {
       initiatedByMe,
       contactId: contact.id,
       tenantId: this.repositories.tenantId,
+      version: 2,
     };
 
     await this.repositories.conversationRepository.saveConversation(
@@ -759,6 +782,7 @@ export class ConversationManagerService {
             initiatedByMe: true,
             contactId: contact.id,
             tenantId: this.repositories.tenantId,
+            version: 2,
           };
 
           await this.repositories.conversationRepository.saveConversation(
@@ -866,6 +890,7 @@ export class ConversationManagerService {
       lastActivityAt: new Date(),
       status,
       initiatedByMe: false,
+      version: 2,
     };
 
     await this.repositories.conversationRepository.saveConversation(
@@ -921,15 +946,6 @@ export class ConversationManagerService {
         monitored.push({
           alias: conversationAndContact.conversation.myAlias,
           address: conversationAndContact.contact.kaspaAddress,
-        });
-
-        console.log("[getMonitoredConversations] Monitoring conversation:", {
-          myAlias: conversationAndContact.conversation.myAlias,
-          theirAlias: conversationAndContact.conversation.theirAlias,
-          partnerAddress: conversationAndContact.contact.kaspaAddress,
-          conversationId: conversationAndContact.conversation.id,
-          status: conversationAndContact.conversation.status,
-          note: "We monitor myAlias. Partner sends to theirAlias which equals our myAlias",
         });
       });
 
@@ -1070,6 +1086,7 @@ export class ConversationManagerService {
       initiatedByMe: true,
       contactId: contact.id,
       tenantId: this.repositories.tenantId,
+      version: 2,
     };
 
     await this.repositories.conversationRepository.saveConversation(

@@ -2,6 +2,7 @@ import { decryptXChaCha20Poly1305, encryptXChaCha20Poly1305 } from "kaspa-wasm";
 import { DBNotFoundException, KasiaDB } from "./db";
 
 export type ConversationStatus = "pending" | "active" | "rejected";
+export type ConversationVersion = 1 | 2;
 
 export type ActiveConversation = InternalConversation & {
   status: "active";
@@ -33,6 +34,7 @@ export type DbConversation = {
   status: ConversationStatus;
   contactId: string;
   initiatedByMe: boolean;
+  version: ConversationVersion;
   /**
    * encrypted data shaped as `json(ConversationBag)`
    */
@@ -210,6 +212,7 @@ export class ConversationRepository {
       initiatedByMe: conversation.initiatedByMe,
       lastActivityAt: conversation.lastActivityAt,
       status: conversation.status,
+      version: conversation.version ?? 1,
       tenantId: this.tenantId,
     };
   }
@@ -233,6 +236,7 @@ export class ConversationRepository {
       myAlias: conversationBag.myAlias,
       status: dbConversation.status,
       theirAlias: conversationBag.theirAlias,
+      version: dbConversation.version ?? 1,
     };
   }
 }

@@ -169,8 +169,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         WalletStorageService.getPrivateKey(unlockedWallet).toString();
 
       const aliasesToFetch = new Set<string>(aliases);
-      if (!aliasesToFetch.size && oooc.conversation.theirAlias) {
-        aliasesToFetch.add(oooc.conversation.theirAlias);
+      if (!aliasesToFetch.size && oooc.conversation.myAlias) {
+        aliasesToFetch.add(oooc.conversation.myAlias);
       }
 
       // get last message&payment timestamp
@@ -420,9 +420,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
                   oooc.contact.kaspaAddress
                 ] ?? new Set<string>();
-              if (oooc.conversation.theirAlias) {
+              if (oooc.conversation.myAlias) {
                 resolvedUnknownHandshakesAlisesForThisConversation.add(
-                  oooc.conversation.theirAlias
+                  oooc.conversation.myAlias
                 );
               }
 
@@ -1117,18 +1117,31 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
         await repositories.handshakeRepository.saveHandshake(handshake);
 
-        const oneOnOneConversations = g().oneOnOneConversations;
+        const existingConversationIndex = g().oneOnOneConversations.findIndex(
+          (oooc) => oooc.conversation.id === conversation.id
+        );
 
-        // push at the beginning of the array
-        oneOnOneConversations.unshift({
-          conversation,
-          contact,
-          events: [handshake],
-        });
-
-        set({
-          oneOnOneConversations,
-        });
+        if (existingConversationIndex !== -1) {
+          const updatedConversations = [...g().oneOnOneConversations];
+          updatedConversations[existingConversationIndex] = {
+            ...updatedConversations[existingConversationIndex],
+            conversation,
+            contact,
+            events: [
+              ...updatedConversations[existingConversationIndex].events,
+              handshake,
+            ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+          };
+          set({ oneOnOneConversations: updatedConversations });
+        } else {
+          const oneOnOneConversations = [...g().oneOnOneConversations];
+          oneOnOneConversations.unshift({
+            conversation,
+            contact,
+            events: [handshake],
+          });
+          set({ oneOnOneConversations });
+        }
 
         // create self-stash for handshake initiation
         const selfStashTxId = await g().createSelfStash({
@@ -1157,91 +1170,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         validatedPayload
       );
 
-      // If the result indicates we should send an automatic response (e.g., for existing active conversations)
-      if (
-        result &&
-        typeof result === "object" &&
-        "shouldSendResponse" in result &&
-        "conversationId" in result
-      ) {
-        const typedResult = result as {
-          shouldSendResponse: boolean;
-          conversationId: string;
-        };
-        if (typedResult.shouldSendResponse) {
-          console.log(
-            "[processHandshake] Automatically sending handshake response for conversation:",
-            typedResult.conversationId
-          );
-          try {
-            // Send automatic response transaction
-            const walletStore = useWalletStore.getState();
-            const repositories = useDBStore.getState().repositories;
-
-            if (!walletStore.unlockedWallet?.password || !walletStore.address) {
-              console.error(
-                "[processHandshake] Cannot send automatic response - wallet not unlocked"
-              );
-              return result;
-            }
-
-            const conversation =
-              await repositories.conversationRepository.getConversation(
-                typedResult.conversationId
-              );
-            const contact = await repositories.contactRepository.getContact(
-              conversation.contactId
-            );
-
-            // Create handshake response (updates conversation status to active if needed)
-            await manager.createHandshakeResponse(conversation.id);
-
-            // Build handshake response payload
-            const handshakeResponsePayload: HandshakePayload = {
-              type: "handshake",
-              timestamp: Date.now(),
-              version: 1,
-              isResponse: true,
-            };
-
-            const payload = `${toHex("ciph_msg:1:handshake:")}${encrypt_message(contact.kaspaAddress, JSON.stringify(handshakeResponsePayload)).to_hex()}`;
-
-            // Send the handshake response transaction
-            const txId = await walletStore.sendTransaction({
-              payload,
-              toAddress: new Address(contact.kaspaAddress),
-              password: walletStore.unlockedWallet.password,
-              customAmount: kaspaToSompi("0.2"),
-            });
-
-            console.log(
-              "[processHandshake] Automatic handshake response sent, txId:",
-              txId
-            );
-
-            // Save handshake event
-            const eventToAdd: Handshake = {
-              __type: "handshake",
-              amount: 0.2,
-              contactId: contact.id,
-              conversationId: conversation.id,
-              content: "Automatic handshake response",
-              createdAt: new Date(),
-              fromMe: true,
-              id: `${walletStore.unlockedWallet.id}_${txId}`,
-              tenantId: walletStore.unlockedWallet.id,
-              transactionId: txId,
-              fee: 0,
-            };
-
-            await repositories.handshakeRepository.saveHandshake(eventToAdd);
-          } catch (error) {
-            console.error(
-              "[processHandshake] Failed to send automatic response:",
-              error
-            );
-          }
-        }
+      if (validatedPayload.isResponse) {
+        await manager.setConversationVersionByAddress(senderAddress, 2);
       }
 
       return result;
@@ -1427,6 +1357,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             customAmount: kaspaToSompi("0.2"),
           });
 
+          await manager.setConversationVersionByAddress(recipientAddress, 2);
+
           // Update the handshake status in the store
           const updatedConversation = manager
             .getActiveConversationsWithContact()
@@ -1495,8 +1427,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
               );
               if (oooc) {
                 const aliases = new Set<string>();
-                if (oooc.conversation.theirAlias) {
-                  aliases.add(oooc.conversation.theirAlias);
+                if (oooc.conversation.myAlias) {
+                  aliases.add(oooc.conversation.myAlias);
                 }
                 await _fetchHistoricalForConversation(
                   oooc,

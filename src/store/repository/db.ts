@@ -27,7 +27,7 @@ import {
   BlockedAddressRepository,
 } from "./blocked-address.repository";
 
-const CURRENT_DB_VERSION = 5;
+const CURRENT_DB_VERSION = 6;
 
 export class DBNotFoundException extends Error {
   constructor() {
@@ -318,8 +318,21 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         );
       }
       if (oldVersion <= 5) {
-        // HERE next migration, first increase CURRENT_DB_VERSION then implement with oldVersion <= CURRENT_DB_VERSION - 1
-        // add more if branching for each next version
+        const conversationsStore = transaction.objectStore("conversations");
+        let conversationCursor = await conversationsStore.openCursor();
+
+        while (conversationCursor) {
+          const conversation = conversationCursor.value;
+          if (conversation.version !== 1 && conversation.version !== 2) {
+            conversation.version = 1;
+            await conversationCursor.update(conversation);
+          }
+          conversationCursor = await conversationCursor.continue();
+        }
+
+        console.log(
+          "[DB] - Migrated to v6: Added conversation version field with default legacy value"
+        );
       }
     },
   });
