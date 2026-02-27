@@ -1,8 +1,16 @@
-import { derive_my_alias, derive_their_alias, PrivateKey } from "cipher";
+import { Address, derive_dm_alias, PrivateKey, XOnlyPublicKey } from "cipher";
+
+function parseXOnlyPublicKeyFromAddress(address: string): string {
+  return XOnlyPublicKey.fromAddress(new Address(address)).toString();
+}
+
+function deriveXOnlyPublicKeyFromPrivateKey(privateKey: PrivateKey): string {
+  return privateKey.toPublicKey().toXOnlyPublicKey().toString();
+}
 
 /**
  * Derives my alias (the one I monitor for incoming messages).
- * Uses HKDF("chat" || shared_secret || my_public_key).
+ * Uses HKDF("dm_alias:v1" || shared_secret || my_xonly_public_key).
  *
  * The alias is computed using ECDH to create a shared secret, then HKDF with my public key
  * as context to derive a 6-byte (12 hex character) deterministic identifier.
@@ -23,11 +31,17 @@ import { derive_my_alias, derive_their_alias, PrivateKey } from "cipher";
  */
 export function deriveMyAlias(
   myPrivateKey: string,
-  theirAddress: string
+  theirAddress: string,
+  myXOnlyPublicKey?: string,
+  theirXOnlyPublicKey?: string
 ): string {
   try {
     const privateKey = new PrivateKey(myPrivateKey);
-    return derive_my_alias(privateKey, theirAddress);
+    const theirXOnly =
+      theirXOnlyPublicKey ?? parseXOnlyPublicKeyFromAddress(theirAddress);
+    const myXOnly =
+      myXOnlyPublicKey ?? deriveXOnlyPublicKeyFromPrivateKey(privateKey);
+    return derive_dm_alias(privateKey, theirXOnly, myXOnly);
   } catch (error) {
     throw new Error(
       `Failed to derive my alias: ${error instanceof Error ? error.message : String(error)}`
@@ -37,7 +51,7 @@ export function deriveMyAlias(
 
 /**
  * Derives their alias (the one I send messages to).
- * Uses HKDF("chat" || shared_secret || their_public_key).
+ * Uses HKDF("dm_alias:v1" || shared_secret || their_xonly_public_key).
  *
  * The alias is computed using ECDH to create a shared secret, then HKDF with their public key
  * as context to derive a 6-byte (12 hex character) deterministic identifier.
@@ -58,11 +72,14 @@ export function deriveMyAlias(
  */
 export function deriveTheirAlias(
   myPrivateKey: string,
-  theirAddress: string
+  theirAddress: string,
+  theirXOnlyPublicKey?: string
 ): string {
   try {
     const privateKey = new PrivateKey(myPrivateKey);
-    return derive_their_alias(privateKey, theirAddress);
+    const theirXOnly =
+      theirXOnlyPublicKey ?? parseXOnlyPublicKeyFromAddress(theirAddress);
+    return derive_dm_alias(privateKey, theirXOnly, theirXOnly);
   } catch (error) {
     throw new Error(
       `Failed to derive their alias: ${error instanceof Error ? error.message : String(error)}`
@@ -95,10 +112,20 @@ export function deriveTheirAlias(
  */
 export function deriveConversationAliases(
   myPrivateKey: string,
-  theirAddress: string
+  theirAddress: string,
+  myXOnlyPublicKey?: string
 ): { myAlias: string; theirAlias: string } {
+  const privateKey = new PrivateKey(myPrivateKey);
+  const theirXOnlyPublicKey = parseXOnlyPublicKeyFromAddress(theirAddress);
+  const myXOnly =
+    myXOnlyPublicKey ?? deriveXOnlyPublicKeyFromPrivateKey(privateKey);
+
   return {
-    myAlias: deriveMyAlias(myPrivateKey, theirAddress),
-    theirAlias: deriveTheirAlias(myPrivateKey, theirAddress),
+    myAlias: derive_dm_alias(privateKey, theirXOnlyPublicKey, myXOnly),
+    theirAlias: derive_dm_alias(
+      privateKey,
+      theirXOnlyPublicKey,
+      theirXOnlyPublicKey
+    ),
   };
 }

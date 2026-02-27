@@ -68,6 +68,20 @@ export class ConversationManagerService {
     ).toString();
   }
 
+  /**
+   * Gets my x-only public key once from wallet state.
+   */
+  private getMyXOnlyPublicKey(): string {
+    const walletStore = useWalletStore.getState();
+    if (!walletStore.unlockedWallet) {
+      throw new Error("Wallet not unlocked - cannot derive aliases");
+    }
+
+    return walletStore.unlockedWallet.receivePublicKey
+      .toXOnlyPublicKey()
+      .toString();
+  }
+
   public async loadConversations() {
     try {
       // Clear existing data first
@@ -240,9 +254,11 @@ export class ConversationManagerService {
 
       // Derive deterministic aliases
       const privateKey = this.getPrivateKey();
+      const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
       const { myAlias, theirAlias } = deriveConversationAliases(
         privateKey,
-        recipientAddress
+        recipientAddress,
+        myXOnlyPublicKey
       );
 
       console.log(
@@ -317,9 +333,11 @@ export class ConversationManagerService {
       if (existingConversationAndContactByAddress) {
         // Derive aliases to verify they match (sanity check for deterministic system)
         const privateKey = this.getPrivateKey();
+        const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
         const { myAlias } = deriveConversationAliases(
           privateKey,
-          senderAddress
+          senderAddress,
+          myXOnlyPublicKey
         );
 
         console.log(
@@ -685,9 +703,11 @@ export class ConversationManagerService {
 
     // Derive deterministic aliases based on ECDH + HKDF
     const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
     const { myAlias, theirAlias } = deriveConversationAliases(
       privateKey,
-      recipientAddress
+      recipientAddress,
+      myXOnlyPublicKey
     );
 
     console.log(
@@ -756,9 +776,11 @@ export class ConversationManagerService {
 
     // Derive deterministic aliases for this conversation
     const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
     const { myAlias, theirAlias } = deriveConversationAliases(
       privateKey,
-      payload.recipientAddress
+      payload.recipientAddress,
+      myXOnlyPublicKey
     );
 
     console.log(
@@ -855,9 +877,11 @@ export class ConversationManagerService {
 
     // Derive deterministic aliases based on sender's address
     const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
     const { myAlias, theirAlias } = deriveConversationAliases(
       privateKey,
-      senderAddress
+      senderAddress,
+      myXOnlyPublicKey
     );
 
     console.log(
