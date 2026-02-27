@@ -9,6 +9,7 @@ import {
   Conversation,
   ActiveConversation,
   PendingConversation,
+  ConversationVersion,
 } from "../store/repository/conversation.repository";
 import { Contact } from "../store/repository/contact.repository";
 import { Handshake } from "../store/repository/handshake.repository";
@@ -532,7 +533,7 @@ export class ConversationManagerService {
 
   public async setConversationVersionByAddress(
     address: string,
-    version: 1 | 2
+    version: ConversationVersion
   ): Promise<boolean> {
     const conversationWithContact =
       this.getConversationWithContactByAddress(address);
