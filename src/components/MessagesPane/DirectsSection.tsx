@@ -2,7 +2,6 @@ import { FC, useEffect, useState, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 
 import { DirectsList } from "./Directs/DirectsList";
-import { ConversationUpgradeNotice } from "./Directs/ConversationUpgradeNotice";
 import { DirectComposer } from "./Composing/Directs/DirectComposer";
 import { useMessagingStore } from "../../store/messaging.store";
 import { KaspaAddress } from "../KaspaAddress";
@@ -283,12 +282,6 @@ export const DirectsSection: FC<{
               </h3>
             </div>
           </div>
-
-          {oneOnOneConversation.conversation.version === 1 ? (
-            <ConversationUpgradeNotice
-              oneOnOneConversation={oneOnOneConversation}
-            />
-          ) : null}
 
           <div
             className="bg-primary-bg flex flex-1 flex-col overflow-x-hidden overflow-y-auto px-1 py-4 pb-8 sm:px-2"

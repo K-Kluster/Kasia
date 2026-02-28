@@ -9,7 +9,6 @@ import {
   Conversation,
   ActiveConversation,
   PendingConversation,
-  ConversationVersion,
 } from "../store/repository/conversation.repository";
 import { Contact } from "../store/repository/contact.repository";
 import { Handshake } from "../store/repository/handshake.repository";
@@ -46,6 +45,22 @@ export class ConversationManagerService {
       events
     );
     await manager.loadConversations();
+
+    const metadata = repositories.metadataRepository.load();
+    if (!metadata.deterministicAliasesMigrated) {
+      // migrate legacy aliases to deterministic aliases only once per wallet
+      try {
+        await manager.migrateLegacyConversationAliasesIntoDeterministicAliases();
+        repositories.metadataRepository.store({
+          deterministicAliasesMigrated: true,
+        });
+      } catch (error) {
+        console.warn(
+          "[alias-migration] Skipping alias reconciliation during init",
+          error
+        );
+      }
+    }
 
     return manager;
   }
@@ -150,21 +165,6 @@ export class ConversationManagerService {
           conversationAndContact &&
           conversationAndContact.conversation.status === "active"
         ) {
-          if (conversationAndContact.conversation.version === 1) {
-            conversationAndContact.conversation.lastActivityAt = new Date();
-            await this.repositories.conversationRepository.saveConversation(
-              conversationAndContact.conversation
-            );
-            this.inMemorySyncronization(
-              conversationAndContact.conversation,
-              conversationAndContact.contact
-            );
-            return {
-              conversation: conversationAndContact.conversation,
-              contact: conversationAndContact.contact,
-            };
-          }
-
           throw new Error(
             "Active conversation already exists with this address"
           );
@@ -280,7 +280,6 @@ export class ConversationManagerService {
         initiatedByMe: true,
         contactId: contact.id,
         tenantId: this.repositories.tenantId,
-        version: 2,
       };
 
       await this.repositories.conversationRepository.saveConversation(
@@ -549,36 +548,6 @@ export class ConversationManagerService {
     return true;
   }
 
-  public async setConversationVersionByAddress(
-    address: string,
-    version: ConversationVersion
-  ): Promise<boolean> {
-    const conversationWithContact =
-      this.getConversationWithContactByAddress(address);
-    if (!conversationWithContact) {
-      return false;
-    }
-
-    if (conversationWithContact.conversation.version === version) {
-      return true;
-    }
-
-    const updatedConversation: Conversation = {
-      ...conversationWithContact.conversation,
-      version,
-      lastActivityAt: new Date(),
-    };
-
-    await this.repositories.conversationRepository.saveConversation(
-      updatedConversation
-    );
-    this.inMemorySyncronization(
-      updatedConversation,
-      conversationWithContact.contact
-    );
-    return true;
-  }
-
   public async updateConversation(
     conversation: Pick<Conversation, "id"> & Partial<Conversation>
   ) {
@@ -728,7 +697,6 @@ export class ConversationManagerService {
       initiatedByMe,
       contactId: contact.id,
       tenantId: this.repositories.tenantId,
-      version: 2,
     };
 
     await this.repositories.conversationRepository.saveConversation(
@@ -805,7 +773,6 @@ export class ConversationManagerService {
             initiatedByMe: true,
             contactId: contact.id,
             tenantId: this.repositories.tenantId,
-            version: 2,
           };
 
           await this.repositories.conversationRepository.saveConversation(
@@ -915,7 +882,6 @@ export class ConversationManagerService {
       lastActivityAt: new Date(),
       status,
       initiatedByMe: false,
-      version: 2,
     };
 
     await this.repositories.conversationRepository.saveConversation(
@@ -1032,6 +998,58 @@ export class ConversationManagerService {
   }
 
   /**
+   * Reconcile legacy aliases with deterministic aliases after wallet unlock.
+   */
+  private async migrateLegacyConversationAliasesIntoDeterministicAliases(): Promise<void> {
+    const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+
+    let updatedCount = 0;
+    for (const {
+      conversation,
+      contact,
+    } of this.conversationWithContactByConversationId.values()) {
+      try {
+        const { myAlias, theirAlias } = deriveConversationAliases(
+          privateKey,
+          contact.kaspaAddress,
+          myXOnlyPublicKey
+        );
+
+        if (
+          conversation.myAlias === myAlias &&
+          conversation.theirAlias === theirAlias
+        ) {
+          continue;
+        }
+
+        await this.repositories.conversationRepository.saveConversation({
+          ...conversation,
+          myAlias,
+          theirAlias,
+        });
+        updatedCount += 1;
+      } catch (error) {
+        console.warn(
+          "[alias-migration] Failed to reconcile conversation aliases",
+          {
+            conversationId: conversation.id,
+            contactAddress: contact.kaspaAddress,
+            error: error instanceof Error ? error.message : String(error),
+          }
+        );
+      }
+    }
+
+    if (updatedCount > 0) {
+      await this.loadConversations();
+      console.log(
+        `[alias-migration] Reconciled aliases for ${updatedCount} conversation(s)`
+      );
+    }
+  }
+
+  /**
    * Validate a conversation object
    * @param conversation The conversation to validate
    * @returns boolean indicating if the conversation is valid
@@ -1111,7 +1129,6 @@ export class ConversationManagerService {
       initiatedByMe: true,
       contactId: contact.id,
       tenantId: this.repositories.tenantId,
-      version: 2,
     };
 
     await this.repositories.conversationRepository.saveConversation(

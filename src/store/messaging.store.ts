@@ -1170,10 +1170,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         validatedPayload
       );
 
-      if (validatedPayload.isResponse) {
-        await manager.setConversationVersionByAddress(senderAddress, 2);
-      }
-
       return result;
     },
     getActiveConversationsWithContacts: () => {
@@ -1356,8 +1352,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
             password: walletStore.unlockedWallet.password,
             customAmount: kaspaToSompi("0.2"),
           });
-
-          await manager.setConversationVersionByAddress(recipientAddress, 2);
 
           // Update the handshake status in the store
           const updatedConversation = manager

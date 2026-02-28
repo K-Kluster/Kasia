@@ -5,6 +5,7 @@ export type MetadataV1 = {
   lastPaymentBlockTime: number;
   lastHandshakeBlockTime: number;
   lastSavedHandshakeBlockTime: number;
+  deterministicAliasesMigrated: boolean;
 };
 
 const defaultMetadata: MetadataV1 = {
@@ -13,6 +14,7 @@ const defaultMetadata: MetadataV1 = {
   lastPaymentBlockTime: 0,
   lastHandshakeBlockTime: 0,
   lastSavedHandshakeBlockTime: 0,
+  deterministicAliasesMigrated: false,
 };
 
 export class MetaRespository {
@@ -33,7 +35,7 @@ export class MetaRespository {
     }
 
     try {
-      return JSON.parse(existing);
+      return { ...defaultMetadata, ...JSON.parse(existing) };
     } catch (error) {
       // corrupted data
       console.error(error);

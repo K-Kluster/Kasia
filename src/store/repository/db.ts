@@ -317,23 +317,6 @@ export const openDatabase = async (): Promise<KasiaDB> => {
           "[DB] - Migrated to v4: Added status field to messages and payments"
         );
       }
-      if (oldVersion <= 5) {
-        const conversationsStore = transaction.objectStore("conversations");
-        let conversationCursor = await conversationsStore.openCursor();
-
-        while (conversationCursor) {
-          const conversation = conversationCursor.value;
-          if (conversation.version !== 1 && conversation.version !== 2) {
-            conversation.version = 1;
-            await conversationCursor.update(conversation);
-          }
-          conversationCursor = await conversationCursor.continue();
-        }
-
-        console.log(
-          "[DB] - Migrated to v6: Added conversation version field with default legacy value"
-        );
-      }
     },
   });
 };
