@@ -1,5 +1,5 @@
 import { FC, useState } from "react";
-import { Menu, Search, X } from "lucide-react";
+import { Menu, Search, X, Plus } from "lucide-react";
 import clsx from "clsx";
 import { useIsMobile } from "../../hooks/useIsMobile";
 import { useUiStore } from "../../store/ui.store";
@@ -10,7 +10,6 @@ import { ContactList } from "./Directs/ContactList";
 import { BroadcastList } from "./Broadcasts/BroadcastList";
 import { useFeatureFlagsStore } from "../../store/featureflag.store";
 import { ModeSelector } from "../ModeSelector";
-import { HoldablePlusButton } from "./HoldablePlusButton";
 
 interface SidebarSectionProps {
   onContactClicked: (contact: Contact) => void;
@@ -47,10 +46,6 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
 
   const handleNewChat = () => {
     openModal("new-chat");
-  };
-
-  const handleOffChainHandshake = () => {
-    openModal("offchain-handshake");
   };
 
   const handleNewBroadcast = () => {
@@ -127,26 +122,25 @@ export const SidebarSection: FC<SidebarSectionProps> = ({
                   shouldShow={broadcastEnabled && !showSearch}
                 />
               )}
-              <HoldablePlusButton
-                broadcastEnabled={broadcastEnabled}
-                isBroadcastMode={isBroadcastMode}
-                onNewChat={handleNewChat}
-                onOffChainHandshake={handleOffChainHandshake}
-                onNewBroadcast={handleNewBroadcast}
-              />
+              <button
+                onClick={isBroadcastMode ? handleNewBroadcast : handleNewChat}
+                className="hover:bg-primary-bg/50 cursor-pointer rounded p-1 transition-all hover:text-[var(--kas-primary)] focus:outline-none active:scale-90 active:opacity-80"
+                aria-label={broadcastEnabled ? "new channel" : "new chat"}
+              >
+                <Plus className="h-6 w-6" />
+              </button>
             </div>
           </div>
         ) : (
           /* Plus button when collapsed */
           <div className="flex w-full justify-center">
-            <HoldablePlusButton
-              broadcastEnabled={broadcastEnabled}
-              isBroadcastMode={isBroadcastMode}
-              onNewChat={handleNewChat}
-              onOffChainHandshake={handleOffChainHandshake}
-              onNewBroadcast={handleNewBroadcast}
-              collapsed={true}
-            />
+            <button
+              onClick={isBroadcastMode ? handleNewBroadcast : handleNewChat}
+              className="hover:bg-primary-bg/50 cursor-pointer rounded p-2 transition-all hover:text-[var(--kas-primary)] focus:outline-none active:scale-90 active:opacity-80"
+              aria-label={broadcastEnabled ? "new channel" : "new chat"}
+            >
+              <Plus className="h-6 w-6" />
+            </button>
           </div>
         )}
       </div>

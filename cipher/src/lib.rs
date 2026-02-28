@@ -2,6 +2,7 @@ use chacha20poly1305::{
     ChaCha20Poly1305, KeyInit, Nonce,
     aead::{Aead, AeadCore, OsRng, Payload},
 };
+use hkdf::Hkdf;
 use k256::{
     PublicKey, SecretKey,
     ecdh::{EphemeralSecret, diffie_hellman},
@@ -9,6 +10,7 @@ use k256::{
 use kaspa_addresses::Address;
 use kaspa_wallet_keys::privatekey::PrivateKey as WalletPrivateKey;
 use secp256k1::{PublicKey as SecpPublicKey, XOnlyPublicKey};
+use sha2::Sha256;
 use std::ops::Deref;
 use wasm_bindgen::{JsError, UnwrapThrowExt, prelude::wasm_bindgen};
 
@@ -91,70 +93,53 @@ impl EncryptedMessage {
     }
 }
 
-// Debug function to extract public key from address
-#[wasm_bindgen]
-pub fn debug_address_to_pubkey(address_string: &str) -> Result<String, JsError> {
-    // Try to parse the address
-    let address = match Address::try_from(address_string) {
-        Ok(addr) => addr,
-        Err(e) => return Err(JsError::new(&format!("Address parsing error: {}", e))),
-    };
-
-    // Extract X-only public key from address payload
-    let xonly_pk = match XOnlyPublicKey::from_slice(address.payload.as_slice()) {
-        Ok(pk) => pk,
-        Err(e) => return Err(JsError::new(&format!("XOnlyPublicKey error: {}", e))),
-    };
-
-    // Convert to full public key (assuming even parity)
-    let pk_even = SecpPublicKey::from_x_only_public_key(xonly_pk, secp256k1::Parity::Even);
-
-    // Convert to k256 PublicKey format
-    let k256_pk = match PublicKey::from_sec1_bytes(&pk_even.serialize()) {
-        Ok(pk) => pk,
-        Err(e) => return Err(JsError::new(&format!("k256 PublicKey error: {}", e))),
-    };
-
-    // Return the hex representation
-    Ok(hex::encode(k256_pk.to_sec1_bytes()))
+#[derive(Clone, Copy)]
+enum HashDomain {
+    DmAliasV1,
 }
 
-// Debug function to check if private key can decrypt a message
-#[wasm_bindgen]
-pub fn debug_can_decrypt(encrypted_hex: &str, private_key_hex: &str) -> Result<String, JsError> {
-    // Try to parse the hex string into EncryptedMessage
-    match hex::decode(encrypted_hex) {
-        Ok(bytes) => bytes,
-        Err(_) => return Err(JsError::new("Invalid encrypted message hex")),
-    };
+impl HashDomain {
+    fn tag(self) -> &'static [u8] {
+        match self {
+            Self::DmAliasV1 => b"dm_alias:v1",
+        }
+    }
+}
 
-    // let encrypted_message = EncryptedMessage::from_bytes(&encrypted_bytes);
+fn parse_xonly_public_key_from_address(address_string: &str) -> Result<XOnlyPublicKey, JsError> {
+    let address = Address::try_from(address_string)
+        .map_err(|e| JsError::new(&format!("Address parsing error: {}", e)))?;
 
-    // Try to parse the private key
-    let private_key_bytes = match hex::decode(private_key_hex) {
-        Ok(bytes) => bytes,
-        Err(_) => return Err(JsError::new("Invalid private key hex")),
-    };
+    XOnlyPublicKey::from_slice(address.payload.as_slice())
+        .map_err(|e| JsError::new(&format!("XOnlyPublicKey error: {}", e)))
+}
 
-    // Create WalletPrivateKey from bytes
-    let wallet_private_key = match WalletPrivateKey::try_from_slice(&private_key_bytes) {
-        Ok(pk) => pk,
-        Err(e) => return Err(JsError::new(&format!("Invalid wallet private key: {}", e))),
-    };
+fn parse_xonly_public_key_from_hex(
+    xonly_public_key_hex: &str,
+    field_name: &str,
+) -> Result<XOnlyPublicKey, JsError> {
+    let bytes = hex::decode(xonly_public_key_hex)
+        .map_err(|_| JsError::new(&format!("Invalid {} hex", field_name)))?;
+    XOnlyPublicKey::from_slice(&bytes)
+        .map_err(|e| JsError::new(&format!("Invalid {}: {}", field_name, e)))
+}
 
-    // Attempt to get k256 SecretKey
-    let secret_key = match SecretKey::from_slice(&wallet_private_key.secret_bytes()) {
-        Ok(sk) => sk,
-        Err(e) => return Err(JsError::new(&format!("Invalid k256 secret key: {}", e))),
-    };
+fn xonly_to_k256_public_key(xonly_pk: XOnlyPublicKey) -> Result<PublicKey, JsError> {
+    let pk_even = SecpPublicKey::from_x_only_public_key(xonly_pk, secp256k1::Parity::Even);
+    PublicKey::from_sec1_bytes(&pk_even.serialize())
+        .map_err(|e| JsError::new(&format!("k256 PublicKey error: {}", e)))
+}
 
-    // Get the public key from the private key
-    let derived_public_key = secret_key.public_key();
-
-    // Return success with public key for verification
-    Ok(format!(
-        "Private key valid. Derived public key: {}",
-        hex::encode(derived_public_key.to_sec1_bytes())
+fn shared_secret_for_alias(
+    my_private_key: &WalletPrivateKey,
+    their_xonly_pk: XOnlyPublicKey,
+) -> Result<k256::ecdh::SharedSecret, JsError> {
+    let their_pk = xonly_to_k256_public_key(their_xonly_pk)?;
+    let my_sk = SecretKey::from_slice(&my_private_key.secret_bytes())
+        .map_err(|_| JsError::new("Invalid private key"))?;
+    Ok(diffie_hellman(
+        my_sk.to_nonzero_scalar(),
+        their_pk.as_affine(),
     ))
 }
 
@@ -163,14 +148,8 @@ pub fn encrypt_message(
     receiver_address_string: &str,
     message: &str,
 ) -> Result<EncryptedMessage, JsError> {
-    let receiver_address = Address::try_from(receiver_address_string)?;
-
-    let receiver_xonly_pk = XOnlyPublicKey::from_slice(receiver_address.payload.as_slice())?;
-
-    let receiver_pk_even =
-        SecpPublicKey::from_x_only_public_key(receiver_xonly_pk, secp256k1::Parity::Even);
-
-    let receiver_pk = PublicKey::from_sec1_bytes(&receiver_pk_even.serialize())?;
+    let receiver_xonly_pk = parse_xonly_public_key_from_address(receiver_address_string)?;
+    let receiver_pk = xonly_to_k256_public_key(receiver_xonly_pk)?;
 
     let ephemeral_secret = EphemeralSecret::random(&mut OsRng);
     let ephemeral_public_key = PublicKey::from(&ephemeral_secret);
@@ -241,7 +220,7 @@ pub fn decrypt_message(
 
     // Decrypt
     let plaintext = match cipher_2.decrypt(
-        &nonce,
+        nonce,
         Payload::from(encrypted_message.ciphertext.as_slice()),
     ) {
         Ok(pt) => pt,
@@ -259,89 +238,138 @@ pub fn decrypt_message(
     }
 }
 
+/// Derive a deterministic 1:1 conversation alias (DM alias).
+///
+/// HKDF info uses a dedicated domain tag:
+/// `dm_alias:v1 || shared_secret || context_xonly_public_key`
 #[wasm_bindgen]
-pub fn decrypt_message_with_bytes(
-    encrypted_message: EncryptedMessage,
-    private_key_bytes: &[u8],
+pub fn derive_dm_alias(
+    my_private_key: &WalletPrivateKey,
+    their_xonly_public_key_hex: &str,
+    context_xonly_public_key_hex: &str,
 ) -> Result<String, JsError> {
-    // Create WalletPrivateKey from bytes
-    let wallet_private_key = match WalletPrivateKey::try_from_slice(private_key_bytes) {
-        Ok(pk) => pk,
-        Err(e) => return Err(JsError::new(&format!("Invalid wallet private key: {}", e))),
-    };
+    let their_xonly_pk =
+        parse_xonly_public_key_from_hex(their_xonly_public_key_hex, "their_xonly_public_key")?;
+    let context_xonly_pk =
+        parse_xonly_public_key_from_hex(context_xonly_public_key_hex, "context_xonly_public_key")?;
 
-    // Use the existing decrypt_message function
-    decrypt_message(encrypted_message, wallet_private_key)
+    derive_alias_with_context(
+        my_private_key,
+        their_xonly_pk,
+        context_xonly_pk,
+        HashDomain::DmAliasV1,
+    )
 }
 
-#[wasm_bindgen]
-pub fn decrypt_with_secret_key(
-    encrypted_message: EncryptedMessage,
-    secret_key_bytes: &[u8],
+fn derive_alias_with_context(
+    my_private_key: &WalletPrivateKey,
+    their_xonly_pk: XOnlyPublicKey,
+    context_xonly_pk: XOnlyPublicKey,
+    domain: HashDomain,
 ) -> Result<String, JsError> {
-    // Create k256 SecretKey directly from bytes
-    let receiver_sk = match SecretKey::from_slice(secret_key_bytes) {
-        Ok(sk) => sk,
-        Err(_) => return Err(JsError::new("Invalid secret key")),
-    };
+    let shared_secret = shared_secret_for_alias(my_private_key, their_xonly_pk)?;
 
-    // Parse ephemeral public key
-    let ephemeral_pk = match PublicKey::from_sec1_bytes(&encrypted_message.ephemeral_public_key) {
-        Ok(pk) => pk,
-        Err(_) => return Err(JsError::new("Invalid ephemeral public key")),
-    };
+    let mut info = Vec::new();
+    info.extend_from_slice(domain.tag());
+    info.extend_from_slice(context_xonly_pk.serialize().as_ref());
 
-    // Get nonce
-    let nonce = Nonce::from_slice(&encrypted_message.nonce);
+    let hkdf = Hkdf::<Sha256>::new(None, shared_secret.raw_secret_bytes());
+    let mut alias_bytes = [0u8; 6];
+    hkdf.expand(&info, &mut alias_bytes)
+        .map_err(|_| JsError::new("HKDF expansion failed"))?;
 
-    // Perform Diffie-Hellman key exchange
-    let shared_secret = diffie_hellman(receiver_sk.to_nonzero_scalar(), ephemeral_pk.as_affine());
-
-    // Extract shared secret for cipher
-    let extracted = shared_secret.extract::<sha2::Sha256>(None);
-    let mut okm = [0u8; 32];
-    match extracted.expand(b"", &mut okm) {
-        Ok(_) => {}
-        Err(_) => {
-            return Err(JsError::new(
-                "Failed to expand shared secret for decryption",
-            ));
-        }
-    }
-
-    // Create cipher
-    let cipher = ChaCha20Poly1305::new(&okm.into());
-
-    // Decrypt
-    let plaintext = match cipher.decrypt(
-        &nonce,
-        Payload::from(encrypted_message.ciphertext.as_slice()),
-    ) {
-        Ok(pt) => pt,
-        Err(_) => {
-            return Err(JsError::new(
-                "Decryption failed - incorrect key or corrupted data",
-            ));
-        }
-    };
-
-    // Convert to string
-    match String::from_utf8(plaintext) {
-        Ok(s) => Ok(s),
-        Err(_) => Err(JsError::new("Decrypted data is not valid UTF-8")),
-    }
+    Ok(hex::encode(alias_bytes))
 }
 
 // tests
 #[cfg(test)]
 mod tests {
 
+    use kaspa_consensus_core::network::NetworkType;
     use kaspa_wallet_keys::{
         prelude::PublicKey as WalletPublicKey, privatekey::PrivateKey as WalletPrivateKey,
     };
-    use kaspa_wrpc_client::prelude::NetworkType;
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::wasm_bindgen_test;
 
     use super::*;
+
+    fn make_wallet_private_key() -> WalletPrivateKey {
+        let sk = SecretKey::random(&mut OsRng);
+        WalletPrivateKey::try_from_slice(sk.to_bytes().as_slice()).unwrap()
+    }
+
+    fn xonly_hex(private_key: &WalletPrivateKey) -> String {
+        hex::encode(
+            private_key
+                .to_public_key()
+                .unwrap()
+                .xonly_public_key
+                .serialize(),
+        )
+    }
+
+    #[test]
+    fn test_hash_domain_tag_dm_alias_v1() {
+        assert_eq!(HashDomain::DmAliasV1.tag(), b"dm_alias:v1");
+    }
+
+    #[test]
+    fn test_parse_xonly_public_key_from_hex_valid() {
+        let private_key = make_wallet_private_key();
+        let xonly = private_key.to_public_key().unwrap().xonly_public_key;
+        let parsed =
+            parse_xonly_public_key_from_hex(&xonly_hex(&private_key), "their_xonly_public_key")
+                .unwrap();
+        assert_eq!(parsed.serialize(), xonly.serialize());
+    }
+
+    #[test]
+    fn test_parse_xonly_public_key_from_address_valid() {
+        let private_key = make_wallet_private_key();
+        let wallet_public_key = private_key.to_public_key().unwrap();
+        let expected = wallet_public_key.xonly_public_key;
+        let address = wallet_public_key.to_address(NetworkType::Testnet).unwrap();
+
+        let parsed = parse_xonly_public_key_from_address(&address.to_string()).unwrap();
+        assert_eq!(parsed.serialize(), expected.serialize());
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[wasm_bindgen_test]
+    fn test_parse_xonly_public_key_from_address_invalid() {
+        let parsed = parse_xonly_public_key_from_address("invalid-address");
+        assert!(parsed.is_err());
+    }
+
+    #[test]
+    fn test_xonly_to_k256_public_key_roundtrip_xonly() {
+        let private_key = make_wallet_private_key();
+        let xonly = private_key.to_public_key().unwrap().xonly_public_key;
+
+        let k256_pk = xonly_to_k256_public_key(xonly).unwrap();
+        let secp_pk = SecpPublicKey::from_slice(&k256_pk.to_sec1_bytes()).unwrap();
+        let (roundtrip_xonly, _) = secp_pk.x_only_public_key();
+
+        assert_eq!(roundtrip_xonly.serialize(), xonly.serialize());
+    }
+
+    #[test]
+    fn test_shared_secret_for_alias_is_symmetric() {
+        let alice_private_key = make_wallet_private_key();
+        let bob_private_key = make_wallet_private_key();
+
+        let alice_xonly = alice_private_key.to_public_key().unwrap().xonly_public_key;
+        let bob_xonly = bob_private_key.to_public_key().unwrap().xonly_public_key;
+
+        let alice_secret = shared_secret_for_alias(&alice_private_key, bob_xonly).unwrap();
+        let bob_secret = shared_secret_for_alias(&bob_private_key, alice_xonly).unwrap();
+
+        assert_eq!(
+            alice_secret.raw_secret_bytes(),
+            bob_secret.raw_secret_bytes()
+        );
+    }
 
     #[test]
     fn test_encrypt_decrypt() {
@@ -360,5 +388,53 @@ mod tests {
         let encrypted_message = encrypt_message(&receiver_address.to_string(), message).unwrap();
         let decrypted_message = decrypt_message(encrypted_message, wallet_private_key).unwrap();
         assert_eq!(message.to_owned(), decrypted_message);
+    }
+
+    #[test]
+    fn test_asymmetric_alias_derivation() {
+        // Create Alice's keypair
+        let alice_sk = SecretKey::random(&mut OsRng);
+        let alice_pk = alice_sk.public_key();
+        let alice_secp_pk = SecpPublicKey::from_slice(&alice_pk.to_sec1_bytes()).unwrap();
+        let _ = WalletPublicKey::from(alice_secp_pk);
+        let alice_private_key =
+            WalletPrivateKey::try_from_slice(alice_sk.to_bytes().as_slice()).unwrap();
+
+        // Create Bob's keypair
+        let bob_sk = SecretKey::random(&mut OsRng);
+        let bob_pk = bob_sk.public_key();
+        let bob_secp_pk = SecpPublicKey::from_slice(&bob_pk.to_sec1_bytes()).unwrap();
+        let _ = WalletPublicKey::from(bob_secp_pk);
+        let bob_private_key =
+            WalletPrivateKey::try_from_slice(bob_sk.to_bytes().as_slice()).unwrap();
+
+        let alice_xonly_hex = hex::encode(
+            alice_private_key
+                .to_public_key()
+                .unwrap()
+                .xonly_public_key
+                .serialize(),
+        );
+        let bob_xonly_hex = hex::encode(
+            bob_private_key
+                .to_public_key()
+                .unwrap()
+                .xonly_public_key
+                .serialize(),
+        );
+
+        // Alice derives her alias for conversation with Bob
+        let alice_my_alias =
+            derive_dm_alias(&alice_private_key, &bob_xonly_hex, &alice_xonly_hex).unwrap();
+
+        // Bob derives his alias for conversation with Alice
+        let bob_my_alias =
+            derive_dm_alias(&bob_private_key, &alice_xonly_hex, &bob_xonly_hex).unwrap();
+
+        // Verify privacy property: myAliases should be different
+        assert_ne!(
+            alice_my_alias, bob_my_alias,
+            "Alice and Bob should have different myAliases (privacy: different aliases in each direction)"
+        );
     }
 }

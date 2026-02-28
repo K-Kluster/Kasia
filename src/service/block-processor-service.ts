@@ -193,6 +193,17 @@ export class BlockProcessorService extends EventEmitter<{
         return; // don't process messages from blocked addresses
       }
 
+      // Log incoming message alias check
+      if (messageType === PROTOCOL.headers.COMM.type && targetAlias) {
+        console.log("[block-processor] Incoming message alias check:", {
+          targetAlias,
+          isMonitored: this.monitoredConversations.has(targetAlias),
+          monitoredAliases: Array.from(this.monitoredConversations),
+          senderAddress: resolvedSenderAddress,
+          note: "Message is for us if targetAlias matches one of our monitored myAliases",
+        });
+      }
+
       const isCommForUs =
         messageType === PROTOCOL.headers.COMM.type &&
         targetAlias &&

@@ -4,7 +4,6 @@ import { ChevronLeft } from "lucide-react";
 import { DirectsList } from "./Directs/DirectsList";
 import { DirectComposer } from "./Composing/Directs/DirectComposer";
 import { useMessagingStore } from "../../store/messaging.store";
-import { useWalletStore } from "../../store/wallet.store";
 import { KaspaAddress } from "../KaspaAddress";
 
 import { useIsMobile } from "../../hooks/useIsMobile";
@@ -19,7 +18,6 @@ export const DirectsSection: FC<{
   setMobileView: (v: "contacts" | "messages") => void;
 }> = ({ mobileView, setMobileView }) => {
   const messageStore = useMessagingStore();
-  const address = useWalletStore((s) => s.address);
   const isMobile = useIsMobile();
 
   const oneOnOneConversations = useMessagingStore(

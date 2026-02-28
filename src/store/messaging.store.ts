@@ -19,8 +19,10 @@ import {
   encryptXChaCha20Poly1305,
   kaspaToSompi,
 } from "kaspa-wasm";
+import { MIN_NETWORK_FEE } from "../config/constants";
 import { ConversationManagerService } from "../service/conversation-manager-service";
 import { useWalletStore } from "./wallet.store";
+import { toast } from "../utils/toast-helper";
 import {
   ConversationEvents,
   HandshakePayload,
@@ -102,15 +104,13 @@ interface MessagingState {
   // New function to manually respond to a handshake
   respondToHandshake: (handshakeId: string) => Promise<string>;
 
-  // Create offline handshake (both parties exchange info manually)
-  createOffChainHandshake: (
-    partnerAddress: string,
-    ourAliasForPartner: string,
-    theirAliasForUs: string
-  ) => Promise<{ conversationId: string; contactId: string }>;
-
   // Generate unique alias for conversations
   generateUniqueAlias: () => string;
+
+  // Create discrete conversation (no handshake required)
+  createDiscreteConversation: (
+    recipientAddress: string
+  ) => Promise<{ conversationId: string; contactId: string }>;
 
   // Nickname management
   setContactNickname: (address: string, nickname?: string) => Promise<void>;
@@ -145,7 +145,13 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
     isFromMe: boolean
   ): boolean => {
     if (isFromMe) return true;
-    return Boolean(conversation.theirAlias) && conversation.status === "active";
+    // Allow incoming messages if:
+    // 1. Conversation is active, OR
+    // 2. Conversation was initiated by me (e.g., discrete chat) - I explicitly chose to communicate
+    return (
+      Boolean(conversation.theirAlias) &&
+      (conversation.status === "active" || conversation.initiatedByMe)
+    );
   };
 
   const _fetchHistoricalForConversation = async (
@@ -163,8 +169,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         WalletStorageService.getPrivateKey(unlockedWallet).toString();
 
       const aliasesToFetch = new Set<string>(aliases);
-      if (!aliasesToFetch.size && oooc.conversation.theirAlias) {
-        aliasesToFetch.add(oooc.conversation.theirAlias);
+      if (!aliasesToFetch.size && oooc.conversation.myAlias) {
+        aliasesToFetch.add(oooc.conversation.myAlias);
       }
 
       // get last message&payment timestamp
@@ -414,9 +420,9 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
                 resolvedUnknownReceivedHandshakesAliasesBySenderAddress[
                   oooc.contact.kaspaAddress
                 ] ?? new Set<string>();
-              if (oooc.conversation.theirAlias) {
+              if (oooc.conversation.myAlias) {
                 resolvedUnknownHandshakesAlisesForThisConversation.add(
-                  oooc.conversation.theirAlias
+                  oooc.conversation.myAlias
                 );
               }
 
@@ -1046,13 +1052,19 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const { contact, conversation } =
         await manager.initiateHandshake(recipientAddress);
 
-      // Create the handshake payload
+      // Create the handshake payload (aliases no longer exchanged - they're derived deterministically)
       const handshakePayload: HandshakePayload = {
         type: "handshake",
-        alias: conversation.myAlias,
         timestamp: Date.now(),
         version: 1,
       };
+
+      console.log(
+        "[initiateHandshake] Conversation aliases => myAlias:",
+        conversation.myAlias,
+        "theirAlias:",
+        conversation.theirAlias
+      );
 
       // their payload
       const encryptedMessageForThem = encrypt_message(
@@ -1105,18 +1117,31 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
 
         await repositories.handshakeRepository.saveHandshake(handshake);
 
-        const oneOnOneConversations = g().oneOnOneConversations;
+        const existingConversationIndex = g().oneOnOneConversations.findIndex(
+          (oooc) => oooc.conversation.id === conversation.id
+        );
 
-        // push at the beginning of the array
-        oneOnOneConversations.unshift({
-          conversation,
-          contact,
-          events: [handshake],
-        });
-
-        set({
-          oneOnOneConversations,
-        });
+        if (existingConversationIndex !== -1) {
+          const updatedConversations = [...g().oneOnOneConversations];
+          updatedConversations[existingConversationIndex] = {
+            ...updatedConversations[existingConversationIndex],
+            conversation,
+            contact,
+            events: [
+              ...updatedConversations[existingConversationIndex].events,
+              handshake,
+            ].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
+          };
+          set({ oneOnOneConversations: updatedConversations });
+        } else {
+          const oneOnOneConversations = [...g().oneOnOneConversations];
+          oneOnOneConversations.unshift({
+            conversation,
+            contact,
+            events: [handshake],
+          });
+          set({ oneOnOneConversations });
+        }
 
         // create self-stash for handshake initiation
         const selfStashTxId = await g().createSelfStash({
@@ -1140,7 +1165,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const validatedPayload: HandshakePayload =
         manager.parseHandshakePayload(payload);
 
-      return await manager.processHandshake(senderAddress, validatedPayload);
+      const result = await manager.processHandshake(
+        senderAddress,
+        validatedPayload
+      );
+
+      return result;
     },
     getActiveConversationsWithContacts: () => {
       const manager = g().conversationManager;
@@ -1154,33 +1184,6 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       const manager = g().conversationManager;
       return manager ? manager.getPendingConversationsWithContact() : [];
     },
-    // add an offline handshake
-    createOffChainHandshake: async (
-      partnerAddress: string,
-      ourAliasForPartner: string,
-      theirAliasForUs: string
-    ) => {
-      const manager = g().conversationManager;
-
-      if (!manager) {
-        throw new Error("Conversation manager not initialized");
-      }
-
-      // Call the service method
-      const result = await manager.createOffChainHandshake(
-        partnerAddress,
-        ourAliasForPartner,
-        theirAliasForUs
-      );
-
-      // Refresh conversation manager to pick up the new conversation
-      await manager.loadConversations();
-
-      // Refresh the UI state to trigger re-render with the new contact
-      await g().hydrateOneonOneConversations();
-
-      return result;
-    },
 
     generateUniqueAlias: () => {
       const manager = g().conversationManager;
@@ -1190,6 +1193,101 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
       }
 
       return manager.generateUniqueAlias();
+    },
+
+    createDiscreteConversation: async (recipientAddress: string) => {
+      const manager = g().conversationManager;
+      if (!manager) {
+        throw new Error("Conversation manager not initialized");
+      }
+
+      const repositories = useDBStore.getState().repositories;
+      const walletStore = useWalletStore.getState();
+
+      if (!walletStore.unlockedWallet) {
+        throw new Error("Wallet not unlocked");
+      }
+
+      // Create discrete conversation (no handshake required)
+      const { conversation, contact } =
+        await manager.createDiscreteConversation(recipientAddress);
+
+      console.log(
+        "[createDiscreteConversation] Created discrete conversation with",
+        recipientAddress
+      );
+      console.log(
+        "[createDiscreteConversation] Aliases => myAlias:",
+        conversation.myAlias,
+        "theirAlias:",
+        conversation.theirAlias
+      );
+
+      // Create an off-chain system message to mark the start of the discrete conversation
+      const systemMessage: Message = {
+        __type: "message",
+        id: `${walletStore.unlockedWallet.id}_discrete_start_${conversation.id}`,
+        conversationId: conversation.id,
+        contactId: contact.id,
+        content:
+          "Discrete chat initiated. Messages will only be received if the other party is monitoring your address (via their own discrete chat or an existing conversation).",
+        amount: 0,
+        fromMe: true,
+        createdAt: new Date(),
+        tenantId: walletStore.unlockedWallet.id,
+        transactionId: `discrete_start_${conversation.id}`,
+        fee: 0,
+      };
+
+      // Save the system message locally
+      await repositories.messageRepository.saveMessage(systemMessage);
+
+      console.log(
+        "[createDiscreteConversation] Created system message:",
+        systemMessage.id
+      );
+
+      // Optionally create self-stash for cross-device sync (requires minimal funds for network fees)
+      // Check if user has sufficient balance before attempting
+      const minFeeAmount = MIN_NETWORK_FEE;
+      const currentBalance = walletStore.balance;
+
+      if (currentBalance && currentBalance.mature >= minFeeAmount) {
+        try {
+          const selfStashTxId = await g().createSelfStash({
+            type: "initiation",
+            partnerAddress: recipientAddress,
+            ourAlias: conversation.myAlias,
+            theirAlias: conversation.theirAlias ?? undefined,
+          });
+
+          console.log(
+            "[createDiscreteConversation] Self-stash created for cross-device sync:",
+            selfStashTxId
+          );
+        } catch (error) {
+          console.warn(
+            "[createDiscreteConversation] Failed to create self-stash (conversation still works locally):",
+            error instanceof Error ? error.message : error
+          );
+        }
+      } else {
+        console.log(
+          "[createDiscreteConversation] Skipping self-stash - insufficient balance for network fees (conversation works locally)"
+        );
+        toast.warning(
+          "Chat created locally only. Insufficient balance for cross-device sync. Chat history won't be available on other devices.",
+          8000
+        );
+      }
+
+      // Refresh the UI state to show the new conversation
+      await g().hydrateOneonOneConversations();
+
+      return {
+        conversationId: conversation.id,
+        contactId: contact.id,
+      };
     },
 
     respondToHandshake: async (handshakeId: string) => {
@@ -1226,17 +1324,21 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         // Create handshake response
         await manager.createHandshakeResponse(conversation.id);
 
+        // Aliases are no longer exchanged - they're derived deterministically
         const handshakeResponsePayload: HandshakePayload = {
           type: "handshake",
-          alias: conversation.myAlias,
-          // create handshake response already check if their alias is set, else it throws
-          theirAlias: conversation.theirAlias!,
           timestamp: Date.now(),
           version: 1,
           isResponse: true,
         };
 
         console.log("Handshake response to send:", handshakeResponsePayload);
+        console.log(
+          "[respondToHandshake] Conversation aliases => myAlias:",
+          conversation.myAlias,
+          "theirAlias:",
+          conversation.theirAlias
+        );
 
         const payload = `${toHex("ciph_msg:1:handshake:")}${encrypt_message(recipientAddress, JSON.stringify(handshakeResponsePayload)).to_hex()}`;
 
@@ -1319,8 +1421,8 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
               );
               if (oooc) {
                 const aliases = new Set<string>();
-                if (oooc.conversation.theirAlias) {
-                  aliases.add(oooc.conversation.theirAlias);
+                if (oooc.conversation.myAlias) {
+                  aliases.add(oooc.conversation.myAlias);
                 }
                 await _fetchHistoricalForConversation(
                   oooc,
@@ -1452,12 +1554,12 @@ export const useMessagingStore = create<MessagingState>((set, g) => {
         throw new Error("Account service not available");
       }
 
-      // check if user has sufficient funds (0.2 KAS minimum)
-      const minAmount = BigInt(20000000);
+      // check if user has sufficient funds for network fees (not 0.2 KAS like handshakes)
+      const minFeeAmount = MIN_NETWORK_FEE;
       const currentBalance = walletStore.balance;
-      if (!currentBalance || currentBalance.mature < minAmount) {
+      if (!currentBalance || currentBalance.mature < minFeeAmount) {
         throw new Error(
-          "Insufficient funds. you need at least 0.2 KAS for self stash."
+          "Insufficient funds. You need at least ~0.2 KAS for network fees to create self-stash."
         );
       }
 

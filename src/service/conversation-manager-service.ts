@@ -4,8 +4,6 @@ import {
   SavedHandshakePayload,
 } from "src/types/messaging.types";
 import { v4 as uuidv4 } from "uuid";
-import { ALIAS_LENGTH } from "../config/constants";
-import { isAlias } from "../utils/alias-validator";
 import { DBNotFoundException, Repositories } from "../store/repository/db";
 import {
   Conversation,
@@ -14,6 +12,9 @@ import {
 } from "../store/repository/conversation.repository";
 import { Contact } from "../store/repository/contact.repository";
 import { Handshake } from "../store/repository/handshake.repository";
+import { deriveConversationAliases } from "../utils/deterministic-alias";
+import { useWalletStore } from "../store/wallet.store";
+import { WalletStorageService } from "./wallet-storage-service";
 import { useBlocklistStore } from "../store/blocklist.store";
 
 export class ConversationManagerService {
@@ -45,11 +46,55 @@ export class ConversationManagerService {
     );
     await manager.loadConversations();
 
+    const metadata = repositories.metadataRepository.load();
+    if (!metadata.deterministicAliasesMigrated) {
+      // migrate legacy aliases to deterministic aliases only once per wallet
+      try {
+        await manager.migrateLegacyConversationAliasesIntoDeterministicAliases();
+        repositories.metadataRepository.store({
+          deterministicAliasesMigrated: true,
+        });
+      } catch (error) {
+        console.warn(
+          "[alias-migration] Skipping alias reconciliation during init",
+          error
+        );
+      }
+    }
+
     return manager;
   }
 
   private get storageKey(): string {
     return `${ConversationManagerService.STORAGE_KEY_PREFIX}_${this.currentAddress}`;
+  }
+
+  /**
+   * Gets the private key for deriving deterministic aliases
+   */
+  private getPrivateKey(): string {
+    const walletStore = useWalletStore.getState();
+    if (!walletStore.unlockedWallet) {
+      throw new Error("Wallet not unlocked - cannot derive aliases");
+    }
+
+    return WalletStorageService.getPrivateKey(
+      walletStore.unlockedWallet
+    ).toString();
+  }
+
+  /**
+   * Gets my x-only public key once from wallet state.
+   */
+  private getMyXOnlyPublicKey(): string {
+    const walletStore = useWalletStore.getState();
+    if (!walletStore.unlockedWallet) {
+      throw new Error("Wallet not unlocked - cannot derive aliases");
+    }
+
+    return walletStore.unlockedWallet.receivePublicKey
+      .toXOnlyPublicKey()
+      .toString();
   }
 
   public async loadConversations() {
@@ -162,6 +207,103 @@ export class ConversationManagerService {
   }
 
   /**
+   * Create a discrete conversation - start monitoring for messages without sending a handshake.
+   * Both parties independently derive the same deterministic aliases.
+   * No on-chain transaction is required.
+   */
+  public async createDiscreteConversation(recipientAddress: string): Promise<{
+    conversation: Conversation;
+    contact: Contact;
+  }> {
+    try {
+      // Validate recipient address format
+      if (!this.isValidKaspaAddress(recipientAddress)) {
+        throw new Error("Invalid Kaspa address format");
+      }
+
+      // Check if conversation already exists
+      const existingConvId = this.addressToConversation.get(recipientAddress);
+      if (existingConvId) {
+        const conversationAndContact =
+          this.conversationWithContactByConversationId.get(existingConvId);
+        if (conversationAndContact) {
+          throw new Error(
+            "Conversation already exists with this address. Use the existing conversation."
+          );
+        }
+      }
+
+      // Get or create contact
+      const contact = await this.repositories.contactRepository
+        .getContactByKaspaAddress(recipientAddress)
+        .catch(async (error) => {
+          if (error instanceof DBNotFoundException) {
+            // Create new contact
+            const newContact = {
+              id: uuidv4(),
+              kaspaAddress: recipientAddress,
+              timestamp: new Date(),
+              name: undefined,
+              tenantId: this.repositories.tenantId,
+            };
+            await this.repositories.contactRepository.saveContact(newContact);
+            return newContact;
+          }
+          throw error;
+        });
+
+      // Derive deterministic aliases
+      const privateKey = this.getPrivateKey();
+      const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+      const { myAlias, theirAlias } = deriveConversationAliases(
+        privateKey,
+        recipientAddress,
+        myXOnlyPublicKey
+      );
+
+      console.log(
+        "[createDiscreteConversation] Derived aliases for",
+        recipientAddress,
+        "=> myAlias:",
+        myAlias,
+        "theirAlias:",
+        theirAlias
+      );
+
+      // Create conversation in active state (no handshake needed)
+      const conversation: ActiveConversation = {
+        id: uuidv4(),
+        myAlias,
+        theirAlias,
+        lastActivityAt: new Date(),
+        status: "active", // Immediately active - no handshake required
+        initiatedByMe: true,
+        contactId: contact.id,
+        tenantId: this.repositories.tenantId,
+      };
+
+      await this.repositories.conversationRepository.saveConversation(
+        conversation
+      );
+
+      this.inMemorySyncronization(conversation, contact);
+
+      console.log(
+        "[createDiscreteConversation] Created discrete conversation - now monitoring myAlias:",
+        myAlias
+      );
+
+      return {
+        conversation,
+        contact,
+      };
+    } catch (error) {
+      this.events?.onError?.(error);
+      throw error;
+    }
+  }
+
+  /**
    * assumption: payload has been parse with this.parseHandshakePayload first
    */
   public async processHandshake(
@@ -182,15 +324,40 @@ export class ConversationManagerService {
       const existingConversationAndContactByAddress =
         this.getConversationWithContactByAddress(senderAddress);
 
-      console.log("conversation manager - processing handshake", { payload });
+      console.log("conversation manager - processing handshake", {
+        payload,
+        senderAddress,
+      });
 
       if (existingConversationAndContactByAddress) {
-        // for safety reasons, it would be better to update the alias only if received handshake date
-        // is greater than last time time we touched the alias. it would allow the caller to not be
-        // responsible for this check
-        (
-          existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
-        ).theirAlias = payload.alias;
+        // Derive aliases to verify they match (sanity check for deterministic system)
+        const privateKey = this.getPrivateKey();
+        const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+        const { myAlias } = deriveConversationAliases(
+          privateKey,
+          senderAddress,
+          myXOnlyPublicKey
+        );
+
+        console.log(
+          "[processHandshake] Existing conversation - Derived myAlias:",
+          myAlias,
+          "Expected:",
+          existingConversationAndContactByAddress.conversation.myAlias
+        );
+
+        // Verify aliases match (they should be deterministic)
+        if (
+          existingConversationAndContactByAddress.conversation.myAlias !==
+          myAlias
+        ) {
+          console.warn(
+            "[Alias Mismatch] Expected myAlias:",
+            myAlias,
+            "Got:",
+            existingConversationAndContactByAddress.conversation.myAlias
+          );
+        }
 
         // if conversation was initiated by me, and not yet active, it becomes active.
         if (
@@ -201,6 +368,9 @@ export class ConversationManagerService {
           (
             existingConversationAndContactByAddress.conversation as unknown as ActiveConversation
           ).status = "active";
+          console.log(
+            "[processHandshake] Activated pending conversation that I initiated"
+          );
         }
 
         await this.repositories.conversationRepository.saveConversation(
@@ -210,10 +380,11 @@ export class ConversationManagerService {
           existingConversationAndContactByAddress.conversation,
           existingConversationAndContactByAddress.contact
         );
+
         return;
       }
 
-      // STEP 3 – completely unknown (first contact ever)
+      // STEP 2 – completely unknown (first contact ever)
       return this.processNewHandshake(payload, senderAddress);
     } catch (error) {
       this.events?.onError?.(error);
@@ -499,10 +670,28 @@ export class ConversationManagerService {
         throw error;
       });
 
+    // Derive deterministic aliases based on ECDH + HKDF
+    const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+    const { myAlias, theirAlias } = deriveConversationAliases(
+      privateKey,
+      recipientAddress,
+      myXOnlyPublicKey
+    );
+
+    console.log(
+      "[Alias Derivation] Partner:",
+      recipientAddress,
+      "=> myAlias:",
+      myAlias,
+      "theirAlias:",
+      theirAlias
+    );
+
     const conversation: Conversation = {
       id: uuidv4(),
-      myAlias: this.generateUniqueAlias(),
-      theirAlias: null,
+      myAlias,
+      theirAlias,
       lastActivityAt: new Date(),
       status: "pending",
       initiatedByMe,
@@ -553,16 +742,34 @@ export class ConversationManagerService {
         throw error;
       });
 
+    // Derive deterministic aliases for this conversation
+    const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+    const { myAlias, theirAlias } = deriveConversationAliases(
+      privateKey,
+      payload.recipientAddress,
+      myXOnlyPublicKey
+    );
+
+    console.log(
+      "[hydrateFromSavedHandshake] Derived aliases for",
+      payload.recipientAddress,
+      "=> myAlias:",
+      myAlias,
+      "theirAlias:",
+      theirAlias
+    );
+
     const conversation = await this.repositories.conversationRepository
       .getConversationByContactId(contact.id)
       .catch(async (error) => {
         if (error instanceof DBNotFoundException) {
           const _conversation: Conversation = {
             id: uuidv4(),
-            myAlias: payload.alias,
-            theirAlias: payload.theirAlias || null, // use theirAlias if present (for offline handshakes)
+            myAlias,
+            theirAlias,
             lastActivityAt: new Date(payload.timestamp),
-            status: payload.theirAlias ? "active" : "pending", // mark as active if we have both aliases (offline handshake)
+            status: "pending", // Will be activated when handshake is confirmed
             initiatedByMe: true,
             contactId: contact.id,
             tenantId: this.repositories.tenantId,
@@ -577,18 +784,10 @@ export class ConversationManagerService {
         throw error;
       });
 
-    conversation.myAlias = payload.alias;
+    // Update with derived aliases (they should match if deterministic)
+    conversation.myAlias = myAlias;
+    conversation.theirAlias = theirAlias;
     conversation.lastActivityAt = new Date(payload.timestamp);
-
-    // set theirAlias if present in payload (for offline handshakes)
-    if (payload.theirAlias) {
-      conversation.theirAlias = payload.theirAlias;
-    }
-
-    // mark as active if we now have both aliases (completed offline handshake)
-    if (payload.theirAlias && conversation.myAlias) {
-      conversation.status = "active";
-    }
 
     await this.repositories.conversationRepository.saveConversation(
       conversation
@@ -607,27 +806,14 @@ export class ConversationManagerService {
     };
   }
 
+  /**
+   * @deprecated Use deriveConversationAliases() instead - aliases are now deterministic
+   * This method is kept for backward compatibility only
+   */
   public generateUniqueAlias(): string {
-    let attempts = 0;
-    const maxAttempts = 100; // Increased for better collision resistance
-
-    while (attempts < maxAttempts) {
-      const alias = this.generateAlias();
-      if (!this.aliasToConversation.has(alias)) {
-        return alias;
-      }
-      attempts++;
-    }
-
-    throw new Error("Failed to generate unique alias after maximum attempts");
-  }
-
-  private generateAlias(): string {
-    const bytes = new Uint8Array(ALIAS_LENGTH);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    throw new Error(
+      "generateUniqueAlias is deprecated - aliases are now deterministic. Use deriveConversationAliases() instead."
+    );
   }
 
   private isValidKaspaAddress(address: string): boolean {
@@ -656,11 +842,25 @@ export class ConversationManagerService {
       return;
     }
 
-    const isMyNewAliasValid = isAlias(payload.theirAlias);
+    // Derive deterministic aliases based on sender's address
+    const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+    const { myAlias, theirAlias } = deriveConversationAliases(
+      privateKey,
+      senderAddress,
+      myXOnlyPublicKey
+    );
 
-    const myAlias = this.generateUniqueAlias();
-    const status =
-      payload.isResponse && isMyNewAliasValid ? "active" : "pending";
+    console.log(
+      "[processNewHandshake] Derived aliases for",
+      senderAddress,
+      "=> myAlias:",
+      myAlias,
+      "theirAlias:",
+      theirAlias
+    );
+
+    const status = payload.isResponse ? "active" : "pending";
 
     const newContact = {
       id: uuidv4(),
@@ -676,7 +876,7 @@ export class ConversationManagerService {
     const conversation: Conversation = {
       id: uuidv4(),
       myAlias,
-      theirAlias: payload.alias,
+      theirAlias,
       contactId,
       tenantId: this.repositories.tenantId,
       lastActivityAt: new Date(),
@@ -690,20 +890,12 @@ export class ConversationManagerService {
 
     this.inMemorySyncronization(conversation, newContact);
 
-    if (isMyNewAliasValid) {
+    if (payload.isResponse) {
       this.events?.onHandshakeCompleted?.(conversation, newContact);
     }
   }
 
   private validateHandshakePayload(payload: HandshakePayload) {
-    if (!payload.alias || payload.alias.length !== ALIAS_LENGTH * 2) {
-      throw new Error("Invalid alias format");
-    }
-
-    if (!payload.alias.match(/^[0-9a-f]+$/i)) {
-      throw new Error("Alias must be hexadecimal");
-    }
-
     // Version compatibility check
     if (
       payload.version &&
@@ -711,6 +903,9 @@ export class ConversationManagerService {
     ) {
       throw new Error("Unsupported protocol version");
     }
+
+    // Aliases are no longer exchanged in handshake - they're derived deterministically
+    // So no alias validation needed here
   }
 
   private inMemorySyncronization(conversation: Conversation, contact: Contact) {
@@ -736,12 +931,13 @@ export class ConversationManagerService {
             conversationAndContact.conversation.initiatedByMe)
       )
       .forEach((conversationAndContact) => {
-        if (conversationAndContact.conversation.theirAlias) {
-          monitored.push({
-            alias: conversationAndContact.conversation.theirAlias,
-            address: conversationAndContact.contact.kaspaAddress,
-          });
-        }
+        // CRITICAL: Monitor myAlias (not theirAlias)
+        // In deterministic system: I monitor myAlias, they send to theirAlias
+        // Due to ECDH symmetry: their theirAlias === my myAlias
+        monitored.push({
+          alias: conversationAndContact.conversation.myAlias,
+          address: conversationAndContact.contact.kaspaAddress,
+        });
       });
 
     return monitored;
@@ -799,6 +995,58 @@ export class ConversationManagerService {
     await this.repositories.conversationRepository.saveConversation(
       conversation
     );
+  }
+
+  /**
+   * Reconcile legacy aliases with deterministic aliases after wallet unlock.
+   */
+  private async migrateLegacyConversationAliasesIntoDeterministicAliases(): Promise<void> {
+    const privateKey = this.getPrivateKey();
+    const myXOnlyPublicKey = this.getMyXOnlyPublicKey();
+
+    let updatedCount = 0;
+    for (const {
+      conversation,
+      contact,
+    } of this.conversationWithContactByConversationId.values()) {
+      try {
+        const { myAlias, theirAlias } = deriveConversationAliases(
+          privateKey,
+          contact.kaspaAddress,
+          myXOnlyPublicKey
+        );
+
+        if (
+          conversation.myAlias === myAlias &&
+          conversation.theirAlias === theirAlias
+        ) {
+          continue;
+        }
+
+        await this.repositories.conversationRepository.saveConversation({
+          ...conversation,
+          myAlias,
+          theirAlias,
+        });
+        updatedCount += 1;
+      } catch (error) {
+        console.warn(
+          "[alias-migration] Failed to reconcile conversation aliases",
+          {
+            conversationId: conversation.id,
+            contactAddress: contact.kaspaAddress,
+            error: error instanceof Error ? error.message : String(error),
+          }
+        );
+      }
+    }
+
+    if (updatedCount > 0) {
+      await this.loadConversations();
+      console.log(
+        `[alias-migration] Reconciled aliases for ${updatedCount} conversation(s)`
+      );
+    }
   }
 
   /**

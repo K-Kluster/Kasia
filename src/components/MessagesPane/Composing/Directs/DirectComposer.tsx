@@ -160,7 +160,21 @@ export const DirectComposer = ({ recipient }: { recipient?: string }) => {
 
   const onSend = async () => {
     if (!guardReady() || !conversation || !canCompose) return;
-    await send(conversation.myAlias);
+
+    // Guard: theirAlias must exist to send messages
+    if (!conversation.theirAlias) {
+      toast.error("Cannot send: recipient alias not yet established");
+      return;
+    }
+
+    // CRITICAL: Send to theirAlias (recipient monitors this), not myAlias!
+    console.log("[DirectComposer] Sending message:", {
+      myAlias: conversation.myAlias,
+      theirAlias: conversation.theirAlias,
+      sendingTo: conversation.theirAlias,
+      note: "Sending to theirAlias - recipient should be monitoring this",
+    });
+    await send(conversation.theirAlias);
   };
 
   return (

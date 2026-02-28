@@ -27,7 +27,7 @@ import {
   BlockedAddressRepository,
 } from "./blocked-address.repository";
 
-const CURRENT_DB_VERSION = 5;
+const CURRENT_DB_VERSION = 6;
 
 export class DBNotFoundException extends Error {
   constructor() {
@@ -316,10 +316,6 @@ export const openDatabase = async (): Promise<KasiaDB> => {
         console.log(
           "[DB] - Migrated to v4: Added status field to messages and payments"
         );
-      }
-      if (oldVersion <= 5) {
-        // HERE next migration, first increase CURRENT_DB_VERSION then implement with oldVersion <= CURRENT_DB_VERSION - 1
-        // add more if branching for each next version
       }
     },
   });
